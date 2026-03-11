@@ -4,502 +4,726 @@
     <base target="_top">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      :root {
+        --neon-blue: #00d4ff;
+        --neon-green: #00ff88;
+        --neon-gold: #ffd700;
+        --neon-purple: #a855f7;
+        --neon-orange: #ff6b35;
+        --neon-pink: #ff4d8d;
+        --bg-dark: #060b18;
+        --bg-card: rgba(255,255,255,0.04);
+        --border-glow: rgba(0,212,255,0.2);
       }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
 
       body {
-        font-family: 'Roboto', 'Arial', sans-serif;
-        background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+        font-family: 'Inter', sans-serif;
+        background: var(--bg-dark);
         min-height: 100vh;
-        padding: 0;
-        margin: 0;
         color: #fff;
-        overflow: hidden;
+        overflow-x: hidden;
       }
 
-      .container {
-        width: 100%;
-        height: 100vh;
+      /* Animated background */
+      .bg-orbs {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        animation: float 12s ease-in-out infinite;
+        opacity: 0.15;
+      }
+      .orb1 { width: 400px; height: 400px; background: #00d4ff; top: -100px; left: -100px; animation-delay: 0s; }
+      .orb2 { width: 350px; height: 350px; background: #a855f7; bottom: -80px; right: -80px; animation-delay: -4s; }
+      .orb3 { width: 250px; height: 250px; background: #00ff88; top: 40%; left: 60%; animation-delay: -8s; }
+      .orb4 { width: 200px; height: 200px; background: #ffd700; top: 60%; left: 10%; animation-delay: -3s; }
+
+      @keyframes float {
+        0%, 100% { transform: translate(0, 0) scale(1); }
+        33% { transform: translate(30px, -30px) scale(1.05); }
+        66% { transform: translate(-20px, 20px) scale(0.95); }
+      }
+
+      /* Grid dots */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
+        background-size: 32px 32px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .page-wrap {
+        position: relative;
+        z-index: 1;
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      /* Header */
+      .header {
+        text-align: center;
+        padding: 24px 0 28px;
+        animation: slideDown 0.6s ease;
+      }
+      .header-tag {
+        display: inline-block;
+        background: rgba(0,212,255,0.1);
+        border: 1px solid rgba(0,212,255,0.3);
+        color: var(--neon-blue);
+        font-size: 0.7em;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        padding: 6px 16px;
+        border-radius: 20px;
+        margin-bottom: 12px;
+      }
+      .header h1 {
+        font-size: 2em;
+        font-weight: 800;
+        background: linear-gradient(135deg, #fff 0%, var(--neon-blue) 50%, var(--neon-purple) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        letter-spacing: -1px;
+        line-height: 1.1;
+      }
+      .header-sub {
+        color: rgba(255,255,255,0.4);
+        font-size: 0.82em;
+        margin-top: 6px;
+        font-weight: 400;
+      }
+
+      /* Hero total cards */
+      .hero-cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+        animation: fadeUp 0.6s ease 0.1s both;
+      }
+
+      .hero-card {
+        position: relative;
+        border-radius: 20px;
+        padding: 24px;
+        overflow: hidden;
+        border: 1px solid;
+        backdrop-filter: blur(20px);
+      }
+      .hero-card.lkr {
+        background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,150,0,0.04));
+        border-color: rgba(255,215,0,0.25);
+        box-shadow: 0 0 40px rgba(255,215,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
+      }
+      .hero-card.usd {
+        background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(0,212,255,0.04));
+        border-color: rgba(0,255,136,0.25);
+        box-shadow: 0 0 40px rgba(0,255,136,0.08), inset 0 1px 0 rgba(255,255,255,0.06);
+      }
+      .hero-card-icon {
+        font-size: 2em;
+        margin-bottom: 10px;
+        display: block;
+      }
+      .hero-card-label {
+        font-size: 0.72em;
+        font-weight: 600;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.45);
+        margin-bottom: 6px;
+      }
+      .hero-card-amount {
+        font-size: 1.75em;
+        font-weight: 800;
+        letter-spacing: -1px;
+        line-height: 1;
+      }
+      .hero-card.lkr .hero-card-amount { color: var(--neon-gold); text-shadow: 0 0 30px rgba(255,215,0,0.4); }
+      .hero-card.usd .hero-card-amount { color: var(--neon-green); text-shadow: 0 0 30px rgba(0,255,136,0.4); }
+      .hero-card-glow {
+        position: absolute;
+        right: -20px;
+        bottom: -20px;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        filter: blur(40px);
+        opacity: 0.25;
+      }
+      .hero-card.lkr .hero-card-glow { background: #ffd700; }
+      .hero-card.usd .hero-card-glow { background: #00ff88; }
+
+      /* Charts section */
+      .charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+        animation: fadeUp 0.6s ease 0.2s both;
+      }
+
+      .glass-card {
+        background: var(--bg-card);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 18px;
+        padding: 20px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+        position: relative;
+        overflow: hidden;
+      }
+      .glass-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .card-title {
+        font-size: 0.78em;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.55);
+      }
+      .card-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+
+      canvas { max-height: 240px; }
+
+      /* Asset items */
+      .assets-section {
+        margin-bottom: 20px;
+        animation: fadeUp 0.6s ease 0.3s both;
+      }
+
+      .section-heading {
+        font-size: 0.72em;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.35);
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .section-heading::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(255,255,255,0.06);
+      }
+
+      .assets-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 12px;
+      }
+
+      .asset-card {
+        background: var(--bg-card);
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 14px;
+        padding: 16px;
+        transition: all 0.25s ease;
+        cursor: default;
+        position: relative;
+        overflow: hidden;
+      }
+      .asset-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.04), transparent);
+        opacity: 0;
+        transition: opacity 0.25s ease;
+      }
+      .asset-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+      .asset-card:hover::after { opacity: 1; }
+
+      .asset-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+      .asset-name {
+        font-size: 0.78em;
+        font-weight: 500;
+        color: rgba(255,255,255,0.5);
+        line-height: 1.3;
+        flex: 1;
+      }
+      .asset-badge {
+        font-size: 0.6em;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 6px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-left: 6px;
+        flex-shrink: 0;
+      }
+      .badge-positive { background: rgba(0,255,136,0.15); color: var(--neon-green); }
+      .badge-negative { background: rgba(255,77,141,0.15); color: var(--neon-pink); }
+      .badge-neutral  { background: rgba(0,212,255,0.15); color: var(--neon-blue); }
+
+      .asset-amount {
+        font-size: 1.35em;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        color: #fff;
+      }
+      .asset-amount.positive { color: var(--neon-green); }
+      .asset-amount.negative { color: var(--neon-pink); }
+      .asset-amount.neutral  { color: var(--neon-blue); }
+
+      /* Progress bar per asset */
+      .asset-bar-wrap { margin-top: 10px; height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+      .asset-bar { height: 100%; border-radius: 2px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); width: 0; }
+
+      /* Bottom gauge row */
+      .gauge-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+        animation: fadeUp 0.6s ease 0.35s both;
+      }
+
+      /* Polar area gets this spot on mobile */
+      @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes fadeUp   { from { opacity: 0; transform: translateY(20px); }  to { opacity: 1; transform: translateY(0); } }
+
+      .counter-animate { display: inline-block; }
+
+      /* Pulse ring on total cards */
+      @keyframes pulse-ring {
+        0% { box-shadow: 0 0 0 0 rgba(255,215,0,0.3); }
+        70% { box-shadow: 0 0 0 15px rgba(255,215,0,0); }
+        100% { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
+      }
+      .hero-card.lkr { animation: pulse-ring 3s infinite; }
+
+      /* Loading */
+      .loading {
         display: flex;
         flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        gap: 16px;
       }
-
-      .portfolio-wrapper {
-        flex: 1;
-        background: rgba(20, 30, 40, 0.9);
-        padding: 20px;
-        overflow-y: auto;
-        animation: fadeIn 0.6s ease;
+      .spinner {
+        width: 48px; height: 48px;
+        border: 3px solid rgba(0,212,255,0.15);
+        border-top-color: var(--neon-blue);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
       }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .loading-text { color: rgba(255,255,255,0.35); font-size: 0.9em; letter-spacing: 1px; }
 
-      .charts-section {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        margin-bottom: 20px;
-      }
-
-      .chart-container {
-        background: rgba(40, 50, 60, 0.7);
-        border-radius: 12px;
-        padding: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      }
-
-      .chart-title {
-        font-size: 1.1em;
-        font-weight: 600;
-        color: #90caf9;
-        margin-bottom: 15px;
+      .error-box {
+        background: rgba(255,77,141,0.08);
+        border: 1px solid rgba(255,77,141,0.25);
+        border-radius: 14px;
+        padding: 24px;
         text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-      }
-
-      canvas {
-        max-height: 300px;
-      }
-
-      .summary-cards {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-        margin-bottom: 20px;
-      }
-
-      .summary-card {
-        background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 193, 7, 0.05));
-        border: 1px solid rgba(255, 215, 0, 0.3);
-        border-radius: 12px;
-        padding: 20px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .summary-card::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-        transform: rotate(45deg);
-        animation: shine 3s infinite;
-      }
-
-      @keyframes shine {
-        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-      }
-
-      .summary-card.usd {
-        background: linear-gradient(135deg, rgba(76, 175, 80, 0.1), rgba(129, 199, 132, 0.05));
-        border-color: rgba(76, 175, 80, 0.3);
-      }
-
-      .summary-label {
+        color: var(--neon-pink);
         font-size: 0.9em;
-        color: #aaa;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        position: relative;
-        z-index: 1;
       }
 
-      .summary-amount {
-        font-size: 2em;
-        font-weight: 700;
-        color: #ffd700;
-        text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        position: relative;
-        z-index: 1;
-      }
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
 
-      .summary-card.usd .summary-amount {
-        color: #4CAF50;
-        text-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
-      }
-
-      .loading {
-        text-align: center;
-        padding: 40px;
-        color: #aaa;
-        font-size: 1.2em;
-      }
-
-      .portfolio-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-
-      .portfolio-item {
-        background: rgba(40, 50, 60, 0.7);
-        border-left: 4px solid;
-        border-radius: 8px;
-        padding: 15px;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .portfolio-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), transparent);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-      }
-
-      .portfolio-item:hover::before {
-        opacity: 1;
-      }
-
-      .portfolio-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-      }
-
-      .portfolio-item.positive {
-        border-color: #4CAF50;
-      }
-
-      .portfolio-item.negative {
-        border-color: #f44336;
-      }
-
-      .portfolio-item.neutral {
-        border-color: #2196F3;
-      }
-
-      .portfolio-item.special {
-        border-color: #ff9800;
-      }
-
-      .item-category {
-        font-size: 0.85em;
-        color: #bbb;
-        margin-bottom: 8px;
-        font-weight: 500;
-      }
-
-      .item-amount {
-        font-size: 1.4em;
-        font-weight: 700;
-        color: #fff;
-      }
-
-      .item-amount.positive {
-        color: #66bb6a;
-      }
-
-      .item-amount.negative {
-        color: #ef5350;
-      }
-
-      .totals-section {
-        background: linear-gradient(135deg, rgba(63, 81, 181, 0.2), rgba(33, 150, 243, 0.1));
-        border: 1px solid rgba(33, 150, 243, 0.3);
-        border-radius: 12px;
-        padding: 20px;
-        margin-top: 10px;
-      }
-
-      .totals-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 15px;
-      }
-
-      .total-item {
-        text-align: center;
-        padding: 15px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 8px;
-      }
-
-      .total-label {
-        font-size: 0.9em;
-        color: #90caf9;
-        margin-bottom: 8px;
-        font-weight: 500;
-      }
-
-      .total-value {
-        font-size: 1.8em;
-        font-weight: 700;
-        color: #fff;
-      }
-
-      .error {
-        background: rgba(244, 67, 54, 0.1);
-        border: 1px solid #f44336;
-        border-radius: 8px;
-        padding: 20px;
-        color: #ff6b6b;
-        text-align: center;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .portfolio-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .summary-cards {
-          grid-template-columns: 1fr;
-        }
-
-        .totals-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .charts-section {
-          grid-template-columns: 1fr;
-        }
+      @media (max-width: 600px) {
+        .hero-cards, .charts-row, .gauge-row { grid-template-columns: 1fr; }
+        .assets-grid { grid-template-columns: 1fr 1fr; }
+        .header h1 { font-size: 1.6em; }
+        .hero-card-amount { font-size: 1.4em; }
+        .page-wrap { padding: 14px; }
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="portfolio-wrapper" id="portfolioWrapper">
-        <div class="loading">Loading portfolio data...</div>
+
+    <!-- Animated background -->
+    <div class="bg-orbs">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="orb orb3"></div>
+      <div class="orb orb4"></div>
+    </div>
+
+    <div class="page-wrap" id="root">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div class="loading-text">FETCHING PORTFOLIO DATA…</div>
       </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script>
-      function formatCurrency(value, currency = 'LKR') {
+      /* ── helpers ── */
+      function fmt(value, currency = 'LKR') {
         if (!value && value !== 0) return '—';
         const num = parseFloat(value.toString().replace(/,/g, ''));
         if (isNaN(num)) return value;
-        
-        const formatted = num.toLocaleString('en-IN', { 
-          maximumFractionDigits: 2,
-          minimumFractionDigits: 2 
-        });
-        
-        return currency === 'USD' ? '$' + formatted : '₨' + formatted;
+        const f = Math.abs(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const sign = num < 0 ? '-' : '';
+        return sign + (currency === 'USD' ? '$' : '₨') + f;
       }
 
-      function getCategoryClass(category) {
-        const cat = category.toLowerCase();
-        if (cat.includes('earn') || cat.includes('stock') || cat.includes('gold')) return 'positive';
-        if (cat.includes('due') || cat.includes('splitwise')) return 'negative';
-        if (cat.includes('total')) return 'special';
+      function animateCounter(el, target, duration = 1400, prefix = '₨') {
+        const start = performance.now();
+        const update = (now) => {
+          const pct = Math.min((now - start) / duration, 1);
+          const ease = 1 - Math.pow(1 - pct, 4);
+          const val = target * ease;
+          el.textContent = prefix + Math.abs(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          if (pct < 1) requestAnimationFrame(update);
+        };
+        requestAnimationFrame(update);
+      }
+
+      const PALETTE = [
+        '#00d4ff','#00ff88','#ffd700','#a855f7','#ff6b35','#ff4d8d',
+        '#38bdf8','#34d399','#fbbf24','#c084fc','#fb923c','#f472b6'
+      ];
+
+      /* ── category helpers ── */
+      function getClass(cat) {
+        const c = cat.toLowerCase();
+        if (c.includes('earn') || c.includes('stock') || c.includes('gold') || c.includes('cash') || c.includes('saving')) return 'positive';
+        if (c.includes('due') || c.includes('splitwise') || c.includes('loan') || c.includes('borrow')) return 'negative';
         return 'neutral';
       }
 
+      /* ── main render ── */
       function displayPortfolio(data) {
-        if (!data || data.length === 0) {
-          document.getElementById('portfolioWrapper').innerHTML = 
-            '<div class="error">No portfolio data found.</div>';
+        if (!data || !data.length) {
+          document.getElementById('root').innerHTML = '<div class="error-box">No portfolio data found.</div>';
           return;
         }
 
-        let totalLKR = 0;
-        let totalUSD = 0;
-        let portfolioItems = '';
-        let assets = [];
-        let totals = [];
+        let totalLKR = 0, totalUSD = 0;
+        const assets = [], totals = [];
 
         data.forEach(row => {
-          const category = row[0] || '';
-          const amount = row[1] || 0;
-          
-          if (category.toLowerCase().includes('total')) {
-            totals.push({ category, amount });
-          } else if (category) {
-            assets.push({ category, amount });
-          }
+          const cat = (row[0] || '').trim();
+          const amt = parseFloat((row[1] || 0).toString().replace(/,/g, '')) || 0;
+          if (!cat) return;
+          if (cat.toLowerCase().includes('total')) totals.push({ cat, amt });
+          else assets.push({ cat, amt });
         });
 
-        // Create portfolio items grid
-        assets.forEach(item => {
-          const categoryClass = getCategoryClass(item.category);
-          const isNegative = item.amount < 0;
-          const amountClass = isNegative ? 'negative' : (item.category.toLowerCase().includes('earn') ? 'positive' : '');
-          
-          portfolioItems += `
-            <div class="portfolio-item ${categoryClass}">
-              <div class="item-category">${item.category}</div>
-              <div class="item-amount ${amountClass}">${formatCurrency(item.amount)}</div>
+        totals.forEach(t => {
+          if (t.cat.toLowerCase().includes('usd')) totalUSD = t.amt;
+          else totalLKR = t.amt;
+        });
+
+        const posAssets = assets.filter(a => a.amt > 0);
+        const totalPositive = posAssets.reduce((s, a) => s + a.amt, 0);
+
+        /* ── build HTML ── */
+        const assetCards = assets.map((a, i) => {
+          const cls = getClass(a.cat);
+          const badge = cls === 'positive' ? 'badge-positive' : cls === 'negative' ? 'badge-negative' : 'badge-neutral';
+          const badgeText = cls === 'positive' ? 'ASSET' : cls === 'negative' ? 'OWE' : 'OTHER';
+          const amtCls = a.amt < 0 ? 'negative' : cls === 'positive' ? 'positive' : 'neutral';
+          const barPct = totalPositive > 0 && a.amt > 0 ? (a.amt / totalPositive * 100).toFixed(1) : 0;
+          const barColor = PALETTE[i % PALETTE.length];
+          return `
+            <div class="asset-card" data-bar="${barPct}" data-color="${barColor}">
+              <div class="asset-card-top">
+                <div class="asset-name">${a.cat}</div>
+                <span class="asset-badge ${badge}">${badgeText}</span>
+              </div>
+              <div class="asset-amount ${amtCls}">${fmt(a.amt)}</div>
+              ${a.amt > 0 ? `<div class="asset-bar-wrap"><div class="asset-bar" style="background:${barColor}"></div></div>` : ''}
+            </div>`;
+        }).join('');
+
+        document.getElementById('root').innerHTML = `
+          <!-- Header -->
+          <div class="header">
+            <div class="header-tag">Live Dashboard</div>
+            <h1>Portfolio Summary</h1>
+            <div class="header-sub">Updated just now</div>
+          </div>
+
+          <!-- Hero totals -->
+          <div class="hero-cards">
+            <div class="hero-card lkr">
+              <div class="hero-card-glow"></div>
+              <span class="hero-card-icon">🏦</span>
+              <div class="hero-card-label">Total Portfolio · LKR</div>
+              <div class="hero-card-amount" id="lkrCounter">${fmt(totalLKR)}</div>
             </div>
-          `;
-        });
-
-        // Extract totals
-        totals.forEach(item => {
-          if (item.category.toLowerCase().includes('lkr')) {
-            totalLKR = item.amount;
-          } else if (item.category.toLowerCase().includes('usd')) {
-            totalUSD = item.amount;
-          }
-        });
-
-        const html = `
-          <div class="summary-cards">
-            <div class="summary-card">
-              <div class="summary-label">Total Portfolio (LKR)</div>
-              <div class="summary-amount">${formatCurrency(totalLKR)}</div>
-            </div>
-            <div class="summary-card usd">
-              <div class="summary-label">Total Portfolio (USD)</div>
-              <div class="summary-amount">${formatCurrency(totalUSD, 'USD')}</div>
+            <div class="hero-card usd">
+              <div class="hero-card-glow"></div>
+              <span class="hero-card-icon">💵</span>
+              <div class="hero-card-label">Total Portfolio · USD</div>
+              <div class="hero-card-amount" id="usdCounter">${fmt(totalUSD, 'USD')}</div>
             </div>
           </div>
 
-          <div class="charts-section">
-            <div class="chart-container">
-              <div class="chart-title">Asset Distribution</div>
-              <canvas id="pieChart"></canvas>
+          <!-- Charts row 1 -->
+          <div class="charts-row">
+            <div class="glass-card">
+              <div class="card-header">
+                <div class="card-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div>
+                <div class="card-title">Asset Allocation</div>
+              </div>
+              <canvas id="donutChart"></canvas>
             </div>
-            <div class="chart-container">
-              <div class="chart-title">Portfolio Breakdown</div>
+            <div class="glass-card">
+              <div class="card-header">
+                <div class="card-dot" style="background:#00d4ff;box-shadow:0 0 6px #00d4ff"></div>
+                <div class="card-title">Value Comparison</div>
+              </div>
               <canvas id="barChart"></canvas>
             </div>
           </div>
 
-          <div class="portfolio-grid">
-            ${portfolioItems}
+          <!-- Charts row 2 -->
+          <div class="gauge-row">
+            <div class="glass-card">
+              <div class="card-header">
+                <div class="card-dot" style="background:#00ff88;box-shadow:0 0 6px #00ff88"></div>
+                <div class="card-title">Polar Distribution</div>
+              </div>
+              <canvas id="polarChart"></canvas>
+            </div>
+            <div class="glass-card">
+              <div class="card-header">
+                <div class="card-dot" style="background:#ffd700;box-shadow:0 0 6px #ffd700"></div>
+                <div class="card-title">Horizontal Bars</div>
+              </div>
+              <canvas id="hbarChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Asset cards -->
+          <div class="assets-section">
+            <div class="section-heading">All Assets &amp; Balances</div>
+            <div class="assets-grid">${assetCards}</div>
           </div>
         `;
 
-        document.getElementById('portfolioWrapper').innerHTML = html;
+        /* ── animated counters ── */
+        setTimeout(() => {
+          animateCounter(document.getElementById('lkrCounter'), totalLKR, 1600, '₨');
+          animateCounter(document.getElementById('usdCounter'), totalUSD, 1600, '$');
+        }, 200);
 
-        // Create charts
-        createCharts(assets);
+        /* ── animate progress bars ── */
+        setTimeout(() => {
+          document.querySelectorAll('.asset-card[data-bar]').forEach(card => {
+            const bar = card.querySelector('.asset-bar');
+            if (bar) bar.style.width = card.dataset.bar + '%';
+          });
+        }, 400);
+
+        /* ── build charts ── */
+        buildCharts(posAssets, assets);
       }
 
-      function createCharts(assets) {
-        // Prepare data for charts
-        const positiveAssets = assets.filter(item => item.amount > 0);
-        const labels = positiveAssets.map(item => item.category);
-        const values = positiveAssets.map(item => Math.abs(item.amount));
-        
-        const colors = positiveAssets.map(item => {
-          const cat = item.category.toLowerCase();
-          if (cat.includes('earn')) return 'rgba(102, 187, 106, 0.8)';
-          if (cat.includes('stock')) return 'rgba(255, 193, 7, 0.8)';
-          if (cat.includes('gold')) return 'rgba(255, 152, 0, 0.8)';
-          return 'rgba(33, 150, 243, 0.8)';
-        });
+      function buildCharts(posAssets, allAssets) {
+        const labels = posAssets.map(a => a.cat);
+        const values = posAssets.map(a => a.amt);
+        const colors = posAssets.map((_, i) => PALETTE[i % PALETTE.length]);
+        const colorsAlpha = colors.map(c => c + '33');
 
-        // Pie Chart
-        new Chart(document.getElementById('pieChart'), {
+        const chartDefaults = {
+          color: 'rgba(255,255,255,0.5)',
+          font: { family: 'Inter' }
+        };
+        Chart.defaults.color = chartDefaults.color;
+        Chart.defaults.font.family = chartDefaults.font.family;
+
+        /* Donut */
+        new Chart(document.getElementById('donutChart'), {
           type: 'doughnut',
           data: {
-            labels: labels,
+            labels,
             datasets: [{
               data: values,
-              backgroundColor: colors,
-              borderColor: colors.map(c => c.replace('0.8', '1')),
-              borderWidth: 2
+              backgroundColor: colorsAlpha,
+              borderColor: colors,
+              borderWidth: 2,
+              hoverBorderWidth: 3,
+              hoverOffset: 8
             }]
           },
           options: {
             responsive: true,
-            maintainAspectRatio: true,
+            cutout: '68%',
+            animation: { animateRotate: true, duration: 1200 },
             plugins: {
               legend: {
                 position: 'bottom',
-                labels: {
-                  color: '#fff',
-                  font: { size: 11 },
-                  padding: 10
-                }
+                labels: { color: 'rgba(255,255,255,0.55)', font: { size: 10 }, padding: 10, boxWidth: 10, usePointStyle: true, pointStyleWidth: 8 }
               },
               tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    return context.label + ': ' + formatCurrency(context.parsed);
-                  }
-                }
+                backgroundColor: 'rgba(6,11,24,0.95)',
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1,
+                titleColor: '#fff',
+                bodyColor: 'rgba(255,255,255,0.7)',
+                callbacks: { label: ctx => ' ' + ctx.label + ': ' + fmt(ctx.parsed) }
               }
             }
           }
         });
 
-        // Bar Chart
+        /* Vertical Bar */
         new Chart(document.getElementById('barChart'), {
           type: 'bar',
           data: {
-            labels: labels,
+            labels,
             datasets: [{
-              label: 'Amount (LKR)',
               data: values,
-              backgroundColor: colors,
-              borderColor: colors.map(c => c.replace('0.8', '1')),
+              backgroundColor: colorsAlpha,
+              borderColor: colors,
+              borderWidth: 2,
+              borderRadius: 8,
+              borderSkipped: false
+            }]
+          },
+          options: {
+            responsive: true,
+            animation: { duration: 1200 },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(6,11,24,0.95)',
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1,
+                callbacks: { label: ctx => ' ' + fmt(ctx.parsed.y) }
+              }
+            },
+            scales: {
+              x: { ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+              y: {
+                ticks: {
+                  color: 'rgba(255,255,255,0.4)', font: { size: 9 },
+                  callback: v => '₨' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v)
+                },
+                grid: { color: 'rgba(255,255,255,0.05)' }
+              }
+            }
+          }
+        });
+
+        /* Polar Area */
+        new Chart(document.getElementById('polarChart'), {
+          type: 'polarArea',
+          data: {
+            labels,
+            datasets: [{
+              data: values,
+              backgroundColor: colorsAlpha,
+              borderColor: colors,
               borderWidth: 2
             }]
           },
           options: {
             responsive: true,
-            maintainAspectRatio: true,
+            animation: { duration: 1400 },
+            scales: {
+              r: {
+                ticks: { display: false },
+                grid: { color: 'rgba(255,255,255,0.06)' },
+                pointLabels: { display: false }
+              }
+            },
             plugins: {
-              legend: {
-                display: false
-              },
+              legend: { display: false },
               tooltip: {
-                callbacks: {
-                  label: function(context) {
-                    return formatCurrency(context.parsed.y);
-                  }
-                }
+                backgroundColor: 'rgba(6,11,24,0.95)',
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1,
+                callbacks: { label: ctx => ' ' + ctx.label + ': ' + fmt(ctx.parsed.r) }
+              }
+            }
+          }
+        });
+
+        /* Horizontal Bar */
+        new Chart(document.getElementById('hbarChart'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              data: values,
+              backgroundColor: colorsAlpha,
+              borderColor: colors,
+              borderWidth: 2,
+              borderRadius: 6
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            animation: { duration: 1200 },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(6,11,24,0.95)',
+                borderColor: 'rgba(255,255,255,0.1)',
+                borderWidth: 1,
+                callbacks: { label: ctx => ' ' + fmt(ctx.parsed.x) }
               }
             },
             scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  color: '#aaa',
-                  callback: function(value) {
-                    return '₨' + value.toLocaleString();
-                  }
-                },
-                grid: {
-                  color: 'rgba(255, 255, 255, 0.1)'
-                }
-              },
               x: {
                 ticks: {
-                  color: '#aaa',
-                  font: { size: 10 }
+                  color: 'rgba(255,255,255,0.4)', font: { size: 9 },
+                  callback: v => '₨' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v)
                 },
-                grid: {
-                  color: 'rgba(255, 255, 255, 0.1)'
-                }
-              }
+                grid: { color: 'rgba(255,255,255,0.05)' }
+              },
+              y: { ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 9 } }, grid: { display: false } }
             }
           }
         });
       }
 
-      function showError(error) {
-        document.getElementById('portfolioWrapper').innerHTML = 
-          `<div class="error">Error loading portfolio: ${error.message}</div>`;
+      function showError(err) {
+        document.getElementById('root').innerHTML =
+          `<div class="error-box">⚠️ Error loading portfolio<br><small style="opacity:.6">${err.message || err}</small></div>`;
       }
 
       window.onload = function() {
