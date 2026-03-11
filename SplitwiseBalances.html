@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+        background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #1f1f1f 100%);
+        padding: 24px;
+        min-height: 100vh;
+        position: relative;
+      }
+      
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: 
+          radial-gradient(circle at 20% 50%, rgba(212, 106, 106, 0.05) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(139, 195, 139, 0.05) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+      }
+      
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+      }
+      
+      .header {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      
+      .header h2 {
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #d46a6a 0%, #8bc38b 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        text-shadow: 0 0 30px rgba(212, 106, 106, 0.3);
+      }
+      
+      .header p {
+        font-size: 14px;
+        color: #888;
+      }
+      
+      .validation-alert {
+        margin-bottom: 24px;
+        padding: 24px 28px;
+        border-radius: 12px;
+        border: 3px solid;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        animation: slideDown 0.4s ease;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .validation-alert::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        opacity: 0.1;
+        z-index: 0;
+      }
+      
+      .validation-alert.match {
+        background: linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(34, 197, 94, 0.15));
+        border-color: #22c55e;
+        box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4), 0 0 40px rgba(34, 197, 94, 0.2);
+      }
+      
+      .validation-alert.match::before {
+        background: radial-gradient(circle at top left, #22c55e, transparent);
+      }
+      
+      .validation-alert.mismatch {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.15));
+        border-color: #ef4444;
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
+        animation: shake 0.6s ease, slideDown 0.4s ease;
+      }
+      
+      .validation-alert.mismatch::before {
+        background: radial-gradient(circle at top left, #ef4444, transparent);
+      }
+      
+      .validation-icon {
+        font-size: 48px;
+        min-width: 48px;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+        z-index: 1;
+        animation: pulse 2s ease infinite;
+      }
+      
+      .validation-content {
+        flex: 1;
+        z-index: 1;
+      }
+      
+      .validation-title {
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+      
+      .validation-alert.match .validation-title {
+        color: #22c55e;
+      }
+      
+      .validation-alert.mismatch .validation-title {
+        color: #ef4444;
+      }
+      
+      .validation-details {
+        font-size: 15px;
+        color: #d0d0d0;
+        line-height: 1.8;
+        font-weight: 500;
+      }
+      
+      .validation-amount {
+        font-weight: 700;
+        font-size: 17px;
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+      
+      .validation-alert.match .validation-amount {
+        color: #22c55e;
+        background: rgba(34, 197, 94, 0.2);
+      }
+      
+      .validation-alert.mismatch .validation-amount {
+        color: #ef4444;
+        background: rgba(239, 68, 68, 0.2);
+      }
+      
+      .validation-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        z-index: 1;
+      }
+      
+      .validation-alert.match .validation-badge {
+        background: #22c55e;
+        color: white;
+        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
+      }
+      
+      .validation-alert.mismatch .validation-badge {
+        background: #ef4444;
+        color: white;
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+        animation: blink 1s ease infinite;
+      }
+      
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+        20%, 40%, 60%, 80% { transform: translateX(8px); }
+      }
+      
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+      
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+      }
+      
+      .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      
+      .summary-card {
+        background: linear-gradient(135deg, #242424 0%, #1f1f1f 100%);
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid #333;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+      }
+      
+      .summary-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #d46a6a, #c05a5a);
+        opacity: 0.8;
+      }
+      
+      .summary-card::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(212, 106, 106, 0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+      }
+      
+      .summary-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 12px 32px rgba(212, 106, 106, 0.25);
+        border-color: #d46a6a;
+      }
+      
+      .summary-card:hover::after {
+        opacity: 1;
+      }
+      
+      .summary-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      
+      .summary-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-right: 12px;
+        background: rgba(212, 106, 106, 0.15);
+        border: 2px solid rgba(212, 106, 106, 0.3);
+        box-shadow: 0 4px 12px rgba(212, 106, 106, 0.2);
+        transition: all 0.3s ease;
+      }
+      
+      .summary-card:hover .summary-icon {
+        transform: rotate(5deg) scale(1.1);
+        box-shadow: 0 6px 16px rgba(212, 106, 106, 0.3);
+      }
+      
+      .icon-owe {
+        background: linear-gradient(135deg, rgba(212, 106, 106, 0.2), rgba(239, 68, 68, 0.15));
+        border-color: rgba(212, 106, 106, 0.4);
+      }
+      
+      .icon-owed {
+        background: linear-gradient(135deg, rgba(139, 195, 139, 0.2), rgba(34, 197, 94, 0.15));
+        border-color: rgba(139, 195, 139, 0.4);
+      }
+      
+      .icon-settled {
+        background: linear-gradient(135deg, rgba(150, 150, 150, 0.2), rgba(120, 120, 120, 0.15));
+        border-color: rgba(150, 150, 150, 0.3);
+      }
+      
+      .summary-card-title {
+        font-size: 13px;
+        color: #999;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .summary-card-amount {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 4px;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      }
+      
+      .amount-owe {
+        color: #d46a6a;
+      }
+      
+      .amount-owed {
+        color: #8bc38b;
+      }
+      
+      .amount-settled {
+        color: #999;
+      }
+      
+      .summary-card-label {
+        font-size: 13px;
+        color: #777;
+      }
+      
+      .charts-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+      }
+      
+      .chart-card {
+        background: linear-gradient(135deg, #242424 0%, #1f1f1f 100%);
+        border-radius: 16px;
+        padding: 24px;
+        border: 1px solid #333;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+      }
+      
+      .chart-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(212, 106, 106, 0.15);
+      }
+      
+      .chart-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #e0e0e0;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #333;
+      }
+      
+      .chart-container {
+        position: relative;
+        height: 300px;
+      }
+      
+      .friends-section {
+        background: linear-gradient(135deg, #242424 0%, #1f1f1f 100%);
+        border-radius: 16px;
+        padding: 28px;
+        border: 1px solid #333;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        margin-bottom: 24px;
+      }
+      
+      .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #e0e0e0;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #333;
+      }
+      
+      .section-title::before {
+        content: '👥';
+        margin-right: 8px;
+        font-size: 24px;
+      }
+      
+      .friends-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+      }
+      
+      .friend-card {
+        background: linear-gradient(135deg, #252525 0%, #1f1f1f 100%);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #2d2d2d;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+      }
+      
+      .friend-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        transition: width 0.3s ease;
+      }
+      
+      .friend-card.owe::before {
+        background: linear-gradient(180deg, #d46a6a, #c05a5a);
+        box-shadow: 0 0 10px rgba(212, 106, 106, 0.5);
+      }
+      
+      .friend-card.owed::before {
+        background: linear-gradient(180deg, #8bc38b, #7ab37a);
+        box-shadow: 0 0 10px rgba(139, 195, 139, 0.5);
+      }
+      
+      .friend-card.settled::before {
+        background: linear-gradient(180deg, #666, #555);
+      }
+      
+      .friend-card:hover {
+        transform: translateX(6px) scale(1.02);
+        box-shadow: 0 8px 24px rgba(212, 106, 106, 0.2);
+        border-color: #3d3d3d;
+        background: linear-gradient(135deg, #2a2a2a 0%, #252525 100%);
+      }
+      
+      .friend-card:hover::before {
+        width: 6px;
+      }
+      
+      .friend-name {
+        font-size: 17px;
+        font-weight: 600;
+        color: #e0e0e0;
+        margin-bottom: 10px;
+        letter-spacing: 0.3px;
+      }
+      
+      .friend-amount {
+        font-size: 26px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      }
+      
+      .friend-amount.positive {
+        color: #8bc38b;
+      }
+      
+      .friend-amount.negative {
+        color: #d46a6a;
+      }
+      
+      .friend-amount.neutral {
+        color: #999;
+      }
+      
+      .friend-status {
+        font-size: 12px;
+        color: #888;
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      
+      .currency-badge {
+        display: inline-block;
+        background: linear-gradient(135deg, rgba(212, 106, 106, 0.25), rgba(212, 106, 106, 0.15));
+        color: #d46a6a;
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 14px;
+        margin-left: 8px;
+        font-weight: 600;
+        border: 1px solid rgba(212, 106, 106, 0.4);
+        box-shadow: 0 2px 6px rgba(212, 106, 106, 0.2);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .no-data {
+        text-align: center;
+        padding: 40px;
+        color: #777;
+        font-size: 16px;
+      }
+      
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: #1a1a1a;
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: #d46a6a;
+        border-radius: 4px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: #c05a5a;
+      }
+      
+      @media (max-width: 768px) {
+        body {
+          padding: 16px;
+        }
+        
+        .summary-cards {
+          grid-template-columns: 1fr;
+        }
+        
+        .charts-section {
+          grid-template-columns: 1fr;
+        }
+        
+        .friends-grid {
+          grid-template-columns: 1fr;
+        }
+        
+        .header h2 {
+          font-size: 24px;
+        }
+        
+        .validation-icon {
+          font-size: 36px;
+        }
+        
+        .validation-title {
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>💰 Splitwise Dashboard</h2>
+        <p>Your balance overview and friend expenses</p>
+      </div>
+      
+      <? if (validationResult) { ?>
+        <div class="validation-alert <?= validationResult.match ? 'match' : 'mismatch' ?>">
+          <div class="validation-badge">
+            <?= validationResult.match ? 'BALANCED' : 'NOT BALANCED' ?>
+          </div>
+          <div class="validation-icon">
+            <?= validationResult.match ? '✅' : '❌' ?>
+          </div>
+          <div class="validation-content">
+            <div class="validation-title">
+              <?= validationResult.match ? '🎉 Balance Matched!' : 'Balance Mismatch!' ?>
+            </div>
+            <div class="validation-details">
+              <? if (validationResult.match) { ?>
+                Splitwise LKR: <span class="validation-amount"><?= validationResult.splitwiseRounded.toFixed(0) ?></span> ≈ 
+                Sheet Balance: <span class="validation-amount"><?= validationResult.sheetRounded.toFixed(0) ?></span>
+                <br>
+                ✓ Your records are synchronized (within ±<?= validationResult.tolerance ?> LKR tolerance)
+              <? } else { ?>
+                Splitwise LKR: <span class="validation-amount"><?= validationResult.splitwiseRounded.toFixed(0) ?></span> ≠ 
+                Sheet Balance: <span class="validation-amount"><?= validationResult.sheetRounded.toFixed(0) ?></span>
+                <br>
+                ⚠️ Difference: <span class="validation-amount"><?= validationResult.difference.toFixed(0) ?> LKR</span> (exceeds ±<?= validationResult.tolerance ?> LKR tolerance)
+              <? } ?>
+            </div>
+          </div>
+        </div>
+      <? } ?>
+      
+      <div class="summary-cards">
+        <? var currencies = Object.keys(totals); ?>
+        <? for (var i = 0; i < currencies.length; i++) { ?>
+          <? var currency = currencies[i]; ?>
+          <? var total = totals[currency]; ?>
+          <? var cardClass = total < 0 ? 'owe' : (total > 0 ? 'owed' : 'settled'); ?>
+          <? var amountClass = total < 0 ? 'amount-owe' : (total > 0 ? 'amount-owed' : 'amount-settled'); ?>
+          <? var icon = total < 0 ? '📤' : (total > 0 ? '📥' : '✅'); ?>
+          
+          <div class="summary-card">
+            <div class="summary-card-header">
+              <div class="summary-icon icon-<?= cardClass ?>">
+                <?= icon ?>
+              </div>
+              <div class="summary-card-title"><?= currency ?></div>
+            </div>
+            <div class="summary-card-amount <?= amountClass ?>">
+              <?= Math.abs(total).toFixed(2) ?>
+            </div>
+            <div class="summary-card-label">
+              <? if (total < 0) { ?>
+                You owe this amount
+              <? } else if (total > 0) { ?>
+                You are owed this
+              <? } else { ?>
+                All settled up!
+              <? } ?>
+            </div>
+          </div>
+        <? } ?>
+      </div>
+      
+      <? if (balanceData.length > 0) { ?>
+        <div class="charts-section">
+          <div class="chart-card">
+            <div class="chart-title">📊 Balance Distribution</div>
+            <div class="chart-container">
+              <canvas id="balanceChart"></canvas>
+            </div>
+          </div>
+          
+          <div class="chart-card">
+            <div class="chart-title">💳 Owed vs Owing</div>
+            <div class="chart-container">
+              <canvas id="categoryChart"></canvas>
+            </div>
+          </div>
+        </div>
+      <? } ?>
+      
+      <div class="friends-section">
+        <div class="section-title">Friend Balances</div>
+        
+        <? if (balanceData.length > 0) { ?>
+          <div class="friends-grid">
+            <? for (var i = 0; i < balanceData.length; i++) { ?>
+              <? var item = balanceData[i]; ?>
+              <? var cardType = item.amount < 0 ? 'owe' : (item.amount > 0 ? 'owed' : 'settled'); ?>
+              <? var amountClass = item.amount < 0 ? 'negative' : (item.amount > 0 ? 'positive' : 'neutral'); ?>
+              
+              <div class="friend-card <?= cardType ?>">
+                <div class="friend-name"><?= item.name ?></div>
+                <div class="friend-amount <?= amountClass ?>">
+                  <?= item.amount.toFixed(2) ?>
+                  <span class="currency-badge"><?= item.currency ?></span>
+                </div>
+                <div class="friend-status"><?= item.status ?></div>
+              </div>
+            <? } ?>
+          </div>
+        <? } else { ?>
+          <div class="no-data">
+            <p>😊 No balances found. All settled up!</p>
+          </div>
+        <? } ?>
+      </div>
+    </div>
+    
+    <script>
+      Chart.defaults.color = '#999';
+      Chart.defaults.borderColor = '#333';
+      
+      const balanceData = <?!= JSON.stringify(balanceData) ?>;
+      
+      if (balanceData && balanceData.length > 0) {
+        const names = balanceData.map(item => item.name);
+        const amounts = balanceData.map(item => item.amount);
+        const colors = amounts.map(amt => amt < 0 ? 'rgba(212, 106, 106, 0.8)' : amt > 0 ? 'rgba(139, 195, 139, 0.8)' : 'rgba(150, 150, 150, 0.8)');
+        const borderColors = amounts.map(amt => amt < 0 ? '#d46a6a' : amt > 0 ? '#8bc38b' : '#969696');
+        
+        const balanceCtx = document.getElementById('balanceChart');
+        if (balanceCtx) {
+          new Chart(balanceCtx, {
+            type: 'bar',
+            data: {
+              labels: names,
+              datasets: [{
+                label: 'Balance Amount',
+                data: amounts,
+                backgroundColor: colors,
+                borderColor: borderColors,
+                borderWidth: 2,
+                borderRadius: 8,
+                borderSkipped: false,
+              }]
+            },
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                  padding: 12,
+                  titleFont: { size: 14, weight: 'bold' },
+                  bodyFont: { size: 13 },
+                  borderColor: '#d46a6a',
+                  borderWidth: 1,
+                  callbacks: {
+                    label: function(context) {
+                      const value = context.parsed.x;
+                      const item = balanceData[context.dataIndex];
+                      return value < 0 ? 'You owe: ' + Math.abs(value).toFixed(2) + ' ' + item.currency : 'You are owed: ' + value.toFixed(2) + ' ' + item.currency;
+                    }
+                  }
+                }
+              },
+              scales: {
+                x: {
+                  grid: { color: '#2a2a2a', drawBorder: false },
+                  ticks: { 
+                    color: '#999',
+                    callback: function(value) {
+                      return value.toFixed(0);
+                    }
+                  }
+                },
+                y: {
+                  grid: { display: false },
+                  ticks: { 
+                    color: '#e0e0e0',
+                    font: { size: 12, weight: '500' }
+                  }
+                }
+              }
+            }
+          });
+        }
+        
+        const totalOwed = balanceData.filter(item => item.amount > 0).reduce((sum, item) => sum + item.amount, 0);
+        const totalOwe = Math.abs(balanceData.filter(item => item.amount < 0).reduce((sum, item) => sum + item.amount, 0));
+        const settled = balanceData.filter(item => item.amount === 0).length;
+        
+        const categoryCtx = document.getElementById('categoryChart');
+        if (categoryCtx && (totalOwed > 0 || totalOwe > 0 || settled > 0)) {
+          new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['You Are Owed', 'You Owe', 'Settled'],
+              datasets: [{
+                data: [totalOwed, totalOwe, settled * 10],
+                backgroundColor: [
+                  'rgba(139, 195, 139, 0.8)',
+                  'rgba(212, 106, 106, 0.8)',
+                  'rgba(150, 150, 150, 0.6)'
+                ],
+                borderColor: ['#8bc38b', '#d46a6a', '#969696'],
+                borderWidth: 3,
+                hoverOffset: 15
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    padding: 15,
+                    font: { size: 13, weight: '500' },
+                    color: '#e0e0e0',
+                    usePointStyle: true,
+                    pointStyle: 'circle'
+                  }
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                  padding: 12,
+                  titleFont: { size: 14, weight: 'bold' },
+                  bodyFont: { size: 13 },
+                  borderColor: '#d46a6a',
+                  borderWidth: 1,
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label;
+                      const value = context.parsed;
+                      if (label === 'Settled') {
+                        return label + ': ' + Math.round(value / 10) + ' friends';
+                      }
+                      return label + ': ' + value.toFixed(2);
+                    }
+                  }
+                }
+              },
+              cutout: '65%'
+            }
+          });
+        }
+      }
+    </script>
+  </body>
+</html>
