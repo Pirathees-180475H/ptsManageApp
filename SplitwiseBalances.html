@@ -2,810 +2,645 @@
 <html>
   <head>
     <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
+      :root {
+        --red:    #ff4d6d;
+        --green:  #00e676;
+        --blue:   #00d4ff;
+        --purple: #a855f7;
+        --gold:   #ffd700;
+        --bg:     #05080f;
+        --card:   rgba(255,255,255,0.035);
+        --border: rgba(255,255,255,0.07);
       }
-      
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
       body {
-        font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
-        background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #1f1f1f 100%);
-        padding: 24px;
+        font-family: 'Inter', sans-serif;
+        background: var(--bg);
         min-height: 100vh;
-        position: relative;
+        color: #fff;
+        overflow-x: hidden;
       }
-      
+
+      /* ── animated background ── */
+      .bg-layer {
+        position: fixed; inset: 0;
+        pointer-events: none; z-index: 0; overflow: hidden;
+      }
+      .orb {
+        position: absolute; border-radius: 50%;
+        filter: blur(90px); opacity: 0.12;
+        animation: drift 14s ease-in-out infinite;
+      }
+      .orb1 { width:480px;height:480px;background:#ff4d6d;top:-120px;left:-120px;animation-delay:0s; }
+      .orb2 { width:380px;height:380px;background:#00e676;bottom:-80px;right:-80px;animation-delay:-5s; }
+      .orb3 { width:260px;height:260px;background:#a855f7;top:45%;left:55%;animation-delay:-9s; }
+      .orb4 { width:200px;height:200px;background:#00d4ff;top:70%;left:8%;animation-delay:-2s; }
+      @keyframes drift {
+        0%,100%{transform:translate(0,0) scale(1);}
+        33%{transform:translate(25px,-25px) scale(1.04);}
+        66%{transform:translate(-18px,18px) scale(0.96);}
+      }
       body::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: 
-          radial-gradient(circle at 20% 50%, rgba(212, 106, 106, 0.05) 0%, transparent 50%),
-          radial-gradient(circle at 80% 80%, rgba(139, 195, 139, 0.05) 0%, transparent 50%);
-        pointer-events: none;
-        z-index: 0;
+        content:''; position:fixed; inset:0;
+        background-image:radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size:30px 30px; pointer-events:none; z-index:0;
       }
-      
-      .container {
-        max-width: 1400px;
-        margin: 0 auto;
-        position: relative;
-        z-index: 1;
-      }
-      
+
+      /* ── layout ── */
+      .page { position:relative; z-index:1; padding:20px; max-width:1300px; margin:0 auto; }
+
+      /* ── header ── */
       .header {
-        text-align: center;
-        margin-bottom: 32px;
+        text-align:center; padding:22px 0 28px;
+        animation: slideDown .6s ease;
       }
-      
-      .header h2 {
-        font-size: 36px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        background: linear-gradient(135deg, #d46a6a 0%, #8bc38b 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        text-shadow: 0 0 30px rgba(212, 106, 106, 0.3);
+      .header-chip {
+        display:inline-block;
+        background:rgba(255,77,109,0.12); border:1px solid rgba(255,77,109,0.3);
+        color:var(--red); font-size:.68em; font-weight:700;
+        letter-spacing:3px; text-transform:uppercase;
+        padding:5px 16px; border-radius:20px; margin-bottom:12px;
       }
-      
-      .header p {
-        font-size: 14px;
-        color: #888;
+      .header h1 {
+        font-size:2em; font-weight:800; letter-spacing:-1px;
+        background:linear-gradient(135deg,#fff 0%,var(--red) 45%,var(--green) 100%);
+        -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
       }
-      
-      .validation-alert {
-        margin-bottom: 24px;
-        padding: 24px 28px;
-        border-radius: 12px;
-        border: 3px solid;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        animation: slideDown 0.4s ease;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-        position: relative;
-        overflow: hidden;
+      .header-sub { color:rgba(255,255,255,0.35); font-size:.8em; margin-top:6px; }
+
+      /* ── validation banner ── */
+      .v-banner {
+        border-radius:18px; padding:20px 24px;
+        border:1px solid; display:flex; align-items:center;
+        gap:16px; margin-bottom:24px; position:relative; overflow:hidden;
+        backdrop-filter:blur(16px);
+        animation: fadeUp .5s ease;
       }
-      
-      .validation-alert::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        opacity: 0.1;
-        z-index: 0;
+      .v-banner.match {
+        background:linear-gradient(135deg,rgba(0,230,118,.1),rgba(0,230,118,.05));
+        border-color:rgba(0,230,118,.3);
+        box-shadow:0 0 40px rgba(0,230,118,.08), inset 0 1px 0 rgba(255,255,255,.05);
       }
-      
-      .validation-alert.match {
-        background: linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(34, 197, 94, 0.15));
-        border-color: #22c55e;
-        box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4), 0 0 40px rgba(34, 197, 94, 0.2);
+      .v-banner.mismatch {
+        background:linear-gradient(135deg,rgba(255,77,109,.12),rgba(255,77,109,.05));
+        border-color:rgba(255,77,109,.35);
+        box-shadow:0 0 40px rgba(255,77,109,.1), inset 0 1px 0 rgba(255,255,255,.05);
+        animation: fadeUp .5s ease, shake .6s ease .1s;
       }
-      
-      .validation-alert.match::before {
-        background: radial-gradient(circle at top left, #22c55e, transparent);
-      }
-      
-      .validation-alert.mismatch {
-        background: linear-gradient(135deg, rgba(239, 68, 68, 0.25), rgba(239, 68, 68, 0.15));
-        border-color: #ef4444;
-        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4), 0 0 40px rgba(239, 68, 68, 0.2);
-        animation: shake 0.6s ease, slideDown 0.4s ease;
-      }
-      
-      .validation-alert.mismatch::before {
-        background: radial-gradient(circle at top left, #ef4444, transparent);
-      }
-      
-      .validation-icon {
-        font-size: 48px;
-        min-width: 48px;
-        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
-        z-index: 1;
-        animation: pulse 2s ease infinite;
-      }
-      
-      .validation-content {
-        flex: 1;
-        z-index: 1;
-      }
-      
-      .validation-title {
-        font-size: 22px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      }
-      
-      .validation-alert.match .validation-title {
-        color: #22c55e;
-      }
-      
-      .validation-alert.mismatch .validation-title {
-        color: #ef4444;
-      }
-      
-      .validation-details {
-        font-size: 15px;
-        color: #d0d0d0;
-        line-height: 1.8;
-        font-weight: 500;
-      }
-      
-      .validation-amount {
-        font-weight: 700;
-        font-size: 17px;
-        padding: 2px 8px;
-        border-radius: 4px;
-      }
-      
-      .validation-alert.match .validation-amount {
-        color: #22c55e;
-        background: rgba(34, 197, 94, 0.2);
-      }
-      
-      .validation-alert.mismatch .validation-amount {
-        color: #ef4444;
-        background: rgba(239, 68, 68, 0.2);
-      }
-      
-      .validation-badge {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        padding: 6px 14px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        z-index: 1;
-      }
-      
-      .validation-alert.match .validation-badge {
-        background: #22c55e;
-        color: white;
-        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
-      }
-      
-      .validation-alert.mismatch .validation-badge {
-        background: #ef4444;
-        color: white;
-        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
-        animation: blink 1s ease infinite;
-      }
-      
-      @keyframes slideDown {
-        from {
-          opacity: 0;
-          transform: translateY(-20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      
       @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
-        20%, 40%, 60%, 80% { transform: translateX(8px); }
+        0%,100%{transform:translateX(0);}
+        15%,45%,75%{transform:translateX(-7px);}
+        30%,60%,90%{transform:translateX(7px);}
       }
-      
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.1); }
+      .v-icon { font-size:2.4em; flex-shrink:0; animation:pulse 2.5s ease infinite; }
+      @keyframes pulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.12);} }
+      .v-content { flex:1; }
+      .v-title {
+        font-size:1.05em; font-weight:800; letter-spacing:1px;
+        text-transform:uppercase; margin-bottom:5px;
       }
-      
-      @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
+      .v-banner.match .v-title { color:var(--green); }
+      .v-banner.mismatch .v-title { color:var(--red); }
+      .v-detail { font-size:.82em; color:rgba(255,255,255,.55); line-height:1.8; }
+      .v-amt {
+        font-weight:700; font-size:.9em; padding:1px 8px;
+        border-radius:6px; display:inline-block;
       }
-      
-      .summary-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 16px;
-        margin-bottom: 32px;
+      .v-banner.match .v-amt { color:var(--green); background:rgba(0,230,118,.15); }
+      .v-banner.mismatch .v-amt { color:var(--red); background:rgba(255,77,109,.15); }
+      .v-badge {
+        position:absolute; top:14px; right:14px;
+        font-size:.6em; font-weight:800; letter-spacing:2px;
+        text-transform:uppercase; padding:4px 12px; border-radius:20px;
       }
-      
-      .summary-card {
-        background: linear-gradient(135deg, #242424 0%, #1f1f1f 100%);
-        border-radius: 16px;
-        padding: 24px;
-        border: 1px solid #333;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
+      .v-banner.match .v-badge { background:var(--green); color:#000; }
+      .v-banner.mismatch .v-badge { background:var(--red); color:#fff; animation:blink 1.2s ease infinite; }
+      @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.6;} }
+
+      /* ── hero total cards ── */
+      .hero-row {
+        display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+        gap:14px; margin-bottom:22px;
+        animation: fadeUp .6s ease .1s both;
       }
-      
-      .summary-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, #d46a6a, #c05a5a);
-        opacity: 0.8;
+      .hero-card {
+        border-radius:18px; padding:22px; border:1px solid;
+        backdrop-filter:blur(20px); position:relative; overflow:hidden;
+        transition:transform .25s ease, box-shadow .25s ease;
       }
-      
-      .summary-card::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(212, 106, 106, 0.1) 0%, transparent 70%);
-        opacity: 0;
-        transition: opacity 0.4s ease;
+      .hero-card:hover { transform:translateY(-4px); }
+      .hero-card.owe {
+        background:linear-gradient(135deg,rgba(255,77,109,.09),rgba(255,77,109,.04));
+        border-color:rgba(255,77,109,.25);
+        box-shadow:0 0 32px rgba(255,77,109,.07), inset 0 1px 0 rgba(255,255,255,.05);
       }
-      
-      .summary-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 12px 32px rgba(212, 106, 106, 0.25);
-        border-color: #d46a6a;
+      .hero-card.owe:hover { box-shadow:0 12px 40px rgba(255,77,109,.2); }
+      .hero-card.owed {
+        background:linear-gradient(135deg,rgba(0,230,118,.09),rgba(0,230,118,.04));
+        border-color:rgba(0,230,118,.25);
+        box-shadow:0 0 32px rgba(0,230,118,.07), inset 0 1px 0 rgba(255,255,255,.05);
       }
-      
-      .summary-card:hover::after {
-        opacity: 1;
+      .hero-card.owed:hover { box-shadow:0 12px 40px rgba(0,230,118,.2); }
+      .hero-card.settled {
+        background:rgba(255,255,255,.03);
+        border-color:rgba(255,255,255,.08);
       }
-      
-      .summary-card-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 12px;
+      .hero-card-glow {
+        position:absolute; right:-30px; bottom:-30px;
+        width:130px; height:130px; border-radius:50%; filter:blur(50px); opacity:.2;
       }
-      
-      .summary-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        margin-right: 12px;
-        background: rgba(212, 106, 106, 0.15);
-        border: 2px solid rgba(212, 106, 106, 0.3);
-        box-shadow: 0 4px 12px rgba(212, 106, 106, 0.2);
-        transition: all 0.3s ease;
+      .hero-card.owe .hero-card-glow { background:var(--red); }
+      .hero-card.owed .hero-card-glow { background:var(--green); }
+      .hero-icon { font-size:1.8em; margin-bottom:8px; display:block; }
+      .hero-label {
+        font-size:.68em; font-weight:700; letter-spacing:2px;
+        text-transform:uppercase; color:rgba(255,255,255,.4); margin-bottom:5px;
       }
-      
-      .summary-card:hover .summary-icon {
-        transform: rotate(5deg) scale(1.1);
-        box-shadow: 0 6px 16px rgba(212, 106, 106, 0.3);
+      .hero-amount {
+        font-size:1.9em; font-weight:800; letter-spacing:-1px; line-height:1;
       }
-      
-      .icon-owe {
-        background: linear-gradient(135deg, rgba(212, 106, 106, 0.2), rgba(239, 68, 68, 0.15));
-        border-color: rgba(212, 106, 106, 0.4);
+      .hero-card.owe .hero-amount { color:var(--red); text-shadow:0 0 24px rgba(255,77,109,.4); }
+      .hero-card.owed .hero-amount { color:var(--green); text-shadow:0 0 24px rgba(0,230,118,.4); }
+      .hero-card.settled .hero-amount { color:rgba(255,255,255,.4); }
+      .hero-sub { font-size:.72em; color:rgba(255,255,255,.3); margin-top:4px; }
+
+      /* ── insights strip ── */
+      .insights-row {
+        display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+        gap:10px; margin-bottom:22px;
+        animation: fadeUp .6s ease .15s both;
       }
-      
-      .icon-owed {
-        background: linear-gradient(135deg, rgba(139, 195, 139, 0.2), rgba(34, 197, 94, 0.15));
-        border-color: rgba(139, 195, 139, 0.4);
+      .insight-pill {
+        background:var(--card); border:1px solid var(--border);
+        border-radius:12px; padding:14px 16px;
+        display:flex; align-items:center; gap:10px;
+        transition:transform .2s ease;
       }
-      
-      .icon-settled {
-        background: linear-gradient(135deg, rgba(150, 150, 150, 0.2), rgba(120, 120, 120, 0.15));
-        border-color: rgba(150, 150, 150, 0.3);
+      .insight-pill:hover { transform:translateY(-2px); }
+      .insight-emoji { font-size:1.4em; flex-shrink:0; }
+      .insight-body {}
+      .insight-label { font-size:.62em; color:rgba(255,255,255,.35); font-weight:600; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
+      .insight-value { font-size:.95em; font-weight:700; color:#fff; }
+      .insight-value.red { color:var(--red); }
+      .insight-value.green { color:var(--green); }
+
+      /* ── glass card ── */
+      .glass {
+        background:var(--card); border:1px solid var(--border);
+        border-radius:18px; padding:20px; backdrop-filter:blur(20px);
+        box-shadow:0 4px 24px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.04);
+        position:relative; overflow:hidden;
       }
-      
-      .summary-card-title {
-        font-size: 13px;
-        color: #999;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+      .glass::before {
+        content:''; position:absolute; top:0; left:0; right:0; height:1px;
+        background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);
       }
-      
-      .summary-card-amount {
-        font-size: 32px;
-        font-weight: 700;
-        margin-bottom: 4px;
-        letter-spacing: -0.5px;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      .card-hdr {
+        display:flex; align-items:center; gap:8px;
+        margin-bottom:16px; padding-bottom:12px;
+        border-bottom:1px solid rgba(255,255,255,.05);
       }
-      
-      .amount-owe {
-        color: #d46a6a;
+      .card-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+      .card-title {
+        font-size:.75em; font-weight:700; letter-spacing:2px;
+        text-transform:uppercase; color:rgba(255,255,255,.45);
       }
-      
-      .amount-owed {
-        color: #8bc38b;
+      .chart-wrap { position:relative; height:260px; }
+
+      /* ── charts grid ── */
+      .charts-grid {
+        display:grid; grid-template-columns:1fr 1fr;
+        gap:14px; margin-bottom:22px;
+        animation: fadeUp .6s ease .2s both;
       }
-      
-      .amount-settled {
-        color: #999;
+
+      /* ── friends section ── */
+      .friends-section { animation: fadeUp .6s ease .25s both; }
+      .section-hdr {
+        font-size:.7em; font-weight:700; letter-spacing:3px;
+        text-transform:uppercase; color:rgba(255,255,255,.3);
+        margin-bottom:14px; display:flex; align-items:center; gap:10px;
       }
-      
-      .summary-card-label {
-        font-size: 13px;
-        color: #777;
-      }
-      
-      .charts-section {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 20px;
-        margin-bottom: 32px;
-      }
-      
-      .chart-card {
-        background: linear-gradient(135deg, #242424 0%, #1f1f1f 100%);
-        border-radius: 16px;
-        padding: 24px;
-        border: 1px solid #333;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-        transition: all 0.3s ease;
-      }
-      
-      .chart-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(212, 106, 106, 0.15);
-      }
-      
-      .chart-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #e0e0e0;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #333;
-      }
-      
-      .chart-container {
-        position: relative;
-        height: 300px;
-      }
-      
-      .friends-section {
-        background: linear-gradient(135deg, #242424 0%, #1f1f1f 100%);
-        border-radius: 16px;
-        padding: 28px;
-        border: 1px solid #333;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-        margin-bottom: 24px;
-      }
-      
-      .section-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: #e0e0e0;
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #333;
-      }
-      
-      .section-title::before {
-        content: '👥';
-        margin-right: 8px;
-        font-size: 24px;
-      }
-      
+      .section-hdr::after { content:''; flex:1; height:1px; background:rgba(255,255,255,.05); }
+
       .friends-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 16px;
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(210px,1fr));
+        gap:12px;
       }
-      
+
       .friend-card {
-        background: linear-gradient(135deg, #252525 0%, #1f1f1f 100%);
-        border-radius: 12px;
-        padding: 20px;
-        border: 1px solid #2d2d2d;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
-        cursor: pointer;
+        background:var(--card); border:1px solid var(--border);
+        border-radius:14px; padding:16px;
+        transition:all .25s ease; cursor:default;
+        position:relative; overflow:hidden;
       }
-      
-      .friend-card::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 4px;
-        transition: width 0.3s ease;
+      .friend-card:hover { transform:translateY(-3px); box-shadow:0 10px 30px rgba(0,0,0,.35); }
+
+      /* left accent bar */
+      .friend-card::after {
+        content:''; position:absolute; left:0; top:0; bottom:0;
+        width:3px; border-radius:0 3px 3px 0; transition:width .25s ease;
       }
-      
-      .friend-card.owe::before {
-        background: linear-gradient(180deg, #d46a6a, #c05a5a);
-        box-shadow: 0 0 10px rgba(212, 106, 106, 0.5);
+      .friend-card.owe::after  { background:var(--red);   box-shadow:0 0 8px var(--red); }
+      .friend-card.owed::after { background:var(--green); box-shadow:0 0 8px var(--green); }
+      .friend-card.settled::after { background:rgba(255,255,255,.2); }
+      .friend-card:hover::after { width:4px; }
+
+      .friend-top { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+      .friend-avatar {
+        width:38px; height:38px; border-radius:10px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:.9em; font-weight:800; flex-shrink:0;
+        background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08);
       }
-      
-      .friend-card.owed::before {
-        background: linear-gradient(180deg, #8bc38b, #7ab37a);
-        box-shadow: 0 0 10px rgba(139, 195, 139, 0.5);
+      .friend-card.owe  .friend-avatar { background:rgba(255,77,109,.12); border-color:rgba(255,77,109,.25); color:var(--red); }
+      .friend-card.owed .friend-avatar { background:rgba(0,230,118,.1); border-color:rgba(0,230,118,.2); color:var(--green); }
+      .friend-name { font-size:.88em; font-weight:600; color:rgba(255,255,255,.8); line-height:1.2; }
+      .friend-curr {
+        font-size:.55em; font-weight:700; padding:2px 7px;
+        border-radius:6px; letter-spacing:1px; text-transform:uppercase;
+        background:rgba(255,255,255,.06); color:rgba(255,255,255,.4);
+        border:1px solid rgba(255,255,255,.08); margin-left:auto; flex-shrink:0;
       }
-      
-      .friend-card.settled::before {
-        background: linear-gradient(180deg, #666, #555);
-      }
-      
-      .friend-card:hover {
-        transform: translateX(6px) scale(1.02);
-        box-shadow: 0 8px 24px rgba(212, 106, 106, 0.2);
-        border-color: #3d3d3d;
-        background: linear-gradient(135deg, #2a2a2a 0%, #252525 100%);
-      }
-      
-      .friend-card:hover::before {
-        width: 6px;
-      }
-      
-      .friend-name {
-        font-size: 17px;
-        font-weight: 600;
-        color: #e0e0e0;
-        margin-bottom: 10px;
-        letter-spacing: 0.3px;
-      }
-      
+
       .friend-amount {
-        font-size: 26px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        letter-spacing: -0.5px;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        font-size:1.4em; font-weight:800; letter-spacing:-.5px; margin-bottom:6px;
       }
-      
-      .friend-amount.positive {
-        color: #8bc38b;
-      }
-      
-      .friend-amount.negative {
-        color: #d46a6a;
-      }
-      
-      .friend-amount.neutral {
-        color: #999;
-      }
-      
+      .friend-card.owe  .friend-amount { color:var(--red);   text-shadow:0 0 16px rgba(255,77,109,.3); }
+      .friend-card.owed .friend-amount { color:var(--green); text-shadow:0 0 16px rgba(0,230,118,.25); }
+      .friend-card.settled .friend-amount { color:rgba(255,255,255,.3); }
+
       .friend-status {
-        font-size: 12px;
-        color: #888;
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 4px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        font-size:.62em; color:rgba(255,255,255,.3); font-weight:500;
+        background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06);
+        display:inline-block; padding:2px 8px; border-radius:6px;
       }
-      
-      .currency-badge {
-        display: inline-block;
-        background: linear-gradient(135deg, rgba(212, 106, 106, 0.25), rgba(212, 106, 106, 0.15));
-        color: #d46a6a;
-        font-size: 11px;
-        padding: 4px 10px;
-        border-radius: 14px;
-        margin-left: 8px;
-        font-weight: 600;
-        border: 1px solid rgba(212, 106, 106, 0.4);
-        box-shadow: 0 2px 6px rgba(212, 106, 106, 0.2);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+      .friend-bar-wrap { margin-top:10px; height:3px; background:rgba(255,255,255,.05); border-radius:2px; overflow:hidden; }
+      .friend-bar { height:100%; border-radius:2px; width:0; transition:width 1.3s cubic-bezier(.4,0,.2,1); }
+      .friend-card.owe  .friend-bar { background:var(--red); }
+      .friend-card.owed .friend-bar { background:var(--green); }
+
+      /* ── empty state ── */
+      .empty {
+        text-align:center; padding:50px 20px;
+        color:rgba(255,255,255,.2); font-size:.9em;
       }
-      
-      .no-data {
-        text-align: center;
-        padding: 40px;
-        color: #777;
-        font-size: 16px;
+      .empty-icon { font-size:3em; margin-bottom:12px; opacity:.5; }
+
+      /* ── animations ── */
+      @keyframes slideDown { from{opacity:0;transform:translateY(-18px);}to{opacity:1;transform:translateY(0);} }
+      @keyframes fadeUp    { from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);} }
+
+      /* ── scrollbar ── */
+      ::-webkit-scrollbar{width:4px;}
+      ::-webkit-scrollbar-track{background:transparent;}
+      ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px;}
+
+      @media(max-width:640px){
+        .charts-grid{grid-template-columns:1fr;}
+        .friends-grid{grid-template-columns:1fr 1fr;}
+        .hero-row{grid-template-columns:1fr 1fr;}
+        .header h1{font-size:1.6em;}
+        .page{padding:14px;}
       }
-      
-      ::-webkit-scrollbar {
-        width: 8px;
-      }
-      
-      ::-webkit-scrollbar-track {
-        background: #1a1a1a;
-      }
-      
-      ::-webkit-scrollbar-thumb {
-        background: #d46a6a;
-        border-radius: 4px;
-      }
-      
-      ::-webkit-scrollbar-thumb:hover {
-        background: #c05a5a;
-      }
-      
-      @media (max-width: 768px) {
-        body {
-          padding: 16px;
-        }
-        
-        .summary-cards {
-          grid-template-columns: 1fr;
-        }
-        
-        .charts-section {
-          grid-template-columns: 1fr;
-        }
-        
-        .friends-grid {
-          grid-template-columns: 1fr;
-        }
-        
-        .header h2 {
-          font-size: 24px;
-        }
-        
-        .validation-icon {
-          font-size: 36px;
-        }
-        
-        .validation-title {
-          font-size: 18px;
-        }
+      @media(max-width:420px){
+        .friends-grid{grid-template-columns:1fr;}
+        .hero-row{grid-template-columns:1fr;}
       }
     </style>
   </head>
   <body>
-    <div class="container">
+
+    <div class="bg-layer">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="orb orb3"></div>
+      <div class="orb orb4"></div>
+    </div>
+
+    <div class="page">
+
+      <!-- Header -->
       <div class="header">
-        <h2>💰 Splitwise Dashboard</h2>
-        <p>Your balance overview and friend expenses</p>
+        <div class="header-chip">Live · Splitwise</div>
+        <h1>💸 Balance Dashboard</h1>
+        <div class="header-sub">Your money — who owes who</div>
       </div>
-      
+
+      <!-- Validation Banner -->
       <? if (validationResult) { ?>
-        <div class="validation-alert <?= validationResult.match ? 'match' : 'mismatch' ?>">
-          <div class="validation-badge">
-            <?= validationResult.match ? 'BALANCED' : 'NOT BALANCED' ?>
-          </div>
-          <div class="validation-icon">
-            <?= validationResult.match ? '✅' : '❌' ?>
-          </div>
-          <div class="validation-content">
-            <div class="validation-title">
-              <?= validationResult.match ? '🎉 Balance Matched!' : 'Balance Mismatch!' ?>
-            </div>
-            <div class="validation-details">
+        <div class="v-banner <?= validationResult.match ? 'match' : 'mismatch' ?>">
+          <div class="v-badge"><?= validationResult.match ? 'BALANCED' : 'CHECK THIS' ?></div>
+          <div class="v-icon"><?= validationResult.match ? '✅' : '⚠️' ?></div>
+          <div class="v-content">
+            <div class="v-title"><?= validationResult.match ? '🎉 Records Synced!' : '⛔ Balance Mismatch' ?></div>
+            <div class="v-detail">
               <? if (validationResult.match) { ?>
-                Splitwise LKR: <span class="validation-amount"><?= validationResult.splitwiseRounded.toFixed(0) ?></span> ≈ 
-                Sheet Balance: <span class="validation-amount"><?= validationResult.sheetRounded.toFixed(0) ?></span>
-                <br>
-                ✓ Your records are synchronized (within ±<?= validationResult.tolerance ?> LKR tolerance)
+                Splitwise LKR: <span class="v-amt"><?= validationResult.splitwiseRounded.toFixed(0) ?></span>
+                &nbsp;≈&nbsp;
+                Sheet Balance: <span class="v-amt"><?= validationResult.sheetRounded.toFixed(0) ?></span>
+                &nbsp;·&nbsp; ✓ Within ±<?= validationResult.tolerance ?> LKR tolerance
               <? } else { ?>
-                Splitwise LKR: <span class="validation-amount"><?= validationResult.splitwiseRounded.toFixed(0) ?></span> ≠ 
-                Sheet Balance: <span class="validation-amount"><?= validationResult.sheetRounded.toFixed(0) ?></span>
-                <br>
-                ⚠️ Difference: <span class="validation-amount"><?= validationResult.difference.toFixed(0) ?> LKR</span> (exceeds ±<?= validationResult.tolerance ?> LKR tolerance)
+                Splitwise: <span class="v-amt"><?= validationResult.splitwiseRounded.toFixed(0) ?></span>
+                &nbsp;≠&nbsp;
+                Sheet: <span class="v-amt"><?= validationResult.sheetRounded.toFixed(0) ?></span>
+                &nbsp;·&nbsp; Gap: <span class="v-amt"><?= validationResult.difference.toFixed(0) ?> LKR</span>
+                &nbsp;(±<?= validationResult.tolerance ?> tolerance exceeded)
               <? } ?>
             </div>
           </div>
         </div>
       <? } ?>
-      
-      <div class="summary-cards">
+
+      <!-- Hero Currency Totals -->
+      <div class="hero-row">
         <? var currencies = Object.keys(totals); ?>
-        <? for (var i = 0; i < currencies.length; i++) { ?>
-          <? var currency = currencies[i]; ?>
-          <? var total = totals[currency]; ?>
-          <? var cardClass = total < 0 ? 'owe' : (total > 0 ? 'owed' : 'settled'); ?>
-          <? var amountClass = total < 0 ? 'amount-owe' : (total > 0 ? 'amount-owed' : 'amount-settled'); ?>
-          <? var icon = total < 0 ? '📤' : (total > 0 ? '📥' : '✅'); ?>
-          
-          <div class="summary-card">
-            <div class="summary-card-header">
-              <div class="summary-icon icon-<?= cardClass ?>">
-                <?= icon ?>
-              </div>
-              <div class="summary-card-title"><?= currency ?></div>
-            </div>
-            <div class="summary-card-amount <?= amountClass ?>">
-              <?= Math.abs(total).toFixed(2) ?>
-            </div>
-            <div class="summary-card-label">
-              <? if (total < 0) { ?>
-                You owe this amount
-              <? } else if (total > 0) { ?>
-                You are owed this
-              <? } else { ?>
-                All settled up!
-              <? } ?>
+        <? for (var ci = 0; ci < currencies.length; ci++) { ?>
+          <? var cur = currencies[ci]; ?>
+          <? var tot = totals[cur]; ?>
+          <? var cardCls = tot < 0 ? 'owe' : (tot > 0 ? 'owed' : 'settled'); ?>
+          <? var ico = tot < 0 ? '📤' : (tot > 0 ? '📥' : '✅'); ?>
+          <div class="hero-card <?= cardCls ?>">
+            <div class="hero-card-glow"></div>
+            <span class="hero-icon"><?= ico ?></span>
+            <div class="hero-label"><?= cur ?> Balance</div>
+            <div class="hero-amount"><?= Math.abs(tot).toFixed(2) ?></div>
+            <div class="hero-sub">
+              <? if (tot < 0) { ?>You owe this
+              <? } else if (tot > 0) { ?>You are owed
+              <? } else { ?>All settled up!<? } ?>
             </div>
           </div>
         <? } ?>
       </div>
-      
+
+      <!-- Insight Pills (JS-rendered) -->
+      <div class="insights-row" id="insightsRow"></div>
+
+      <!-- Charts 2×2 -->
       <? if (balanceData.length > 0) { ?>
-        <div class="charts-section">
-          <div class="chart-card">
-            <div class="chart-title">📊 Balance Distribution</div>
-            <div class="chart-container">
-              <canvas id="balanceChart"></canvas>
-            </div>
+      <div class="charts-grid">
+
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#ff4d6d;box-shadow:0 0 6px #ff4d6d"></div>
+            <div class="card-title">Balance Per Person</div>
           </div>
-          
-          <div class="chart-card">
-            <div class="chart-title">💳 Owed vs Owing</div>
-            <div class="chart-container">
-              <canvas id="categoryChart"></canvas>
-            </div>
-          </div>
+          <div class="chart-wrap"><canvas id="hbarChart"></canvas></div>
         </div>
+
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div>
+            <div class="card-title">Owed vs Owing</div>
+          </div>
+          <div class="chart-wrap"><canvas id="donutChart"></canvas></div>
+        </div>
+
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#00d4ff;box-shadow:0 0 6px #00d4ff"></div>
+            <div class="card-title">Magnitude Breakdown</div>
+          </div>
+          <div class="chart-wrap"><canvas id="polarChart"></canvas></div>
+        </div>
+
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#00e676;box-shadow:0 0 6px #00e676"></div>
+            <div class="card-title">Top Balances Ranked</div>
+          </div>
+          <div class="chart-wrap"><canvas id="vbarChart"></canvas></div>
+        </div>
+
+      </div>
       <? } ?>
-      
+
+      <!-- Friend Cards -->
       <div class="friends-section">
-        <div class="section-title">Friend Balances</div>
-        
+        <div class="section-hdr">Friends &amp; Balances</div>
+
         <? if (balanceData.length > 0) { ?>
-          <div class="friends-grid">
-            <? for (var i = 0; i < balanceData.length; i++) { ?>
-              <? var item = balanceData[i]; ?>
-              <? var cardType = item.amount < 0 ? 'owe' : (item.amount > 0 ? 'owed' : 'settled'); ?>
-              <? var amountClass = item.amount < 0 ? 'negative' : (item.amount > 0 ? 'positive' : 'neutral'); ?>
-              
-              <div class="friend-card <?= cardType ?>">
-                <div class="friend-name"><?= item.name ?></div>
-                <div class="friend-amount <?= amountClass ?>">
-                  <?= item.amount.toFixed(2) ?>
-                  <span class="currency-badge"><?= item.currency ?></span>
+          <div class="friends-grid" id="friendsGrid">
+            <? for (var fi = 0; fi < balanceData.length; fi++) { ?>
+              <? var item = balanceData[fi]; ?>
+              <? var fc = item.amount < 0 ? 'owe' : (item.amount > 0 ? 'owed' : 'settled'); ?>
+              <? var initials = item.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2); ?>
+              <div class="friend-card <?= fc ?>" data-abs="<?= Math.abs(item.amount) ?>">
+                <div class="friend-top">
+                  <div class="friend-avatar"><?= initials ?></div>
+                  <div class="friend-name"><?= item.name ?></div>
+                  <span class="friend-curr"><?= item.currency ?></span>
                 </div>
+                <div class="friend-amount"><?= item.amount.toFixed(2) ?></div>
                 <div class="friend-status"><?= item.status ?></div>
+                <? if (item.amount !== 0) { ?>
+                  <div class="friend-bar-wrap"><div class="friend-bar" data-pct="0"></div></div>
+                <? } ?>
               </div>
             <? } ?>
           </div>
         <? } else { ?>
-          <div class="no-data">
-            <p>😊 No balances found. All settled up!</p>
+          <div class="empty">
+            <div class="empty-icon">🎉</div>
+            <div>No balances found — all settled up!</div>
           </div>
         <? } ?>
       </div>
-    </div>
-    
+
+    </div><!-- /page -->
+
     <script>
-      Chart.defaults.color = '#999';
-      Chart.defaults.borderColor = '#333';
-      
-      const balanceData = <?!= JSON.stringify(balanceData) ?>;
-      
-      if (balanceData && balanceData.length > 0) {
-        const names = balanceData.map(item => item.name);
-        const amounts = balanceData.map(item => item.amount);
-        const colors = amounts.map(amt => amt < 0 ? 'rgba(212, 106, 106, 0.8)' : amt > 0 ? 'rgba(139, 195, 139, 0.8)' : 'rgba(150, 150, 150, 0.8)');
-        const borderColors = amounts.map(amt => amt < 0 ? '#d46a6a' : amt > 0 ? '#8bc38b' : '#969696');
-        
-        const balanceCtx = document.getElementById('balanceChart');
-        if (balanceCtx) {
-          new Chart(balanceCtx, {
-            type: 'bar',
-            data: {
-              labels: names,
-              datasets: [{
-                label: 'Balance Amount',
-                data: amounts,
-                backgroundColor: colors,
-                borderColor: borderColors,
-                borderWidth: 2,
-                borderRadius: 8,
-                borderSkipped: false,
-              }]
-            },
-            options: {
-              indexAxis: 'y',
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                  padding: 12,
-                  titleFont: { size: 14, weight: 'bold' },
-                  bodyFont: { size: 13 },
-                  borderColor: '#d46a6a',
-                  borderWidth: 1,
-                  callbacks: {
-                    label: function(context) {
-                      const value = context.parsed.x;
-                      const item = balanceData[context.dataIndex];
-                      return value < 0 ? 'You owe: ' + Math.abs(value).toFixed(2) + ' ' + item.currency : 'You are owed: ' + value.toFixed(2) + ' ' + item.currency;
-                    }
-                  }
-                }
-              },
-              scales: {
-                x: {
-                  grid: { color: '#2a2a2a', drawBorder: false },
-                  ticks: { 
-                    color: '#999',
-                    callback: function(value) {
-                      return value.toFixed(0);
-                    }
-                  }
-                },
-                y: {
-                  grid: { display: false },
-                  ticks: { 
-                    color: '#e0e0e0',
-                    font: { size: 12, weight: '500' }
-                  }
-                }
-              }
-            }
+      /* ── raw data from GAS ── */
+      const RAW = <?!= JSON.stringify(balanceData) ?>;
+
+      if (!RAW || RAW.length === 0) {
+        document.getElementById('insightsRow') && (document.getElementById('insightsRow').style.display = 'none');
+      } else {
+
+        const oweItems  = RAW.filter(d => d.amount < 0);
+        const owedItems = RAW.filter(d => d.amount > 0);
+        const totalOwe  = oweItems.reduce((s,d)  => s + Math.abs(d.amount), 0);
+        const totalOwed = owedItems.reduce((s,d) => s + d.amount, 0);
+        const net       = totalOwed - totalOwe;
+        const biggestOwe  = oweItems.sort((a,b)  => a.amount - b.amount)[0];
+        const biggestOwed = owedItems.sort((a,b) => b.amount - a.amount)[0];
+
+        /* ── insights ── */
+        const insightsData = [
+          { icon:'📊', label:'Net Position', value: net >= 0 ? '+'+net.toFixed(2) : net.toFixed(2), cls: net >= 0 ? 'green' : 'red' },
+          { icon:'🔴', label:'Total You Owe', value: totalOwe.toFixed(2), cls:'red' },
+          { icon:'🟢', label:'Total Owed to You', value: totalOwed.toFixed(2), cls:'green' },
+          { icon:'👤', label:'Biggest You Owe', value: biggestOwe ? biggestOwe.name : '—', cls:'red' },
+          { icon:'🌟', label:'Biggest Owes You', value: biggestOwed ? biggestOwed.name : '—', cls:'green' },
+          { icon:'🤝', label:'Active Balances', value: RAW.filter(d=>d.amount!==0).length + ' people', cls:'' },
+        ];
+        const insRow = document.getElementById('insightsRow');
+        insRow.innerHTML = insightsData.map(i=>`
+          <div class="insight-pill">
+            <div class="insight-emoji">${i.icon}</div>
+            <div class="insight-body">
+              <div class="insight-label">${i.label}</div>
+              <div class="insight-value ${i.cls}">${i.value}</div>
+            </div>
+          </div>`).join('');
+
+        /* ── animate friend bars ── */
+        const allAbs = RAW.map(d => Math.abs(d.amount));
+        const maxAbs = Math.max(...allAbs, 1);
+        setTimeout(() => {
+          document.querySelectorAll('.friend-bar').forEach(bar => {
+            const card = bar.closest('.friend-card');
+            const abs  = parseFloat(card.dataset.abs) || 0;
+            bar.style.width = (abs / maxAbs * 100).toFixed(1) + '%';
           });
-        }
-        
-        const totalOwed = balanceData.filter(item => item.amount > 0).reduce((sum, item) => sum + item.amount, 0);
-        const totalOwe = Math.abs(balanceData.filter(item => item.amount < 0).reduce((sum, item) => sum + item.amount, 0));
-        const settled = balanceData.filter(item => item.amount === 0).length;
-        
-        const categoryCtx = document.getElementById('categoryChart');
-        if (categoryCtx && (totalOwed > 0 || totalOwe > 0 || settled > 0)) {
-          new Chart(categoryCtx, {
-            type: 'doughnut',
-            data: {
-              labels: ['You Are Owed', 'You Owe', 'Settled'],
-              datasets: [{
-                data: [totalOwed, totalOwe, settled * 10],
-                backgroundColor: [
-                  'rgba(139, 195, 139, 0.8)',
-                  'rgba(212, 106, 106, 0.8)',
-                  'rgba(150, 150, 150, 0.6)'
-                ],
-                borderColor: ['#8bc38b', '#d46a6a', '#969696'],
-                borderWidth: 3,
-                hoverOffset: 15
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'bottom',
-                  labels: {
-                    padding: 15,
-                    font: { size: 13, weight: '500' },
-                    color: '#e0e0e0',
-                    usePointStyle: true,
-                    pointStyle: 'circle'
-                  }
-                },
-                tooltip: {
-                  backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                  padding: 12,
-                  titleFont: { size: 14, weight: 'bold' },
-                  bodyFont: { size: 13 },
-                  borderColor: '#d46a6a',
-                  borderWidth: 1,
-                  callbacks: {
-                    label: function(context) {
-                      const label = context.label;
-                      const value = context.parsed;
-                      if (label === 'Settled') {
-                        return label + ': ' + Math.round(value / 10) + ' friends';
-                      }
-                      return label + ': ' + value.toFixed(2);
-                    }
-                  }
+        }, 350);
+
+        /* ── chart defaults ── */
+        Chart.defaults.color = 'rgba(255,255,255,0.45)';
+        Chart.defaults.font.family = 'Inter';
+
+        const names   = RAW.map(d => d.name);
+        const amounts = RAW.map(d => d.amount);
+        const absAmts = RAW.map(d => Math.abs(d.amount));
+
+        const barColors = amounts.map(a =>
+          a < 0 ? 'rgba(255,77,109,0.35)' : a > 0 ? 'rgba(0,230,118,0.35)' : 'rgba(255,255,255,0.1)');
+        const barBorders = amounts.map(a =>
+          a < 0 ? '#ff4d6d' : a > 0 ? '#00e676' : 'rgba(255,255,255,0.3)');
+
+        const TIP = {
+          backgroundColor:'rgba(5,8,15,0.95)',
+          borderColor:'rgba(255,255,255,0.1)',
+          borderWidth:1,
+          titleColor:'#fff',
+          bodyColor:'rgba(255,255,255,0.6)',
+          padding:12,
+          titleFont:{size:12,weight:'700'},
+          bodyFont:{size:11}
+        };
+
+        /* 1 ── horizontal bar */
+        new Chart(document.getElementById('hbarChart'), {
+          type:'bar',
+          data:{
+            labels:names,
+            datasets:[{
+              data:amounts,
+              backgroundColor:barColors,
+              borderColor:barBorders,
+              borderWidth:2, borderRadius:7, borderSkipped:false
+            }]
+          },
+          options:{
+            indexAxis:'y', responsive:true, maintainAspectRatio:false,
+            animation:{duration:1100},
+            plugins:{
+              legend:{display:false},
+              tooltip:{...TIP, callbacks:{
+                label:ctx=>{
+                  const v=ctx.parsed.x, d=RAW[ctx.dataIndex];
+                  return v<0 ? ' You owe '+Math.abs(v).toFixed(2)+' '+d.currency
+                             : ' Owed to you '+v.toFixed(2)+' '+d.currency;
                 }
-              },
-              cutout: '65%'
+              }}
+            },
+            scales:{
+              x:{ticks:{color:'rgba(255,255,255,0.3)',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},
+              y:{ticks:{color:'rgba(255,255,255,0.55)',font:{size:9,weight:'500'}},grid:{display:false}}
             }
-          });
-        }
+          }
+        });
+
+        /* 2 ── doughnut */
+        new Chart(document.getElementById('donutChart'), {
+          type:'doughnut',
+          data:{
+            labels:['You Are Owed','You Owe','Settled'],
+            datasets:[{
+              data:[totalOwed, totalOwe, RAW.filter(d=>d.amount===0).length],
+              backgroundColor:['rgba(0,230,118,0.25)','rgba(255,77,109,0.25)','rgba(255,255,255,0.07)'],
+              borderColor:['#00e676','#ff4d6d','rgba(255,255,255,0.2)'],
+              borderWidth:2, hoverOffset:10
+            }]
+          },
+          options:{
+            responsive:true, maintainAspectRatio:false, cutout:'68%',
+            animation:{animateRotate:true,duration:1300},
+            plugins:{
+              legend:{position:'bottom',labels:{color:'rgba(255,255,255,0.5)',font:{size:10},padding:14,usePointStyle:true,pointStyleWidth:8}},
+              tooltip:{...TIP, callbacks:{
+                label:ctx=>{
+                  if(ctx.label==='Settled') return ' '+ctx.parsed+' people settled';
+                  return ' '+ctx.label+': '+ctx.parsed.toFixed(2);
+                }
+              }}
+            }
+          }
+        });
+
+        /* 3 ── polar */
+        const PALETTE=['#ff4d6d','#00e676','#a855f7','#00d4ff','#ffd700','#ff6b35','#38bdf8','#34d399'];
+        new Chart(document.getElementById('polarChart'), {
+          type:'polarArea',
+          data:{
+            labels:names,
+            datasets:[{
+              data:absAmts,
+              backgroundColor:names.map((_,i)=>PALETTE[i%PALETTE.length]+'44'),
+              borderColor:names.map((_,i)=>PALETTE[i%PALETTE.length]),
+              borderWidth:2
+            }]
+          },
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            animation:{duration:1400},
+            scales:{r:{ticks:{display:false},grid:{color:'rgba(255,255,255,0.05)'}}},
+            plugins:{
+              legend:{display:false},
+              tooltip:{...TIP, callbacks:{
+                label:ctx=>' '+ctx.label+': '+ctx.parsed.r.toFixed(2)
+              }}
+            }
+          }
+        });
+
+        /* 4 ── vertical bar sorted by abs */
+        const sorted = [...RAW].sort((a,b)=>Math.abs(b.amount)-Math.abs(a.amount)).slice(0,8);
+        new Chart(document.getElementById('vbarChart'), {
+          type:'bar',
+          data:{
+            labels:sorted.map(d=>d.name),
+            datasets:[{
+              data:sorted.map(d=>Math.abs(d.amount)),
+              backgroundColor:sorted.map(d=>d.amount<0?'rgba(255,77,109,0.3)':'rgba(0,230,118,0.3)'),
+              borderColor:sorted.map(d=>d.amount<0?'#ff4d6d':'#00e676'),
+              borderWidth:2, borderRadius:8, borderSkipped:false
+            }]
+          },
+          options:{
+            responsive:true, maintainAspectRatio:false,
+            animation:{duration:1100},
+            plugins:{
+              legend:{display:false},
+              tooltip:{...TIP, callbacks:{
+                label:ctx=>' '+sorted[ctx.dataIndex].name+': '+ctx.parsed.y.toFixed(2)
+              }}
+            },
+            scales:{
+              x:{ticks:{color:'rgba(255,255,255,0.35)',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},
+              y:{ticks:{color:'rgba(255,255,255,0.3)',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}
+            }
+          }
+        });
       }
     </script>
   </body>
