@@ -18,12 +18,12 @@ function onEdit(e) {
     showInvestmentDashboard();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'F1') {
-    showExp();
+    showInvestFlow();
   }
 
 }
 
-function showExp() {
+function showInvestFlow() {
   try {
     var html = HtmlService.createHtmlOutputFromFile('moneyFlowDashboard')
       .setWidth(1600)
@@ -57,13 +57,7 @@ function getMoneyFlowData() {
 
     var data = [];
     values.forEach(function(row) {
-      var monthRaw = row[0];
-      var month;
-      if (monthRaw instanceof Date && !isNaN(monthRaw)) {
-        month = Utilities.formatDate(monthRaw, Session.getScriptTimeZone(), "MMM/yyyy");
-      } else {
-        month = (monthRaw || '').toString().trim();
-      }
+      var month = (row[0] || '').toString().trim();
       if (!month) return; // skip blank/totals rows
       data.push({
         month:         month,
