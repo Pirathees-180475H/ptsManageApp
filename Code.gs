@@ -25,12 +25,65 @@ function onEdit(e) {
 
 function showExp() {
   try {
-    var html = HtmlService.createHtmlOutputFromFile('exp')
-      .setWidth(1200)
-      .setHeight(600);
-    SpreadsheetApp.getUi().showModalDialog(html, 'EXP');
+    var html = HtmlService.createHtmlOutputFromFile('moneyFlowDashboard')
+      .setWidth(1600)
+      .setHeight(1000);
+    SpreadsheetApp.getUi().showModalDialog(html, '💸 Investment Flow Dashboard');
   } catch (error) {
      //SpreadsheetApp.getUi().alert('Error: ' + error.toString());
+  }
+}
+
+function getMoneyFlowData() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Money Flow and invest');
+
+    if (!sheet) throw new Error('Sheet "Money Flow and invest" not found');
+
+    var lastRow = sheet.getLastRow();
+    // Data starts at row 2, columns A–L
+    var values = sheet.getRange(2, 1, lastRow - 1, 12).getValues();
+
+    function parseAmt(val) {
+      if (!val && val !== 0) return 0;
+      var s = val.toString().trim();
+      if (s === '' || s === 'NTM' || s === 'N T M' || s.toUpperCase() === 'FAILED') return 0;
+      // Strip any NTM suffix mixed in (e.g. "NTM Stocks going down")
+      if (s.toUpperCase().startsWith('NTM')) return 0;
+      var n = parseFloat(s.replace(/,/g, ''));
+      return isNaN(n) ? 0 : n;
+    }
+
+    var data = [];
+    values.forEach(function(row) {
+      var monthRaw = row[0];
+      var month;
+      if (monthRaw instanceof Date && !isNaN(monthRaw)) {
+        month = Utilities.formatDate(monthRaw, Session.getScriptTimeZone(), "MMM/yyyy");
+      } else {
+        month = (monthRaw || '').toString().trim();
+      }
+      if (!month) return; // skip blank/totals rows
+      data.push({
+        month:         month,
+        sentHome:      parseAmt(row[1]),
+        cal:           parseAmt(row[2]),
+        ndb:           parseAmt(row[3]),
+        binance:       parseAmt(row[4]),
+        stock:         parseAmt(row[5]),
+        fd:            parseAmt(row[6]),
+        gold:          parseAmt(row[7]),
+        totalInvested: parseAmt(row[8]),
+        income:        parseAmt(row[9]),
+        savingPct:     parseAmt(row[10]),
+        notes:         (row[11] || '').toString().trim()
+      });
+    });
+
+    return data;
+  } catch (error) {
+    throw new Error('Failed to load money flow data: ' + error.message);
   }
 }
 

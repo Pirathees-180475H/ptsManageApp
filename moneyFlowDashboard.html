@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:      #05080f;
+      --card:    rgba(255,255,255,0.035);
+      --border:  rgba(255,255,255,0.07);
+      --c1: #00d4ff;  /* blue   */
+      --c2: #a855f7;  /* purple */
+      --c3: #00e676;  /* green  */
+      --c4: #ffd700;  /* gold   */
+      --c5: #ff6b35;  /* orange */
+      --c6: #ff4d8d;  /* pink   */
+      --c7: #38bdf8;  /* sky    */
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family:'Inter',sans-serif;
+      background:var(--bg);
+      color:#fff;
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    /* ── animated background ── */
+    .bg-orbs { position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden; }
+    .orb {
+      position:absolute; border-radius:50%;
+      filter:blur(100px); opacity:0.1;
+      animation:drift 15s ease-in-out infinite;
+    }
+    .o1 { width:500px;height:500px;background:#00d4ff;top:-150px;left:-150px;animation-delay:0s; }
+    .o2 { width:400px;height:400px;background:#a855f7;bottom:-100px;right:-100px;animation-delay:-5s; }
+    .o3 { width:300px;height:300px;background:#ffd700;top:40%;left:50%;animation-delay:-9s; }
+    .o4 { width:250px;height:250px;background:#00e676;bottom:30%;left:5%;animation-delay:-3s; }
+    @keyframes drift {
+      0%,100%{transform:translate(0,0);}
+      33%{transform:translate(30px,-30px);}
+      66%{transform:translate(-20px,20px);}
+    }
+    body::before {
+      content:''; position:fixed; inset:0;
+      background-image:radial-gradient(rgba(255,255,255,0.025) 1px,transparent 1px);
+      background-size:28px 28px; pointer-events:none; z-index:0;
+    }
+
+    /* ── layout ── */
+    .page { position:relative; z-index:1; padding:18px; max-width:1560px; margin:0 auto; }
+
+    /* ── header ── */
+    .header { text-align:center; padding:18px 0 24px; }
+    .header-chip {
+      display:inline-block; padding:5px 16px; border-radius:20px;
+      background:rgba(0,212,255,0.1); border:1px solid rgba(0,212,255,0.3);
+      color:var(--c1); font-size:.68em; font-weight:700;
+      letter-spacing:3px; text-transform:uppercase; margin-bottom:10px;
+    }
+    .header h1 {
+      font-size:1.9em; font-weight:800; letter-spacing:-1px;
+      background:linear-gradient(135deg,#fff 0%,var(--c1) 40%,var(--c2) 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .header-sub { color:rgba(255,255,255,0.35); font-size:.78em; margin-top:5px; }
+
+    /* ── loading ── */
+    .loading {
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; min-height:60vh; gap:14px;
+    }
+    .spinner {
+      width:44px; height:44px;
+      border:3px solid rgba(0,212,255,0.15);
+      border-top-color:var(--c1); border-radius:50%;
+      animation:spin .8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
+    .loading-text { color:rgba(255,255,255,0.3); font-size:.82em; letter-spacing:2px; text-transform:uppercase; }
+
+    /* ── glass card ── */
+    .glass {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:18px; padding:18px; backdrop-filter:blur(20px);
+      box-shadow:0 4px 24px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.04);
+      position:relative; overflow:hidden;
+    }
+    .glass::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:1px;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);
+    }
+    .card-hdr {
+      display:flex; align-items:center; gap:8px; margin-bottom:14px;
+      padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.05);
+    }
+    .card-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .card-title { font-size:.72em; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.4); }
+    .card-sub { font-size:.62em; color:rgba(255,255,255,0.25); margin-left:auto; }
+
+    /* ── KPI strip ── */
+    .kpi-row {
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:12px; margin-bottom:16px;
+      animation:fadeUp .5s ease both;
+    }
+    .kpi {
+      border-radius:16px; padding:16px 18px; border:1px solid;
+      backdrop-filter:blur(20px); position:relative; overflow:hidden;
+      transition:transform .2s ease;
+    }
+    .kpi:hover { transform:translateY(-3px); }
+    .kpi-glow {
+      position:absolute; right:-20px; bottom:-20px;
+      width:100px; height:100px; border-radius:50%;
+      filter:blur(40px); opacity:0.2;
+    }
+    .kpi-icon { font-size:1.6em; margin-bottom:7px; display:block; }
+    .kpi-label { font-size:.62em; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:3px; }
+    .kpi-value { font-size:1.5em; font-weight:800; letter-spacing:-1px; line-height:1; }
+    .kpi-sub { font-size:.68em; color:rgba(255,255,255,0.25); margin-top:4px; }
+
+    .kpi.blue   { background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(0,212,255,.04)); border-color:rgba(0,212,255,.22); }
+    .kpi.blue   .kpi-value { color:var(--c1); text-shadow:0 0 24px rgba(0,212,255,.35); }
+    .kpi.blue   .kpi-glow  { background:var(--c1); }
+    .kpi.purple { background:linear-gradient(135deg,rgba(168,85,247,.09),rgba(168,85,247,.04)); border-color:rgba(168,85,247,.22); }
+    .kpi.purple .kpi-value { color:var(--c2); text-shadow:0 0 24px rgba(168,85,247,.35); }
+    .kpi.purple .kpi-glow  { background:var(--c2); }
+    .kpi.green  { background:linear-gradient(135deg,rgba(0,230,118,.09),rgba(0,230,118,.04)); border-color:rgba(0,230,118,.22); }
+    .kpi.green  .kpi-value { color:var(--c3); text-shadow:0 0 24px rgba(0,230,118,.35); }
+    .kpi.green  .kpi-glow  { background:var(--c3); }
+    .kpi.gold   { background:linear-gradient(135deg,rgba(255,215,0,.09),rgba(255,215,0,.04)); border-color:rgba(255,215,0,.22); }
+    .kpi.gold   .kpi-value { color:var(--c4); text-shadow:0 0 24px rgba(255,215,0,.35); }
+    .kpi.gold   .kpi-glow  { background:var(--c4); }
+    .kpi.orange { background:linear-gradient(135deg,rgba(255,107,53,.09),rgba(255,107,53,.04)); border-color:rgba(255,107,53,.22); }
+    .kpi.orange .kpi-value { color:var(--c5); text-shadow:0 0 24px rgba(255,107,53,.35); }
+    .kpi.orange .kpi-glow  { background:var(--c5); }
+
+    /* ── grid layouts ── */
+    .row-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; animation:fadeUp .5s ease .1s both; }
+    .row-3 { display:grid; grid-template-columns:2fr 1fr; gap:14px; margin-bottom:14px; animation:fadeUp .5s ease .15s both; }
+    .row-full { margin-bottom:14px; animation:fadeUp .5s ease .2s both; }
+    .row-2b { display:grid; grid-template-columns:1fr 2fr; gap:14px; margin-bottom:14px; animation:fadeUp .5s ease .25s both; }
+
+    .chart-wrap { position:relative; height:240px; }
+    .chart-wrap.tall { height:280px; }
+    .chart-wrap.short { height:200px; }
+
+    /* ── heatmap ── */
+    .heatmap { overflow-x:auto; }
+    .hm-table { width:100%; border-collapse:separate; border-spacing:4px; }
+    .hm-table th {
+      font-size:.58em; font-weight:700; letter-spacing:1.5px;
+      text-transform:uppercase; color:rgba(255,255,255,0.35);
+      padding:6px 8px; text-align:center; white-space:nowrap;
+    }
+    .hm-table td.month-lbl {
+      font-size:.7em; font-weight:600; color:rgba(255,255,255,0.5);
+      padding:0 10px 0 0; white-space:nowrap; text-align:right;
+    }
+    .hm-cell {
+      width:70px; height:36px; border-radius:8px;
+      font-size:.68em; font-weight:700; text-align:center;
+      vertical-align:middle; transition:transform .2s ease;
+      cursor:default; position:relative;
+    }
+    .hm-cell:hover { transform:scale(1.1); z-index:2; }
+    .hm-cell.zero { background:rgba(255,255,255,0.04); color:rgba(255,255,255,0.15); }
+
+    /* ── saving badge per row ── */
+    .saving-badge {
+      display:inline-block; font-size:.6em; font-weight:700;
+      padding:2px 8px; border-radius:6px; letter-spacing:1px;
+      text-transform:uppercase; white-space:nowrap;
+    }
+    .badge-great  { background:rgba(0,230,118,.15); color:var(--c3); }
+    .badge-good   { background:rgba(0,212,255,.15); color:var(--c1); }
+    .badge-ok     { background:rgba(255,215,0,.15);  color:var(--c4); }
+    .badge-low    { background:rgba(255,77,141,.15);  color:#ff4d8d; }
+
+    /* ── month timeline dots ── */
+    .timeline { display:flex; align-items:flex-end; gap:6px; padding:6px 0; overflow-x:auto; }
+    .tl-month { display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; min-width:60px; }
+    .tl-bar { width:40px; border-radius:6px 6px 0 0; transition:height 1s cubic-bezier(.4,0,.2,1); cursor:default; }
+    .tl-label { font-size:.55em; color:rgba(255,255,255,0.4); text-align:center; line-height:1.2; white-space:nowrap; }
+    .tl-pct { font-size:.62em; font-weight:700; }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);} }
+
+    ::-webkit-scrollbar{width:4px;height:4px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:4px;}
+
+    @media(max-width:900px){
+      .kpi-row{grid-template-columns:repeat(3,1fr);}
+      .row-2,.row-3,.row-2b{grid-template-columns:1fr;}
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb o1"></div><div class="orb o2"></div>
+    <div class="orb o3"></div><div class="orb o4"></div>
+  </div>
+
+  <div class="page" id="root">
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading Investment Flow…</div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script>
+  /* ── helpers ── */
+  const K = n => n >= 1e6 ? (n/1e6).toFixed(2)+'M' : n >= 1e3 ? (n/1e3).toFixed(0)+'K' : n.toFixed(0);
+  const fmt = n => '₨' + Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0});
+
+  function animCounter(el, target, dur=1200) {
+    const s = performance.now();
+    const tick = now => {
+      const p = Math.min((now-s)/dur,1);
+      const e = 1-Math.pow(1-p,4);
+      el.textContent = '₨'+Math.round(target*e).toLocaleString('en-IN');
+      if(p<1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  function animPct(el, target, dur=1200) {
+    const s = performance.now();
+    const tick = now => {
+      const p = Math.min((now-s)/dur,1);
+      const e = 1-Math.pow(1-p,4);
+      el.textContent = (target*e).toFixed(1)+'%';
+      if(p<1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  const CATS = ['CAL','NDB','Binance','Stock','FD','Gold','Sent Home'];
+  const KEYS = ['cal','ndb','binance','stock','fd','gold','sentHome'];
+  const COLORS = ['#00d4ff','#a855f7','#f59e0b','#00e676','#ff6b35','#ffd700','#ff4d8d'];
+  const COLORS_A = COLORS.map(c=>c+'44');
+
+  const TIP = {
+    backgroundColor:'rgba(5,8,15,0.95)',
+    borderColor:'rgba(255,255,255,0.1)',
+    borderWidth:1, titleColor:'#fff',
+    bodyColor:'rgba(255,255,255,0.65)',
+    padding:12, titleFont:{size:11,weight:'700'},
+    bodyFont:{size:10}
+  };
+
+  Chart.defaults.color = 'rgba(255,255,255,0.4)';
+  Chart.defaults.font.family = 'Inter';
+
+  /* ── heatmap color ── */
+  function heatColor(val, max) {
+    if (!val || max === 0) return null;
+    const pct = Math.min(val/max,1);
+    // low = purple-ish, high = cyan
+    const r = Math.round(0   + pct*0);
+    const g = Math.round(100 + pct*130);
+    const b = Math.round(180 + pct*75);
+    return `rgba(${r},${g},${b},${0.2+pct*0.55})`;
+  }
+
+  /* ── main render ── */
+  function render(DATA) {
+    if (!DATA || !DATA.length) {
+      document.getElementById('root').innerHTML =
+        '<div style="text-align:center;padding:80px;color:rgba(255,255,255,.3)">No data found in "Money Flow and invest" sheet.</div>';
+      return;
+    }
+
+    // ── derived metrics ──
+    const totalInvested  = DATA.reduce((s,d)=>s+d.totalInvested,0);
+    const totalIncome    = DATA.reduce((s,d)=>s+d.income,0);
+    const avgSaving      = DATA.reduce((s,d)=>s+d.savingPct,0)/DATA.length;
+    const best   = DATA.reduce((a,b)=>b.savingPct>a.savingPct?b:a);
+    const worst  = DATA.reduce((a,b)=>b.savingPct<a.savingPct?b:a);
+
+    // ── totals per category ──
+    const catTotals = KEYS.map(k => DATA.reduce((s,d)=>s+d[k],0));
+    const maxCatVal = Math.max(...KEYS.map(k => Math.max(...DATA.map(d=>d[k]))));
+
+    const months = DATA.map(d=>d.month);
+
+    /* ── html ── */
+    document.getElementById('root').innerHTML = `
+      <div class="header">
+        <div class="header-chip">📊 Live · Money Flow</div>
+        <h1>Investment Flow Dashboard</h1>
+        <div class="header-sub">Your complete investment history at a glance</div>
+      </div>
+
+      <!-- KPI Row -->
+      <div class="kpi-row">
+        <div class="kpi blue">
+          <div class="kpi-glow"></div>
+          <span class="kpi-icon">💰</span>
+          <div class="kpi-label">Total Invested</div>
+          <div class="kpi-value" id="kpi-ti">₨0</div>
+          <div class="kpi-sub">${DATA.length} months tracked</div>
+        </div>
+        <div class="kpi purple">
+          <div class="kpi-glow"></div>
+          <span class="kpi-icon">📈</span>
+          <div class="kpi-label">Avg Saving Rate</div>
+          <div class="kpi-value" id="kpi-avg">0%</div>
+          <div class="kpi-sub">across all months</div>
+        </div>
+        <div class="kpi green">
+          <div class="kpi-glow"></div>
+          <span class="kpi-icon">🏆</span>
+          <div class="kpi-label">Best Month</div>
+          <div class="kpi-value" style="font-size:1.1em">${best.month}</div>
+          <div class="kpi-sub">${best.savingPct.toFixed(1)}% saved</div>
+        </div>
+        <div class="kpi gold">
+          <div class="kpi-glow"></div>
+          <span class="kpi-icon">📉</span>
+          <div class="kpi-label">Lowest Month</div>
+          <div class="kpi-value" style="font-size:1.1em">${worst.month}</div>
+          <div class="kpi-sub">${worst.savingPct.toFixed(1)}% saved</div>
+        </div>
+        <div class="kpi orange">
+          <div class="kpi-glow"></div>
+          <span class="kpi-icon">🏦</span>
+          <div class="kpi-label">Total Income</div>
+          <div class="kpi-value" id="kpi-inc">₨0</div>
+          <div class="kpi-sub">cumulative earnings</div>
+        </div>
+      </div>
+
+      <!-- Row 1: Saving trend + Donut -->
+      <div class="row-3">
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#00d4ff;box-shadow:0 0 6px #00d4ff"></div>
+            <div class="card-title">Saving % Trend</div>
+            <div class="card-sub">monthly saving rate</div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="lineChart"></canvas></div>
+        </div>
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div>
+            <div class="card-title">Category Allocation</div>
+            <div class="card-sub">all-time total</div>
+          </div>
+          <div class="chart-wrap tall"><canvas id="donutChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Row 2: Stacked bar full width -->
+      <div class="row-full glass">
+        <div class="card-hdr">
+          <div class="card-dot" style="background:#ffd700;box-shadow:0 0 6px #ffd700"></div>
+          <div class="card-title">Monthly Investment Breakdown</div>
+          <div class="card-sub">stacked by category</div>
+        </div>
+        <div class="chart-wrap tall"><canvas id="stackedBar"></canvas></div>
+      </div>
+
+      <!-- Row 3: Grouped bar + Polar -->
+      <div class="row-2">
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#00e676;box-shadow:0 0 6px #00e676"></div>
+            <div class="card-title">Income vs Invested</div>
+            <div class="card-sub">monthly comparison</div>
+          </div>
+          <div class="chart-wrap"><canvas id="groupedBar"></canvas></div>
+        </div>
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#ff6b35;box-shadow:0 0 6px #ff6b35"></div>
+            <div class="card-title">Category Spread</div>
+            <div class="card-sub">polar area</div>
+          </div>
+          <div class="chart-wrap"><canvas id="polarChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Row 4: Heatmap -->
+      <div class="row-full glass">
+        <div class="card-hdr">
+          <div class="card-dot" style="background:#ff4d8d;box-shadow:0 0 6px #ff4d8d"></div>
+          <div class="card-title">Investment Heatmap</div>
+          <div class="card-sub">amount per category per month — darker = higher</div>
+        </div>
+        <div class="heatmap" id="heatmap"></div>
+      </div>
+
+      <!-- Row 5: Saving bar + notes -->
+      <div class="row-2b">
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#38bdf8;box-shadow:0 0 6px #38bdf8"></div>
+            <div class="card-title">Saving % Bars</div>
+          </div>
+          <div id="savingBars" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+        <div class="glass">
+          <div class="card-hdr">
+            <div class="card-dot" style="background:#c084fc;box-shadow:0 0 6px #c084fc"></div>
+            <div class="card-title">Month Insights</div>
+          </div>
+          <div id="insights" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+    `;
+
+    /* ── animated KPI counters ── */
+    setTimeout(() => {
+      animCounter(document.getElementById('kpi-ti'),  totalInvested);
+      animCounter(document.getElementById('kpi-inc'), totalIncome);
+      animPct(document.getElementById('kpi-avg'), avgSaving);
+    }, 150);
+
+    /* ── LINE chart (saving %) ── */
+    new Chart(document.getElementById('lineChart'), {
+      type:'line',
+      data:{
+        labels:months,
+        datasets:[{
+          label:'Saving %',
+          data:DATA.map(d=>d.savingPct),
+          borderColor:'#00d4ff',
+          backgroundColor:(ctx)=>{
+            const g=ctx.chart.ctx.createLinearGradient(0,0,0,280);
+            g.addColorStop(0,'rgba(0,212,255,0.25)');
+            g.addColorStop(1,'rgba(0,212,255,0)');
+            return g;
+          },
+          borderWidth:2.5, fill:true, tension:0.4,
+          pointBackgroundColor: DATA.map(d=>d.savingPct>=70?'#00e676':d.savingPct>=50?'#ffd700':'#ff4d8d'),
+          pointRadius:5, pointHoverRadius:8
+        },{
+          label:'Target 60%',
+          data:DATA.map(()=>60),
+          borderColor:'rgba(255,215,0,0.3)',
+          borderDash:[6,4], borderWidth:1.5, fill:false,
+          pointRadius:0, tension:0
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        animation:{duration:1200},
+        plugins:{
+          legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:10},usePointStyle:true}},
+          tooltip:{...TIP, callbacks:{label:ctx=>' '+ctx.dataset.label+': '+ctx.parsed.y.toFixed(2)+'%'}}
+        },
+        scales:{
+          x:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},
+          y:{
+            min:0, max:110,
+            ticks:{color:'rgba(255,255,255,0.4)',font:{size:9},callback:v=>v+'%'},
+            grid:{color:'rgba(255,255,255,0.04)'}
+          }
+        }
+      }
+    });
+
+    /* ── DONUT (category totals) ── */
+    const donutLabels = CATS.filter((_,i)=>catTotals[i]>0);
+    const donutVals   = catTotals.filter(v=>v>0);
+    const donutColors = COLORS.filter((_,i)=>catTotals[i]>0);
+    new Chart(document.getElementById('donutChart'),{
+      type:'doughnut',
+      data:{
+        labels:donutLabels,
+        datasets:[{
+          data:donutVals,
+          backgroundColor:donutColors.map(c=>c+'44'),
+          borderColor:donutColors, borderWidth:2, hoverOffset:10
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false, cutout:'65%',
+        animation:{animateRotate:true,duration:1300},
+        plugins:{
+          legend:{position:'bottom',labels:{color:'rgba(255,255,255,0.5)',font:{size:9},padding:10,usePointStyle:true,pointStyleWidth:7}},
+          tooltip:{...TIP, callbacks:{
+            label:ctx=>' '+ctx.label+': '+fmt(ctx.parsed)+' ('+((ctx.parsed/donutVals.reduce((a,b)=>a+b,0))*100).toFixed(1)+'%)'
+          }}
+        }
+      }
+    });
+
+    /* ── STACKED BAR ── */
+    new Chart(document.getElementById('stackedBar'),{
+      type:'bar',
+      data:{
+        labels:months,
+        datasets:KEYS.map((k,i)=>({
+          label:CATS[i],
+          data:DATA.map(d=>d[k]),
+          backgroundColor:COLORS[i]+'55',
+          borderColor:COLORS[i],
+          borderWidth:1, borderRadius:i===KEYS.length-1?6:0,
+          borderSkipped:false
+        }))
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        animation:{duration:1100},
+        plugins:{
+          legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:9},usePointStyle:true,pointStyleWidth:7}},
+          tooltip:{...TIP, mode:'index', intersect:false, callbacks:{
+            label:ctx=>ctx.parsed.y>0?' '+ctx.dataset.label+': '+fmt(ctx.parsed.y):null,
+            footer:items=>' Total: '+fmt(items.reduce((s,i)=>s+i.parsed.y,0))
+          }}
+        },
+        scales:{
+          x:{stacked:true,ticks:{color:'rgba(255,255,255,0.4)',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},
+          y:{stacked:true,ticks:{color:'rgba(255,255,255,0.4)',font:{size:9},callback:v=>'₨'+K(v)},grid:{color:'rgba(255,255,255,0.04)'}}
+        }
+      }
+    });
+
+    /* ── GROUPED BAR: income vs invested ── */
+    new Chart(document.getElementById('groupedBar'),{
+      type:'bar',
+      data:{
+        labels:months,
+        datasets:[
+          {label:'Income',data:DATA.map(d=>d.income),backgroundColor:'rgba(0,212,255,0.2)',borderColor:'#00d4ff',borderWidth:2,borderRadius:6,borderSkipped:false},
+          {label:'Invested',data:DATA.map(d=>d.totalInvested),backgroundColor:'rgba(0,230,118,0.2)',borderColor:'#00e676',borderWidth:2,borderRadius:6,borderSkipped:false}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        animation:{duration:1100},
+        plugins:{
+          legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:10},usePointStyle:true}},
+          tooltip:{...TIP, callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmt(ctx.parsed.y)}}
+        },
+        scales:{
+          x:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},
+          y:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:9},callback:v=>'₨'+K(v)},grid:{color:'rgba(255,255,255,0.04)'}}
+        }
+      }
+    });
+
+    /* ── POLAR (category totals) ── */
+    new Chart(document.getElementById('polarChart'),{
+      type:'polarArea',
+      data:{
+        labels:donutLabels,
+        datasets:[{
+          data:donutVals,
+          backgroundColor:donutColors.map(c=>c+'44'),
+          borderColor:donutColors, borderWidth:2
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        animation:{duration:1400},
+        scales:{r:{ticks:{display:false},grid:{color:'rgba(255,255,255,0.05)'}}},
+        plugins:{
+          legend:{display:false},
+          tooltip:{...TIP, callbacks:{label:ctx=>' '+ctx.label+': '+fmt(ctx.parsed.r)}}
+        }
+      }
+    });
+
+    /* ── HEATMAP ── */
+    const hmCats = CATS.filter((_,i) => catTotals[i] > 0);
+    const hmKeys = KEYS.filter((_,i) => catTotals[i] > 0);
+    const hmMax  = Math.max(...hmKeys.flatMap(k=>DATA.map(d=>d[k])));
+
+    let hmHtml = `<table class="hm-table"><thead><tr>
+      <th style="text-align:right">Month</th>
+      ${hmCats.map(c=>'<th>'+c+'</th>').join('')}
+      <th>Saving%</th>
+      <th>Total</th>
+    </tr></thead><tbody>`;
+
+    DATA.forEach(d => {
+      const sp = d.savingPct;
+      const badgeCls = sp>=80?'badge-great':sp>=60?'badge-good':sp>=45?'badge-ok':'badge-low';
+      hmHtml += `<tr><td class="month-lbl">${d.month}</td>`;
+      hmKeys.forEach(k => {
+        const v = d[k];
+        const bg = v>0 ? heatColor(v,hmMax) : null;
+        hmHtml += `<td class="hm-cell${v===0?' zero':''}" style="${bg?'background:'+bg+';color:#fff':''}">
+          ${v>0?K(v):'—'}
+        </td>`;
+      });
+      hmHtml += `
+        <td style="text-align:center;padding:0 6px"><span class="saving-badge ${badgeCls}">${sp.toFixed(1)}%</span></td>
+        <td style="text-align:right;padding:0 0 0 6px;font-size:.7em;font-weight:700;color:rgba(255,255,255,0.6)">₨${K(d.totalInvested)}</td>
+      </tr>`;
+    });
+
+    // totals row
+    hmHtml += `<tr style="border-top:1px solid rgba(255,255,255,0.08)">
+      <td class="month-lbl" style="color:rgba(255,255,255,0.6)">TOTAL</td>
+      ${hmKeys.map(k=>`<td class="hm-cell" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7)">₨${K(DATA.reduce((s,d)=>s+d[k],0))}</td>`).join('')}
+      <td style="text-align:center;padding:0 6px"><span class="saving-badge badge-good">${avgSaving.toFixed(1)}%</span></td>
+      <td style="text-align:right;padding:0 0 0 6px;font-size:.7em;font-weight:700;color:var(--c1)">₨${K(totalInvested)}</td>
+    </tr></tbody></table>`;
+
+    document.getElementById('heatmap').innerHTML = hmHtml;
+
+    /* ── saving % bars ── */
+    const maxSP = Math.max(...DATA.map(d=>d.savingPct));
+    const barsEl = document.getElementById('savingBars');
+    barsEl.innerHTML = DATA.map(d => {
+      const sp = d.savingPct;
+      const pct = (sp/maxSP*100).toFixed(1);
+      const col = sp>=80?'#00e676':sp>=60?'#00d4ff':sp>=45?'#ffd700':'#ff4d8d';
+      return `<div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+          <span style="font-size:.68em;color:rgba(255,255,255,0.5)">${d.month}</span>
+          <span style="font-size:.68em;font-weight:700;color:${col}">${sp.toFixed(1)}%</span>
+        </div>
+        <div style="height:6px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden">
+          <div class="saving-bar-fill" data-w="${pct}" style="height:100%;width:0;background:${col};border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1)"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    /* ── insights ── */
+    const insightsEl = document.getElementById('insights');
+    insightsEl.innerHTML = DATA.map(d => {
+      const sp = d.savingPct;
+      const cls = sp>=80?'badge-great':sp>=60?'badge-good':sp>=45?'badge-ok':'badge-low';
+      const note = d.notes && d.notes!=='N/A' && d.notes ? d.notes : null;
+      return `<div style="display:flex;align-items:flex-start;gap:10px;padding:8px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.05)">
+        <span class="saving-badge ${cls}" style="flex-shrink:0;margin-top:1px">${d.month}</span>
+        <div>
+          <div style="font-size:.72em;font-weight:700;color:rgba(255,255,255,0.7)">₨${K(d.totalInvested)} invested &nbsp;·&nbsp; ${sp.toFixed(1)}%</div>
+          ${note?`<div style="font-size:.65em;color:rgba(255,255,255,0.3);margin-top:2px">${note}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+    /* ── animate saving bars ── */
+    setTimeout(()=>{
+      document.querySelectorAll('.saving-bar-fill').forEach(b=>{
+        b.style.width = b.dataset.w+'%';
+      });
+    }, 400);
+  }
+
+  /* ── fetch data ── */
+  window.onload = function() {
+    google.script.run
+      .withSuccessHandler(render)
+      .withFailureHandler(err => {
+        document.getElementById('root').innerHTML =
+          `<div style="text-align:center;padding:80px;color:#ff4d8d;font-size:.9em">⚠️ ${err.message||err}</div>`;
+      })
+      .getMoneyFlowData();
+  };
+  </script>
+</body>
+</html>
