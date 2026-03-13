@@ -57,7 +57,13 @@ function getMoneyFlowData() {
 
     var data = [];
     values.forEach(function(row) {
-      var month = (row[0] || '').toString().trim();
+      var raw = row[0];
+      var month;
+      if (raw instanceof Date && !isNaN(raw.getTime())) {
+        month = Utilities.formatDate(raw, Session.getScriptTimeZone(), "MMM/yyyy");
+      } else {
+        month = (raw || '').toString().trim();
+      }
       if (!month) return; // skip blank/totals rows
       data.push({
         month:         month,
