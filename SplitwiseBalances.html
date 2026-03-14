@@ -295,6 +295,68 @@
       }
       .empty-icon { font-size:3em; margin-bottom:12px; opacity:.5; }
 
+      /* ── transactions section ── */
+      .txn-section { margin-top:24px; animation: fadeUp .6s ease .3s both; }
+      .txn-row {
+        display:flex; align-items:center; gap:12px;
+        padding:10px 14px; border-radius:12px;
+        border:1px solid rgba(255,255,255,.06);
+        background:rgba(255,255,255,.025);
+        transition:background .2s ease;
+        margin-bottom:6px;
+      }
+      .txn-row:hover { background:rgba(255,255,255,.04); }
+      .txn-row.highlight {
+        border-color:rgba(255,215,0,.35);
+        background:rgba(255,215,0,.06);
+        box-shadow:0 0 16px rgba(255,215,0,.08);
+      }
+      .txn-icon { font-size:1.3em; flex-shrink:0; width:28px; text-align:center; }
+      .txn-info { flex:1; min-width:0; }
+      .txn-desc {
+        font-size:.83em; font-weight:600; color:rgba(255,255,255,.8);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      }
+      .txn-date { font-size:.65em; color:rgba(255,255,255,.3); margin-top:2px; }
+      .txn-cost { font-size:.72em; color:rgba(255,255,255,.3); margin-left:auto; flex-shrink:0; white-space:nowrap; }
+      .txn-net {
+        font-size:.88em; font-weight:700; flex-shrink:0;
+        padding:3px 10px; border-radius:7px; white-space:nowrap; min-width:80px; text-align:right;
+      }
+      .txn-net.owed { color:#00e676; background:rgba(0,230,118,.12); }
+      .txn-net.owe  { color:#ff4d6d; background:rgba(255,77,109,.12); }
+      .txn-net.zero { color:rgba(255,255,255,.25); background:rgba(255,255,255,.05); }
+      .txn-badge {
+        font-size:.55em; font-weight:700; letter-spacing:1px;
+        padding:2px 7px; border-radius:5px; flex-shrink:0;
+        text-transform:uppercase;
+      }
+      .txn-badge.payment { background:rgba(168,85,247,.2); color:#a855f7; border:1px solid rgba(168,85,247,.3); }
+      .txn-badge.suspect { background:rgba(255,215,0,.2); color:#ffd700; border:1px solid rgba(255,215,0,.4); }
+
+      /* ── mismatch analysis ── */
+      .analysis-box {
+        margin-bottom:16px; border-radius:14px; padding:16px 20px;
+        background:linear-gradient(135deg,rgba(255,215,0,.07),rgba(255,107,53,.05));
+        border:1px solid rgba(255,215,0,.25);
+        animation: fadeUp .5s ease;
+      }
+      .analysis-title {
+        font-size:.8em; font-weight:700; letter-spacing:2px;
+        text-transform:uppercase; color:#ffd700; margin-bottom:10px;
+        display:flex; align-items:center; gap:8px;
+      }
+      .analysis-body { font-size:.8em; color:rgba(255,255,255,.6); line-height:1.7; }
+      .analysis-body strong { color:#fff; }
+      .analysis-txn-list { margin-top:8px; display:flex; flex-direction:column; gap:4px; }
+      .a-txn {
+        padding:7px 12px; border-radius:8px;
+        background:rgba(255,215,0,.06); border:1px solid rgba(255,215,0,.15);
+        font-size:.78em; color:rgba(255,255,255,.7);
+        display:flex; justify-content:space-between; gap:10px;
+      }
+      .a-txn-amt { font-weight:700; color:#ffd700; }
+
       /* ── animations ── */
       @keyframes slideDown { from{opacity:0;transform:translateY(-18px);}to{opacity:1;transform:translateY(0);} }
       @keyframes fadeUp    { from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);} }
@@ -358,6 +420,32 @@
             </div>
           </div>
         </div>
+      <? } ?>
+
+      <!-- Recent Transactions (always shown after validation banner) -->
+      <? if (recentTransactions && recentTransactions.length > 0) { ?>
+      <div class="txn-section">
+        <div class="section-hdr">Recent Transactions</div>
+        <div id="analysisBox"></div>
+        <div id="txnList">
+          <? for (var ti = 0; ti < recentTransactions.length; ti++) { ?>
+            <? var tx = recentTransactions[ti]; ?>
+            <? var txIcon = tx.isPayment ? '💸' : (tx.paidByMe ? '🧾' : '📋'); ?>
+            <? var txNetCls = tx.myNet > 0 ? 'owed' : (tx.myNet < 0 ? 'owe' : 'zero'); ?>
+            <? var txNetLabel = tx.myNet > 0 ? '+' + tx.myNet.toFixed(2) : (tx.myNet < 0 ? tx.myNet.toFixed(2) : '—'); ?>
+            <div class="txn-row" data-net="<?= tx.myNet ?>" data-currency="<?= tx.currency ?>" data-id="<?= tx.id ?>">
+              <div class="txn-icon"><?= txIcon ?></div>
+              <div class="txn-info">
+                <div class="txn-desc"><?= tx.description ?></div>
+                <div class="txn-date"><?= tx.date ?></div>
+              </div>
+              <div class="txn-cost"><?= tx.currency ?> <?= tx.cost.toFixed(2) ?></div>
+              <? if (tx.isPayment) { ?><span class="txn-badge payment">Payment</span><? } ?>
+              <div class="txn-net <?= txNetCls ?>"><?= txNetLabel ?></div>
+            </div>
+          <? } ?>
+        </div>
+      </div>
       <? } ?>
 
       <!-- Hero Currency Totals -->
@@ -461,6 +549,8 @@
     <script>
       /* ── raw data from GAS ── */
       const RAW = <?!= JSON.stringify(balanceData) ?>;
+      const TRANSACTIONS = <?!= JSON.stringify(recentTransactions) ?>;
+      const VALIDATION = <?!= JSON.stringify(validationResult) ?>;
 
       if (!RAW || RAW.length === 0) {
         document.getElementById('insightsRow') && (document.getElementById('insightsRow').style.display = 'none');
@@ -641,6 +731,87 @@
             }
           }
         });
+      }
+
+      /* ── Mismatch analysis ── */
+      const analysisBox = document.getElementById('analysisBox');
+      if (VALIDATION && !VALIDATION.match && TRANSACTIONS && TRANSACTIONS.length > 0 && analysisBox) {
+        const gap = VALIDATION.difference;
+
+        // Filter LKR transactions with non-zero net
+        const lkrTxns = TRANSACTIONS.filter(t => t.currency === 'LKR' && t.myNet !== 0);
+
+        // Try all non-empty subsets (up to 2^n, n ≤ 15 → fine)
+        const n = lkrTxns.length;
+        const TOL = 15; // tolerance in LKR
+        let bestSubset = null;
+        let bestDiff = Infinity;
+
+        for (let mask = 1; mask < (1 << n); mask++) {
+          let sum = 0;
+          for (let i = 0; i < n; i++) {
+            if (mask & (1 << i)) sum += Math.abs(lkrTxns[i].myNet);
+          }
+          const diff = Math.abs(sum - gap);
+          if (diff < bestDiff) {
+            bestDiff = diff;
+            bestSubset = mask;
+          }
+          if (diff <= TOL) break; // good enough
+        }
+
+        // Highlight rows in the transaction list
+        if (bestSubset !== null && bestDiff <= gap * 0.3) {
+          const suspectIds = new Set();
+          for (let i = 0; i < n; i++) {
+            if (bestSubset & (1 << i)) suspectIds.add(lkrTxns[i].id);
+          }
+
+          document.querySelectorAll('.txn-row').forEach(row => {
+            const id = parseInt(row.dataset.id);
+            if (suspectIds.has(id)) {
+              row.classList.add('highlight');
+              const badge = document.createElement('span');
+              badge.className = 'txn-badge suspect';
+              badge.textContent = 'Suspect';
+              row.insertBefore(badge, row.querySelector('.txn-net'));
+            }
+          });
+
+          // Build analysis box
+          const subsetTxns = [];
+          for (let i = 0; i < n; i++) {
+            if (bestSubset & (1 << i)) subsetTxns.push(lkrTxns[i]);
+          }
+          const subsetSum = subsetTxns.reduce((s,t) => s + Math.abs(t.myNet), 0);
+
+          analysisBox.innerHTML = `
+            <div class="analysis-box">
+              <div class="analysis-title">🔍 Mismatch Analysis &nbsp;·&nbsp; Gap: ${gap.toFixed(2)} LKR</div>
+              <div class="analysis-body">
+                Found <strong>${subsetTxns.length} transaction${subsetTxns.length>1?'s':''}</strong>
+                that likely account for the difference
+                (combined: <strong>${subsetSum.toFixed(2)} LKR</strong>,
+                deviation: <strong>${bestDiff.toFixed(2)} LKR</strong>):
+                <div class="analysis-txn-list">
+                  ${subsetTxns.map(t => `
+                    <div class="a-txn">
+                      <span>${t.description} · ${t.date}</span>
+                      <span class="a-txn-amt">${t.myNet > 0 ? '+' : ''}${t.myNet.toFixed(2)} LKR</span>
+                    </div>`).join('')}
+                </div>
+              </div>
+            </div>`;
+        } else {
+          analysisBox.innerHTML = `
+            <div class="analysis-box">
+              <div class="analysis-title">🔍 Mismatch Analysis &nbsp;·&nbsp; Gap: ${gap.toFixed(2)} LKR</div>
+              <div class="analysis-body">
+                No single combination of these recent transactions fully explains the gap.
+                The difference may involve older transactions or entries not yet reflected in the sheet.
+              </div>
+            </div>`;
+        }
       }
     </script>
   </body>

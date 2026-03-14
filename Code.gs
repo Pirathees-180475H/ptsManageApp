@@ -451,72 +451,85 @@ function getSplitwiseData() {
 
 function getFriendBalances() {
   const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
-  const url = 'https://secure.splitwise.com/api/v3.0/get_friends';
-  
-  const options = {
-    'method': 'get',
-    'headers': {
-      'Authorization': 'Bearer ' + apiKey
-    }
-  };
-  
+  const headers = { 'Authorization': 'Bearer ' + apiKey };
+  const opts = { method: 'get', headers: headers };
+
   try {
-    const response = UrlFetchApp.fetch(url, options);
-    const data = JSON.parse(response.getContentText());
-    const friends = data.friends;
-    
-    // Prepare data and track totals by currency
+    // ── 1. Friend balances ──
+    const friendsResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_friends', opts);
+    const friends = JSON.parse(friendsResp.getContentText()).friends;
+
     const balanceData = [];
-    const totals = {}; // Track totals by currency
-    
+    const totals = {};
+
     friends.forEach(friend => {
-      const fullName = `${friend.first_name} ${friend.last_name || ''}`.trim();
-      
+      const fullName = (friend.first_name + ' ' + (friend.last_name || '')).trim();
       friend.balance.forEach(bal => {
         const amount = parseFloat(bal.amount);
         const currency = bal.currency_code;
-        
-
-        const adjustedAmount = amount;
-        
-        let status = '';
-        if (adjustedAmount < 0) {
-          status = 'I need to pay';
-        } else if (adjustedAmount > 0) {
-          status = 'They need to pay';
-        } else {
-          status = 'Settled up';
-        }
-        
         balanceData.push({
           name: fullName,
-          amount: adjustedAmount,
+          amount: amount,
           currency: currency,
-          status: status
+          status: amount < 0 ? 'I need to pay' : amount > 0 ? 'They need to pay' : 'Settled up'
         });
-        
-        // Add to totals
-        if (!totals[currency]) {
-          totals[currency] = 0;
-        }
-        totals[currency] += adjustedAmount;
+        totals[currency] = (totals[currency] || 0) + amount;
       });
     });
-    
-    // Get the sheet balance for validation
+
+    // ── 2. Current user ID (needed to compute per-expense net balance) ──
+    var currentUserId = null;
+    try {
+      const meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', opts);
+      currentUserId = JSON.parse(meResp.getContentText()).user.id;
+    } catch(e) {}
+
+    // ── 3. Recent 10 expenses ──
+    var recentTransactions = [];
+    try {
+      const expResp = UrlFetchApp.fetch(
+        'https://secure.splitwise.com/api/v3.0/get_expenses?limit=15&offset=0', opts);
+      const expenses = JSON.parse(expResp.getContentText()).expenses;
+
+      recentTransactions = expenses
+        .filter(function(e) { return !e.deleted_at; })
+        .slice(0, 10)
+        .map(function(e) {
+          var myNet = 0;
+          var paidByMe = false;
+          if (currentUserId) {
+            var myUser = null;
+            for (var i = 0; i < e.users.length; i++) {
+              if (e.users[i].user_id === currentUserId) { myUser = e.users[i]; break; }
+            }
+            if (myUser) {
+              myNet = parseFloat(myUser.net_balance || 0);
+              paidByMe = parseFloat(myUser.paid_share || 0) > 0;
+            }
+          }
+          return {
+            id: e.id,
+            description: e.description || '(no description)',
+            date: Utilities.formatDate(new Date(e.date), Session.getScriptTimeZone(), 'dd MMM yyyy'),
+            cost: parseFloat(e.cost),
+            currency: e.currency_code,
+            myNet: myNet,        // +ve = owed to me, -ve = I owe
+            paidByMe: paidByMe,
+            isPayment: e.payment === true
+          };
+        });
+    } catch(e) {}
+
+    // ── 4. Validate LKR ──
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('CC_SW_CL_INST');
-    const sheetBalanceCell = 'C44'; // Change this to your actual cell reference
-    const sheetBalance = sheet.getRange(sheetBalanceCell).getValue();
-    
-    // Validate LKR balance
+    const sheetBalance = sheet.getRange('C44').getValue();
     const lkrTotal = totals['LKR'] || 0;
     const validationResult = validateBalance(lkrTotal, sheetBalance);
-    
-    // Show modal with data and validation
-    showBalanceModal(balanceData, totals, validationResult, sheetBalance);
-    
+
+    showBalanceModal(balanceData, totals, validationResult, sheetBalance, recentTransactions);
+
   } catch (error) {
-    //SpreadsheetApp.getUi().alert('Error: ' + error.toString());
+    // silent fail
   }
 }
 
@@ -543,22 +556,21 @@ function validateBalance(splitwiseAmount, sheetAmount) {
   };
 }
 
-function showBalanceModal(balanceData, totals, validationResult, sheetBalance) {
-
+function showBalanceModal(balanceData, totals, validationResult, sheetBalance, recentTransactions) {
   try {
-      var html = HtmlService.createTemplateFromFile('SplitwiseBalances');
-      html.balanceData = balanceData;
-      html.totals = totals;
-      html.validationResult = validationResult;
-      html.sheetBalance = sheetBalance;
-      
-      var htmlOutput = html.evaluate()
-        .setWidth(1400)
-        .setHeight(800);
+    var html = HtmlService.createTemplateFromFile('SplitwiseBalances');
+    html.balanceData = balanceData;
+    html.totals = totals;
+    html.validationResult = validationResult;
+    html.sheetBalance = sheetBalance;
+    html.recentTransactions = recentTransactions || [];
+
+    var htmlOutput = html.evaluate()
+      .setWidth(1400)
+      .setHeight(900);
     SpreadsheetApp.getUi().showModalDialog(htmlOutput, '💰 Splitwise Balances');
-    SpreadsheetApp.getUi().showModalDialog(html, '💳 Credit Card Dashboard');
   } catch (error) {
-    // Silent fail on mobile
+    // Silent fail
   }
 }
 
