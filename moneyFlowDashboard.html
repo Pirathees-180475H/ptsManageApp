@@ -200,7 +200,77 @@
     @media(max-width:900px){
       .kpi-row{grid-template-columns:repeat(3,1fr);}
       .row-2,.row-3,.row-2b{grid-template-columns:1fr;}
+      .plan-cards{grid-template-columns:repeat(2,1fr);}
     }
+
+    /* ── Current Month Plan ── */
+    .plan-section { margin-bottom:18px; animation:fadeUp .4s ease both; }
+    .plan-hdr {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:14px; flex-wrap:wrap; gap:10px;
+    }
+    .plan-hdr-left { display:flex; flex-direction:column; gap:4px; }
+    .plan-chip {
+      display:inline-block; padding:4px 14px; border-radius:20px;
+      background:rgba(0,230,118,0.1); border:1px solid rgba(0,230,118,0.3);
+      color:#00e676; font-size:.63em; font-weight:700;
+      letter-spacing:2.5px; text-transform:uppercase;
+    }
+    .plan-title {
+      font-size:1.05em; font-weight:800; letter-spacing:-.5px; color:#fff;
+    }
+    .save-all-btn {
+      background:linear-gradient(135deg,rgba(0,230,118,.12),rgba(0,230,118,.05));
+      border:1px solid rgba(0,230,118,.35); color:#00e676;
+      padding:9px 20px; border-radius:10px; font-size:.75em; font-weight:700;
+      cursor:pointer; transition:all .2s ease; font-family:'Inter',sans-serif;
+      letter-spacing:.5px;
+    }
+    .save-all-btn:hover { background:rgba(0,230,118,.2); box-shadow:0 0 18px rgba(0,230,118,.2); }
+    .save-all-btn:disabled { opacity:.5; cursor:not-allowed; }
+    .plan-cards {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px;
+    }
+    .plan-card {
+      border-radius:16px; padding:16px; border:2px solid;
+      backdrop-filter:blur(20px); transition:transform .2s ease;
+      position:relative; overflow:hidden;
+    }
+    .plan-card:hover { transform:translateY(-3px); }
+    .plan-card.color-blue   { background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(0,212,255,.04)); border-color:rgba(0,212,255,.4); }
+    .plan-card.color-yellow { background:linear-gradient(135deg,rgba(255,215,0,.1),rgba(255,215,0,.04)); border-color:rgba(255,215,0,.4); }
+    .plan-card.color-red    { background:linear-gradient(135deg,rgba(255,77,141,.1),rgba(255,77,141,.04)); border-color:rgba(255,77,141,.4); }
+    .plan-card.color-green  { background:linear-gradient(135deg,rgba(0,230,118,.1),rgba(0,230,118,.04)); border-color:rgba(0,230,118,.4); }
+    .plan-dirty-dot {
+      position:absolute; top:10px; right:10px;
+      width:7px; height:7px; border-radius:50%;
+      background:rgba(255,255,255,.15); transition:background .2s;
+    }
+    .plan-dirty-dot.dirty { background:#ffd700; box-shadow:0 0 6px #ffd700; }
+    .plan-dirty-dot.saved { background:#00e676; box-shadow:0 0 6px #00e676; }
+    .plan-cat-name { font-size:.88em; font-weight:800; color:#fff; margin-bottom:2px; }
+    .plan-amount   { font-size:.68em; color:rgba(255,255,255,.4); margin-bottom:12px; }
+    .plan-input {
+      width:100%; background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.1); border-radius:8px;
+      color:#fff; padding:7px 10px; font-size:.74em;
+      font-family:'Inter',sans-serif; outline:none;
+      transition:border-color .2s; margin-bottom:10px;
+    }
+    .plan-input:focus { border-color:rgba(255,255,255,.28); background:rgba(255,255,255,.09); }
+    .plan-colors { display:flex; gap:7px; align-items:center; }
+    .plan-colors-label { font-size:.58em; color:rgba(255,255,255,.25); margin-right:2px; text-transform:uppercase; letter-spacing:1px; }
+    .clr-btn {
+      width:18px; height:18px; border-radius:50%; cursor:pointer;
+      transition:transform .15s, box-shadow .15s;
+      border:2px solid transparent; flex-shrink:0;
+    }
+    .clr-btn:hover { transform:scale(1.25); }
+    .clr-btn.active { border-color:rgba(255,255,255,.9); box-shadow:0 0 8px rgba(255,255,255,.3); }
+    .clr-btn.blue   { background:#00d4ff; }
+    .clr-btn.yellow { background:#ffd700; }
+    .clr-btn.red    { background:#ff4d8d; }
+    .clr-btn.green  { background:#00e676; }
   </style>
 </head>
 <body>
@@ -298,6 +368,18 @@
         <div class="header-chip">📊 Live · Money Flow</div>
         <h1>Investment Flow Dashboard</h1>
         <div class="header-sub">Your complete investment history at a glance</div>
+      </div>
+
+      <!-- Current Month Plan -->
+      <div class="plan-section glass" id="planSection">
+        <div class="plan-hdr">
+          <div class="plan-hdr-left">
+            <span class="plan-chip">📅 Current Month</span>
+            <div class="plan-title" id="planTitle">Investment Plan</div>
+          </div>
+          <button class="save-all-btn" id="saveAllBtn" onclick="saveAllPlan()">💾 Save All</button>
+        </div>
+        <div class="plan-cards" id="planCards"></div>
       </div>
 
       <!-- KPI Row -->
@@ -650,6 +732,106 @@
         b.style.width = b.dataset.w+'%';
       });
     }, 400);
+
+    /* ── init plan section ── */
+    initPlan(DATA);
+  }
+
+  /* ── Plan Section ── */
+  const EMOJIS = {'cal':'🏦','ndb':'🏛️','binance':'₿','stock':'📊','fd':'🔒','gold':'🥇','sentHome':'🏠'};
+  let planState = {};
+  let _planMonthStr = '';
+
+  function initPlan(DATA) {
+    const cur = DATA[DATA.length - 1];
+    _planMonthStr = cur.month;
+    document.getElementById('planTitle').textContent = cur.month + ' · Investment Plan';
+
+    const notesRaw = cur.notes || '';
+    let savedState = {};
+    if (notesRaw.trim().startsWith('{')) {
+      try { savedState = JSON.parse(notesRaw); } catch(e) { savedState = {}; }
+    }
+
+    planState = {};
+    const cards = [];
+    KEYS.forEach((k, i) => {
+      const s = savedState[k] || { text: '', color: 'blue' };
+      planState[k] = { text: s.text || '', color: s.color || 'blue' };
+      cards.push({ key: k, cat: CATS[i], val: cur[k] });
+    });
+
+    document.getElementById('planCards').innerHTML = cards.map(c => {
+      const s = planState[c.key];
+      const clrs = ['blue','yellow','red','green'];
+      const clrBtns = clrs.map(cl =>
+        `<div class="clr-btn ${cl}${s.color===cl?' active':''}" title="${cl}" onclick="setPlanColor('${c.key}','${cl}')"></div>`
+      ).join('');
+      const safeVal = s.text.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+      return `<div class="plan-card color-${s.color}" id="pc-${c.key}">
+        <div class="plan-dirty-dot${s.text||s.color!=='blue'?' saved':''}" id="pd-${c.key}"></div>
+        <div class="plan-cat-name">${EMOJIS[c.key]||''} ${c.cat}</div>
+        <div class="plan-amount">${c.val > 0 ? '₨' + c.val.toLocaleString('en-IN') : '<span style="color:rgba(255,107,53,.7);font-weight:700;letter-spacing:1px">NTM</span>'}</div>
+        <input type="text" class="plan-input" id="pi-${c.key}"
+               placeholder="e.g. Done, Pending, Waiting…"
+               value="${safeVal}"
+               oninput="onPlanInput('${c.key}')">
+        <div class="plan-colors">
+          <span class="plan-colors-label">Color</span>
+          ${clrBtns}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function onPlanInput(key) {
+    planState[key].text = document.getElementById('pi-'+key).value;
+    markDirty(key);
+  }
+
+  function setPlanColor(key, color) {
+    planState[key].color = color;
+    const card = document.getElementById('pc-'+key);
+    card.className = 'plan-card color-' + color;
+    card.querySelectorAll('.clr-btn').forEach(b => {
+      b.classList.toggle('active', b.classList.contains(color));
+    });
+    markDirty(key);
+  }
+
+  function markDirty(key) {
+    const dot = document.getElementById('pd-'+key);
+    if (dot) { dot.className = 'plan-dirty-dot dirty'; }
+  }
+
+  function saveAllPlan() {
+    const btn = document.getElementById('saveAllBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Saving…';
+
+    // Sync text inputs into state
+    Object.keys(planState).forEach(k => {
+      const el = document.getElementById('pi-'+k);
+      if (el) planState[k].text = el.value;
+    });
+
+    const jsonStr = JSON.stringify(planState);
+    google.script.run
+      .withSuccessHandler(() => {
+        btn.disabled = false;
+        btn.textContent = '✅ Saved!';
+        Object.keys(planState).forEach(k => {
+          const dot = document.getElementById('pd-'+k);
+          if (dot) dot.className = 'plan-dirty-dot saved';
+        });
+        setTimeout(() => { btn.textContent = '💾 Save All'; }, 2200);
+      })
+      .withFailureHandler(err => {
+        btn.disabled = false;
+        btn.textContent = '❌ Failed – try again';
+        setTimeout(() => { btn.textContent = '💾 Save All'; }, 2500);
+      })
+      .saveMoneyFlowItemStatus(_planMonthStr, jsonStr);
   }
 
   /* ── fetch data ── */

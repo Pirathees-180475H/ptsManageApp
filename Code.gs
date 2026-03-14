@@ -87,6 +87,35 @@ function getMoneyFlowData() {
   }
 }
 
+function saveMoneyFlowItemStatus(monthStr, jsonString) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Money Flow and invest');
+    if (!sheet) throw new Error('Sheet "Money Flow and invest" not found');
+
+    var lastRow = sheet.getLastRow();
+    var values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+
+    for (var i = 0; i < values.length; i++) {
+      var raw = values[i][0];
+      var month;
+      if (raw instanceof Date && !isNaN(raw.getTime())) {
+        month = Utilities.formatDate(raw, Session.getScriptTimeZone(), "MMM/yyyy");
+      } else {
+        month = (raw || '').toString().trim();
+      }
+      if (month === monthStr) {
+        sheet.getRange(i + 2, 12).setValue(jsonString);
+        SpreadsheetApp.flush();
+        return { success: true };
+      }
+    }
+    throw new Error('Month "' + monthStr + '" not found in sheet');
+  } catch (error) {
+    throw new Error('Failed to save status: ' + error.message);
+  }
+}
+
 function showCreditCardSummary() {
   try {
     var html = HtmlService.createHtmlOutputFromFile('showCreditCardSummary')
