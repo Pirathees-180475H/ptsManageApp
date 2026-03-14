@@ -200,6 +200,58 @@
     @media(max-width:900px){
       .kpi-row{grid-template-columns:repeat(3,1fr);}
       .row-2,.row-3,.row-2b{grid-template-columns:1fr;}
+      .plan-cards{grid-template-columns:repeat(2,1fr);}
+    }
+
+    /* ── Current Month Plan ── */
+    .plan-section { margin-bottom:18px; animation:fadeUp .4s ease both; }
+    .plan-hdr {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:14px; flex-wrap:wrap; gap:8px;
+    }
+    .plan-chip {
+      display:inline-block; padding:4px 14px; border-radius:20px;
+      background:rgba(0,230,118,0.1); border:1px solid rgba(0,230,118,0.3);
+      color:#00e676; font-size:.63em; font-weight:700;
+      letter-spacing:2.5px; text-transform:uppercase;
+    }
+    .plan-month-label {
+      font-size:1.05em; font-weight:800; letter-spacing:-.5px; color:#fff; margin-top:3px;
+    }
+    .plan-cards {
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px;
+      margin-bottom:12px;
+    }
+    .plan-card {
+      border-radius:14px; padding:14px 16px; border:1px solid;
+      backdrop-filter:blur(20px); position:relative; overflow:hidden;
+    }
+    .plan-card.invested {
+      background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(0,212,255,.03));
+      border-color:rgba(0,212,255,.3);
+    }
+    .plan-card.ntm {
+      background:linear-gradient(135deg,rgba(255,107,53,.07),rgba(255,107,53,.02));
+      border-color:rgba(255,107,53,.25);
+    }
+    .pc-emoji { font-size:1.3em; margin-bottom:6px; display:block; }
+    .pc-name  { font-size:.75em; font-weight:700; color:rgba(255,255,255,.6); letter-spacing:.5px; margin-bottom:4px; }
+    .pc-amount {
+      font-size:1.05em; font-weight:800; letter-spacing:-.5px;
+    }
+    .pc-amount.has-val { color:#00d4ff; text-shadow:0 0 16px rgba(0,212,255,.3); }
+    .pc-amount.is-ntm  { color:rgba(255,107,53,.8); font-size:.75em; font-weight:700; letter-spacing:2px; }
+    .plan-notes-strip {
+      display:flex; align-items:center; gap:10px;
+      padding:10px 16px; border-radius:10px;
+      background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.07);
+    }
+    .pn-label {
+      font-size:.6em; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+      color:rgba(255,255,255,.3); white-space:nowrap; flex-shrink:0;
+    }
+    .pn-text {
+      font-size:.78em; color:rgba(255,255,255,.55); font-style:italic;
     }
   </style>
 </head>
@@ -298,6 +350,18 @@
         <div class="header-chip">📊 Live · Money Flow</div>
         <h1>Investment Flow Dashboard</h1>
         <div class="header-sub">Your complete investment history at a glance</div>
+      </div>
+
+      <!-- Current Month Plan -->
+      <div class="plan-section glass" id="planSection">
+        <div class="plan-hdr">
+          <div>
+            <span class="plan-chip">📅 Current Month</span>
+            <div class="plan-month-label" id="planTitle">Investment Plan</div>
+          </div>
+        </div>
+        <div class="plan-cards" id="planCards"></div>
+        <div class="plan-notes-strip" id="planNotes" style="display:none"></div>
       </div>
 
       <!-- KPI Row -->
@@ -650,6 +714,36 @@
         b.style.width = b.dataset.w+'%';
       });
     }, 400);
+
+    /* ── init plan section ── */
+    initPlan(DATA);
+  }
+
+  /* ── Plan Section (read-only) ── */
+  const EMOJIS = {'cal':'🏦','ndb':'🏛️','binance':'₿','stock':'📊','fd':'🔒','gold':'🥇','sentHome':'🏠'};
+
+  function initPlan(DATA) {
+    const cur = DATA[DATA.length - 1];
+    document.getElementById('planTitle').textContent = cur.month + ' · Investment Plan';
+
+    // Cards
+    document.getElementById('planCards').innerHTML = KEYS.map((k, i) => {
+      const val = cur[k];
+      const isNTM = val <= 0;
+      return `<div class="plan-card ${isNTM ? 'ntm' : 'invested'}">
+        <span class="pc-emoji">${EMOJIS[k] || '💼'}</span>
+        <div class="pc-name">${CATS[i]}</div>
+        <div class="pc-amount ${isNTM ? 'is-ntm' : 'has-val'}">${isNTM ? 'NTM' : '₨' + val.toLocaleString('en-IN')}</div>
+      </div>`;
+    }).join('');
+
+    // Notes strip (L column)
+    const notes = cur.notes || '';
+    const notesEl = document.getElementById('planNotes');
+    if (notes && notes.trim()) {
+      notesEl.style.display = 'flex';
+      notesEl.innerHTML = `<span class="pn-label">📝 Notes</span><span class="pn-text">${notes}</span>`;
+    }
   }
 
   /* ── fetch data ── */
