@@ -20,6 +20,9 @@ function onEdit(e) {
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'F1') {
     showInvestFlow();
   }
+  if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'G1') {
+    showExpenseDashboard();
+  }
 
 }
 
@@ -666,6 +669,72 @@ function logMonthlyEarnings() {
   sheet.getRange(startRow, 1, existing.length, 7).setValues(existing);
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// MONTHLY EXPENSE DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+
+function showExpenseDashboard() {
+  try {
+    var html = HtmlService.createHtmlOutputFromFile('expenseDashboard')
+      .setWidth(1600)
+      .setHeight(1000);
+    SpreadsheetApp.getUi().showModalDialog(html, '📊 Monthly Expense Dashboard');
+  } catch (error) {
+    // silent fail
+  }
+}
+
+function getExpenseData() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) throw new Error('Sheet "Monthly Expences" not found');
+
+    // ── Row 6: month headers (cols A onward, fixed 30-col window) ─
+    // Col A = "Category", then month names, last meaningful col = "TOTAL"
+    var headerRow = sheet.getRange(6, 1, 1, 30).getValues()[0];
+    var monthCols = []; // [{label, colIndex}]  colIndex = 0-based in this array
+    for (var c = 1; c < headerRow.length; c++) {
+      var h = (headerRow[c] || '').toString().trim();
+      if (!h) continue;                          // blank — past the data
+      if (h.toUpperCase() === 'TOTAL') continue; // skip grand-total column
+      monthCols.push({ label: h, colIndex: c });
+    }
+
+    // ── Rows 7–17: 10 category rows + 1 Total row ────────────────
+    // Read exactly 11 rows, same 30-col window so indices align
+    var tableData = sheet.getRange(7, 1, 11, 30).getValues();
+    var categories    = [];
+    var monthlyTotals = monthCols.map(function() { return 0; });
+
+    tableData.forEach(function(row) {
+      var catName = (row[0] || '').toString().trim();
+      if (!catName) return; // skip blank rows
+
+      var vals = monthCols.map(function(mc) {
+        return parseFloat(row[mc.colIndex]) || 0;
+      });
+
+      // Row 17 label contains "total" (case-insensitive)
+      if (catName.toLowerCase().indexOf('total') >= 0) {
+        monthlyTotals = vals;
+      } else {
+        categories.push({ name: catName, values: vals });
+      }
+    });
+
+    return {
+      months:        monthCols.map(function(m) { return m.label; }),
+      monthlyTotals: monthlyTotals,
+      categories:    categories,
+      latestMonth:   monthCols.length > 0 ? monthCols[monthCols.length - 1].label : ''
+    };
+
+  } catch (error) {
+    throw new Error('Failed to load expense data: ' + error.message);
+  }
+}
 
 function showInvestmentDashboard() {
   const html = HtmlService.createHtmlOutputFromFile("investmentDashboard")

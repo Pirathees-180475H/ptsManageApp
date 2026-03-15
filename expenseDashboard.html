@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Monthly Expense Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+  :root {
+    --bg:    #0a0e1a;
+    --glass: rgba(255,255,255,0.04);
+    --bdr:   rgba(255,255,255,0.08);
+    --acc:   #6366f1; --acc2: #8b5cf6;
+    --grn:   #10b981; --red: #ef4444;
+    --amb:   #f59e0b; --cyn: #06b6d4;
+    --t1:    #f1f5f9; --t2: #94a3b8; --t3: #475569;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh;overflow-x:hidden;position:relative}
+  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(rgba(99,102,241,.12) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0}
+  .orb{position:fixed;border-radius:50%;filter:blur(80px);opacity:.18;pointer-events:none;z-index:0;animation:drift 20s ease-in-out infinite alternate}
+  .orb1{width:500px;height:500px;background:#6366f1;top:-200px;left:-100px;animation-duration:18s}
+  .orb2{width:400px;height:400px;background:#8b5cf6;bottom:-100px;right:-100px;animation-duration:22s;animation-delay:-5s}
+  .orb3{width:300px;height:300px;background:#06b6d4;top:40%;left:55%;animation-duration:16s;animation-delay:-8s}
+  @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(40px,30px) scale(1.08)}}
+  .page{position:relative;z-index:1;max-width:1560px;margin:0 auto;padding:24px 20px 40px}
+
+  /* header */
+  .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+  .hdr h1{font-size:22px;font-weight:700}
+  .hdr p{font-size:13px;color:var(--t2);margin-top:3px}
+  .badge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;
+    background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 0 16px rgba(99,102,241,.4)}
+
+  /* loader */
+  .loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:80px 0}
+  .spinner{width:48px;height:48px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* KPI strip */
+  .kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
+  .kpi{border-radius:14px;padding:16px 18px;background:var(--glass);border:1px solid var(--bdr);
+    backdrop-filter:blur(12px);position:relative;overflow:hidden}
+  .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+  .kpi.c0::before{background:linear-gradient(90deg,var(--acc),var(--acc2))}
+  .kpi.c1::before{background:linear-gradient(90deg,var(--cyn),#0ea5e9)}
+  .kpi.c2::before{background:linear-gradient(90deg,var(--amb),#fb923c)}
+  .kpi.c3::before{background:linear-gradient(90deg,var(--grn),#34d399)}
+  .kpi.c4::before{background:linear-gradient(90deg,#f97316,var(--amb))}
+  .kpi.c5::before{background:linear-gradient(90deg,#ec4899,#f43f5e)}
+  .kpi-lbl{font-size:11px;font-weight:500;color:var(--t2);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+  .kpi-val{font-size:20px;font-weight:700;letter-spacing:-.5px}
+  .kpi-sub{font-size:11px;color:var(--t2);margin-top:4px}
+  .delta{font-size:11px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:6px;display:inline-block}
+  .delta.up{background:rgba(239,68,68,.15);color:var(--red)}
+  .delta.dn{background:rgba(16,185,129,.15);color:var(--grn)}
+  .delta.nt{background:rgba(148,163,184,.1);color:var(--t2)}
+
+  /* pills */
+  .pills{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+  .pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;
+    background:var(--glass);border:1px solid var(--bdr);backdrop-filter:blur(8px)}
+  .pill em{color:var(--t2);font-style:normal;margin-right:4px}
+  .pill.warn strong{color:var(--amb)}
+  .pill.good strong{color:var(--grn)}
+  .pill.bad  strong{color:var(--red)}
+  .pill.info strong{color:var(--cyn)}
+  .pill.pur  strong{color:var(--acc2)}
+
+  /* chart grid */
+  .row{display:grid;gap:16px;margin-bottom:16px}
+  .r3{grid-template-columns:repeat(3,1fr)}
+  .r2{grid-template-columns:repeat(2,1fr)}
+  .r1{grid-template-columns:1fr}
+  .r21{grid-template-columns:2fr 1fr}
+  .cbox{border-radius:16px;padding:18px 18px 14px;background:var(--glass);border:1px solid var(--bdr);backdrop-filter:blur(12px)}
+  .ctitle{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px}
+  .csub{font-size:11px;color:var(--t2);margin-bottom:14px}
+  .cwrap canvas{max-height:230px}
+  .cwrap.tall canvas{max-height:280px}
+
+  /* insights */
+  .ig{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+  .ic{border-radius:14px;padding:16px;background:var(--glass);border:1px solid var(--bdr);backdrop-filter:blur(10px)}
+  .ic-ico{font-size:22px;margin-bottom:8px}
+  .ic-lbl{font-size:11px;color:var(--t2);font-weight:500;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+  .ic-val{font-size:16px;font-weight:700}
+  .ic-val.good{color:var(--grn)} .ic-val.bad{color:var(--red)} .ic-val.warn{color:var(--amb)}
+  .ic-val.info{color:var(--cyn)} .ic-val.pur{color:var(--acc2)}
+  .ic-desc{font-size:11px;color:var(--t2);margin-top:4px;line-height:1.5}
+
+  /* error */
+  .err{text-align:center;padding:48px;color:var(--red)}
+  .err-ico{font-size:40px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+<div class="page">
+  <div class="hdr">
+    <div>
+      <h1>📊 Monthly Expense Dashboard</h1>
+      <p id="sub">Loading…</p>
+    </div>
+    <div class="badge" id="badge">–</div>
+  </div>
+  <div id="root">
+    <div class="loader"><div class="spinner"></div><p style="color:var(--t2);font-size:13px">Fetching data…</p></div>
+  </div>
+</div>
+
+<script>
+// ── Category colours ─────────────────────────────────────────────
+const CAT_COLORS = {
+  'Food':'#f59e0b','Super market':'#10b981','Uber':'#6366f1',
+  'Uber Work':'#8b5cf6','Movies & outing':'#ec4899','Other Expences':'#f97316',
+  'Bus Fair':'#06b6d4','Party':'#ef4444','Dress and Appearance':'#84cc16','Rent':'#64748b'
+};
+const FALLBACK = ['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981','#ec4899','#f97316','#ef4444','#84cc16','#64748b'];
+const cc = (name,i) => CAT_COLORS[name] || FALLBACK[i % FALLBACK.length];
+
+// ── Formatters ───────────────────────────────────────────────────
+const sl = s => { // "JUNE 2025" → "Jun '25"
+  const p = s.trim().split(/\s+/);
+  if (p.length < 2) return s.substring(0,6);
+  let m = p[0].substring(0,3);
+  if (m.toUpperCase()==='OTC') m='Oct';
+  return m+" '"+p[p.length-1].substring(2);
+};
+const f  = n => n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':Math.round(n).toLocaleString('en-IN');
+const fr = n => '₨ '+Math.round(n).toLocaleString('en-IN');
+
+// ── Chart defaults ───────────────────────────────────────────────
+Chart.defaults.color='#94a3b8';
+Chart.defaults.font.family="'Inter',sans-serif";
+Chart.defaults.font.size=11;
+const GC='rgba(255,255,255,0.05)', TC='#475569';
+const sc = (stacked) => ({
+  x:{grid:{color:GC},ticks:{color:TC,maxRotation:35},stacked:!!stacked},
+  y:{grid:{color:GC},ticks:{color:TC,callback:v=>'₨'+f(v)},stacked:!!stacked}
+});
+const LEG={labels:{color:'#94a3b8',boxWidth:10,padding:14,font:{size:11}}};
+
+// ── Build ─────────────────────────────────────────────────────────
+function build(D) {
+  const months = D.months;
+  const totals = D.monthlyTotals;
+  const cats   = D.categories;
+  const latest = D.latestMonth;
+  const labels = months.map(sl);
+  const n      = months.length;
+  const li     = n - 1;
+
+  // ── Derived ─────────────────────────────────────────────────────
+  const cur      = totals[li]  || 0;
+  const prev     = totals[li-1]|| 0;
+  const mom      = prev>0 ? (cur-prev)/prev*100 : 0;
+  const avg      = totals.reduce((a,b)=>a+b,0)/(n||1);
+  const bestI    = totals.indexOf(Math.min(...totals));
+  const worstI   = totals.indexOf(Math.max(...totals));
+
+  // per-category current month, sorted desc
+  const catCur  = cats.map((c,i)=>({name:c.name,val:c.values[li]||0,i})).sort((a,b)=>b.val-a.val);
+  const topCat  = catCur[0]||{name:'–',val:0};
+  const rentObj = cats.find(c=>c.name.toLowerCase()==='rent');
+  const rentVal = rentObj ? rentObj.values[li]||0 : 0;
+  const varSpd  = cur - rentVal;
+  const rentPct = cur>0 ? rentVal/cur*100 : 0;
+
+  const foodObj = cats.find(c=>c.name.toLowerCase()==='food');
+  const foodVal = foodObj ? foodObj.values[li]||0 : 0;
+  const foodPct = cur>0 ? foodVal/cur*100 : 0;
+
+  const discNames=['movies & outing','party','dress and appearance'];
+  const discVal = cats.filter(c=>discNames.includes(c.name.toLowerCase())).reduce((s,c)=>s+(c.values[li]||0),0);
+  const discPct = cur>0 ? discVal/cur*100 : 0;
+
+  // MoM changes array
+  const momArr = totals.map((v,i)=>i===0?0:v-totals[i-1]);
+
+  // All-time category totals, sorted
+  const catAll = cats.map((c,i)=>({name:c.name,tot:c.values.reduce((s,v)=>s+v,0),i})).sort((a,b)=>b.tot-a.tot);
+
+  // Transport
+  const transVal = ['uber','uber work','bus fair'].reduce((s,n)=>{
+    const c=cats.find(x=>x.name.toLowerCase()===n); return s+(c?c.values[li]||0:0);
+  },0);
+
+  // ── Render skeleton ─────────────────────────────────────────────
+  document.getElementById('sub').textContent = `${n} months tracked · Latest: ${latest}`;
+  document.getElementById('badge').textContent = latest;
+
+  document.getElementById('root').innerHTML = `
+  <div class="kpi-strip">
+    <div class="kpi c0">
+      <div class="kpi-lbl">Current Month</div>
+      <div class="kpi-val">${fr(cur)}</div>
+      <div class="delta ${mom>5?'up':mom<-5?'dn':'nt'}">${mom>=0?'▲':'▼'} ${Math.abs(mom).toFixed(1)}% MoM</div>
+    </div>
+    <div class="kpi c1">
+      <div class="kpi-lbl">Avg Monthly</div>
+      <div class="kpi-val">${fr(avg)}</div>
+      <div class="kpi-sub">Over ${n} months</div>
+    </div>
+    <div class="kpi c2">
+      <div class="kpi-lbl">Top Category</div>
+      <div class="kpi-val" style="font-size:15px">${topCat.name}</div>
+      <div class="kpi-sub">${fr(topCat.val)} this month</div>
+    </div>
+    <div class="kpi c3">
+      <div class="kpi-lbl">Best Month</div>
+      <div class="kpi-val" style="font-size:15px">${sl(months[bestI]||'–')}</div>
+      <div class="kpi-sub">${fr(totals[bestI]||0)}</div>
+    </div>
+    <div class="kpi c4">
+      <div class="kpi-lbl">Rent</div>
+      <div class="kpi-val">${fr(rentVal)}</div>
+      <div class="kpi-sub">${rentPct.toFixed(1)}% of total</div>
+    </div>
+    <div class="kpi c5">
+      <div class="kpi-lbl">Variable Spend</div>
+      <div class="kpi-val">${fr(varSpd)}</div>
+      <div class="kpi-sub">Excl. rent</div>
+    </div>
+  </div>
+
+  <div class="pills">
+    <div class="pill ${rentPct>40?'warn':'good'}"><em>🏠 Rent</em><strong>${rentPct.toFixed(1)}%</strong></div>
+    <div class="pill ${foodPct>30?'warn':''}"><em>🍜 Food</em><strong>${foodPct.toFixed(1)}%</strong></div>
+    <div class="pill ${discPct>15?'warn':''}"><em>🎉 Discretionary</em><strong>${discPct.toFixed(1)}%</strong></div>
+    <div class="pill info"><em>🚗 Transport</em><strong>${fr(transVal)}</strong></div>
+    <div class="pill ${cur<avg?'good':'bad'}"><em>vs Avg</em><strong>${cur<avg?'Below avg ✓':'Above avg'}</strong></div>
+    <div class="pill pur"><em>📉 Worst month</em><strong>${sl(months[worstI]||'–')}</strong></div>
+    <div class="pill"><em>📈 All-time total</em><strong>${fr(totals.reduce((a,b)=>a+b,0))}</strong></div>
+  </div>
+
+  <!-- Trend + Donut -->
+  <div class="row r21">
+    <div class="cbox">
+      <div class="ctitle">📈 Monthly Expense Trend</div>
+      <div class="csub">Total spend each month + average line</div>
+      <div class="cwrap tall"><canvas id="cTrend"></canvas></div>
+    </div>
+    <div class="cbox">
+      <div class="ctitle">🍩 ${latest} — Breakdown</div>
+      <div class="csub">Current month by category</div>
+      <div class="cwrap"><canvas id="cDonut"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Stacked bar full width -->
+  <div class="row r1">
+    <div class="cbox">
+      <div class="ctitle">📊 Monthly Spend by Category</div>
+      <div class="csub">Stacked across all months</div>
+      <div class="cwrap tall"><canvas id="cStack"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Top category lines + MoM delta -->
+  <div class="row r2">
+    <div class="cbox">
+      <div class="ctitle">📉 Top Category Trends</div>
+      <div class="csub">Top 4 categories over time</div>
+      <div class="cwrap"><canvas id="cCatTrend"></canvas></div>
+    </div>
+    <div class="cbox">
+      <div class="ctitle">📊 Month-on-Month Change</div>
+      <div class="csub">Δ vs previous month</div>
+      <div class="cwrap"><canvas id="cMom"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Category ranking -->
+  <div class="row r1">
+    <div class="cbox">
+      <div class="ctitle">🏆 All-Time Category Ranking</div>
+      <div class="csub">Total spend per category across all months</div>
+      <div class="cwrap"><canvas id="cRank"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="ig" id="ig"></div>
+  `;
+
+  // ── Chart 1: Trend ───────────────────────────────────────────────
+  new Chart(document.getElementById('cTrend'),{type:'line',data:{labels,datasets:[
+    {label:'Total Spend',data:totals,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',
+     fill:true,tension:.4,pointBackgroundColor:'#6366f1',pointRadius:4,pointHoverRadius:7,borderWidth:2.5},
+    {label:'Average',data:totals.map(()=>avg),borderColor:'rgba(239,68,68,.5)',borderDash:[5,5],
+     borderWidth:1.5,fill:false,pointRadius:0,tension:0}
+  ]},options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:LEG,tooltip:{callbacks:{label:c=>' ₨'+f(c.raw)}}},scales:sc()}});
+
+  // ── Chart 2: Donut ───────────────────────────────────────────────
+  const dCats = catCur.filter(c=>c.val>0);
+  new Chart(document.getElementById('cDonut'),{type:'doughnut',data:{
+    labels:dCats.map(c=>c.name),
+    datasets:[{data:dCats.map(c=>c.val),backgroundColor:dCats.map(c=>cc(c.name,c.i)),borderWidth:0,hoverOffset:8}]
+  },options:{responsive:true,maintainAspectRatio:true,cutout:'62%',
+    plugins:{legend:{...LEG,position:'bottom'},
+      tooltip:{callbacks:{label:c=>' ₨'+f(c.raw)+' ('+((c.raw/cur)*100).toFixed(1)+'%)' }}}}});
+
+  // ── Chart 3: Stacked bar ─────────────────────────────────────────
+  new Chart(document.getElementById('cStack'),{type:'bar',data:{labels,
+    datasets:cats.map((c,i)=>({label:c.name,data:c.values,backgroundColor:cc(c.name,i)+'cc',borderWidth:0,stack:'a'}))
+  },options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:c=>' '+c.dataset.label+': ₨'+f(c.raw)}}},
+    scales:sc(true)}});
+
+  // ── Chart 4: Top 4 category trends ──────────────────────────────
+  const top4=[...cats].sort((a,b)=>b.values.reduce((s,v)=>s+v,0)-a.values.reduce((s,v)=>s+v,0)).slice(0,4);
+  new Chart(document.getElementById('cCatTrend'),{type:'line',data:{labels,
+    datasets:top4.map(c=>({label:c.name,data:c.values,
+      borderColor:cc(c.name,cats.indexOf(c)),backgroundColor:'transparent',
+      tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2}))
+  },options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:LEG,tooltip:{callbacks:{label:c=>' ₨'+f(c.raw)}}},scales:sc()}});
+
+  // ── Chart 5: MoM delta ───────────────────────────────────────────
+  const momColors=momArr.map(v=>v>0?'rgba(239,68,68,.8)':v<0?'rgba(16,185,129,.8)':'rgba(148,163,184,.4)');
+  new Chart(document.getElementById('cMom'),{type:'bar',data:{labels:labels.slice(1),
+    datasets:[{label:'MoM Δ',data:momArr.slice(1),backgroundColor:momColors.slice(1),borderWidth:0,borderRadius:3}]
+  },options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ₨'+f(Math.abs(c.raw))+(c.raw>=0?' ▲':' ▼')}}},
+    scales:sc()}});
+
+  // ── Chart 6: Category ranking (horizontal) ───────────────────────
+  new Chart(document.getElementById('cRank'),{type:'bar',data:{
+    labels:catAll.map(c=>c.name),
+    datasets:[{label:'All-time Total',data:catAll.map(c=>c.tot),
+      backgroundColor:catAll.map((c,i)=>cc(c.name,c.i)+'cc'),borderWidth:0,borderRadius:4}]
+  },options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ₨'+f(c.raw)}}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,callback:v=>'₨'+f(v)}},y:{grid:{color:'transparent'},ticks:{color:TC}}}}});
+
+  // ── Insights panel ───────────────────────────────────────────────
+  const biggestMom   = momArr.slice(1).reduce((mx,v,i,a)=>Math.abs(v)>Math.abs(a[mx])?i:mx,0);
+  const biggestMomLbl= labels[biggestMom+1]||'–';
+  const biggestMomVal= momArr[biggestMom+1]||0;
+
+  // Highest single category all-time
+  const topAllCat = catAll[0]||{name:'–',tot:0};
+  const topAllPct = totals.reduce((a,b)=>a+b,0)>0 ? topAllCat.tot/totals.reduce((a,b)=>a+b,0)*100 : 0;
+
+  // Food trend direction (last 3 months)
+  const foodTrend = foodObj ? foodObj.values.slice(-3) : [];
+  const foodDir   = foodTrend.length>=2 ? (foodTrend[foodTrend.length-1]>foodTrend[0]?'↑ Rising':'↓ Falling') : '–';
+
+  // Avg rent
+  const rentVals  = rentObj ? rentObj.values.filter(v=>v>0) : [];
+  const avgRent   = rentVals.length>0 ? rentVals.reduce((a,b)=>a+b,0)/rentVals.length : 0;
+
+  // Months above average
+  const abvAvg    = totals.filter(v=>v>avg).length;
+
+  // Lowest single month category
+  const lowestCatCur = [...catCur].reverse()[0]||{name:'–',val:0};
+
+  const ins = [
+    { ico:'📊',lbl:'Above-Average Months',val:`${abvAvg} / ${n}`,
+      cls:abvAvg>n/2?'bad':'good',
+      desc:`${abvAvg} months exceeded avg of ₨${f(avg)}` },
+    { ico:'📉',lbl:'Best vs Worst Month',val:fr(totals[worstI]-totals[bestI]),
+      cls:'warn',
+      desc:`Best: ${sl(months[bestI])} (${fr(totals[bestI])}). Worst: ${sl(months[worstI])} (${fr(totals[worstI])})` },
+    { ico:'🍜',lbl:'Food Trend (last 3)',val:foodDir,
+      cls:foodDir.includes('Rising')?'bad':'good',
+      desc:foodTrend.map(v=>'₨'+f(v)).join(' → ')||'–' },
+    { ico:'🏠',lbl:'Avg Rent',val:fr(avgRent),
+      cls:'info',
+      desc:`Consistent over ${rentVals.length} months. Currently ${fr(rentVal)}` },
+    { ico:'🏆',lbl:'Biggest All-Time Category',val:topAllCat.name,
+      cls:'pur',
+      desc:`₨${f(topAllCat.tot)} total — ${topAllPct.toFixed(1)}% of all spending` },
+    { ico:'🚗',lbl:'Transport This Month',val:fr(transVal),
+      cls:'info',
+      desc:'Uber + Uber Work + Bus combined' },
+    { ico:'📈',lbl:'Biggest MoM Jump',val:`${biggestMomVal>=0?'+':''}${fr(biggestMomVal)}`,
+      cls:biggestMomVal>0?'bad':'good',
+      desc:`Happened in ${biggestMomLbl}` },
+    { ico:'✨',lbl:'Least Spent This Month',val:lowestCatCur.name,
+      cls:'good',
+      desc:`Only ₨${f(lowestCatCur.val)} spent on ${lowestCatCur.name}` }
+  ];
+
+  document.getElementById('ig').innerHTML = ins.map(x=>`
+    <div class="ic">
+      <div class="ic-ico">${x.ico}</div>
+      <div class="ic-lbl">${x.lbl}</div>
+      <div class="ic-val ${x.cls}">${x.val}</div>
+      <div class="ic-desc">${x.desc}</div>
+    </div>`).join('');
+}
+
+// ── Fetch ────────────────────────────────────────────────────────
+google.script.run
+  .withSuccessHandler(d=>{ try{ build(d); }catch(e){ showErr('Render error: '+e.message); } })
+  .withFailureHandler(e=>showErr(e.message||e.toString()))
+  .getExpenseData();
+
+function showErr(m){
+  document.getElementById('root').innerHTML=`<div class="err"><div class="err-ico">⚠️</div><p>${m}</p></div>`;
+}
+</script>
+</body>
+</html>
