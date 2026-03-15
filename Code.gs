@@ -694,12 +694,16 @@ function getExpenseData() {
     // ── Row 6: month headers (cols A onward, fixed 30-col window) ─
     // Col A = "Category", then month names, last meaningful col = "TOTAL"
     var headerRow = sheet.getRange(6, 1, 1, 30).getValues()[0];
-    var monthCols = []; // [{label, colIndex}]  colIndex = 0-based in this array
+    var monthCols = []; // [{label, colIndex, year}]  colIndex = 0-based in this array
     for (var c = 1; c < headerRow.length; c++) {
       var h = (headerRow[c] || '').toString().trim();
       if (!h) continue;                          // blank — past the data
       if (h.toUpperCase() === 'TOTAL') continue; // skip grand-total column
-      monthCols.push({ label: h, colIndex: c });
+      // Extract year: header contains "20XX" (e.g. "JUNE 2025", "JAN 2026")
+      var yr = 'Unknown';
+      var ym = h.match(/20\d{2}/);
+      if (ym) yr = ym[0];
+      monthCols.push({ label: h, colIndex: c, year: yr });
     }
 
     // ── Rows 7–17: 10 category rows + 1 Total row ────────────────
@@ -724,10 +728,28 @@ function getExpenseData() {
       }
     });
 
+    // ── Group by year ─────────────────────────────────────────────
+    // yearGroups: { '2025': { months:[], indices:[], totals:[], catTotals:{} }, ... }
+    var yearGroups = {};
+    monthCols.forEach(function(mc, idx) {
+      var yr = mc.year;
+      if (!yearGroups[yr]) {
+        yearGroups[yr] = { months: [], indices: [], totals: [], catTotals: {} };
+        categories.forEach(function(c) { yearGroups[yr].catTotals[c.name] = 0; });
+      }
+      yearGroups[yr].months.push(mc.label);
+      yearGroups[yr].indices.push(idx);
+      yearGroups[yr].totals.push(monthlyTotals[idx] || 0);
+      categories.forEach(function(c) {
+        yearGroups[yr].catTotals[c.name] = (yearGroups[yr].catTotals[c.name] || 0) + (c.values[idx] || 0);
+      });
+    });
+
     return {
       months:        monthCols.map(function(m) { return m.label; }),
       monthlyTotals: monthlyTotals,
       categories:    categories,
+      yearGroups:    yearGroups,
       latestMonth:   monthCols.length > 0 ? monthCols[monthCols.length - 1].label : ''
     };
 

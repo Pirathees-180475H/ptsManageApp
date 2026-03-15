@@ -38,6 +38,10 @@
   .spinner{width:48px;height:48px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
+  /* section label */
+  .sec-lbl{font-size:11px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:1px;
+    margin-bottom:12px;padding-left:2px;border-left:3px solid var(--acc);padding-left:8px}
+
   /* KPI strip */
   .kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:20px}
   .kpi{border-radius:14px;padding:16px 18px;background:var(--glass);border:1px solid var(--bdr);
@@ -56,6 +60,26 @@
   .delta.up{background:rgba(239,68,68,.15);color:var(--red)}
   .delta.dn{background:rgba(16,185,129,.15);color:var(--grn)}
   .delta.nt{background:rgba(148,163,184,.1);color:var(--t2)}
+
+  /* Year comparison strip */
+  .yr-strip{display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+  .yr-card{flex:1;min-width:200px;border-radius:14px;padding:18px 20px;
+    background:var(--glass);border:1px solid var(--bdr);backdrop-filter:blur(12px);
+    position:relative;overflow:hidden}
+  .yr-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+  .yr-card:nth-child(1)::before{background:linear-gradient(90deg,#6366f1,#8b5cf6)}
+  .yr-card:nth-child(2)::before{background:linear-gradient(90deg,#06b6d4,#0ea5e9)}
+  .yr-card:nth-child(3)::before{background:linear-gradient(90deg,#10b981,#34d399)}
+  .yr-card:nth-child(4)::before{background:linear-gradient(90deg,#f59e0b,#fb923c)}
+  .yr-card-yr{font-size:24px;font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+  .yr-card-total{font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px}
+  .yr-card-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+  .yr-card-m{font-size:11px;color:var(--t2)}
+  .yr-card-m strong{color:var(--t1);font-weight:600}
+  .yr-yoy{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;
+    padding:3px 9px;border-radius:12px;margin-top:8px}
+  .yr-yoy.up{background:rgba(239,68,68,.15);color:var(--red)}
+  .yr-yoy.dn{background:rgba(16,185,129,.15);color:var(--grn)}
 
   /* pills */
   .pills{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
@@ -111,32 +135,33 @@
 </div>
 
 <script>
-// ── Category colours ─────────────────────────────────────────────
+// ── Category colours ──────────────────────────────────────────────
 const CAT_COLORS = {
   'Food':'#f59e0b','Super market':'#10b981','Uber':'#6366f1',
   'Uber Work':'#8b5cf6','Movies & outing':'#ec4899','Other Expences':'#f97316',
   'Bus Fair':'#06b6d4','Party':'#ef4444','Dress and Appearance':'#84cc16','Rent':'#64748b'
 };
-const FALLBACK = ['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981','#ec4899','#f97316','#ef4444','#84cc16','#64748b'];
-const cc = (name,i) => CAT_COLORS[name] || FALLBACK[i % FALLBACK.length];
+const FALLBACK=['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981','#ec4899','#f97316','#ef4444','#84cc16','#64748b'];
+const YR_COLORS=['#6366f1','#06b6d4','#10b981','#f59e0b','#ec4899','#f97316'];
+const cc=(name,i)=>CAT_COLORS[name]||FALLBACK[i%FALLBACK.length];
 
-// ── Formatters ───────────────────────────────────────────────────
-const sl = s => { // "JUNE 2025" → "Jun '25"
-  const p = s.trim().split(/\s+/);
-  if (p.length < 2) return s.substring(0,6);
-  let m = p[0].substring(0,3);
-  if (m.toUpperCase()==='OTC') m='Oct';
+// ── Formatters ────────────────────────────────────────────────────
+const sl=s=>{
+  const p=s.trim().split(/\s+/);
+  if(p.length<2) return s.substring(0,6);
+  let m=p[0].substring(0,3);
+  if(m.toUpperCase()==='OTC') m='Oct';
   return m+" '"+p[p.length-1].substring(2);
 };
-const f  = n => n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':Math.round(n).toLocaleString('en-IN');
-const fr = n => '₨ '+Math.round(n).toLocaleString('en-IN');
+const f =n=>n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':Math.round(n).toLocaleString('en-IN');
+const fr=n=>'₨ '+Math.round(n).toLocaleString('en-IN');
 
-// ── Chart defaults ───────────────────────────────────────────────
+// ── Chart defaults ────────────────────────────────────────────────
 Chart.defaults.color='#94a3b8';
 Chart.defaults.font.family="'Inter',sans-serif";
 Chart.defaults.font.size=11;
-const GC='rgba(255,255,255,0.05)', TC='#475569';
-const sc = (stacked) => ({
+const GC='rgba(255,255,255,0.05)',TC='#475569';
+const sc=(stacked)=>({
   x:{grid:{color:GC},ticks:{color:TC,maxRotation:35},stacked:!!stacked},
   y:{grid:{color:GC},ticks:{color:TC,callback:v=>'₨'+f(v)},stacked:!!stacked}
 });
@@ -144,54 +169,80 @@ const LEG={labels:{color:'#94a3b8',boxWidth:10,padding:14,font:{size:11}}};
 
 // ── Build ─────────────────────────────────────────────────────────
 function build(D) {
-  const months = D.months;
-  const totals = D.monthlyTotals;
-  const cats   = D.categories;
-  const latest = D.latestMonth;
-  const labels = months.map(sl);
-  const n      = months.length;
-  const li     = n - 1;
+  const months    = D.months;
+  const totals    = D.monthlyTotals;
+  const cats      = D.categories;
+  const yg        = D.yearGroups;   // { '2025': {months,indices,totals,catTotals}, ... }
+  const latest    = D.latestMonth;
+  const labels    = months.map(sl);
+  const n         = months.length;
+  const li        = n-1;
 
-  // ── Derived ─────────────────────────────────────────────────────
-  const cur      = totals[li]  || 0;
-  const prev     = totals[li-1]|| 0;
-  const mom      = prev>0 ? (cur-prev)/prev*100 : 0;
-  const avg      = totals.reduce((a,b)=>a+b,0)/(n||1);
-  const bestI    = totals.indexOf(Math.min(...totals));
-  const worstI   = totals.indexOf(Math.max(...totals));
+  // ── Sorted year list ──────────────────────────────────────────
+  const years = Object.keys(yg).sort();
 
-  // per-category current month, sorted desc
+  // ── Overall derived ───────────────────────────────────────────
+  const cur    = totals[li]||0;
+  const prev   = totals[li-1]||0;
+  const mom    = prev>0?(cur-prev)/prev*100:0;
+  const avg    = totals.reduce((a,b)=>a+b,0)/(n||1);
+  const bestI  = totals.indexOf(Math.min(...totals));
+  const worstI = totals.indexOf(Math.max(...totals));
+
   const catCur  = cats.map((c,i)=>({name:c.name,val:c.values[li]||0,i})).sort((a,b)=>b.val-a.val);
   const topCat  = catCur[0]||{name:'–',val:0};
   const rentObj = cats.find(c=>c.name.toLowerCase()==='rent');
-  const rentVal = rentObj ? rentObj.values[li]||0 : 0;
-  const varSpd  = cur - rentVal;
-  const rentPct = cur>0 ? rentVal/cur*100 : 0;
-
+  const rentVal = rentObj?rentObj.values[li]||0:0;
+  const varSpd  = cur-rentVal;
+  const rentPct = cur>0?rentVal/cur*100:0;
   const foodObj = cats.find(c=>c.name.toLowerCase()==='food');
-  const foodVal = foodObj ? foodObj.values[li]||0 : 0;
-  const foodPct = cur>0 ? foodVal/cur*100 : 0;
-
+  const foodVal = foodObj?foodObj.values[li]||0:0;
+  const foodPct = cur>0?foodVal/cur*100:0;
   const discNames=['movies & outing','party','dress and appearance'];
   const discVal = cats.filter(c=>discNames.includes(c.name.toLowerCase())).reduce((s,c)=>s+(c.values[li]||0),0);
-  const discPct = cur>0 ? discVal/cur*100 : 0;
+  const discPct = cur>0?discVal/cur*100:0;
+  const momArr  = totals.map((v,i)=>i===0?0:v-totals[i-1]);
+  const catAll  = cats.map((c,i)=>({name:c.name,tot:c.values.reduce((s,v)=>s+v,0),i})).sort((a,b)=>b.tot-a.tot);
+  const transVal= ['uber','uber work','bus fair'].reduce((s,nm)=>{
+    const c=cats.find(x=>x.name.toLowerCase()===nm); return s+(c?c.values[li]||0:0);},0);
 
-  // MoM changes array
-  const momArr = totals.map((v,i)=>i===0?0:v-totals[i-1]);
+  // ── Year KPI cards HTML ───────────────────────────────────────
+  const yrCards = years.map((yr,yi)=>{
+    const g = yg[yr];
+    const yrTotal   = g.totals.reduce((a,b)=>a+b,0);
+    const yrAvg     = yrTotal/(g.months.length||1);
+    const yrBestI   = g.totals.indexOf(Math.min(...g.totals));
+    const yrWorstI  = g.totals.indexOf(Math.max(...g.totals));
+    // YoY vs previous year
+    let yoyHtml='';
+    if(yi>0){
+      const prevYr = years[yi-1];
+      const prevTotal = yg[prevYr].totals.reduce((a,b)=>a+b,0);
+      if(prevTotal>0){
+        const yoyPct=(yrTotal-prevTotal)/prevTotal*100;
+        yoyHtml=`<div class="yr-yoy ${yoyPct>0?'up':'dn'}">${yoyPct>0?'▲':'▼'} ${Math.abs(yoyPct).toFixed(1)}% vs ${prevYr}</div>`;
+      }
+    }
+    return `<div class="yr-card">
+      <div class="yr-card-yr">${yr}</div>
+      <div class="yr-card-total">${fr(yrTotal)} total · ${g.months.length} months</div>
+      <div class="yr-card-meta">
+        <div class="yr-card-m"><span style="color:var(--t3)">Avg/mo</span> <strong>${fr(yrAvg)}</strong></div>
+        <div class="yr-card-m"><span style="color:var(--t3)">Best</span> <strong style="color:var(--grn)">${sl(g.months[yrBestI]||'–')}</strong></div>
+        <div class="yr-card-m"><span style="color:var(--t3)">Worst</span> <strong style="color:var(--red)">${sl(g.months[yrWorstI]||'–')}</strong></div>
+      </div>
+      ${yoyHtml}
+    </div>`;
+  }).join('');
 
-  // All-time category totals, sorted
-  const catAll = cats.map((c,i)=>({name:c.name,tot:c.values.reduce((s,v)=>s+v,0),i})).sort((a,b)=>b.tot-a.tot);
+  // ── Render skeleton ───────────────────────────────────────────
+  document.getElementById('sub').textContent=`${n} months tracked · Latest: ${latest}`;
+  document.getElementById('badge').textContent=latest;
 
-  // Transport
-  const transVal = ['uber','uber work','bus fair'].reduce((s,n)=>{
-    const c=cats.find(x=>x.name.toLowerCase()===n); return s+(c?c.values[li]||0:0);
-  },0);
+  document.getElementById('root').innerHTML=`
 
-  // ── Render skeleton ─────────────────────────────────────────────
-  document.getElementById('sub').textContent = `${n} months tracked · Latest: ${latest}`;
-  document.getElementById('badge').textContent = latest;
-
-  document.getElementById('root').innerHTML = `
+  <!-- ── OVERALL KPIs ── -->
+  <div class="sec-lbl">Overall</div>
   <div class="kpi-strip">
     <div class="kpi c0">
       <div class="kpi-lbl">Current Month</div>
@@ -225,6 +276,7 @@ function build(D) {
     </div>
   </div>
 
+  <!-- ── INSIGHT PILLS ── -->
   <div class="pills">
     <div class="pill ${rentPct>40?'warn':'good'}"><em>🏠 Rent</em><strong>${rentPct.toFixed(1)}%</strong></div>
     <div class="pill ${foodPct>30?'warn':''}"><em>🍜 Food</em><strong>${foodPct.toFixed(1)}%</strong></div>
@@ -234,6 +286,35 @@ function build(D) {
     <div class="pill pur"><em>📉 Worst month</em><strong>${sl(months[worstI]||'–')}</strong></div>
     <div class="pill"><em>📈 All-time total</em><strong>${fr(totals.reduce((a,b)=>a+b,0))}</strong></div>
   </div>
+
+  <!-- ── YEAR COMPARISON ── -->
+  <div class="sec-lbl" style="margin-top:8px">Year Comparison</div>
+  <div class="yr-strip">${yrCards}</div>
+
+  <!-- Year comparison charts -->
+  <div class="row r2" style="margin-bottom:16px">
+    <div class="cbox">
+      <div class="ctitle">📅 Year-over-Year Monthly Totals</div>
+      <div class="csub">Same calendar month across years overlaid</div>
+      <div class="cwrap tall"><canvas id="cYoY"></canvas></div>
+    </div>
+    <div class="cbox">
+      <div class="ctitle">🏷️ Year-over-Year by Category</div>
+      <div class="csub">Total per category grouped by year</div>
+      <div class="cwrap tall"><canvas id="cYrCat"></canvas></div>
+    </div>
+  </div>
+
+  <div class="row r1" style="margin-bottom:16px">
+    <div class="cbox">
+      <div class="ctitle">📊 Year-over-Year Avg Monthly Spend per Category</div>
+      <div class="csub">Average monthly spend per category — compared across years</div>
+      <div class="cwrap"><canvas id="cYrAvgCat"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ── ALL MONTHS ── -->
+  <div class="sec-lbl" style="margin-top:8px">Monthly View</div>
 
   <!-- Trend + Donut -->
   <div class="row r21">
@@ -285,7 +366,94 @@ function build(D) {
   <div class="ig" id="ig"></div>
   `;
 
-  // ── Chart 1: Trend ───────────────────────────────────────────────
+  // ════════════════════════════════════════════════════════════
+  // YEAR CHARTS
+  // ════════════════════════════════════════════════════════════
+
+  // Short month names (without year) for YoY x-axis
+  // Build a merged list of unique short-month positions (Jan–Dec order)
+  const MON_ORDER=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // For each year, map month-position → total
+  // Month position derived from label: "Jun '25" → "Jun"
+  function monKey(lbl){ return lbl.split(' ')[0]; } // "Jun"
+  function monIdx(k){ const i=MON_ORDER.findIndex(m=>m.toLowerCase()===k.toLowerCase()); return i>=0?i:11; }
+
+  // Collect all unique short-month keys present across all years
+  const allMonKeys=[];
+  years.forEach(yr=>{
+    yg[yr].months.map(sl).forEach(lbl=>{
+      const k=monKey(lbl);
+      if(!allMonKeys.includes(k)) allMonKeys.push(k);
+    });
+  });
+  allMonKeys.sort((a,b)=>monIdx(a)-monIdx(b));
+
+  // Chart: YoY monthly totals (one line per year)
+  const yoyDatasets = years.map((yr,yi)=>{
+    const g=yg[yr];
+    const map={};
+    g.months.forEach((m,i)=>{ map[monKey(sl(m))]=g.totals[i]||0; });
+    return {
+      label: yr,
+      data: allMonKeys.map(k=>map[k]!==undefined?map[k]:null),
+      borderColor: YR_COLORS[yi%YR_COLORS.length],
+      backgroundColor: YR_COLORS[yi%YR_COLORS.length]+'25',
+      fill: false,
+      tension: .4,
+      pointRadius: 4,
+      pointHoverRadius: 7,
+      borderWidth: 2.5,
+      spanGaps: false
+    };
+  });
+  new Chart(document.getElementById('cYoY'),{type:'line',
+    data:{labels:allMonKeys,datasets:yoyDatasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:LEG,tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ₨${f(c.raw)}`}}},
+      scales:sc()}});
+
+  // Chart: YoY by category (grouped bar — one group per category, bar per year)
+  const yrCatDatasets = years.map((yr,yi)=>{
+    const g=yg[yr];
+    return {
+      label: yr,
+      data: cats.map(c=>g.catTotals[c.name]||0),
+      backgroundColor: YR_COLORS[yi%YR_COLORS.length]+'bb',
+      borderWidth: 0,
+      borderRadius: 4
+    };
+  });
+  new Chart(document.getElementById('cYrCat'),{type:'bar',
+    data:{labels:cats.map(c=>c.name),datasets:yrCatDatasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:LEG,tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ₨${f(c.raw)}`}}},
+      scales:sc()}});
+
+  // Chart: YoY avg monthly spend per category
+  const yrAvgCatDatasets = years.map((yr,yi)=>{
+    const g=yg[yr];
+    const moCnt=g.months.length||1;
+    return {
+      label: yr,
+      data: cats.map(c=>(g.catTotals[c.name]||0)/moCnt),
+      backgroundColor: YR_COLORS[yi%YR_COLORS.length]+'99',
+      borderColor:     YR_COLORS[yi%YR_COLORS.length],
+      borderWidth: 1,
+      borderRadius: 4
+    };
+  });
+  new Chart(document.getElementById('cYrAvgCat'),{type:'bar',
+    data:{labels:cats.map(c=>c.name),datasets:yrAvgCatDatasets},
+    options:{responsive:true,maintainAspectRatio:true,
+      plugins:{legend:LEG,tooltip:{callbacks:{label:c=>` ${c.dataset.label} avg/mo: ₨${f(c.raw)}`}}},
+      scales:sc()}});
+
+  // ════════════════════════════════════════════════════════════
+  // MONTHLY CHARTS
+  // ════════════════════════════════════════════════════════════
+
+  // Trend
   new Chart(document.getElementById('cTrend'),{type:'line',data:{labels,datasets:[
     {label:'Total Spend',data:totals,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',
      fill:true,tension:.4,pointBackgroundColor:'#6366f1',pointRadius:4,pointHoverRadius:7,borderWidth:2.5},
@@ -294,8 +462,8 @@ function build(D) {
   ]},options:{responsive:true,maintainAspectRatio:true,
     plugins:{legend:LEG,tooltip:{callbacks:{label:c=>' ₨'+f(c.raw)}}},scales:sc()}});
 
-  // ── Chart 2: Donut ───────────────────────────────────────────────
-  const dCats = catCur.filter(c=>c.val>0);
+  // Donut
+  const dCats=catCur.filter(c=>c.val>0);
   new Chart(document.getElementById('cDonut'),{type:'doughnut',data:{
     labels:dCats.map(c=>c.name),
     datasets:[{data:dCats.map(c=>c.val),backgroundColor:dCats.map(c=>cc(c.name,c.i)),borderWidth:0,hoverOffset:8}]
@@ -303,14 +471,14 @@ function build(D) {
     plugins:{legend:{...LEG,position:'bottom'},
       tooltip:{callbacks:{label:c=>' ₨'+f(c.raw)+' ('+((c.raw/cur)*100).toFixed(1)+'%)' }}}}});
 
-  // ── Chart 3: Stacked bar ─────────────────────────────────────────
+  // Stacked bar
   new Chart(document.getElementById('cStack'),{type:'bar',data:{labels,
     datasets:cats.map((c,i)=>({label:c.name,data:c.values,backgroundColor:cc(c.name,i)+'cc',borderWidth:0,stack:'a'}))
   },options:{responsive:true,maintainAspectRatio:true,
     plugins:{legend:LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:c=>' '+c.dataset.label+': ₨'+f(c.raw)}}},
     scales:sc(true)}});
 
-  // ── Chart 4: Top 4 category trends ──────────────────────────────
+  // Top 4 trends
   const top4=[...cats].sort((a,b)=>b.values.reduce((s,v)=>s+v,0)-a.values.reduce((s,v)=>s+v,0)).slice(0,4);
   new Chart(document.getElementById('cCatTrend'),{type:'line',data:{labels,
     datasets:top4.map(c=>({label:c.name,data:c.values,
@@ -319,7 +487,7 @@ function build(D) {
   },options:{responsive:true,maintainAspectRatio:true,
     plugins:{legend:LEG,tooltip:{callbacks:{label:c=>' ₨'+f(c.raw)}}},scales:sc()}});
 
-  // ── Chart 5: MoM delta ───────────────────────────────────────────
+  // MoM delta
   const momColors=momArr.map(v=>v>0?'rgba(239,68,68,.8)':v<0?'rgba(16,185,129,.8)':'rgba(148,163,184,.4)');
   new Chart(document.getElementById('cMom'),{type:'bar',data:{labels:labels.slice(1),
     datasets:[{label:'MoM Δ',data:momArr.slice(1),backgroundColor:momColors.slice(1),borderWidth:0,borderRadius:3}]
@@ -327,7 +495,7 @@ function build(D) {
     plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ₨'+f(Math.abs(c.raw))+(c.raw>=0?' ▲':' ▼')}}},
     scales:sc()}});
 
-  // ── Chart 6: Category ranking (horizontal) ───────────────────────
+  // Category ranking
   new Chart(document.getElementById('cRank'),{type:'bar',data:{
     labels:catAll.map(c=>c.name),
     datasets:[{label:'All-time Total',data:catAll.map(c=>c.tot),
@@ -336,57 +504,57 @@ function build(D) {
     plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' ₨'+f(c.raw)}}},
     scales:{x:{grid:{color:GC},ticks:{color:TC,callback:v=>'₨'+f(v)}},y:{grid:{color:'transparent'},ticks:{color:TC}}}}});
 
-  // ── Insights panel ───────────────────────────────────────────────
-  const biggestMom   = momArr.slice(1).reduce((mx,v,i,a)=>Math.abs(v)>Math.abs(a[mx])?i:mx,0);
-  const biggestMomLbl= labels[biggestMom+1]||'–';
-  const biggestMomVal= momArr[biggestMom+1]||0;
+  // ════════════════════════════════════════════════════════════
+  // INSIGHTS
+  // ════════════════════════════════════════════════════════════
+  const biggestMomIdx=momArr.slice(1).reduce((mx,v,i,a)=>Math.abs(v)>Math.abs(a[mx])?i:mx,0);
+  const biggestMomVal=momArr[biggestMomIdx+1]||0;
+  const biggestMomLbl=labels[biggestMomIdx+1]||'–';
+  const topAllCat=catAll[0]||{name:'–',tot:0};
+  const topAllPct=totals.reduce((a,b)=>a+b,0)>0?topAllCat.tot/totals.reduce((a,b)=>a+b,0)*100:0;
+  const foodTrend=foodObj?foodObj.values.slice(-3):[];
+  const foodDir=foodTrend.length>=2?(foodTrend[foodTrend.length-1]>foodTrend[0]?'↑ Rising':'↓ Falling'):'–';
+  const rentVals=rentObj?rentObj.values.filter(v=>v>0):[];
+  const avgRent=rentVals.length>0?rentVals.reduce((a,b)=>a+b,0)/rentVals.length:0;
+  const abvAvg=totals.filter(v=>v>avg).length;
+  const lowestCatCur=[...catCur].reverse()[0]||{name:'–',val:0};
 
-  // Highest single category all-time
-  const topAllCat = catAll[0]||{name:'–',tot:0};
-  const topAllPct = totals.reduce((a,b)=>a+b,0)>0 ? topAllCat.tot/totals.reduce((a,b)=>a+b,0)*100 : 0;
+  // Year-specific insight: best year
+  const yrTotals=years.map(yr=>({yr,tot:yg[yr].totals.reduce((a,b)=>a+b,0)}));
+  const bestYr=yrTotals.reduce((b,y)=>y.tot<b.tot?y:b,yrTotals[0]||{yr:'–',tot:0});
+  const worstYr=yrTotals.reduce((b,y)=>y.tot>b.tot?y:b,yrTotals[0]||{yr:'–',tot:0});
 
-  // Food trend direction (last 3 months)
-  const foodTrend = foodObj ? foodObj.values.slice(-3) : [];
-  const foodDir   = foodTrend.length>=2 ? (foodTrend[foodTrend.length-1]>foodTrend[0]?'↑ Rising':'↓ Falling') : '–';
+  // YoY growth (last two years)
+  let yoyInsight='–'; let yoyCls='nt';
+  if(years.length>=2){
+    const ya=years[years.length-2], yb=years[years.length-1];
+    const ta=yg[ya].totals.reduce((a,b)=>a+b,0);
+    const tb=yg[yb].totals.reduce((a,b)=>a+b,0);
+    const pct=(tb-ta)/ta*100;
+    yoyInsight=(pct>0?'▲ +':'▼ ')+Math.abs(pct).toFixed(1)+'% vs '+ya;
+    yoyCls=pct>0?'bad':'good';
+  }
 
-  // Avg rent
-  const rentVals  = rentObj ? rentObj.values.filter(v=>v>0) : [];
-  const avgRent   = rentVals.length>0 ? rentVals.reduce((a,b)=>a+b,0)/rentVals.length : 0;
-
-  // Months above average
-  const abvAvg    = totals.filter(v=>v>avg).length;
-
-  // Lowest single month category
-  const lowestCatCur = [...catCur].reverse()[0]||{name:'–',val:0};
-
-  const ins = [
-    { ico:'📊',lbl:'Above-Average Months',val:`${abvAvg} / ${n}`,
-      cls:abvAvg>n/2?'bad':'good',
-      desc:`${abvAvg} months exceeded avg of ₨${f(avg)}` },
-    { ico:'📉',lbl:'Best vs Worst Month',val:fr(totals[worstI]-totals[bestI]),
-      cls:'warn',
-      desc:`Best: ${sl(months[bestI])} (${fr(totals[bestI])}). Worst: ${sl(months[worstI])} (${fr(totals[worstI])})` },
-    { ico:'🍜',lbl:'Food Trend (last 3)',val:foodDir,
-      cls:foodDir.includes('Rising')?'bad':'good',
-      desc:foodTrend.map(v=>'₨'+f(v)).join(' → ')||'–' },
-    { ico:'🏠',lbl:'Avg Rent',val:fr(avgRent),
-      cls:'info',
-      desc:`Consistent over ${rentVals.length} months. Currently ${fr(rentVal)}` },
-    { ico:'🏆',lbl:'Biggest All-Time Category',val:topAllCat.name,
-      cls:'pur',
-      desc:`₨${f(topAllCat.tot)} total — ${topAllPct.toFixed(1)}% of all spending` },
-    { ico:'🚗',lbl:'Transport This Month',val:fr(transVal),
-      cls:'info',
-      desc:'Uber + Uber Work + Bus combined' },
-    { ico:'📈',lbl:'Biggest MoM Jump',val:`${biggestMomVal>=0?'+':''}${fr(biggestMomVal)}`,
-      cls:biggestMomVal>0?'bad':'good',
-      desc:`Happened in ${biggestMomLbl}` },
-    { ico:'✨',lbl:'Least Spent This Month',val:lowestCatCur.name,
-      cls:'good',
-      desc:`Only ₨${f(lowestCatCur.val)} spent on ${lowestCatCur.name}` }
+  const ins=[
+    {ico:'📊',lbl:'Above-Average Months',val:`${abvAvg} / ${n}`,cls:abvAvg>n/2?'bad':'good',
+     desc:`${abvAvg} months exceeded avg of ₨${f(avg)}`},
+    {ico:'📅',lbl:'Year-over-Year Spend',val:yoyInsight,cls:yoyCls,
+     desc:years.map(yr=>`${yr}: ₨${f(yg[yr].totals.reduce((a,b)=>a+b,0))}`).join(' · ')},
+    {ico:'🏆',lbl:'Best Year',val:bestYr.yr,cls:'good',
+     desc:`₨${f(bestYr.tot)} total across ${(yg[bestYr.yr]||{months:[]}).months.length} months`},
+    {ico:'⚠️',lbl:'Highest Year',val:worstYr.yr,cls:'bad',
+     desc:`₨${f(worstYr.tot)} total across ${(yg[worstYr.yr]||{months:[]}).months.length} months`},
+    {ico:'🍜',lbl:'Food Trend (last 3)',val:foodDir,cls:foodDir.includes('Rising')?'bad':'good',
+     desc:foodTrend.map(v=>'₨'+f(v)).join(' → ')||'–'},
+    {ico:'🏠',lbl:'Avg Rent',val:fr(avgRent),cls:'info',
+     desc:`Consistent over ${rentVals.length} months. Currently ${fr(rentVal)}`},
+    {ico:'🏷️',lbl:'Biggest All-Time Category',val:topAllCat.name,cls:'pur',
+     desc:`₨${f(topAllCat.tot)} total — ${topAllPct.toFixed(1)}% of all spending`},
+    {ico:'📈',lbl:'Biggest MoM Jump',val:`${biggestMomVal>=0?'+':''}${fr(biggestMomVal)}`,cls:biggestMomVal>0?'bad':'good',
+     desc:`Happened in ${biggestMomLbl}`}
   ];
 
-  document.getElementById('ig').innerHTML = ins.map(x=>`
+  document.getElementById('ig').innerHTML=ins.map(x=>`
     <div class="ic">
       <div class="ic-ico">${x.ico}</div>
       <div class="ic-lbl">${x.lbl}</div>
@@ -395,9 +563,9 @@ function build(D) {
     </div>`).join('');
 }
 
-// ── Fetch ────────────────────────────────────────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────
 google.script.run
-  .withSuccessHandler(d=>{ try{ build(d); }catch(e){ showErr('Render error: '+e.message); } })
+  .withSuccessHandler(d=>{try{build(d);}catch(e){showErr('Render error: '+e.message);}})
   .withFailureHandler(e=>showErr(e.message||e.toString()))
   .getExpenseData();
 
