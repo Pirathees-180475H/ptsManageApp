@@ -193,31 +193,24 @@ function renderDashboard(rows) {
   const totEarn   = rows.map((_,i)=>utEarn[i]+stkEarn[i]+gldEarn[i]);
   const totInv    = rows.map((_,i)=>utInv[i]+stkInv[i]+gldInv[i]);
 
-  // cumulative
-  let cumEarnUT=0,cumEarnStk=0,cumEarnGld=0;
-  const cumUT=[],cumStk=[],cumGld=[],cumTot=[];
-  rows.forEach((_,i)=>{
-    cumEarnUT+=utEarn[i]; cumEarnStk+=stkEarn[i]; cumEarnGld+=gldEarn[i];
-    cumUT.push(cumEarnUT); cumStk.push(cumEarnStk); cumGld.push(cumEarnGld);
-    cumTot.push(cumEarnUT+cumEarnStk+cumEarnGld);
-  });
-
-  // ROI per month
+  // ROI per month (earnings are snapshot values, invested is current portfolio size)
   const roiUT  = rows.map((_,i)=>pct(utEarn[i],utInv[i]));
   const roiStk = rows.map((_,i)=>pct(stkEarn[i],stkInv[i]));
   const roiGld = rows.map((_,i)=>pct(gldEarn[i],gldInv[i]));
 
-  // month-over-month delta
+  // month-over-month delta (change between consecutive readings)
   const deltaEarn = rows.map((_,i)=> i===0?0:totEarn[i]-totEarn[i-1]);
 
-  // all-time aggregates
-  const allUtEarn=cumEarnUT, allStkEarn=cumEarnStk, allGldEarn=cumEarnGld;
-  const allUtInv =utInv.reduce((s,v)=>s+v,0);
-  const allStkInv=stkInv.reduce((s,v)=>s+v,0);
-  const allGldInv=gldInv.reduce((s,v)=>s+v,0);
-  const allTotEarn=allUtEarn+allStkEarn+allGldEarn;
-  const allTotInv =allUtInv+allStkInv+allGldInv;
-  const overallROI= pct(allTotEarn,allTotInv);
+  // all-time aggregates — use LATEST row (each value is a snapshot, not an addition)
+  const allUtEarn  = +latest[1];
+  const allStkEarn = +latest[2];
+  const allGldEarn = +latest[3];
+  const allUtInv   = +latest[4];
+  const allStkInv  = +latest[5];
+  const allGldInv  = +latest[6];
+  const allTotEarn = allUtEarn + allStkEarn + allGldEarn;
+  const allTotInv  = allUtInv  + allStkInv  + allGldInv;
+  const overallROI = pct(allTotEarn, allTotInv);
 
   // best months
   const bestEarnIdx = totEarn.indexOf(Math.max(...totEarn));
@@ -312,8 +305,8 @@ function renderDashboard(rows) {
       <div class="glass">
         <div class="card-hdr">
           <div class="card-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div>
-          <div class="card-title">Cumulative Earnings</div>
-          <div class="card-sub">all-time growth</div>
+          <div class="card-title">Earnings History</div>
+          <div class="card-sub">portfolio value over time</div>
         </div>
         <div class="chart-wrap tall"><canvas id="cumLine"></canvas></div>
       </div>
@@ -421,14 +414,14 @@ function renderDashboard(rows) {
       scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:v=>'₨'+K(v)},grid:{color:'rgba(255,255,255,.04)'}}}}
   });
 
-  /* ── CHART 2: Cumulative earnings ── */
+  /* ── CHART 2: Earnings History (each point is the snapshot value, not a sum) ── */
   new Chart(document.getElementById('cumLine'),{
     type:'line',
     data:{labels:months,datasets:[
-      {label:'Total Cumulative',data:cumTot,borderColor:'#a855f7',backgroundColor:(ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,280);g.addColorStop(0,'rgba(168,85,247,0.3)');g.addColorStop(1,'rgba(168,85,247,0)');return g;},tension:.4,fill:true,borderWidth:2.5,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#a855f7'},
-      {label:'UT',data:cumUT,borderColor:'#3b82f6',backgroundColor:'transparent',tension:.4,borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
-      {label:'Stock',data:cumStk,borderColor:'#00e676',backgroundColor:'transparent',tension:.4,borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
-      {label:'Gold',data:cumGld,borderColor:'#ffd700',backgroundColor:'transparent',tension:.4,borderWidth:1.5,pointRadius:3,borderDash:[4,3]}
+      {label:'Total',data:totEarn,borderColor:'#a855f7',backgroundColor:(ctx)=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,280);g.addColorStop(0,'rgba(168,85,247,0.28)');g.addColorStop(1,'rgba(168,85,247,0)');return g;},tension:.4,fill:true,borderWidth:2.5,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#a855f7'},
+      {label:'UT',data:utEarn,borderColor:'#3b82f6',backgroundColor:'transparent',tension:.4,borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
+      {label:'Stock',data:stkEarn,borderColor:'#00e676',backgroundColor:'transparent',tension:.4,borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
+      {label:'Gold',data:gldEarn,borderColor:'#ffd700',backgroundColor:'transparent',tension:.4,borderWidth:1.5,pointRadius:3,borderDash:[4,3]}
     ]},
     options:{responsive:true,maintainAspectRatio:false,animation:{duration:1300},
       plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},tooltip:{...TIP,callbacks:{label:ctx=>' '+ctx.dataset.label+': '+fmtLKR(ctx.parsed.y)}}},
@@ -517,28 +510,72 @@ function renderDashboard(rows) {
   });
 
   /* ── Insights ── */
-  const bestUtROI  = Math.max(...roiUT.map(Number));
-  const bestStkROI = Math.max(...roiStk.map(Number));
-  const bestGldROI = Math.max(...roiGld.map(Number));
+
+  // Count unique calendar months tracked
+  const uniqueMonthCount = new Set(months.map(m => m.substring(0,7))).size || 1;
+
+  // Per-asset current ROI % (snapshot: earn / invested)
+  const roiUT_now  = allUtInv  > 0 ? (allUtEarn  / allUtInv  * 100) : 0;
+  const roiStk_now = allStkInv > 0 ? (allStkEarn / allStkInv * 100) : 0;
+  const roiGld_now = allGldInv > 0 ? (allGldEarn / allGldInv * 100) : 0;
+
+  // Estimated annual return — simple linear: currentROI * (12 / months)
+  const annualTotal = parseFloat(overallROI) * (12 / uniqueMonthCount);
+  const annualUT    = roiUT_now  * (12 / uniqueMonthCount);
+  const annualStk   = roiStk_now * (12 / uniqueMonthCount);
+  const annualGld   = roiGld_now * (12 / uniqueMonthCount);
+
+  // Average monthly ROI % across all readings (earn[i] / inv[i])
+  const allMonthlyROI = rows.map((_,i) => totInv[i] > 0 ? totEarn[i] / totInv[i] * 100 : 0);
+  const avgMonthlyROI = allMonthlyROI.reduce((s,v)=>s+v,0) / allMonthlyROI.length;
+
+  // Period-over-period gain % (latest reading vs previous)
+  const prevTotEarn = +prev[1]+ +prev[2]+ +prev[3];
+  const prevTotInv  = +prev[4]+ +prev[5]+ +prev[6];
+  const latestGainPct = prevTotInv > 0 ? ((allTotEarn - prevTotEarn) / prevTotInv * 100) : 0;
+  const gainSign = latestGainPct >= 0 ? '+' : '';
+
+  const fmt1 = v => (v >= 0 ? '' : '') + v.toFixed(2) + '%';
+  const fmtA = v => '~' + v.toFixed(1) + '% p.a.';
+
   const insightsData = [
-    {icon:'🏆',label:'Best Earning Month',value:months[bestEarnIdx],sub:'Total: '+fmtLKR(totEarn[bestEarnIdx])},
-    {icon:'🔵',label:'Best UT ROI',value:bestUtROI+'%',sub:'Month: '+months[bestROI_UT]},
-    {icon:'📈',label:'Best Stock ROI',value:bestStkROI+'%',sub:'Month: '+months[bestROI_Stk]},
-    {icon:'🥇',label:'Best Gold ROI',value:bestGldROI+'%',sub:'Month: '+months[bestROI_Gld]},
-    {icon:'💼',label:'All-Time UT Invested',value:fmtLKR(allUtInv),sub:'Earned: '+fmtLKR(allUtEarn)},
-    {icon:'📊',label:'All-Time Stock Invested',value:fmtLKR(allStkInv),sub:'Earned: '+fmtLKR(allStkEarn)},
-    {icon:'🪙',label:'All-Time Gold Invested',value:fmtLKR(allGldInv),sub:'Earned: '+fmtLKR(allGldEarn)},
-    {icon:'🎯',label:'Overall ROI',value:overallROI+'%',sub:'Total invested: '+fmtLKR(allTotInv)},
+    { icon:'🎯', label:'Overall ROI',
+      value: overallROI + '%',
+      sub: fmtLKR(allTotEarn) + ' earned · ' + fmtLKR(allTotInv) + ' invested' },
+    { icon:'📅', label:'Avg Monthly ROI',
+      value: avgMonthlyROI.toFixed(2) + '%',
+      sub: 'average across ' + rows.length + ' readings' },
+    { icon:'🚀', label:'Est. Annual Return (Total)',
+      value: annualTotal.toFixed(1) + '%',
+      sub: 'based on ' + uniqueMonthCount + ' month' + (uniqueMonthCount>1?'s':'') + ' of data' },
+    { icon:'📊', label:'Latest vs Prev Reading',
+      value: gainSign + latestGainPct.toFixed(2) + '%',
+      sub: fmtLKR(allTotEarn - prevTotEarn) + ' change' },
+    { icon:'🔵', label:'UT Return · Annual',
+      value: roiUT_now.toFixed(2) + '%',
+      sub: fmtA(annualUT) + ' · ' + fmtLKR(allUtEarn) + ' on ' + fmtLKR(allUtInv) },
+    { icon:'📈', label:'Stock Return · Annual',
+      value: roiStk_now.toFixed(2) + '%',
+      sub: fmtA(annualStk) + ' · ' + fmtLKR(allStkEarn) + ' on ' + fmtLKR(allStkInv) },
+    { icon:'🥇', label:'Gold Return · Annual',
+      value: roiGld_now.toFixed(2) + '%',
+      sub: fmtA(annualGld) + ' · ' + fmtLKR(allGldEarn) + ' on ' + fmtLKR(allGldInv) },
+    { icon:'🏆', label:'Best Earning Point',
+      value: months[bestEarnIdx],
+      sub: fmtLKR(totEarn[bestEarnIdx]) + ' total · ' + (totInv[bestEarnIdx]>0?(totEarn[bestEarnIdx]/totInv[bestEarnIdx]*100).toFixed(1)+'% ROI':'') },
   ];
-  document.getElementById('insights').innerHTML = insightsData.map(i=>`
-    <div class="insight-item">
+  document.getElementById('insights').innerHTML = insightsData.map(i=>{
+    const v = parseFloat(i.value);
+    const col = isNaN(v) ? '#fff' : v > 0 ? '#00e676' : v < 0 ? '#ff4d8d' : 'rgba(255,255,255,.6)';
+    return `<div class="insight-item">
       <div class="insight-emoji">${i.icon}</div>
       <div>
         <div class="insight-label">${i.label}</div>
-        <div class="insight-value">${i.value}</div>
+        <div class="insight-value" style="color:${col}">${i.value}</div>
         <div class="insight-sub">${i.sub}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   /* ── Performance bars ── */
   const maxEarn = Math.max(...totEarn,1);
