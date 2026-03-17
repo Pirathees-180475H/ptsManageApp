@@ -165,18 +165,10 @@ function getHomeData() {
   } catch(e) { out.moneyFlow = null; }
 
   // ── 5. PORTFOLIO TOTAL ────────────────────────────────────────
-  // Read the dedicated "Total Portfolio" row — do NOT sum rows (investments already inside)
+  // B16 = Total Portfolio · LKR
   try {
     var portSheet = ss.getSheetByName('Portfolio');
-    var portVals  = portSheet.getRange('A2:B17').getValues();
-    var portTotal = 0;
-    for (var pi = 0; pi < portVals.length; pi++) {
-      var label = (portVals[pi][0] || '').toString().toLowerCase();
-      if (label.indexOf('total') >= 0 && label.indexOf('portfolio') >= 0) {
-        portTotal = parseFloat(portVals[pi][1]) || 0;
-        break;
-      }
-    }
+    var portTotal = parseFloat(portSheet.getRange('B16').getValue()) || 0;
     out.portfolio = { total: portTotal };
   } catch(e) { out.portfolio = null; }
 
