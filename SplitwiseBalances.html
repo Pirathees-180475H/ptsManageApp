@@ -377,6 +377,136 @@
         .friends-grid{grid-template-columns:1fr;}
         .hero-row{grid-template-columns:1fr;}
       }
+
+      /* ── Friend Transaction Drawer ── */
+      .drawer-overlay {
+        position:fixed; inset:0; background:rgba(0,0,0,.55);
+        z-index:100; opacity:0; pointer-events:none;
+        transition:opacity .3s ease;
+      }
+      .drawer-overlay.open { opacity:1; pointer-events:all; }
+
+      .drawer {
+        position:fixed; top:0; right:0; bottom:0;
+        width:440px; max-width:100vw;
+        background:linear-gradient(160deg,#0d1117,#0a0f1a);
+        border-left:1px solid rgba(255,255,255,.09);
+        box-shadow:-24px 0 80px rgba(0,0,0,.6);
+        z-index:101; display:flex; flex-direction:column;
+        transform:translateX(100%);
+        transition:transform .35s cubic-bezier(.4,0,.2,1);
+        overflow:hidden;
+      }
+      .drawer.open { transform:translateX(0); }
+
+      .drawer-top {
+        padding:22px 22px 14px;
+        border-bottom:1px solid rgba(255,255,255,.06);
+        flex-shrink:0; position:relative;
+      }
+      .drawer-close {
+        position:absolute; top:16px; right:16px;
+        width:30px; height:30px; border-radius:50%;
+        background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.1);
+        color:rgba(255,255,255,.6); font-size:1em; line-height:30px;
+        text-align:center; cursor:pointer; transition:all .2s ease;
+      }
+      .drawer-close:hover { background:rgba(255,77,109,.15); color:#ff4d6d; border-color:rgba(255,77,109,.3); }
+
+      .drawer-avatar {
+        width:46px; height:46px; border-radius:13px;
+        display:flex; align-items:center; justify-content:center;
+        font-size:1.1em; font-weight:800;
+        margin-bottom:10px;
+      }
+      .drawer-avatar.owe  { background:rgba(255,77,109,.15); border:1px solid rgba(255,77,109,.3); color:#ff4d6d; }
+      .drawer-avatar.owed { background:rgba(0,230,118,.12); border:1px solid rgba(0,230,118,.25); color:#00e676; }
+      .drawer-avatar.settled { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.5); }
+
+      .drawer-name { font-size:1.05em; font-weight:700; color:#fff; margin-bottom:3px; }
+      .drawer-balance {
+        font-size:.82em; font-weight:600;
+        padding:2px 10px; border-radius:8px; display:inline-block;
+      }
+      .drawer-balance.owe  { background:rgba(255,77,109,.15); color:#ff4d6d; }
+      .drawer-balance.owed { background:rgba(0,230,118,.12); color:#00e676; }
+      .drawer-balance.settled { background:rgba(255,255,255,.06); color:rgba(255,255,255,.4); }
+
+      .drawer-sub {
+        font-size:.63em; font-weight:700; letter-spacing:2px;
+        text-transform:uppercase; color:rgba(255,255,255,.3);
+        margin-top:12px;
+      }
+
+      .drawer-body {
+        flex:1; overflow-y:auto; padding:14px 22px 22px;
+      }
+      .drawer-body::-webkit-scrollbar{width:3px;}
+      .drawer-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px;}
+
+      /* spinner */
+      .drawer-spin {
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        height:180px; gap:14px; color:rgba(255,255,255,.3); font-size:.82em;
+      }
+      .spin-ring {
+        width:36px; height:36px; border-radius:50%;
+        border:3px solid rgba(255,255,255,.08);
+        border-top-color:#00d4ff;
+        animation:spin .9s linear infinite;
+      }
+      @keyframes spin { to{transform:rotate(360deg);} }
+
+      /* drawer txn rows */
+      .dtxn {
+        display:flex; align-items:center; gap:11px;
+        padding:11px 14px; border-radius:12px;
+        border:1px solid rgba(255,255,255,.06);
+        background:rgba(255,255,255,.025);
+        margin-bottom:7px;
+        transition:background .2s;
+      }
+      .dtxn:hover { background:rgba(255,255,255,.042); }
+      .dtxn-ico { font-size:1.25em; flex-shrink:0; width:26px; text-align:center; }
+      .dtxn-info { flex:1; min-width:0; }
+      .dtxn-desc {
+        font-size:.83em; font-weight:600; color:rgba(255,255,255,.85);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      }
+      .dtxn-meta { font-size:.62em; color:rgba(255,255,255,.3); margin-top:2px; display:flex; gap:8px; }
+      .dtxn-cost { font-size:.7em; color:rgba(255,255,255,.3); flex-shrink:0; }
+      .dtxn-net {
+        font-size:.85em; font-weight:700;
+        padding:3px 10px; border-radius:7px;
+        flex-shrink:0; white-space:nowrap;
+      }
+      .dtxn-net.owed { color:#00e676; background:rgba(0,230,118,.12); }
+      .dtxn-net.owe  { color:#ff4d6d; background:rgba(255,77,109,.12); }
+      .dtxn-net.zero { color:rgba(255,255,255,.25); background:rgba(255,255,255,.05); }
+      .dtxn-pay-badge {
+        font-size:.52em; font-weight:700; letter-spacing:1px;
+        padding:2px 7px; border-radius:5px; flex-shrink:0;
+        text-transform:uppercase;
+        background:rgba(168,85,247,.2); color:#a855f7; border:1px solid rgba(168,85,247,.3);
+      }
+      .dtxn-empty {
+        text-align:center; padding:40px 20px;
+        color:rgba(255,255,255,.2); font-size:.85em;
+      }
+      .dtxn-err { color:#ff4d6d; font-size:.8em; text-align:center; padding:30px; }
+
+      /* clickable friend card */
+      .friend-card[data-friend-id] { cursor:pointer; }
+      .friend-card[data-friend-id]:hover::after { width:5px; }
+      .friend-card[data-friend-id] .friend-name::after {
+        content:'→';
+        margin-left:6px; font-size:.75em;
+        color:rgba(255,255,255,.2);
+        transition:color .2s, margin-left .2s;
+      }
+      .friend-card[data-friend-id]:hover .friend-name::after {
+        color:rgba(255,255,255,.5); margin-left:9px;
+      }
     </style>
   </head>
   <body>
@@ -522,7 +652,13 @@
               <? var item = balanceData[fi]; ?>
               <? var fc = item.amount < 0 ? 'owe' : (item.amount > 0 ? 'owed' : 'settled'); ?>
               <? var initials = item.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2); ?>
-              <div class="friend-card <?= fc ?>" data-abs="<?= Math.abs(item.amount) ?>">
+              <div class="friend-card <?= fc ?>"
+                   data-abs="<?= Math.abs(item.amount) ?>"
+                   data-friend-id="<?= item.friendId ?>"
+                   data-friend-name="<?= item.name ?>"
+                   data-friend-amount="<?= item.amount ?>"
+                   data-friend-currency="<?= item.currency ?>"
+                   data-friend-cls="<?= fc ?>">
                 <div class="friend-top">
                   <div class="friend-avatar"><?= initials ?></div>
                   <div class="friend-name"><?= item.name ?></div>
@@ -545,6 +681,24 @@
       </div>
 
     </div><!-- /page -->
+
+    <!-- Friend Transaction Drawer -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+    <div class="drawer" id="friendDrawer">
+      <div class="drawer-top">
+        <div class="drawer-close" onclick="closeDrawer()">✕</div>
+        <div class="drawer-avatar" id="drawerAvatar"></div>
+        <div class="drawer-name" id="drawerName"></div>
+        <div class="drawer-balance" id="drawerBalance"></div>
+        <div class="drawer-sub">Latest 10 Transactions</div>
+      </div>
+      <div class="drawer-body" id="drawerBody">
+        <div class="drawer-spin">
+          <div class="spin-ring"></div>
+          Loading transactions…
+        </div>
+      </div>
+    </div>
 
     <script>
       /* ── raw data from GAS ── */
@@ -813,6 +967,111 @@
             </div>`;
         }
       }
+      /* ── Friend Drawer ── */
+      var _currentFriendId = null;
+
+      function openDrawer(friendId, name, amount, currency, cls) {
+        _currentFriendId = friendId;
+
+        // Header
+        var initials = name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);
+        var drawerAvatar   = document.getElementById('drawerAvatar');
+        var drawerName     = document.getElementById('drawerName');
+        var drawerBalance  = document.getElementById('drawerBalance');
+        drawerAvatar.className = 'drawer-avatar ' + cls;
+        drawerAvatar.textContent = initials;
+        drawerName.textContent = name;
+        drawerBalance.className = 'drawer-balance ' + cls;
+        var sign = amount > 0 ? '+' : '';
+        drawerBalance.textContent = sign + parseFloat(amount).toFixed(2) + ' ' + currency;
+
+        // Reset body to spinner
+        document.getElementById('drawerBody').innerHTML =
+          '<div class="drawer-spin"><div class="spin-ring"></div>Loading transactions…</div>';
+
+        // Open
+        document.getElementById('drawerOverlay').classList.add('open');
+        document.getElementById('friendDrawer').classList.add('open');
+
+        // Fetch from GAS
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (_currentFriendId != friendId) return; // stale
+            renderDrawerTxns(result, amount);
+          })
+          .withFailureHandler(function(err) {
+            if (_currentFriendId != friendId) return;
+            document.getElementById('drawerBody').innerHTML =
+              '<div class="dtxn-err">⚠ Failed to load: ' + (err.message||err) + '</div>';
+          })
+          .getExpensesForFriend(friendId);
+      }
+
+      function closeDrawer() {
+        _currentFriendId = null;
+        document.getElementById('drawerOverlay').classList.remove('open');
+        document.getElementById('friendDrawer').classList.remove('open');
+      }
+
+      function renderDrawerTxns(result, friendAmt) {
+        var body = document.getElementById('drawerBody');
+        if (!result || !result.success) {
+          body.innerHTML = '<div class="dtxn-err">⚠ ' + (result&&result.error ? result.error : 'Unknown error') + '</div>';
+          return;
+        }
+        var txns = result.transactions || [];
+        if (txns.length === 0) {
+          body.innerHTML = '<div class="dtxn-empty">🎉 No transactions found with this person.</div>';
+          return;
+        }
+
+        var html = '';
+        txns.forEach(function(tx) {
+          var icon = tx.isPayment ? '💸' : (tx.paidByMe ? '🧾' : '📋');
+          var netCls = tx.myNet > 0 ? 'owed' : (tx.myNet < 0 ? 'owe' : 'zero');
+          var netLabel = tx.myNet > 0 ? '+' + tx.myNet.toFixed(2)
+                       : tx.myNet < 0 ? tx.myNet.toFixed(2) : '—';
+          var payBadge = tx.isPayment ? '<span class="dtxn-pay-badge">Payment</span>' : '';
+          var others = (tx.participants||[]).filter(function(p){ return p; }).join(', ');
+          html += '<div class="dtxn">' +
+            '<div class="dtxn-ico">' + icon + '</div>' +
+            '<div class="dtxn-info">' +
+              '<div class="dtxn-desc">' + escHtml(tx.description) + '</div>' +
+              '<div class="dtxn-meta">' +
+                '<span>' + tx.date + '</span>' +
+                (others ? '<span>👥 ' + escHtml(others) + '</span>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="dtxn-cost">' + tx.currency + ' ' + tx.cost.toFixed(2) + '</div>' +
+            payBadge +
+            '<div class="dtxn-net ' + netCls + '">' + netLabel + '</div>' +
+          '</div>';
+        });
+        body.innerHTML = html;
+      }
+
+      function escHtml(s) {
+        return (s||'').toString()
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      }
+
+      // Wire up friend card clicks
+      document.querySelectorAll('.friend-card[data-friend-id]').forEach(function(card) {
+        card.addEventListener('click', function() {
+          openDrawer(
+            card.dataset.friendId,
+            card.dataset.friendName,
+            parseFloat(card.dataset.friendAmount) || 0,
+            card.dataset.friendCurrency || '',
+            card.dataset.friendCls || 'settled'
+          );
+        });
+      });
+
+      // Close on Escape
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeDrawer();
+      });
     </script>
   </body>
 </html>

@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:     #05080f;
+      --card:   rgba(255,255,255,0.033);
+      --border: rgba(255,255,255,0.07);
+      --red:    #ff4d6d;
+      --green:  #00e676;
+      --blue:   #00d4ff;
+      --purple: #a855f7;
+      --gold:   #ffd700;
+      --amber:  #f59e0b;
+      --teal:   #2dd4bf;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family:'Inter',sans-serif;
+      background:var(--bg); color:#fff;
+      height:100vh; overflow:hidden;
+    }
+
+    /* animated background */
+    body::before {
+      content:''; position:fixed; inset:0;
+      background-image:radial-gradient(circle,rgba(255,255,255,.025) 1px,transparent 1px);
+      background-size:28px 28px; pointer-events:none; z-index:0;
+    }
+    .orb {
+      position:fixed; border-radius:50%;
+      filter:blur(100px); opacity:.09;
+      animation:drift 16s ease-in-out infinite; pointer-events:none;
+    }
+    .o1{width:500px;height:500px;background:#ff4d6d;top:-160px;left:-140px;}
+    .o2{width:420px;height:420px;background:#00e676;bottom:-120px;right:-100px;animation-delay:-6s;}
+    .o3{width:300px;height:300px;background:#a855f7;top:40%;left:50%;animation-delay:-11s;}
+    .o4{width:220px;height:220px;background:#00d4ff;top:60%;left:5%;animation-delay:-3s;}
+    @keyframes drift{0%,100%{transform:translate(0,0);}40%{transform:translate(20px,-20px);}70%{transform:translate(-15px,15px);}}
+
+    /* layout */
+    .page {
+      position:relative; z-index:1;
+      height:100vh; display:flex; flex-direction:column;
+      padding:16px 20px; gap:12px; overflow:hidden;
+    }
+
+    /* header */
+    .header {
+      display:flex; align-items:center; justify-content:space-between;
+      flex-shrink:0;
+    }
+    .header-left { display:flex; align-items:center; gap:14px; }
+    .header-logo {
+      width:40px; height:40px; border-radius:12px;
+      background:linear-gradient(135deg,rgba(0,212,255,.25),rgba(168,85,247,.2));
+      border:1px solid rgba(0,212,255,.3);
+      display:flex; align-items:center; justify-content:center; font-size:1.2em;
+    }
+    .header-title {
+      font-size:1.15em; font-weight:800; letter-spacing:-.4px;
+      background:linear-gradient(135deg,#fff 0%,var(--blue) 60%,var(--purple) 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+    }
+    .header-sub { font-size:.65em; color:rgba(255,255,255,.3); font-weight:500; margin-top:1px; }
+    .header-right { display:flex; align-items:center; gap:10px; }
+    .ts-chip {
+      font-size:.65em; color:rgba(255,255,255,.35); font-weight:600;
+      background:var(--card); border:1px solid var(--border);
+      padding:6px 12px; border-radius:20px;
+    }
+    .live-dot {
+      width:7px; height:7px; border-radius:50%;
+      background:var(--green); box-shadow:0 0 8px var(--green);
+      animation:pulse 2s ease infinite; flex-shrink:0;
+    }
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+    /* KPI bar */
+    .kpi-bar {
+      display:grid; grid-template-columns:repeat(4,1fr);
+      gap:10px; flex-shrink:0;
+    }
+    .kpi {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:14px; padding:12px 16px;
+      backdrop-filter:blur(20px);
+      display:flex; align-items:center; gap:12px;
+      transition:transform .2s;
+      animation:fadeUp .5s ease both;
+    }
+    .kpi:hover { transform:translateY(-2px); }
+    .kpi-ico {
+      width:36px; height:36px; border-radius:10px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:1em;
+    }
+    .kpi-body {}
+    .kpi-label {
+      font-size:.58em; font-weight:700; letter-spacing:2px;
+      text-transform:uppercase; color:rgba(255,255,255,.3); margin-bottom:2px;
+    }
+    .kpi-value { font-size:1.2em; font-weight:800; letter-spacing:-.5px; }
+    .kpi-sub { font-size:.6em; color:rgba(255,255,255,.3); margin-top:1px; }
+
+    /* module grid */
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px; flex:1; min-height:0;
+    }
+
+    /* module tile */
+    .tile {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:18px; padding:18px;
+      backdrop-filter:blur(20px);
+      display:flex; flex-direction:column; gap:10px;
+      cursor:pointer; position:relative; overflow:hidden;
+      transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+      animation:fadeUp .55s ease both;
+    }
+    .tile:hover { transform:translateY(-3px); }
+    .tile::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:1px;
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+    }
+    /* per-tile accent */
+    .tile[data-module=cc]   { --accent:#00d4ff; }
+    .tile[data-module=sw]   { --accent:#a855f7; }
+    .tile[data-module=exp]  { --accent:#ff4d6d; }
+    .tile[data-module=inv]  { --accent:#ffd700; }
+    .tile[data-module=mf]   { --accent:#00e676; }
+    .tile[data-module=port] { --accent:#2dd4bf; }
+    .tile[data-module=add]  { --accent:#f59e0b; }
+
+    .tile::after {
+      content:''; position:absolute; left:0; top:0; bottom:0;
+      width:3px; border-radius:0 3px 3px 0;
+      background:var(--accent); box-shadow:0 0 10px var(--accent);
+      opacity:.7; transition:opacity .25s;
+    }
+    .tile:hover::after { opacity:1; }
+    .tile:hover { border-color:color-mix(in srgb,var(--accent) 25%,var(--border)); box-shadow:0 12px 40px color-mix(in srgb,var(--accent) 15%,transparent); }
+
+    /* tile header */
+    .tile-hdr {
+      display:flex; align-items:center; gap:10px;
+    }
+    .tile-icon {
+      width:34px; height:34px; border-radius:10px; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center; font-size:1em;
+      background:color-mix(in srgb,var(--accent) 15%,transparent);
+      border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+    }
+    .tile-name {
+      font-size:.78em; font-weight:700; letter-spacing:1.5px;
+      text-transform:uppercase; color:rgba(255,255,255,.55);
+      flex:1;
+    }
+    .tile-arrow {
+      font-size:.75em; color:color-mix(in srgb,var(--accent) 60%,transparent);
+      background:color-mix(in srgb,var(--accent) 10%,transparent);
+      border:1px solid color-mix(in srgb,var(--accent) 20%,transparent);
+      padding:3px 9px; border-radius:8px;
+      transition:all .2s; font-weight:700;
+    }
+    .tile:hover .tile-arrow {
+      background:color-mix(in srgb,var(--accent) 20%,transparent);
+      color:var(--accent);
+    }
+
+    /* tile body */
+    .tile-body { flex:1; display:flex; flex-direction:column; gap:6px; }
+
+    .metric {
+      display:flex; align-items:baseline; justify-content:space-between;
+      padding:5px 0; border-bottom:1px solid rgba(255,255,255,.04);
+    }
+    .metric:last-child { border-bottom:none; }
+    .metric-label {
+      font-size:.65em; color:rgba(255,255,255,.35); font-weight:500; flex-shrink:0;
+    }
+    .metric-value {
+      font-size:.85em; font-weight:700; text-align:right;
+    }
+    .metric-value.accent { color:var(--accent); }
+    .metric-value.green  { color:var(--green); }
+    .metric-value.red    { color:var(--red); }
+    .metric-value.muted  { color:rgba(255,255,255,.3); }
+
+    /* big number in tile */
+    .tile-big {
+      font-size:1.55em; font-weight:800; letter-spacing:-.8px;
+      color:var(--accent); text-shadow:0 0 30px color-mix(in srgb,var(--accent) 40%,transparent);
+      line-height:1; margin:2px 0;
+    }
+    .tile-big-label {
+      font-size:.62em; color:rgba(255,255,255,.3); font-weight:500; margin-bottom:4px;
+    }
+
+    /* badge chips */
+    .badge {
+      display:inline-block; font-size:.55em; font-weight:700;
+      letter-spacing:1px; text-transform:uppercase;
+      padding:2px 8px; border-radius:6px;
+    }
+    .badge.green { background:rgba(0,230,118,.15); color:var(--green); border:1px solid rgba(0,230,118,.25); }
+    .badge.red   { background:rgba(255,77,109,.15); color:var(--red);   border:1px solid rgba(255,77,109,.25); }
+    .badge.amber { background:rgba(245,158,11,.15); color:#f59e0b;      border:1px solid rgba(245,158,11,.25); }
+    .badge.blue  { background:rgba(0,212,255,.12);  color:var(--blue);  border:1px solid rgba(0,212,255,.2); }
+
+    /* delta pill */
+    .delta {
+      font-size:.62em; font-weight:700; padding:1px 7px; border-radius:6px;
+    }
+    .delta.up   { background:rgba(0,230,118,.12);  color:var(--green); }
+    .delta.down { background:rgba(255,77,109,.12); color:var(--red); }
+    .delta.flat { background:rgba(255,255,255,.06); color:rgba(255,255,255,.3); }
+
+    /* card row in CC tile */
+    .cc-card-row {
+      display:flex; align-items:center; gap:8px;
+      padding:5px 8px; border-radius:8px;
+      background:rgba(255,255,255,.025); border:1px solid rgba(255,255,255,.05);
+    }
+    .cc-card-name { font-size:.7em; font-weight:600; color:rgba(255,255,255,.7); flex:1; }
+    .cc-card-bal  { font-size:.75em; font-weight:700; }
+
+    /* loading state */
+    .loading {
+      display:flex; align-items:center; justify-content:center;
+      height:100%; flex-direction:column; gap:14px;
+      color:rgba(255,255,255,.3); font-size:.85em;
+    }
+    .spin {
+      width:38px; height:38px; border-radius:50%;
+      border:3px solid rgba(255,255,255,.06);
+      border-top-color:var(--blue);
+      animation:spin .9s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* add-expense tile special */
+    .tile-add-body {
+      flex:1; display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:10px;
+      text-align:center;
+    }
+    .tile-add-icon { font-size:2.2em; opacity:.6; }
+    .tile-add-text { font-size:.75em; color:rgba(255,255,255,.35); line-height:1.5; }
+    .tile-add-day  { font-size:.95em; font-weight:700; color:var(--amber); }
+
+    /* progress bar */
+    .prog-wrap { height:4px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; margin-top:2px; }
+    .prog-bar  { height:100%; border-radius:3px; transition:width 1.2s cubic-bezier(.4,0,.2,1); width:0; }
+
+    /* animations */
+    @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+    .kpi:nth-child(1){animation-delay:.05s;}
+    .kpi:nth-child(2){animation-delay:.10s;}
+    .kpi:nth-child(3){animation-delay:.15s;}
+    .kpi:nth-child(4){animation-delay:.20s;}
+    .tile:nth-child(1){animation-delay:.12s;}
+    .tile:nth-child(2){animation-delay:.18s;}
+    .tile:nth-child(3){animation-delay:.24s;}
+    .tile:nth-child(4){animation-delay:.30s;}
+    .tile:nth-child(5){animation-delay:.36s;}
+    .tile:nth-child(6){animation-delay:.42s;}
+
+    ::-webkit-scrollbar{width:3px;}
+    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px;}
+  </style>
+</head>
+<body>
+
+<div class="orb o1"></div>
+<div class="orb o2"></div>
+<div class="orb o3"></div>
+<div class="orb o4"></div>
+
+<div class="page" id="page">
+  <div class="loading"><div class="spin"></div>Loading your financial overview…</div>
+</div>
+
+<script>
+  /* ── helpers ── */
+  function fmt(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return Math.abs(n) >= 1000000
+      ? (n / 1000000).toFixed(2) + 'M'
+      : Math.abs(n) >= 1000
+        ? (n / 1000).toFixed(1) + 'k'
+        : n.toFixed(0);
+  }
+  function fmtFull(n) {
+    if (!n && n !== 0) return '—';
+    return Number(n).toLocaleString('en-LK', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  function pct(a, b) {
+    if (!b) return 0;
+    return ((a - b) / b * 100);
+  }
+
+  /* ── navigate to a module ── */
+  function navTo(module) {
+    var fn = {
+      cc:   'showCreditCardSummary',
+      sw:   'getFriendBalances',
+      exp:  'showExpenseDashboard',
+      inv:  'showInvestmentDashboard',
+      mf:   'showInvestFlow',
+      port: 'showPortfolioSummary',
+      add:  'showAddExpense'
+    }[module];
+    if (!fn) return;
+    google.script.run[fn]();
+    setTimeout(function() { google.script.host.close(); }, 150);
+  }
+
+  /* ── render ── */
+  function render(D) {
+    var page = document.getElementById('page');
+
+    // ── timestamp ──
+    var now = new Date();
+    var ts  = now.toLocaleDateString('en-US', { weekday:'short', day:'numeric', month:'short', year:'numeric' })
+              + ' · ' + now.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+
+    // ── derived KPIs ──
+    var exp   = D.expenses    || {};
+    var cc    = D.creditCards || {};
+    var inv   = D.investments || {};
+    var mf    = D.moneyFlow   || {};
+    var port  = D.portfolio   || {};
+
+    var monthSpend  = exp.thisTotal  || 0;
+    var prevSpend   = exp.prevTotal  || 0;
+    var spendDelta  = pct(monthSpend, prevSpend);
+    var swBal       = (cc.swBalance  !== undefined) ? cc.swBalance  : null;
+    var savingPct   = mf.savingPct   || 0;
+    var portTotal   = port.total     || 0;
+    var totalInvested = (inv.utInvested||0) + (inv.stockInvested||0) + (inv.goldInvested||0);
+    var totalEarnings = (inv.utEarnings||0) + (inv.stockEarnings||0) + (inv.goldEarnings||0);
+    var netWorth    = portTotal + totalInvested;
+
+    // CC total outstanding
+    var ccTotal = (cc.cards || []).reduce(function(s, c) { return s + c.balance; }, 0);
+
+    // ── KPI bar ──
+    var kpiHtml = `
+      <div class="kpi-bar" id="kpiBar">
+        <div class="kpi">
+          <div class="kpi-ico" style="background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.25)">💎</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Est. Net Worth</div>
+            <div class="kpi-value" style="color:#2dd4bf">${netWorth > 0 ? 'LKR ' + fmt(netWorth) : '—'}</div>
+            <div class="kpi-sub">portfolio + investments</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ico" style="background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.25)">💸</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Monthly Spend</div>
+            <div class="kpi-value" style="color:#ff4d6d">${monthSpend ? 'LKR ' + fmt(monthSpend) : '—'}</div>
+            <div class="kpi-sub">${exp.latestMonth || 'latest month'}</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ico" style="background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.25)">🤝</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Splitwise Balance</div>
+            <div class="kpi-value" style="color:${swBal > 0 ? '#00e676' : swBal < 0 ? '#ff4d6d' : 'rgba(255,255,255,.4)'}">${swBal !== null ? (swBal >= 0 ? '+' : '') + fmt(swBal) + ' LKR' : '—'}</div>
+            <div class="kpi-sub">${swBal >= 0 ? 'net owed to you' : 'net you owe'}</div>
+          </div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-ico" style="background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.2)">📈</div>
+          <div class="kpi-body">
+            <div class="kpi-label">Savings Rate</div>
+            <div class="kpi-value" style="color:#00e676">${savingPct ? savingPct.toFixed(1) + '%' : '—'}</div>
+            <div class="kpi-sub">${mf.month || 'latest month'}</div>
+          </div>
+        </div>
+      </div>`;
+
+    // ── CC tile ──
+    var ccCards = (cc.cards || []);
+    var ccBody = ccCards.length > 0
+      ? ccCards.map(function(c) {
+          var settledBadge = c.settled
+            ? '<span class="badge green">Settled</span>'
+            : '<span class="badge amber">Pending</span>';
+          return `<div class="cc-card-row">
+            <span class="cc-card-name">💳 ${c.name}</span>
+            ${settledBadge}
+            <span class="cc-card-bal" style="color:${c.balance > 0 ? '#ff4d6d' : '#00e676'}">${fmt(c.balance)}</span>
+          </div>`;
+        }).join('')
+      : '<div style="color:rgba(255,255,255,.2);font-size:.75em;text-align:center;padding:12px">No card data</div>';
+    var ccUnsettled = ccCards.filter(function(c){ return !c.settled; }).length;
+    var ccTile = `
+      <div class="tile" data-module="cc" onclick="navTo('cc')">
+        <div class="tile-hdr">
+          <div class="tile-icon">💳</div>
+          <div class="tile-name">Credit Cards</div>
+          <div class="tile-arrow">Open →</div>
+        </div>
+        <div class="tile-big-label">Total Outstanding</div>
+        <div class="tile-big">${ccTotal > 0 ? 'LKR ' + fmt(ccTotal) : '—'}</div>
+        <div class="tile-body">
+          ${ccBody}
+          ${ccUnsettled > 0 ? `<div style="margin-top:4px"><span class="badge amber">⚠ ${ccUnsettled} card${ccUnsettled>1?'s':''} unsettled</span></div>` : '<div style="margin-top:4px"><span class="badge green">✓ All settled</span></div>'}
+        </div>
+      </div>`;
+
+    // ── Splitwise tile ──
+    var swCls   = (swBal > 0) ? 'green' : (swBal < 0 ? 'red' : 'muted');
+    var swLabel = (swBal > 0) ? 'People owe you' : (swBal < 0 ? 'You owe net' : 'All balanced');
+    var swTile  = `
+      <div class="tile" data-module="sw" onclick="navTo('sw')">
+        <div class="tile-hdr">
+          <div class="tile-icon">🤝</div>
+          <div class="tile-name">Splitwise</div>
+          <div class="tile-arrow">Open →</div>
+        </div>
+        <div class="tile-big-label">${swLabel}</div>
+        <div class="tile-big" style="color:${swBal >= 0 ? 'var(--green)' : 'var(--red)'};text-shadow:0 0 30px ${swBal >= 0 ? 'rgba(0,230,118,.4)' : 'rgba(255,77,109,.4)'}">
+          ${swBal !== null ? (swBal >= 0 ? '+' : '') + fmtFull(swBal) + ' LKR' : '—'}
+        </div>
+        <div class="tile-body">
+          <div class="metric">
+            <span class="metric-label">Sheet recorded balance</span>
+            <span class="metric-value accent">${swBal !== null ? fmtFull(swBal) : '—'} LKR</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Status</span>
+            <span class="metric-value ${swBal > 0 ? 'green' : swBal < 0 ? 'red' : 'muted'}">${swLabel}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Click to load live balances</span>
+            <span class="metric-value muted">via Splitwise API</span>
+          </div>
+        </div>
+      </div>`;
+
+    // ── Expenses tile ──
+    var dSign  = spendDelta >= 0 ? '▲' : '▼';
+    var dCls   = spendDelta >= 0 ? 'down' : 'up';  // spending up = bad = down
+    var topCats = (exp.topCats || []).slice(0, 3);
+    var expBody = topCats.length > 0
+      ? topCats.map(function(c, i) {
+          var barPct = monthSpend > 0 ? Math.min(100, c.val / monthSpend * 100) : 0;
+          var barColor = i === 0 ? 'var(--red)' : i === 1 ? 'var(--amber)' : 'rgba(255,255,255,.3)';
+          return `<div class="metric">
+            <span class="metric-label">${c.name}</span>
+            <span class="metric-value accent">${fmt(c.val)}</span>
+          </div>
+          <div class="prog-wrap"><div class="prog-bar" data-w="${barPct.toFixed(1)}" style="background:${barColor}"></div></div>`;
+        }).join('')
+      : '';
+    var expTile = `
+      <div class="tile" data-module="exp" onclick="navTo('exp')">
+        <div class="tile-hdr">
+          <div class="tile-icon">📊</div>
+          <div class="tile-name">Expenses</div>
+          <div class="tile-arrow">Open →</div>
+        </div>
+        <div class="tile-big-label">${exp.latestMonth || 'Latest Month'}</div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin:2px 0">
+          <div class="tile-big" style="color:var(--red)">${monthSpend ? 'LKR ' + fmt(monthSpend) : '—'}</div>
+          ${prevSpend ? `<span class="delta ${dCls}">${dSign} ${Math.abs(spendDelta).toFixed(1)}% vs ${exp.prevMonth||'prev'}</span>` : ''}
+        </div>
+        <div class="tile-body">${expBody}</div>
+      </div>`;
+
+    // ── Investments tile ──
+    var invEarn = totalEarnings;
+    var invBody = inv.month ? `
+      <div class="metric">
+        <span class="metric-label">🏦 Unit Trust earnings</span>
+        <span class="metric-value ${inv.utEarnings >= 0 ? 'green' : 'red'}">${fmt(inv.utEarnings)}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">📉 Stock earnings</span>
+        <span class="metric-value ${inv.stockEarnings >= 0 ? 'green' : 'red'}">${fmt(inv.stockEarnings)}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">🪙 Gold earnings</span>
+        <span class="metric-value ${inv.goldEarnings >= 0 ? 'green' : 'red'}">${fmt(inv.goldEarnings)}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Total invested capital</span>
+        <span class="metric-value accent">LKR ${fmt(totalInvested)}</span>
+      </div>` : '<div style="color:rgba(255,255,255,.2);font-size:.75em;text-align:center;padding:12px">No investment data</div>';
+    var invTile = `
+      <div class="tile" data-module="inv" onclick="navTo('inv')">
+        <div class="tile-hdr">
+          <div class="tile-icon">📈</div>
+          <div class="tile-name">Investments</div>
+          <div class="tile-arrow">Open →</div>
+        </div>
+        <div class="tile-big-label">Total Earnings · ${inv.month || ''}</div>
+        <div class="tile-big" style="color:var(--gold);text-shadow:0 0 30px rgba(255,215,0,.35)">${invEarn ? (invEarn >= 0 ? '+' : '') + 'LKR ' + fmt(invEarn) : '—'}</div>
+        <div class="tile-body">${invBody}</div>
+      </div>`;
+
+    // ── Money Flow tile ──
+    var savBarPct = Math.min(100, savingPct || 0);
+    var savColor  = savingPct >= 30 ? 'var(--green)' : savingPct >= 15 ? 'var(--amber)' : 'var(--red)';
+    var mfBody = mf.month ? `
+      <div class="metric">
+        <span class="metric-label">Income</span>
+        <span class="metric-value green">LKR ${fmt(mf.income)}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Sent home</span>
+        <span class="metric-value accent">LKR ${fmt(mf.sentHome)}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Invested this month</span>
+        <span class="metric-value accent">LKR ${fmt(mf.totalInvested)}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Savings rate</span>
+        <span class="metric-value" style="color:${savColor}">${savingPct ? savingPct.toFixed(1) + '%' : '—'}</span>
+      </div>
+      <div class="prog-wrap"><div class="prog-bar" data-w="${savBarPct.toFixed(1)}" style="background:${savColor}"></div></div>` : '';
+    var mfTile = `
+      <div class="tile" data-module="mf" onclick="navTo('mf')">
+        <div class="tile-hdr">
+          <div class="tile-icon">💰</div>
+          <div class="tile-name">Money Flow</div>
+          <div class="tile-arrow">Open →</div>
+        </div>
+        <div class="tile-big-label">Savings Rate · ${mf.month || ''}</div>
+        <div class="tile-big" style="color:${savColor}">${savingPct ? savingPct.toFixed(1) + '%' : '—'}</div>
+        <div class="tile-body">${mfBody}</div>
+      </div>`;
+
+    // ── Portfolio tile ──
+    var portTile = `
+      <div class="tile" data-module="port" onclick="navTo('port')">
+        <div class="tile-hdr">
+          <div class="tile-icon">📁</div>
+          <div class="tile-name">Portfolio</div>
+          <div class="tile-arrow">Open →</div>
+        </div>
+        <div class="tile-big-label">Total Portfolio Value</div>
+        <div class="tile-big" style="color:var(--teal);text-shadow:0 0 30px rgba(45,212,191,.35)">${portTotal > 0 ? 'LKR ' + fmt(portTotal) : '—'}</div>
+        <div class="tile-body">
+          <div class="metric">
+            <span class="metric-label">Investments (UT + Stock + Gold)</span>
+            <span class="metric-value accent">LKR ${fmt(totalInvested)}</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Est. combined net worth</span>
+            <span class="metric-value" style="color:var(--teal)">LKR ${netWorth > 0 ? fmt(netWorth) : '—'}</span>
+          </div>
+          <div style="margin-top:6px;font-size:.62em;color:rgba(255,255,255,.2)">
+            🔒 Password protected — click to unlock
+          </div>
+        </div>
+      </div>`;
+
+    // ── Add Expense tile ──
+    var today = new Date();
+    var todayStr = today.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long'});
+    var addTile = `
+      <div class="tile" data-module="add" onclick="navTo('add')">
+        <div class="tile-hdr">
+          <div class="tile-icon">➕</div>
+          <div class="tile-name">Add / Edit Expense</div>
+          <div class="tile-arrow">Open →</div>
+        </div>
+        <div class="tile-add-body">
+          <div class="tile-add-icon">🗓️</div>
+          <div class="tile-add-day">${todayStr}</div>
+          <div class="tile-add-text">Tap to load today's daily log,<br>edit expenses or add new entries</div>
+        </div>
+      </div>`;
+
+    // ── compose page ──
+    page.innerHTML = `
+      <div class="header">
+        <div class="header-left">
+          <div class="header-logo">🏠</div>
+          <div>
+            <div class="header-title">PTS Command Centre</div>
+            <div class="header-sub">Your complete financial overview</div>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="live-dot"></div>
+          <div class="ts-chip">${ts}</div>
+        </div>
+      </div>
+      ${kpiHtml}
+      <div class="grid">
+        ${ccTile}
+        ${swTile}
+        ${expTile}
+        ${invTile}
+        ${mfTile}
+        ${portTile}
+      </div>`;
+
+    // animate progress bars
+    setTimeout(function() {
+      document.querySelectorAll('.prog-bar[data-w]').forEach(function(b) {
+        b.style.width = b.dataset.w + '%';
+      });
+    }, 400);
+  }
+
+  /* ── boot ── */
+  google.script.run
+    .withSuccessHandler(render)
+    .withFailureHandler(function(err) {
+      document.getElementById('page').innerHTML =
+        '<div class="loading" style="color:#ff4d6d">⚠ Failed to load: ' + (err.message || err) + '</div>';
+    })
+    .getHomeData();
+</script>
+</body>
+</html>

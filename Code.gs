@@ -3,6 +3,10 @@ function onEdit(e) {
   
   var sheet = e.range.getSheet();
   
+  // A1 → Home Command Centre
+  if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'A1') {
+    showHomeDashboard();
+  }
   // Only trigger if B1 is edited on 'Monthly Expences' sheet
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'B1') {
     showCreditCardSummary();
@@ -23,7 +27,144 @@ function onEdit(e) {
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'G1') {
     showExpenseDashboard();
   }
+  if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'H1') {
+    showAddExpense();
+  }
+}
 
+// ═══════════════════════════════════════════════════════════════
+// HOME COMMAND CENTRE
+// ═══════════════════════════════════════════════════════════════
+
+function showHomeDashboard() {
+  try {
+    var html = HtmlService.createHtmlOutputFromFile('homeDashboard')
+      .setWidth(1440)
+      .setHeight(900);
+    SpreadsheetApp.getUi().showModalDialog(html, '🏠 PTS Command Centre');
+  } catch (error) { /* silent fail */ }
+}
+
+function getHomeData() {
+  var ss  = SpreadsheetApp.getActiveSpreadsheet();
+  var out = {};
+
+  // ── 1. EXPENSES ──────────────────────────────────────────────
+  try {
+    var expSheet  = ss.getSheetByName('Monthly Expences');
+    var headerRow = expSheet.getRange(6, 1, 1, 30).getValues()[0];
+    var tableData = expSheet.getRange(7, 1, 11, 30).getValues();
+
+    var monthCols = [];
+    for (var c = 1; c < headerRow.length; c++) {
+      var h = (headerRow[c] || '').toString().trim();
+      if (!h || h.toUpperCase() === 'TOTAL') continue;
+      monthCols.push({ label: h, colIndex: c });
+    }
+
+    var totalRow = null, categories = [];
+    tableData.forEach(function(row) {
+      var name = (row[0] || '').toString().trim();
+      if (!name) return;
+      if (name.toLowerCase().indexOf('total') >= 0) { totalRow = row; }
+      else { categories.push({ name: name, values: row }); }
+    });
+
+    if (monthCols.length > 0 && totalRow) {
+      var last = monthCols[monthCols.length - 1];
+      var prev = monthCols.length > 1 ? monthCols[monthCols.length - 2] : null;
+      var thisTotal = parseFloat(totalRow[last.colIndex]) || 0;
+      var prevTotal = prev ? (parseFloat(totalRow[prev.colIndex]) || 0) : 0;
+
+      var cats = categories.map(function(c) {
+        return { name: c.name, val: parseFloat(c.values[last.colIndex]) || 0 };
+      }).sort(function(a, b) { return b.val - a.val; });
+
+      out.expenses = {
+        latestMonth: last.label,
+        prevMonth:   prev ? prev.label : '',
+        thisTotal:   thisTotal,
+        prevTotal:   prevTotal,
+        topCats:     cats.slice(0, 3)
+      };
+    }
+  } catch(e) { out.expenses = null; }
+
+  // ── 2. CREDIT CARDS + SW SHEET BALANCE ───────────────────────
+  try {
+    var ccSheet  = ss.getSheetByName('CC_SW_CL_INST');
+    var ccValues = ccSheet.getRange('A4:H6').getValues();
+    var swBal    = parseFloat(ccSheet.getRange('C44').getValue()) || 0;
+
+    var cards = ccValues.map(function(row) {
+      return {
+        name:         (row[0] || '').toString().trim(),
+        balance:      parseFloat(row[2]) || 0,
+        settled:      (row[3] === true || row[3] === 'TRUE'),
+        lastStatement: parseFloat(row[7]) || 0
+      };
+    }).filter(function(c) { return c.name; });
+
+    out.creditCards = { cards: cards, swBalance: swBal };
+  } catch(e) { out.creditCards = null; }
+
+  // ── 3. INVESTMENTS (latest row from UT_CRYPTO log) ───────────
+  try {
+    var utSheet  = ss.getSheetByName('UT_CRYPTO');
+    var startRow = 46;
+    var lastRow  = utSheet.getLastRow();
+    if (lastRow >= startRow) {
+      var rows = utSheet.getRange(startRow, 1, lastRow - startRow + 1, 7).getValues()
+        .filter(function(r) { return r[0]; });
+      if (rows.length > 0) {
+        var lr = rows[rows.length - 1];
+        var monthLabel = '';
+        try { monthLabel = Utilities.formatDate(new Date(lr[0]), Session.getScriptTimeZone(), 'MMM yyyy'); }
+        catch(e2) { monthLabel = lr[0].toString(); }
+        out.investments = {
+          month:         monthLabel,
+          utEarnings:    Number(lr[1]) || 0,
+          stockEarnings: Number(lr[2]) || 0,
+          goldEarnings:  Number(lr[3]) || 0,
+          utInvested:    Number(lr[4]) || 0,
+          stockInvested: Number(lr[5]) || 0,
+          goldInvested:  Number(lr[6]) || 0
+        };
+      }
+    }
+  } catch(e) { out.investments = null; }
+
+  // ── 4. MONEY FLOW ─────────────────────────────────────────────
+  try {
+    var mfSheet  = ss.getSheetByName('Money Flow and invest');
+    var mfLastRow = mfSheet.getLastRow();
+    var mfRows = mfSheet.getRange(2, 1, mfLastRow - 1, 11).getValues()
+      .filter(function(r) { return r[0]; });
+    if (mfRows.length > 0) {
+      var ml = mfRows[mfRows.length - 1];
+      var mLabel = ml[0] instanceof Date
+        ? Utilities.formatDate(ml[0], Session.getScriptTimeZone(), 'MMM/yyyy')
+        : (ml[0] || '').toString().trim();
+      out.moneyFlow = {
+        month:         mLabel,
+        sentHome:      Number(ml[1]) || 0,
+        totalInvested: Number(ml[8]) || 0,
+        income:        Number(ml[9]) || 0,
+        savingPct:     Number(ml[10]) || 0
+      };
+    }
+  } catch(e) { out.moneyFlow = null; }
+
+  // ── 5. PORTFOLIO TOTAL ────────────────────────────────────────
+  try {
+    var portSheet = ss.getSheetByName('Portfolio');
+    var portVals  = portSheet.getRange('A2:B17').getValues();
+    var portTotal = 0;
+    portVals.forEach(function(row) { portTotal += parseFloat(row[1]) || 0; });
+    out.portfolio = { total: portTotal };
+  } catch(e) { out.portfolio = null; }
+
+  return out;
 }
 
 function showInvestFlow() {
@@ -472,6 +613,7 @@ function getFriendBalances() {
         const currency = bal.currency_code;
         balanceData.push({
           name: fullName,
+          friendId: friend.id,
           amount: amount,
           currency: currency,
           status: amount < 0 ? 'I need to pay' : amount > 0 ? 'They need to pay' : 'Settled up'
@@ -755,6 +897,61 @@ function getExpenseData() {
 
   } catch (error) {
     throw new Error('Failed to load expense data: ' + error.message);
+  }
+}
+
+function getExpensesForFriend(friendId) {
+  var apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
+  var headers = { 'Authorization': 'Bearer ' + apiKey };
+  var opts = { method: 'get', headers: headers, muteHttpExceptions: true };
+
+  try {
+    // ── 1. Current user ID ──
+    var currentUserId = null;
+    try {
+      var meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', opts);
+      currentUserId = JSON.parse(meResp.getContentText()).user.id;
+    } catch(e) {}
+
+    // ── 2. Fetch expenses for this specific friend ──
+    var url = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=20&offset=0&friend_id=' + friendId;
+    var expResp = UrlFetchApp.fetch(url, opts);
+    var expenses = JSON.parse(expResp.getContentText()).expenses || [];
+
+    var transactions = expenses
+      .filter(function(e) { return !e.deleted_at; })
+      .slice(0, 10)
+      .map(function(e) {
+        var myNet = 0, paidByMe = false;
+        if (currentUserId) {
+          for (var i = 0; i < e.users.length; i++) {
+            if (e.users[i].user_id === currentUserId) {
+              myNet = parseFloat(e.users[i].net_balance || 0);
+              paidByMe = parseFloat(e.users[i].paid_share || 0) > 0;
+              break;
+            }
+          }
+        }
+        // All participant first names
+        var participants = (e.users || []).map(function(u) {
+          return (u.user && u.user.first_name) ? u.user.first_name : 'User';
+        });
+        return {
+          id:           e.id,
+          description:  e.description || '(no description)',
+          date:         Utilities.formatDate(new Date(e.date), Session.getScriptTimeZone(), 'dd MMM yyyy'),
+          cost:         parseFloat(e.cost),
+          currency:     e.currency_code,
+          myNet:        myNet,
+          paidByMe:     paidByMe,
+          isPayment:    e.payment === true,
+          participants: participants
+        };
+      });
+
+    return { success: true, transactions: transactions };
+  } catch(err) {
+    return { success: false, error: err.message };
   }
 }
 
