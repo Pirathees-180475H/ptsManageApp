@@ -85,7 +85,10 @@ function getHomeData() {
         prevMonth:   prev ? prev.label : '',
         thisTotal:   thisTotal,
         prevTotal:   prevTotal,
-        topCats:     cats.slice(0, 3)
+        topCats:     cats.slice(0, 3),
+        allMonths:   monthCols.map(function(mc) {
+          return { label: mc.label, total: parseFloat(totalRow[mc.colIndex]) || 0 };
+        }).slice(-8)  // last 8 months for trend chart
       };
     }
   } catch(e) { out.expenses = null; }
@@ -150,17 +153,30 @@ function getHomeData() {
         sentHome:      Number(ml[1]) || 0,
         totalInvested: Number(ml[8]) || 0,
         income:        Number(ml[9]) || 0,
-        savingPct:     Number(ml[10]) || 0
+        savingPct:     Number(ml[10]) || 0,
+        history: mfRows.slice(-7).map(function(r) {
+          var lbl = r[0] instanceof Date
+            ? Utilities.formatDate(r[0], Session.getScriptTimeZone(), 'MMM/yy')
+            : (r[0] || '').toString().slice(0, 8);
+          return { month: lbl, savingPct: Number(r[10]) || 0, income: Number(r[9]) || 0 };
+        })
       };
     }
   } catch(e) { out.moneyFlow = null; }
 
   // ── 5. PORTFOLIO TOTAL ────────────────────────────────────────
+  // Read the dedicated "Total Portfolio" row — do NOT sum rows (investments already inside)
   try {
     var portSheet = ss.getSheetByName('Portfolio');
     var portVals  = portSheet.getRange('A2:B17').getValues();
     var portTotal = 0;
-    portVals.forEach(function(row) { portTotal += parseFloat(row[1]) || 0; });
+    for (var pi = 0; pi < portVals.length; pi++) {
+      var label = (portVals[pi][0] || '').toString().toLowerCase();
+      if (label.indexOf('total') >= 0 && label.indexOf('portfolio') >= 0) {
+        portTotal = parseFloat(portVals[pi][1]) || 0;
+        break;
+      }
+    }
     out.portfolio = { total: portTotal };
   } catch(e) { out.portfolio = null; }
 
