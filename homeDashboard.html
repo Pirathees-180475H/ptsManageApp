@@ -47,8 +47,9 @@
     .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;flex:1;min-height:0;}
 
     /* tile */
-    .tile{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;backdrop-filter:blur(20px);display:flex;flex-direction:column;gap:8px;cursor:pointer;position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s,border-color .25s;animation:fadeUp .55s ease both;}
-    .tile:hover{transform:translateY(-3px);}
+    .tile{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:15px;backdrop-filter:blur(20px);display:flex;flex-direction:column;gap:8px;cursor:default;position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s,border-color .25s;animation:fadeUp .55s ease both;}
+    .tile:hover{transform:translateY(-2px);}
+    .tile[data-m=port]{cursor:pointer;}
     .tile::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);}
     .tile[data-m=cc]   {--ac:#00d4ff;}
     .tile[data-m=sw]   {--ac:#a855f7;}
@@ -128,13 +129,79 @@
     .tile:nth-child(3){animation-delay:.24s;} .tile:nth-child(4){animation-delay:.30s;}
     .tile:nth-child(5){animation-delay:.36s;} .tile:nth-child(6){animation-delay:.42s;}
     ::-webkit-scrollbar{width:3px;} ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px;}
+
+    /* ── PIN overlay ── */
+    .pin-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s ease;backdrop-filter:blur(6px);}
+    .pin-overlay.open{opacity:1;pointer-events:all;}
+    .pin-card{background:linear-gradient(160deg,#0e1420,#0b1018);border:1px solid rgba(45,212,191,.2);border-radius:22px;padding:28px 24px 22px;width:260px;text-align:center;box-shadow:0 0 60px rgba(45,212,191,.1),0 24px 60px rgba(0,0,0,.7);position:relative;}
+    .pin-card::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,rgba(45,212,191,.4),transparent);}
+    @keyframes pinShake{0%,100%{transform:translateX(0);}15%,45%,75%{transform:translateX(-8px);}30%,60%,90%{transform:translateX(8px);}}
+    .pin-card.shake{animation:pinShake .5s ease;}
+    .pin-lock-ico{font-size:1.8em;margin-bottom:8px;}
+    .pin-title{font-size:.95em;font-weight:800;color:#fff;margin-bottom:2px;}
+    .pin-sub{font-size:.62em;color:rgba(255,255,255,.3);margin-bottom:18px;}
+    .pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:20px;}
+    .pin-dot{width:13px;height:13px;border-radius:50%;border:2px solid rgba(45,212,191,.35);background:transparent;transition:all .15s ease;}
+    .pin-dot.filled{background:var(--teal);border-color:var(--teal);box-shadow:0 0 10px rgba(45,212,191,.6);}
+    .pin-dot.err{background:#ff4d6d !important;border-color:#ff4d6d !important;box-shadow:0 0 10px rgba(255,77,109,.6) !important;}
+    .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+    .pin-btn{height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);color:rgba(255,255,255,.8);font-size:.95em;font-weight:700;cursor:pointer;transition:all .15s ease;font-family:'Inter',sans-serif;}
+    .pin-btn:hover{background:rgba(45,212,191,.15);border-color:rgba(45,212,191,.3);color:var(--teal);}
+    .pin-btn:active{transform:scale(.93);background:rgba(45,212,191,.25);}
+    .pin-btn.del{font-size:.8em;color:rgba(255,255,255,.45);}
+    .pin-btn.cancel{font-size:.65em;color:rgba(255,255,255,.3);letter-spacing:1px;text-transform:uppercase;}
+    .pin-btn.cancel:hover{background:rgba(255,77,109,.1);border-color:rgba(255,77,109,.25);color:#ff4d6d;}
+
+    /* portfolio tile blurred state */
+    .port-blur{transition:filter .4s ease,opacity .4s ease;}
+    .port-lock-hint{font-size:.6em;color:rgba(45,212,191,.45);letter-spacing:1px;text-align:center;margin-top:4px;}
+
+    /* portfolio growth section */
+    .pgrow-stats{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;}
+    .pgrow-stat{flex:1;min-width:70px;background:rgba(45,212,191,.06);border:1px solid rgba(45,212,191,.14);border-radius:8px;padding:5px 8px;text-align:center;}
+    .pgrow-stat-lbl{font-size:.5em;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;}
+    .pgrow-stat-val{font-size:.8em;font-weight:800;color:#2dd4bf;margin-top:1px;}
+    .pgrow-milestones{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px;}
+    .pgrow-ms{font-size:.52em;padding:2px 7px;border-radius:5px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.2);color:#ffd700;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   </style>
 </head>
 <body>
 <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="orb o4"></div>
 <div class="page" id="page"><div class="loading"><div class="spin"></div>Loading command centre…</div></div>
 
+<!-- PIN overlay -->
+<div class="pin-overlay" id="pinOverlay">
+  <div class="pin-card" id="pinCard">
+    <div class="pin-lock-ico">🔐</div>
+    <div class="pin-title">Portfolio Access</div>
+    <div class="pin-sub">Enter your 4-digit PIN to continue</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn cancel" onclick="closePin()">✕ Cancel</button>
+      <button class="pin-btn" onclick="pinPress('0')">0</button>
+      <button class="pin-btn del" onclick="pinDelete()">⌫</button>
+    </div>
+  </div>
+</div>
+
 <script>
+/* ── global data store ── */
+var _homeData = null;
+
 /* ── helpers ── */
 function fmt(n){
   if(n===null||n===undefined||isNaN(n)) return '—';
@@ -176,6 +243,7 @@ function grad(ctx,h,r,g,b,a1,a2){
 
 /* ── render ── */
 function render(D){
+  _homeData = D;
   var page=document.getElementById('page');
   var exp=D.expenses||{}, cc=D.creditCards||{}, inv=D.investments||{}, mf=D.moneyFlow||{}, port=D.portfolio||{};
 
@@ -197,8 +265,8 @@ function render(D){
       <div class="kpi">
         <div class="kpi-ico" style="background:rgba(45,212,191,.12);border:1px solid rgba(45,212,191,.24)">💎</div>
         <div><div class="kpi-label">Portfolio / Net Worth</div>
-          <div class="kpi-value" style="color:#2dd4bf">${portTotal>0?'LKR '+fmt(portTotal):'—'}</div>
-          <div class="kpi-sub">all assets combined</div></div>
+          <div class="kpi-value" id="portKpiVal" style="color:#2dd4bf;filter:blur(5px);transition:filter .4s ease,opacity .4s ease">${portTotal>0?'LKR '+fmt(portTotal):'—'}</div>
+          <div class="kpi-sub" id="portKpiSub">🔒 PIN protected</div></div>
       </div>
       <div class="kpi">
         <div class="kpi-ico" style="background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.24)">💸</div>
@@ -228,8 +296,8 @@ function render(D){
     return `<div class="cc-row"><span class="cc-name">💳 ${c.name}</span>${badge}<span class="cc-bal ${cls}">${fmt(c.balance)}</span></div>`;
   }).join('');
   var ccTile=`
-    <div class="tile" data-m="cc" onclick="navTo('cc')">
-      <div class="thdr"><div class="tico">💳</div><div class="tname">Credit Cards</div><div class="tarrow">Open →</div></div>
+    <div class="tile" data-m="cc">
+      <div class="thdr"><div class="tico">💳</div><div class="tname">Credit Cards</div></div>
       <div><div class="tbig-lbl">Total Outstanding</div>
         <div class="tbig-row">
           <div class="tbig">${ccTotal>0?'LKR '+fmt(ccTotal):'—'}</div>
@@ -241,8 +309,8 @@ function render(D){
 
   /* ── Splitwise tile ── */
   var swTile=`
-    <div class="tile" data-m="sw" onclick="navTo('sw')">
-      <div class="thdr"><div class="tico">🤝</div><div class="tname">Splitwise</div><div class="tarrow">Open →</div></div>
+    <div class="tile" data-m="sw">
+      <div class="thdr"><div class="tico">🤝</div><div class="tname">Splitwise</div></div>
       <div><div class="tbig-lbl">${swBal>=0?'People owe you':'You owe net'}</div>
         <div class="tbig" style="color:${swBal>=0?'var(--green)':'var(--red)'};text-shadow:0 0 28px ${swBal>=0?'rgba(0,230,118,.4)':'rgba(255,77,109,.4)'}">${swBal!==null?(swBal>=0?'+':'')+fmtFull(swBal)+' LKR':'—'}</div></div>
       <div class="tbody">
@@ -266,8 +334,8 @@ function render(D){
   var dSign=spendDelta>=0?'▲':'▼';
   var dCls=spendDelta>=0?'dn':'up'; // spending up = bad
   var expTile=`
-    <div class="tile" data-m="exp" onclick="navTo('exp')">
-      <div class="thdr"><div class="tico">📊</div><div class="tname">Expenses</div><div class="tarrow">Open →</div></div>
+    <div class="tile" data-m="exp">
+      <div class="thdr"><div class="tico">📊</div><div class="tname">Expenses</div></div>
       <div><div class="tbig-lbl">${exp.latestMonth||'Latest Month'}</div>
         <div class="tbig-row">
           <div class="tbig">${monthSpend?'LKR '+fmt(monthSpend):'—'}</div>
@@ -280,8 +348,8 @@ function render(D){
   /* ── Investments tile ── */
   var hasInvData = inv.month && (inv.utEarnings||inv.stockEarnings||inv.goldEarnings);
   var invTile=`
-    <div class="tile" data-m="inv" onclick="navTo('inv')">
-      <div class="thdr"><div class="tico">📈</div><div class="tname">Investments</div><div class="tarrow">Open →</div></div>
+    <div class="tile" data-m="inv">
+      <div class="thdr"><div class="tico">📈</div><div class="tname">Investments</div></div>
       <div><div class="tbig-lbl">Total Earnings · ${inv.month||''}</div>
         <div class="tbig-row">
           <div class="tbig" style="color:var(--gold)">${invEarn?(invEarn>=0?'+':'')+'LKR '+fmt(invEarn):'—'}</div>
@@ -299,8 +367,8 @@ function render(D){
   /* ── Money Flow tile ── */
   var savColor=savingPct>=30?'var(--green)':savingPct>=15?'var(--amber)':'var(--red)';
   var mfTile=`
-    <div class="tile" data-m="mf" onclick="navTo('mf')">
-      <div class="thdr"><div class="tico">💰</div><div class="tname">Money Flow</div><div class="tarrow">Open →</div></div>
+    <div class="tile" data-m="mf">
+      <div class="thdr"><div class="tico">💰</div><div class="tname">Money Flow</div></div>
       <div><div class="tbig-lbl">Savings Rate · ${mf.month||''}</div>
         <div class="tbig" style="color:${savColor}">${savingPct?savingPct.toFixed(1)+'%':'—'}</div></div>
       <div class="tbody">
@@ -312,24 +380,33 @@ function render(D){
     </div>`;
 
   /* ── Portfolio tile ── */
+  var pgrowth = port.growth || [];
+  var pgFirst = pgrowth.length > 0 ? pgrowth[0].amount : 0;
+  var pgLast  = pgrowth.length > 0 ? pgrowth[pgrowth.length-1].amount : 0;
+  var pgPct   = pgFirst > 0 ? ((pgLast - pgFirst) / pgFirst * 100) : 0;
   var portTile=`
-    <div class="tile" data-m="port" onclick="navTo('port')">
-      <div class="thdr"><div class="tico">📁</div><div class="tname">Portfolio</div><div class="tarrow">Open →</div></div>
-      <div><div class="tbig-lbl">Total Portfolio Value</div>
-        <div class="tbig" style="color:var(--teal)">${portTotal>0?'LKR '+fmt(portTotal):'—'}</div></div>
-      <div class="tbody">
-        <div class="mrow"><span class="mlbl">Investments (UT + Stock + Gold)</span><span class="mval ac">LKR ${fmt((inv.utInvested||0)+(inv.stockInvested||0)+(inv.goldInvested||0))}</span></div>
-        <div class="mrow"><span class="mlbl">Investment earnings (latest)</span><span class="mval ${invEarn>=0?'g':'r'}">${invEarn?(invEarn>=0?'+':'')+fmt(invEarn):' —'} LKR</span></div>
-        <div style="margin-top:3px;font-size:.58em;color:rgba(255,255,255,.18)">🔒 Password protected</div>
-      </div>
-      <div class="quick-add" onclick="event.stopPropagation();navTo('add')">
-        <div class="qa-icon">➕</div>
-        <div class="qa-body">
-          <div class="qa-title">Add / Edit Expense</div>
-          <div class="qa-sub">Open today's daily log</div>
+    <div class="tile" data-m="port" onclick="openPin()">
+      <div class="thdr"><div class="tico">📁</div><div class="tname">Portfolio</div><div class="tarrow" id="portArrow">🔒 Tap to reveal</div></div>
+      <div id="portBlurred" class="port-blur" style="filter:blur(7px);opacity:.55;pointer-events:none;user-select:none">
+        <div><div class="tbig-lbl">Total Portfolio Value</div>
+          <div class="tbig" style="color:var(--teal)">${portTotal>0?'LKR '+fmt(portTotal):'—'}</div></div>
+        <div class="tbody">
+          <div class="mrow"><span class="mlbl">Investments (UT + Stock + Gold)</span><span class="mval ac">LKR ${fmt((inv.utInvested||0)+(inv.stockInvested||0)+(inv.goldInvested||0))}</span></div>
+          <div class="mrow"><span class="mlbl">Investment earnings (latest)</span><span class="mval ${invEarn>=0?'g':'r'}">${invEarn?(invEarn>=0?'+':'')+fmt(invEarn):' —'} LKR</span></div>
         </div>
-        <div class="qa-arr">→</div>
       </div>
+      <div id="portGrowthSection" style="display:none">
+        <div class="tbig-lbl" style="margin:7px 0 5px;letter-spacing:1.5px">📈 GROWTH TRAJECTORY</div>
+        <div class="cwrap" style="height:100px"><canvas id="cvsPort" height="100"></canvas></div>
+        <div class="pgrow-stats" id="pgrowStats">
+          <div class="pgrow-stat"><div class="pgrow-stat-lbl">From</div><div class="pgrow-stat-val">${fmt(pgFirst)}</div></div>
+          <div class="pgrow-stat"><div class="pgrow-stat-lbl">Now</div><div class="pgrow-stat-val">${fmt(pgLast||portTotal)}</div></div>
+          <div class="pgrow-stat"><div class="pgrow-stat-lbl">Total Growth</div><div class="pgrow-stat-val" style="color:${pgPct>=0?'#00e676':'#ff4d6d'}">${pgPct>=0?'+':''}${pgPct.toFixed(1)}%</div></div>
+          <div class="pgrow-stat"><div class="pgrow-stat-lbl">Data Points</div><div class="pgrow-stat-val">${pgrowth.length}</div></div>
+        </div>
+        <div class="pgrow-milestones" id="pgrowMilestones"></div>
+      </div>
+      <div class="port-lock-hint">🔒 Tap this card to enter PIN and reveal</div>
     </div>`;
 
   /* ── compose ── */
@@ -501,6 +578,176 @@ function initCharts(D){
     });
   }
 }
+
+/* ── Portfolio growth chart ── */
+function initPortfolioChart(port) {
+  var growth = (port && port.growth) || [];
+  if (!growth.length) return;
+
+  var canvas = document.getElementById('cvsPort');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+
+  var labels  = growth.map(function(g) { return g.date; });
+  var amounts = growth.map(function(g) { return g.amount; });
+  var notes   = growth.map(function(g) { return g.note; });
+
+  // Teal gradient fill
+  var fill = ctx.createLinearGradient(0, 0, 0, 100);
+  fill.addColorStop(0, 'rgba(45,212,191,0.45)');
+  fill.addColorStop(1, 'rgba(45,212,191,0.02)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Portfolio Value',
+        data: amounts,
+        borderColor: '#2dd4bf',
+        backgroundColor: fill,
+        borderWidth: 2.5,
+        fill: true,
+        tension: 0.38,
+        pointBackgroundColor: amounts.map(function(v, i) {
+          return notes[i] ? '#ffd700' : '#2dd4bf';
+        }),
+        pointRadius: amounts.map(function(v, i) {
+          return notes[i] ? 5 : 3;
+        }),
+        pointHoverRadius: 7,
+        pointBorderColor: 'rgba(0,0,0,.6)',
+        pointBorderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 1400 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          ...TIP,
+          callbacks: {
+            title: function(c) { return labels[c[0].dataIndex]; },
+            label: function(c) {
+              var n = notes[c.dataIndex];
+              var base = ' LKR ' + fmtFull(c.parsed.y);
+              return n ? [base, ' 📌 ' + n] : base;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { color: 'rgba(255,255,255,.35)', font: { size: 8 }, maxRotation: 0 }, grid: { display: false } },
+        y: {
+          min: Math.floor((Math.min.apply(null, amounts) * 0.94) / 1e5) * 1e5,
+          max: Math.ceil( (Math.max.apply(null, amounts) * 1.04) / 1e5) * 1e5,
+          ticks: { color: 'rgba(255,255,255,.25)', font: { size: 8 }, callback: function(v) { return fmt(v); } },
+          grid: { color: 'rgba(255,255,255,.04)' }
+        }
+      }
+    }
+  });
+
+  // Milestone badges
+  var msEl = document.getElementById('pgrowMilestones');
+  if (msEl) {
+    var msHtml = '';
+    growth.forEach(function(g) {
+      if (g.note) msHtml += '<div class="pgrow-ms">📌 ' + g.date + ' · ' + g.note + '</div>';
+    });
+    msEl.innerHTML = msHtml;
+  }
+}
+
+/* ── PIN protection ── */
+var _PIN = '9965';
+var _pinBuf = '';
+var _pinLocked = true;
+
+function openPin() {
+  _pinBuf = '';
+  updatePinDots();
+  document.getElementById('pinOverlay').classList.add('open');
+}
+
+function closePin() {
+  _pinBuf = '';
+  updatePinDots();
+  document.getElementById('pinOverlay').classList.remove('open');
+}
+
+function pinPress(d) {
+  if (_pinBuf.length >= 4) return;
+  _pinBuf += d;
+  updatePinDots();
+  if (_pinBuf.length === 4) setTimeout(pinSubmit, 120);
+}
+
+function pinDelete() {
+  _pinBuf = _pinBuf.slice(0, -1);
+  updatePinDots();
+}
+
+function updatePinDots() {
+  for (var i = 0; i < 4; i++) {
+    var dot = document.getElementById('pd' + i);
+    if (!dot) continue;
+    dot.classList.toggle('filled', i < _pinBuf.length);
+    dot.classList.remove('err');
+  }
+}
+
+function pinSubmit() {
+  if (_pinBuf === _PIN) {
+    // ✅ correct — unblur portfolio values then open
+    closePin();
+    var blurred = document.getElementById('portBlurred');
+    var hint    = document.querySelector('.port-lock-hint');
+    if (blurred) { blurred.style.filter = 'none'; blurred.style.opacity = '1'; blurred.style.pointerEvents = 'auto'; }
+    if (hint)    { hint.style.display = 'none'; }
+    // Unblur the KPI card value too
+    var kpiVal = document.getElementById('portKpiVal');
+    var kpiSub = document.getElementById('portKpiSub');
+    if (kpiVal) kpiVal.style.filter = 'none';
+    if (kpiSub) kpiSub.textContent = 'all assets combined';
+    // Update tile — lock hint gone, disable re-click
+    var portArrow = document.getElementById('portArrow');
+    if (portArrow) portArrow.textContent = '✓ Unlocked';
+    var portTile = document.querySelector('.tile[data-m="port"]');
+    if (portTile) portTile.onclick = null;
+    // Show growth section and draw chart
+    var portGrowth = document.getElementById('portGrowthSection');
+    if (portGrowth) {
+      portGrowth.style.display = 'block';
+      setTimeout(function() {
+        initPortfolioChart(_homeData && _homeData.portfolio);
+      }, 120);
+    }
+    _pinLocked = false;
+  } else {
+    // ❌ wrong — shake + red dots + clear
+    var card = document.getElementById('pinCard');
+    for (var i = 0; i < 4; i++) {
+      var dot = document.getElementById('pd' + i);
+      if (dot) dot.classList.add('err');
+    }
+    card.classList.add('shake');
+    setTimeout(function() {
+      card.classList.remove('shake');
+      _pinBuf = '';
+      updatePinDots();
+    }, 600);
+  }
+}
+
+// keyboard support for PIN
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('pinOverlay').classList.contains('open')) return;
+  if (e.key >= '0' && e.key <= '9') pinPress(e.key);
+  else if (e.key === 'Backspace') pinDelete();
+  else if (e.key === 'Escape') closePin();
+});
 
 /* ── boot ── */
 google.script.run

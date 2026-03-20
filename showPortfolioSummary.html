@@ -432,7 +432,11 @@
 
       /* ── main render ── */
       function displayPortfolio(data) {
-        if (!data || !data.length) {
+        // Support both old array format and new {assets, growth} object
+        const rawAssets = (data && data.assets) ? data.assets : (Array.isArray(data) ? data : []);
+        const growthData = (data && data.growth) ? data.growth : [];
+
+        if (!rawAssets || !rawAssets.length) {
           document.getElementById('root').innerHTML = '<div class="error-box">No portfolio data found.</div>';
           return;
         }
@@ -440,7 +444,7 @@
         let totalLKR = 0, totalUSD = 0;
         const assets = [], totals = [];
 
-        data.forEach(row => {
+        rawAssets.forEach(row => {
           const cat = (row[0] || '').trim();
           const amt = parseFloat((row[1] || 0).toString().replace(/,/g, '')) || 0;
           if (!cat) return;
@@ -535,6 +539,21 @@
             </div>
           </div>
 
+          <!-- Growth chart -->
+          ${growthData.length > 0 ? `
+          <div class="assets-section" style="animation:fadeUp .6s ease .4s both">
+            <div class="section-heading">📈 Growth Trajectory</div>
+            <div class="glass-card" style="margin-bottom:20px">
+              <div class="card-header">
+                <div class="card-dot" style="background:#2dd4bf;box-shadow:0 0 6px #2dd4bf"></div>
+                <div class="card-title">Portfolio Value Over Time</div>
+              </div>
+              <div id="growthStats" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px"></div>
+              <canvas id="growthChart" style="max-height:220px"></canvas>
+              <div id="growthMilestones" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px"></div>
+            </div>
+          </div>` : ''}
+
           <!-- Asset cards -->
           <div class="assets-section">
             <div class="section-heading">All Assets &amp; Balances</div>
@@ -558,6 +577,9 @@
 
         /* ── build charts ── */
         buildCharts(posAssets, assets);
+        if (growthData.length > 0) {
+          setTimeout(() => buildGrowthChart(growthData), 300);
+        }
       }
 
       function buildCharts(posAssets, allAssets) {
@@ -719,6 +741,108 @@
             }
           }
         });
+      }
+
+      function buildGrowthChart(growth) {
+        const canvas = document.getElementById('growthChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+
+        const labels  = growth.map(g => g.date);
+        const amounts = growth.map(g => g.amount);
+        const notes   = growth.map(g => g.note);
+
+        // Teal gradient fill
+        const fill = ctx.createLinearGradient(0, 0, 0, 220);
+        fill.addColorStop(0, 'rgba(45,212,191,0.38)');
+        fill.addColorStop(1, 'rgba(45,212,191,0.02)');
+
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Portfolio Value',
+              data: amounts,
+              borderColor: '#2dd4bf',
+              backgroundColor: fill,
+              borderWidth: 3,
+              fill: true,
+              tension: 0.38,
+              pointBackgroundColor: amounts.map((v, i) => notes[i] ? '#ffd700' : '#2dd4bf'),
+              pointRadius:      amounts.map((v, i) => notes[i] ? 7 : 4),
+              pointHoverRadius: 9,
+              pointBorderColor: 'rgba(0,0,0,.5)',
+              pointBorderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            animation: { duration: 1600 },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(6,11,24,0.96)',
+                borderColor: 'rgba(45,212,191,0.3)',
+                borderWidth: 1,
+                titleColor: '#2dd4bf',
+                bodyColor: 'rgba(255,255,255,.65)',
+                padding: 11,
+                callbacks: {
+                  title: c => labels[c[0].dataIndex],
+                  label: c => {
+                    const n = notes[c.dataIndex];
+                    const base = ' ₨' + Number(c.parsed.y).toLocaleString('en-IN', {minimumFractionDigits: 0});
+                    return n ? [base, ' 📌 ' + n] : base;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: { color: 'rgba(255,255,255,.45)', font: { size: 10 }, maxRotation: 0 },
+                grid: { color: 'rgba(255,255,255,.04)' }
+              },
+              y: {
+                min: Math.floor((Math.min(...amounts) * 0.94) / 1e5) * 1e5,
+                max: Math.ceil( (Math.max(...amounts) * 1.04) / 1e5) * 1e5,
+                ticks: {
+                  color: 'rgba(255,255,255,.4)', font: { size: 10 },
+                  callback: v => '₨' + (v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v)
+                },
+                grid: { color: 'rgba(255,255,255,.05)' }
+              }
+            }
+          }
+        });
+
+        // Stats pills
+        const first = amounts[0] || 0;
+        const last  = amounts[amounts.length - 1] || 0;
+        const growPct = first > 0 ? ((last - first) / first * 100) : 0;
+        const statsEl = document.getElementById('growthStats');
+        if (statsEl) {
+          const pill = (lbl, val, col) =>
+            `<div style="flex:1;min-width:100px;background:rgba(45,212,191,.07);border:1px solid rgba(45,212,191,.16);border-radius:11px;padding:10px 14px;text-align:center">
+               <div style="font-size:.62em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:3px">${lbl}</div>
+               <div style="font-size:1.05em;font-weight:800;color:${col||'#2dd4bf'}">${val}</div>
+             </div>`;
+          const fmtM = v => '₨' + (v/1e6).toFixed(2) + 'M';
+          statsEl.innerHTML =
+            pill('Start', fmtM(first)) +
+            pill('Latest', fmtM(last)) +
+            pill('Growth', (growPct >= 0 ? '+' : '') + growPct.toFixed(1) + '%', growPct >= 0 ? '#00ff88' : '#ff4d8d') +
+            pill('Entries', growth.length);
+        }
+
+        // Milestone badges
+        const msEl = document.getElementById('growthMilestones');
+        if (msEl) {
+          msEl.innerHTML = growth
+            .filter(g => g.note)
+            .map(g => `<span style="font-size:.68em;padding:3px 10px;border-radius:6px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);color:#ffd700">📌 ${g.date} · ${g.note}</span>`)
+            .join('');
+        }
       }
 
       function showError(err) {

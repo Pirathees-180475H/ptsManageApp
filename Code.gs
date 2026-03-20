@@ -164,12 +164,35 @@ function getHomeData() {
     }
   } catch(e) { out.moneyFlow = null; }
 
-  // ── 5. PORTFOLIO TOTAL ────────────────────────────────────────
-  // B16 = Total Portfolio · LKR
+  // ── 5. PORTFOLIO TOTAL + GROWTH ──────────────────────────────
+  // B16 = Total Portfolio · LKR  |  P3:R = growth log (date, amount, note)
   try {
     var portSheet = ss.getSheetByName('Portfolio');
     var portTotal = parseFloat(portSheet.getRange('B16').getValue()) || 0;
-    out.portfolio = { total: portTotal };
+
+    // Growth log: col P(16)=date, Q(17)=amount, R(18)=note, starting row 3
+    var pLastRow = portSheet.getLastRow();
+    var growth = [];
+    if (pLastRow >= 3) {
+      var gVals = portSheet.getRange(3, 16, pLastRow - 2, 3).getValues();
+      gVals.forEach(function(row) {
+        if (!row[0] && !row[1]) return; // skip blank rows
+        var lbl = '';
+        try {
+          lbl = (row[0] instanceof Date)
+            ? Utilities.formatDate(row[0], Session.getScriptTimeZone(), 'M/yyyy')
+            : (row[0] || '').toString().trim();
+        } catch(e2) { lbl = (row[0] || '').toString().trim(); }
+        if (!lbl) return;
+        growth.push({
+          date:   lbl,
+          amount: Number(row[1]) || 0,
+          note:   (row[2] || '').toString().trim()
+        });
+      });
+    }
+
+    out.portfolio = { total: portTotal, growth: growth };
   } catch(e) { out.portfolio = null; }
 
   return out;
@@ -398,36 +421,45 @@ function getPortfolioData() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Portfolio');
-    
-    if (!sheet) {
-      throw new Error('Sheet "Portfolio" not found');
+
+    if (!sheet) throw new Error('Sheet "Portfolio" not found');
+
+    // ── Asset data A2:B17 (always loaded) ──────────────────────────
+    var assets = sheet.getRange('A2:B17').getValues();
+
+    // ── Growth log: P(col16)=date, Q(col17)=amount, R(col18)=note ──
+    // Wrapped in its own try-catch — if this fails, assets still load
+    var growth = [];
+    try {
+      var pLastRow = sheet.getLastRow();
+      var pMaxCol  = sheet.getLastColumn();
+      if (pLastRow >= 3 && pMaxCol >= 16) {
+        var numCols = Math.min(3, pMaxCol - 15); // how many of P/Q/R actually exist
+        var gVals = sheet.getRange(3, 16, pLastRow - 2, numCols).getValues();
+        gVals.forEach(function(row) {
+          if (!row[0] && !row[1]) return;
+          var lbl = '';
+          try {
+            lbl = (row[0] instanceof Date)
+              ? Utilities.formatDate(row[0], Session.getScriptTimeZone(), 'M/yyyy')
+              : (row[0] || '').toString().trim();
+          } catch(e3) { lbl = (row[0] || '').toString().trim(); }
+          if (!lbl) return;
+          growth.push({
+            date:   lbl,
+            amount: Number(row[1]) || 0,
+            note:   numCols >= 3 ? (row[2] || '').toString().trim() : ''
+          });
+        });
+      }
+    } catch(eg) {
+      // Growth data unavailable — assets still returned below
+      Logger.log('Growth data read failed: ' + eg.message);
     }
-    
-    // Get data from range A3:E6 (includes header)
-    var range = sheet.getRange('A2:B17');
-    var values = range.getValues();
-    
-    return values;
+
+    return { assets: assets, growth: growth };
   } catch (error) {
     throw new Error('Failed to load data: ' + error.message);
-  }
-}
-function getGrowthData() {
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName('Portfolio');
-    
-    if (!sheet) throw new Error('Sheet "Portfolio" not found');
-    
-    // Read Date (col R) + Amount (col S) starting at row 2
-    var lastRow = sheet.getLastRow();
-    var range = sheet.getRange('R2:S' + lastRow);
-    var values = range.getValues();
-    
-    // Return only non-empty rows
-    return values.filter(row => row[0] !== '' && row[1] !== '');
-  } catch (error) {
-    throw new Error('Failed to load growth data: ' + error.message);
   }
 }
 
