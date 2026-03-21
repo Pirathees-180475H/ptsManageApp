@@ -823,32 +823,46 @@ function logMonthlyEarnings() {
 
   const month = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM");
 
-  const utEarn = sheet.getRange("F2").getValue();
-  const stockEarn = sheet.getRange("I2").getValue();
-  const goldEarn = sheet.getRange("C3").getValue();
-
-  const utInvest = sheet.getRange("F1").getValue();
-  const stockInvest = sheet.getRange("I1").getValue();
-  const goldInvest = sheet.getRange("C2").getValue();
+  const utEarn    = Number(sheet.getRange("F2").getValue());
+  const stockEarn = Number(sheet.getRange("I2").getValue());
+  const goldEarn  = Number(sheet.getRange("C3").getValue());
+  const utInvest  = Number(sheet.getRange("F1").getValue());
+  const stockInvest = Number(sheet.getRange("I1").getValue());
+  const goldInvest  = Number(sheet.getRange("C2").getValue());
 
   const startRow = 46;
-  const lastRow = sheet.getLastRow();
+  const lastRow  = sheet.getLastRow();
 
   const existing = lastRow >= startRow
     ? sheet.getRange(startRow, 1, lastRow - startRow + 1, 7).getValues().filter(r => r.some(c => c !== ""))
     : [];
 
-  existing.push([
-    month,
-    utEarn,
-    stockEarn,
-    goldEarn,
-    utInvest,
-    stockInvest,
-    goldInvest
-  ]);
+  // ── Duplicate check: compare current values against the last logged row ──
+  if (existing.length > 0) {
+    const last = existing[existing.length - 1];
+    const sameEarnings  = Number(last[1]) === utEarn    &&
+                          Number(last[2]) === stockEarn  &&
+                          Number(last[3]) === goldEarn;
+    const sameInvested  = Number(last[4]) === utInvest  &&
+                          Number(last[5]) === stockInvest &&
+                          Number(last[6]) === goldInvest;
 
+    if (sameEarnings && sameInvested) {
+      return {
+        logged:  false,
+        reason:  'duplicate',
+        message: 'No change detected — values are identical to the last log entry (' + last[0] + '). Nothing was saved.'
+      };
+    }
+  }
+
+  existing.push([month, utEarn, stockEarn, goldEarn, utInvest, stockInvest, goldInvest]);
   sheet.getRange(startRow, 1, existing.length, 7).setValues(existing);
+
+  return {
+    logged:  true,
+    message: 'Logged successfully for ' + month
+  };
 }
 
 

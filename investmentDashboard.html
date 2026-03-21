@@ -662,7 +662,14 @@ function logData() {
   btn.querySelector('span.btn-ico') && (btn.querySelector('span.btn-ico').style.display = 'none');
 
   google.script.run
-    .withSuccessHandler(function() {
+    .withSuccessHandler(function(result) {
+      // Duplicate — skip refresh, just notify
+      if (result && !result.logged) {
+        btn.disabled = false;
+        btn.classList.remove('logging');
+        showToast('⏭️ ' + result.message, 'error');
+        return;
+      }
       showToast('✅ Logged! Refreshing dashboard…', 'success');
       // Re-fetch and re-render with the updated data
       google.script.run
