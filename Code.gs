@@ -866,6 +866,56 @@ function logMonthlyEarnings() {
 }
 
 
+// ── Log current portfolio total (B16) into growth log (P:Q:R from row 3) ──
+function logPortfolioAmount(note) {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Portfolio');
+  if (!sheet) throw new Error('Portfolio sheet not found');
+
+  var currentAmount = Number(sheet.getRange('B16').getValue());
+  if (!currentAmount) throw new Error('B16 is empty or zero — nothing to log');
+
+  var dateLabel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'M/yyyy');
+  var noteStr   = (note || '').toString().trim();
+
+  // Read existing growth log: P(col16), Q(col17), R(col18) from row 3
+  var lastRow  = sheet.getLastRow();
+  var lastCol  = sheet.getLastColumn();
+  var existing = [];
+
+  if (lastRow >= 3 && lastCol >= 16) {
+    var numCols = Math.min(3, lastCol - 15);
+    var raw = sheet.getRange(3, 16, lastRow - 2, numCols).getValues();
+    existing = raw.filter(function(r) { return r[0] !== '' || r[1] !== ''; });
+  }
+
+  // ── Duplicate check: compare amount against last logged entry ──
+  if (existing.length > 0) {
+    var last = existing[existing.length - 1];
+    if (Number(last[1]) === currentAmount) {
+      return {
+        logged:  false,
+        reason:  'duplicate',
+        message: 'Portfolio value is unchanged (₨' +
+                 currentAmount.toLocaleString('en-IN') +
+                 ') — same as last log (' + last[0] + '). Nothing saved.'
+      };
+    }
+  }
+
+  // ── Append new row ──
+  var newRow = [dateLabel, currentAmount, noteStr];
+  var writeRow = existing.length + 1; // 1-based offset from row 3
+  sheet.getRange(2 + writeRow, 16, 1, 3).setValues([newRow]);
+
+  return {
+    logged:  true,
+    amount:  currentAmount,
+    date:    dateLabel,
+    message: 'Portfolio logged: ₨' + currentAmount.toLocaleString('en-IN') + ' for ' + dateLabel
+  };
+}
+
 // ═══════════════════════════════════════════════════════════════
 // MONTHLY EXPENSE DASHBOARD
 // ═══════════════════════════════════════════════════════════════

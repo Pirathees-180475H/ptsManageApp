@@ -362,6 +362,62 @@
         font-size: 0.9em;
       }
 
+      /* log button */
+      .log-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        margin-top: 14px; padding: 11px 26px; border-radius: 12px;
+        border: 1px solid rgba(255,215,0,.35); background: rgba(255,215,0,.09);
+        color: var(--neon-gold); font-family: 'Inter', sans-serif;
+        font-size: .78em; font-weight: 700; letter-spacing: 1px;
+        cursor: pointer; transition: all .2s ease;
+      }
+      .log-btn:hover:not(:disabled) {
+        background: rgba(255,215,0,.18); border-color: rgba(255,215,0,.65);
+        box-shadow: 0 0 20px rgba(255,215,0,.18); transform: translateY(-1px);
+      }
+      .log-btn:active:not(:disabled) { transform: scale(.97); }
+      .log-btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+      .log-btn .btn-spin {
+        width: 13px; height: 13px; border-radius: 50%;
+        border: 2px solid rgba(255,215,0,.25); border-top-color: var(--neon-gold);
+        animation: spin .7s linear infinite; display: none;
+      }
+      .log-btn.logging .btn-spin { display: block; }
+      .log-btn.logging .btn-ico  { display: none; }
+
+      /* note input */
+      .log-note-wrap { display:none; margin-top: 10px; }
+      .log-note-wrap.open { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+      .log-note-input {
+        background: rgba(255,255,255,.05); border: 1px solid rgba(255,215,0,.25);
+        border-radius: 9px; padding: 8px 14px; color: #fff; font-size: .78em;
+        font-family: 'Inter', sans-serif; width: 260px; outline: none;
+        transition: border-color .2s;
+      }
+      .log-note-input:focus { border-color: rgba(255,215,0,.55); }
+      .log-note-input::placeholder { color: rgba(255,255,255,.25); }
+      .log-confirm-btn {
+        padding: 8px 18px; border-radius: 9px; border: 1px solid rgba(255,215,0,.4);
+        background: rgba(255,215,0,.15); color: var(--neon-gold);
+        font-size: .78em; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif;
+        transition: all .2s;
+      }
+      .log-confirm-btn:hover { background: rgba(255,215,0,.28); }
+
+      /* toast */
+      .toast {
+        position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(70px);
+        background: rgba(6,11,24,.97); border: 1px solid rgba(255,255,255,.1);
+        border-radius: 14px; padding: 13px 24px; font-size: .82em; font-weight: 600;
+        backdrop-filter: blur(20px); z-index: 999; white-space: nowrap;
+        transition: transform .35s cubic-bezier(.34,1.56,.64,1), opacity .3s ease;
+        opacity: 0; display: flex; align-items: center; gap: 9px; font-family: 'Inter', sans-serif;
+      }
+      .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+      .toast.success { border-color: rgba(255,215,0,.4); color: var(--neon-gold); }
+      .toast.info    { border-color: rgba(0,212,255,.35); color: #00d4ff; }
+      .toast.error   { border-color: rgba(255,77,141,.35); color: var(--neon-pink); }
+
       /* Scrollbar */
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
@@ -385,6 +441,9 @@
       <div class="orb orb3"></div>
       <div class="orb orb4"></div>
     </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
 
     <div class="page-wrap" id="root">
       <div class="loading">
@@ -485,6 +544,15 @@
             <div class="header-tag">Live Dashboard</div>
             <h1>Portfolio Summary</h1>
             <div class="header-sub">Updated just now</div>
+            <button class="log-btn" id="logBtn" onclick="startLog()">
+              <span class="btn-ico">💾</span>
+              <div class="btn-spin"></div>
+              Log Portfolio Value
+            </button>
+            <div class="log-note-wrap" id="logNoteWrap">
+              <input class="log-note-input" id="logNoteInput" type="text" placeholder="Optional note (e.g. Saudi money, bonus…)" maxlength="60">
+              <button class="log-confirm-btn" onclick="confirmLog()">✓ Confirm</button>
+            </div>
           </div>
 
           <!-- Hero totals -->
@@ -844,6 +912,73 @@
             .join('');
         }
       }
+
+      /* ── toast ── */
+      function showToast(msg, type) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = 'toast ' + (type || 'info');
+        void t.offsetWidth;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3400);
+      }
+
+      /* ── step 1: show note input ── */
+      function startLog() {
+        const wrap = document.getElementById('logNoteWrap');
+        if (!wrap) return;
+        wrap.classList.toggle('open');
+        if (wrap.classList.contains('open')) {
+          const inp = document.getElementById('logNoteInput');
+          if (inp) { inp.value = ''; inp.focus(); }
+        }
+      }
+
+      /* ── step 2: call GAS with optional note ── */
+      function confirmLog() {
+        const btn  = document.getElementById('logBtn');
+        const wrap = document.getElementById('logNoteWrap');
+        const note = (document.getElementById('logNoteInput') || {}).value || '';
+
+        if (btn) { btn.disabled = true; btn.classList.add('logging'); }
+        if (wrap) wrap.classList.remove('open');
+
+        google.script.run
+          .withSuccessHandler(function(result) {
+            if (btn) { btn.disabled = false; btn.classList.remove('logging'); }
+
+            if (result && !result.logged) {
+              showToast('⏭️ ' + result.message, 'error');
+              return;
+            }
+
+            showToast('✅ ' + result.message + ' — refreshing…', 'success');
+
+            // Refresh portfolio data and re-render
+            google.script.run
+              .withSuccessHandler(function(data) {
+                displayPortfolio(data);
+                showToast('✅ Growth chart updated!', 'success');
+              })
+              .withFailureHandler(function(err) {
+                showToast('⚠️ Logged but refresh failed: ' + (err.message || err), 'error');
+              })
+              .getPortfolioData();
+          })
+          .withFailureHandler(function(err) {
+            if (btn) { btn.disabled = false; btn.classList.remove('logging'); }
+            showToast('⚠️ ' + (err.message || err), 'error');
+          })
+          .logPortfolioAmount(note);
+      }
+
+      /* ── Enter key on note input triggers confirm ── */
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && document.getElementById('logNoteWrap') &&
+            document.getElementById('logNoteWrap').classList.contains('open')) {
+          confirmLog();
+        }
+      });
 
       function showError(err) {
         document.getElementById('root').innerHTML =
