@@ -83,9 +83,11 @@ body::before{content:'';position:fixed;inset:0;
 .tab.active{color:var(--blue);border-color:rgba(0,212,255,.3);
             background:rgba(0,212,255,.08);text-shadow:0 0 12px rgba(0,212,255,.4);}
 .tab:hover:not(.active){color:rgba(255,255,255,.7);background:rgba(255,255,255,.04);}
-.tdot{display:inline-block;width:5px;height:5px;border-radius:50%;
+.tdot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;
       background:var(--muted);margin-left:5px;vertical-align:middle;transition:background .3s;}
-.tdot.loading{background:var(--gold);animation:blink .8s infinite;}
+.tdot.loading{background:transparent!important;border:1.5px solid transparent;
+              border-top-color:var(--blue);border-radius:50%;
+              animation:spin .65s linear infinite;margin-bottom:-1px;}
 .tdot.done{background:var(--green);}
 .tdot.err{background:var(--red);}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
@@ -99,11 +101,22 @@ body::before{content:'';position:fixed;inset:0;
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;
          padding:56px;gap:14px;color:var(--muted);font-size:12px;letter-spacing:1px;
          text-transform:uppercase;}
-.spin{width:36px;height:36px;border:2px solid var(--dim);border-top-color:var(--blue);
-      border-radius:50%;animation:spin .75s linear infinite;}
+/* SVG radial progress circle */
+.ring-wrap{position:relative;width:96px;height:96px;flex-shrink:0;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:5;}
+.ring-fill{fill:none;stroke:url(#ringGrad);stroke-width:5;stroke-linecap:round;
+           stroke-dasharray:264;stroke-dashoffset:264;transition:stroke-dashoffset .35s ease;}
+.ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+          font-size:18px;font-weight:800;letter-spacing:-.5px;
+          background:linear-gradient(135deg,var(--blue),var(--purple));
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.ring-lbl{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
+          margin-top:2px;}
+/* Small spinner for market/dividends/insights loaders */
+.mini-spin{width:28px;height:28px;border:2px solid rgba(255,255,255,.07);
+           border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.prog-wrap{width:180px;height:3px;background:var(--dim);border-radius:2px;}
-.prog-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--purple));transition:width .3s;}
 
 /* ── Glass card ── */
 .glass{background:var(--card);border:1px solid var(--border);border-radius:16px;
@@ -379,22 +392,37 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
 <div class="panels">
   <div class="panel active" id="p0">
     <div class="loading" id="l0">
-      <div class="spin"></div>
-      <div>Reading your stocks…</div>
-      <div class="prog-wrap"><div class="prog-fill" id="progFill" style="width:5%"></div></div>
+      <!-- SVG gradient def (hidden, referenced by ring-fill) -->
+      <svg width="0" height="0" style="position:absolute">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="var(--blue)"/>
+            <stop offset="100%" stop-color="var(--purple)"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <!-- Radial progress ring -->
+      <div class="ring-wrap">
+        <svg width="96" height="96" viewBox="0 0 96 96">
+          <circle class="ring-bg"   cx="48" cy="48" r="42"/>
+          <circle class="ring-fill" cx="48" cy="48" r="42" id="ringCircle"/>
+        </svg>
+        <div class="ring-pct" id="ringPct">0%</div>
+      </div>
+      <div class="ring-lbl" id="ringLbl">Reading your stocks…</div>
     </div>
     <div id="c0" style="display:none"></div>
   </div>
   <div class="panel" id="p1">
-    <div class="loading" id="l1"><div class="spin"></div><div>Click tab to load market data</div></div>
+    <div class="loading" id="l1"><div class="mini-spin"></div><div>Click tab to load market data</div></div>
     <div id="c1" style="display:none"></div>
   </div>
   <div class="panel" id="p2">
-    <div class="loading" id="l2"><div class="spin"></div><div>Click tab to load dividends</div></div>
+    <div class="loading" id="l2"><div class="mini-spin"></div><div>Click tab to load dividends</div></div>
     <div id="c2" style="display:none"></div>
   </div>
   <div class="panel" id="p3">
-    <div class="loading" id="l3"><div class="spin"></div><div>Waiting for portfolio data…</div></div>
+    <div class="loading" id="l3"><div class="mini-spin"></div><div>Waiting for portfolio data…</div></div>
     <div id="c3" style="display:none"></div>
   </div>
 </div>
@@ -451,7 +479,7 @@ function startLoad(){
   document.getElementById('loadFill').style.display='block';
   document.getElementById('updLbl').textContent='Reading sheet…';
   tdot(0,'loading');tdot(3,'loading');
-  document.getElementById('progFill').style.width='5%';
+  setRing(0,'Reading your stocks…');
 
   google.script.run
     .withSuccessHandler(onSheetData)
@@ -489,10 +517,20 @@ function fetchNext(){
     .getCSELivePrice(sym);
 }
 
+function setRing(pct,lbl){
+  var circ=264, offset=circ-Math.round(circ*pct/100);
+  var c=document.getElementById('ringCircle');
+  if(c) c.style.strokeDashoffset=offset;
+  var p=document.getElementById('ringPct');
+  if(p) p.textContent=pct+'%';
+  var l=document.getElementById('ringLbl');
+  if(l&&lbl) l.textContent=lbl;
+}
+
 function onLive(r){
   updateCard(r);
   var pct=Math.round(_liveDone/_liveTotal*100);
-  document.getElementById('progFill').style.width=pct+'%';
+  setRing(pct,'Live prices: '+_liveDone+' / '+_liveTotal);
   document.getElementById('updLbl').textContent='Live: '+_liveDone+'/'+_liveTotal;
 }
 
@@ -510,7 +548,7 @@ function allLiveDone(){
 function loadMarketData(){
   tdot(1,'loading');tdot(2,'loading');
   ['l1','l2'].forEach(function(id){
-    document.getElementById(id).innerHTML='<div class="spin"></div><div>Fetching from CSE…</div>';
+    document.getElementById(id).innerHTML='<div class="mini-spin"></div><div>Fetching from CSE…</div>';
     document.getElementById(id).style.display='flex';
     document.getElementById('c'+id[1]).style.display='none';
   });
