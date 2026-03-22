@@ -28,7 +28,7 @@ function onEdit(e) {
     showExpenseDashboard();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'H1') {
-    showAddExpense();
+    showCSEDashboard();
   }
 }
 
@@ -1085,6 +1085,115 @@ function getInvestmentData() {
       Number(r[5]) || 0,
       Number(r[6]) || 0
     ]);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CSE STOCK DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+
+function showCSEDashboard() {
+  try {
+    var html = HtmlService.createHtmlOutputFromFile('csiDashboard')
+      .setWidth(1600)
+      .setHeight(1000);
+    SpreadsheetApp.getUi().showModalDialog(html, '📈 CSE Stock Dashboard');
+  } catch(e) {}
+}
+
+// ── Stage 1: Instant – just reads sheet, zero API calls ─────────
+function getCSESheetData() {
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName("UT_CRYPTO");
+    var rows  = sheet.getRange("A20:G29").getValues();
+    var stocks = [];
+    rows.forEach(function(row) {
+      var symbol = (row[0] || '').toString().trim();
+      if (!symbol) return;
+      stocks.push({
+        symbol:      symbol,
+        sheetPrice:  Number(row[1]) || 0,
+        boughtPrice: Number(row[2]) || 0,
+        qty:         Number(row[3]) || 0,
+        name:        (row[4] || '').toString().trim(),
+        sector:      (row[5] || '').toString().trim(),
+        notes:       (row[6] || '').toString().trim()
+      });
+    });
+    return { stocks: stocks };
+  } catch(e) {
+    return { stocks: [], error: e.message };
+  }
+}
+
+// ── Stage 2: One live price per symbol (called per-card from HTML) ──
+function getCSELivePrice(symbol) {
+  try {
+    var res  = UrlFetchApp.fetch("https://www.cse.lk/api/companyInfoSummery", {
+      method: "post", payload: { symbol: symbol }, muteHttpExceptions: true
+    });
+    if (res.getResponseCode() !== 200) return { success: false, symbol: symbol };
+    var json = JSON.parse(res.getContentText());
+    if (!json || !json.reqSymbolInfo) return { success: false, symbol: symbol };
+    var si = json.reqSymbolInfo;
+    return {
+      success:      true,
+      symbol:       symbol,
+      currentPrice: Number(si.lastTradedPrice)  || 0,
+      change:       Number(si.change)           || Number(si.priceChange)     || 0,
+      changePct:    Number(si.percentageChange) || Number(si.percentChange)   || 0,
+      dayHigh:      Number(si.dayHigh)          || Number(si.highPrice)       || 0,
+      dayLow:       Number(si.dayLow)           || Number(si.lowPrice)        || 0,
+      volume:       Number(si.volume)           || Number(si.totalVolume)     || 0,
+      pe:           Number(si.pe)               || Number(si.priceToEarnings) || 0,
+      dividendYield:Number(si.dividendYield)    || 0,
+      marketCap:    Number(si.marketCap)        || 0,
+      yearHigh:     Number(si.yearHigh)         || Number(si['52WeekHigh'])   || 0,
+      yearLow:      Number(si.yearLow)          || Number(si['52WeekLow'])    || 0,
+      companyName:  si.companyName || si.name   || '',
+      allFields:    si
+    };
+  } catch(e) {
+    return { success: false, symbol: symbol, error: e.message };
+  }
+}
+
+// ── Stage 3: Market + News + Dividends (lazy, on tab click) ─────
+function getCSEMarketData() {
+  var result = { market: {}, news: [], dividends: [] };
+  var base   = "https://www.cse.lk/api/";
+
+  var eps = [
+    { key: 'summary',    path: 'marketSummary'          },
+    { key: 'index',      path: 'allSharePriceIndex'      },
+    { key: 'gainers',    path: 'topGainers'              },
+    { key: 'losers',     path: 'topLosers'               },
+    { key: 'mostActive', path: 'mostActive'              }
+  ];
+  eps.forEach(function(ep) {
+    try {
+      var r = UrlFetchApp.fetch(base + ep.path, { method: 'get', muteHttpExceptions: true });
+      if (r.getResponseCode() === 200) {
+        var body = r.getContentText().trim();
+        if (body && body.charAt(0) !== '<') result.market[ep.key] = JSON.parse(body);
+      }
+    } catch(e) {}
+  });
+  try {
+    var nr = UrlFetchApp.fetch(base + 'news', { method: 'get', muteHttpExceptions: true });
+    if (nr.getResponseCode() === 200) {
+      var nb = nr.getContentText().trim();
+      if (nb && nb.charAt(0) !== '<') result.news = JSON.parse(nb);
+    }
+  } catch(e) {}
+  try {
+    var dr = UrlFetchApp.fetch(base + 'dividendAnnouncements', { method: 'get', muteHttpExceptions: true });
+    if (dr.getResponseCode() === 200) {
+      var db = dr.getContentText().trim();
+      if (db && db.charAt(0) !== '<') result.dividends = JSON.parse(db);
+    }
+  } catch(e) {}
+
+  return result;
 }
 
 
