@@ -128,10 +128,10 @@
 
     /* balance input row */
     .balance-row{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;}
-    .balance-lbl{font-size:.62em;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);flex-shrink:0;}
-    .balance-input{flex:1;min-width:0;padding:7px 10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:.85em;font-weight:600;font-family:inherit;transition:border-color .2s,box-shadow .2s;}
-    .balance-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,212,255,.12);}
-    .balance-input::placeholder{color:rgba(255,255,255,.25);}
+    .balance-lbl{font-size:.52em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.25);flex-shrink:0;white-space:nowrap;}
+    .balance-input{flex:1;min-width:0;padding:10px 14px;background:rgba(0,212,255,.05);border:1.5px solid rgba(0,212,255,.18);border-radius:10px;color:#fff;font-size:1em;font-weight:700;font-family:inherit;transition:border-color .2s,box-shadow .2s,background .2s;letter-spacing:.2px;}
+    .balance-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,212,255,.15),inset 0 1px 0 rgba(0,212,255,.08);background:rgba(0,212,255,.08);}
+    .balance-input::placeholder{color:rgba(255,255,255,.2);font-weight:400;font-size:.88em;}
     .save-btn{padding:7px 14px;border:none;border-radius:8px;font-family:inherit;font-size:.75em;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .2s ease;background:linear-gradient(135deg,var(--blue),#0099cc);color:#fff;flex-shrink:0;}
     .save-btn:hover{box-shadow:0 4px 14px rgba(0,212,255,.35);transform:translateY(-1px);}
     .save-btn:disabled{background:rgba(255,255,255,.1);cursor:not-allowed;transform:none;box-shadow:none;}
@@ -370,7 +370,7 @@ function displayData(data) {
         </div>
 
         <div class="balance-row">
-          <span class="balance-lbl">Last Statement Bal</span>
+          <span class="balance-lbl">Stmt Bal</span>
           <input class="balance-input" type="number" step="0.01"
                  id="bal-input-${i}" placeholder="Enter amount"
                  value="${row[7]||''}"/>
@@ -387,6 +387,9 @@ function displayData(data) {
       <h1>Credit Card Dashboard</h1>
       <div class="header-sub">Balance · Statements · Payment status</div>
     </div>
+
+    <!-- CC card panels -->
+    <div class="cc-grid">${cardsHTML}</div>
 
     <!-- KPIs -->
     <div class="kpi-row">
@@ -437,9 +440,6 @@ function displayData(data) {
         <div class="chart-wrap"><canvas id="cmpChart"></canvas></div>
       </div>
     </div>
-
-    <!-- CC card panels -->
-    <div class="cc-grid">${cardsHTML}</div>
   `;
 
   /* animate progress bars */
