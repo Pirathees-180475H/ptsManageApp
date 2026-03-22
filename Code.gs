@@ -39,8 +39,8 @@ function onEdit(e) {
 function showHomeDashboard() {
   try {
     var html = HtmlService.createHtmlOutputFromFile('homeDashboard')
-      .setWidth(1440)
-      .setHeight(900);
+      .setWidth(2000)
+      .setHeight(2000);
     SpreadsheetApp.getUi().showModalDialog(html, '🏠 PTS Command Centre');
   } catch (error) { /* silent fail */ }
 }
@@ -201,8 +201,8 @@ function getHomeData() {
 function showInvestFlow() {
   try {
     var html = HtmlService.createHtmlOutputFromFile('moneyFlowDashboard')
-      .setWidth(1600)
-      .setHeight(1000);
+      .setWidth(2000)
+      .setHeight(2000);
     SpreadsheetApp.getUi().showModalDialog(html, '💸 Investment Flow Dashboard');
   } catch (error) {
      //SpreadsheetApp.getUi().alert('Error: ' + error.toString());
@@ -294,8 +294,8 @@ function saveMoneyFlowItemStatus(monthStr, jsonString) {
 function showCreditCardSummary() {
   try {
     var html = HtmlService.createHtmlOutputFromFile('showCreditCardSummary')
-      .setWidth(1200)
-      .setHeight(600);
+      .setWidth(2000)
+      .setHeight(2000);
     SpreadsheetApp.getUi().showModalDialog(html, '💳 Credit Card Dashboard');
   } catch (error) {
      //SpreadsheetApp.getUi().alert('Error: ' + error.toString());
@@ -319,8 +319,8 @@ function verifyPasswordAndShowPortfolio(enteredPassword) {
   
   if (enteredPassword === correctPassword) {
     var html = HtmlService.createHtmlOutputFromFile('showPortfolioSummary')
-      .setWidth(1400)
-      .setHeight(1200);
+      .setWidth(2000)
+      .setHeight(2000);
     SpreadsheetApp.getUi().showModalDialog(html, '💳 Portfolio Dashboard');
     return true;
   } else {
@@ -751,8 +751,8 @@ function showBalanceModal(balanceData, totals, validationResult, sheetBalance, r
     html.recentTransactions = recentTransactions || [];
 
     var htmlOutput = html.evaluate()
-      .setWidth(1400)
-      .setHeight(900);
+      .setWidth(2000)
+      .setHeight(2000);
     SpreadsheetApp.getUi().showModalDialog(htmlOutput, '💰 Splitwise Balances');
   } catch (error) {
     // Silent fail
@@ -923,8 +923,8 @@ function logPortfolioAmount(note) {
 function showExpenseDashboard() {
   try {
     var html = HtmlService.createHtmlOutputFromFile('expenseDashboard')
-      .setWidth(1600)
-      .setHeight(1000);
+      .setWidth(2000)
+      .setHeight(2000);
     SpreadsheetApp.getUi().showModalDialog(html, '📊 Monthly Expense Dashboard');
   } catch (error) {
     // silent fail
@@ -1061,8 +1061,8 @@ function getExpensesForFriend(friendId) {
 
 function showInvestmentDashboard() {
   const html = HtmlService.createHtmlOutputFromFile("investmentDashboard")
-    .setWidth(1600)
-    .setHeight(1000);
+    .setWidth(2000)
+    .setHeight(2000);
   SpreadsheetApp.getUi().showModalDialog(html, "📊 Investment Performance Dashboard");
 }
 
@@ -1094,8 +1094,8 @@ function getInvestmentData() {
 function showCSEDashboard() {
   try {
     var html = HtmlService.createHtmlOutputFromFile('csiDashboard')
-      .setWidth(1600)
-      .setHeight(1000);
+      .setWidth(2000)
+      .setHeight(2000);
     SpreadsheetApp.getUi().showModalDialog(html, '📈 CSE Stock Dashboard');
   } catch(e) {}
 }
