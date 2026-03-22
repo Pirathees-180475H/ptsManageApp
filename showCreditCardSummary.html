@@ -66,8 +66,8 @@
     .kpi-value{font-size:1.5em;font-weight:800;letter-spacing:-1px;line-height:1;}
     .kpi-sub{font-size:.62em;color:rgba(255,255,255,.25);margin-top:4px;}
     .kpi.red   {background:linear-gradient(135deg,rgba(255,77,109,.09),rgba(255,77,109,.04));border-color:rgba(255,77,109,.22);}
-    .kpi.red   .kpi-value,.kpi.red   .kpi-glow{color:var(--red);background:var(--red);}
-    .kpi.red   .kpi-value{text-shadow:0 0 20px rgba(255,77,109,.4);}
+    .kpi.red   .kpi-value{color:var(--red);text-shadow:0 0 20px rgba(255,77,109,.4);}
+    .kpi.red   .kpi-glow{background:var(--red);}
     .kpi.blue  {background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(0,212,255,.04));border-color:rgba(0,212,255,.22);}
     .kpi.blue  .kpi-value{color:var(--blue);text-shadow:0 0 20px rgba(0,212,255,.4);}
     .kpi.blue  .kpi-glow{background:var(--blue);}
@@ -108,8 +108,23 @@
     .amt-val.warn  {color:var(--amber);}
 
     .cc-dates{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
-    .date-chip{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.18);border-radius:8px;padding:5px 10px;font-size:.63em;color:rgba(255,255,255,.55);}
-    .date-chip span{color:var(--blue);font-weight:600;}
+    .date-chip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:7px 12px;font-size:.63em;color:rgba(255,255,255,.45);flex:1;min-width:130px;}
+    .date-chip .dc-icon{font-size:1.1em;flex-shrink:0;}
+    .date-chip .dc-body{display:flex;flex-direction:column;gap:1px;}
+    .date-chip .dc-label{font-size:.75em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.28);}
+    .date-chip .dc-value{font-weight:700;color:#fff;font-size:1em;}
+    .date-chip.due-chip{background:rgba(255,77,109,.06);border-color:rgba(255,77,109,.18);}
+    .date-chip.due-chip .dc-value{color:var(--red);}
+    .date-chip.stmt-chip{background:rgba(0,212,255,.06);border-color:rgba(0,212,255,.18);}
+    .date-chip.stmt-chip .dc-value{color:var(--blue);}
+
+    /* payment progress */
+    .pay-progress{margin-bottom:12px;}
+    .pay-prog-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+    .pay-prog-label{font-size:.6em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);}
+    .pay-prog-pct{font-size:.7em;font-weight:800;}
+    .pay-prog-bg{height:7px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;}
+    .pay-prog-fill{height:100%;border-radius:6px;transition:width 1.3s cubic-bezier(.4,0,.2,1);width:0;}
 
     /* balance input row */
     .balance-row{display:flex;align-items:center;gap:8px;padding:10px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;}
@@ -190,9 +205,8 @@ function fmt(v) {
 }
 
 function fmtDate(v) {
-  if (!v) return '—';
-  try { return new Date(v).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}); }
-  catch(e) { return v; }
+  if (!v || v === '' || v === 0) return '—';
+  return (v + '').trim(); // stored as string — display as-is
 }
 
 function getAlertHTML(paymentAfterStatement, lastStatementBalance, id) {
@@ -288,18 +302,24 @@ function displayData(data) {
     const b = brandCfg(row[0]);
     const isSettled = row[3]===true||row[3]==='TRUE'||row[3]==='true';
     const totalDueNum = parseFloat((row[1]+'').replace(/,/g,''))||0;
-    const amtClass = totalDueNum>50000?'danger':totalDueNum>20000?'warn':'ok';
+    const payNum      = parseFloat((row[6]+'').replace(/,/g,''))||0;
+    const amtClass    = totalDueNum>50000?'danger':totalDueNum>20000?'warn':'ok';
+
+    // payment progress
+    const progPct    = totalDueNum>0 ? Math.min(payNum/totalDueNum*100,100) : 0;
+    const progColor  = progPct>=100?'var(--green)':progPct>=60?'var(--amber)':'var(--red)';
+    const progLabel  = progPct>=100?'Fully covered':progPct>0?progPct.toFixed(0)+'% covered':'No payment set';
 
     return `
-    <div class="cc-card">
+    <div class="cc-card" style="border-color:${isSettled?'rgba(0,230,118,.18)':'rgba(255,255,255,.07)'}">
+      <div class="cc-brand-strip" style="background:${b.bg};height:3px;position:absolute;top:0;left:0;right:0;"></div>
       <div class="cc-top">
-        <div class="cc-brand-strip" style="background:${b.bg}"></div>
 
         <div class="cc-header">
-          <div class="cc-logo" style="background:${b.bg}">${b.label}</div>
-          <div>
+          <div class="cc-logo" style="background:${b.bg};box-shadow:0 0 14px ${b.color}44">${b.label}</div>
+          <div style="flex:1">
             <div class="cc-name">${row[0]||'—'}</div>
-            <div class="cc-month">${row[2]||'No month set'}</div>
+            <div class="cc-month">📆 ${row[2]||'No month set'}</div>
           </div>
           <div class="cc-status-wrap">
             <span class="status-badge ${isSettled?'settled':'pending'}"
@@ -312,19 +332,41 @@ function displayData(data) {
         </div>
 
         <div class="cc-amounts">
-          <div class="amt-block">
-            <div class="amt-lbl">Total Due</div>
+          <div class="amt-block" style="border-color:rgba(255,77,109,.15)">
+            <div class="amt-lbl">💳 Total Due</div>
             <div class="amt-val ${amtClass}">${fmt(row[1])}</div>
           </div>
-          <div class="amt-block">
-            <div class="amt-lbl">Payment After Statement</div>
+          <div class="amt-block" style="border-color:rgba(0,212,255,.12)">
+            <div class="amt-lbl">💸 Payment After Statement</div>
             <div class="amt-val">${fmt(row[6])}</div>
           </div>
         </div>
 
+        <div class="pay-progress">
+          <div class="pay-prog-row">
+            <span class="pay-prog-label">Payment coverage</span>
+            <span class="pay-prog-pct" style="color:${progColor}">${progLabel}</span>
+          </div>
+          <div class="pay-prog-bg">
+            <div class="pay-prog-fill" data-w="${progPct}" style="background:${progColor}"></div>
+          </div>
+        </div>
+
         <div class="cc-dates">
-          <div class="date-chip">📅 Statement: <span>${fmtDate(row[4])}</span></div>
-          <div class="date-chip">⏰ Due: <span>${fmtDate(row[5])}</span></div>
+          <div class="date-chip stmt-chip">
+            <span class="dc-icon">📋</span>
+            <div class="dc-body">
+              <span class="dc-label">Statement</span>
+              <span class="dc-value">${fmtDate(row[4])}</span>
+            </div>
+          </div>
+          <div class="date-chip due-chip">
+            <span class="dc-icon">⏰</span>
+            <div class="dc-body">
+              <span class="dc-label">Due Date</span>
+              <span class="dc-value">${fmtDate(row[5])}</span>
+            </div>
+          </div>
         </div>
 
         <div class="balance-row">
@@ -399,6 +441,13 @@ function displayData(data) {
     <!-- CC card panels -->
     <div class="cc-grid">${cardsHTML}</div>
   `;
+
+  /* animate progress bars */
+  setTimeout(()=>{
+    document.querySelectorAll('.pay-prog-fill').forEach(el=>{
+      el.style.width = (el.dataset.w||0) + '%';
+    });
+  }, 350);
 
   const TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:12};
   Chart.defaults.color='rgba(255,255,255,0.4)';
