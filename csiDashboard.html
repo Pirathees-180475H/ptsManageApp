@@ -828,6 +828,80 @@ function renderGold(d){
     html+='<div class="empty"><div class="empty-ico">🏅</div>No gold price data available.<br>Check network or run <strong>updateGoldPrice()</strong> in the script.</div>';
   }
 
+  // ── My Gold Investment Insights ──
+  if(lastInvested>0){
+    var curVal=lastInvested+lastEarnings;
+    var roi=lastInvested>0?(lastEarnings/lastInvested*100):0;
+    var chg6m=ph.length>=2?((ph[ph.length-1].lkr-ph[0].lkr)/ph[0].lkr*100):0;
+
+    html+='<div class="glass fade-in" style="margin-bottom:14px;">';
+    html+='<div class="g-hdr"><div class="g-dot" style="background:var(--gold)"></div>'+
+          '<span class="g-title">My Gold Investment</span></div>';
+
+    // KPI row
+    html+='<div class="kpi-row" style="margin-bottom:12px;">';
+    html+=kpi('💰','Invested',fs(lastInvested),'Total capital put in','','blue');
+    html+=kpi(lastEarnings>=0?'📈':'📉','Earnings',fs(lastEarnings),'Profit / loss',(roi>=0?'+':'')+roi.toFixed(2)+'%',lastEarnings>=0?'green':'red');
+    html+=kpi('🏦','Portfolio Value',fs(curVal),'Invested + earnings','','gold');
+    html+='</div>';
+
+    // Insights
+    var insHtml='';
+
+    // ROI signal
+    if(roi>=20){
+      insHtml+=goldInsCard('🏆','Strong Profit — Consider Partial Exit',
+        'Your gold is up <strong>'+roi.toFixed(1)+'%</strong> ('+fs(lastEarnings)+'). Gold is a long-term store of value, but locking in some gains during peaks is wise.',
+        'sell','Consider selling 20–30% of your position if you need liquidity or want to rebalance. Keep the rest as inflation hedge.');
+    } else if(roi>=10){
+      insHtml+=goldInsCard('✅','Healthy Gain — Hold',
+        'Up <strong>'+roi.toFixed(1)+'%</strong> — solid return. Gold is performing well for you.',
+        'hold','Hold your position. Gold works best as a long-term hedge. Only sell if you have a specific financial need.');
+    } else if(roi>=0&&roi<5){
+      insHtml+=goldInsCard('⚖️','Near Break-Even',
+        'ROI is <strong>'+roi.toFixed(1)+'%</strong> — essentially flat. Could be a holding period or recent purchase.',
+        'hold','Patience — gold moves in long cycles. If you bought recently, hold. If you have been holding a long time, review whether gold still fits your portfolio strategy.');
+    } else if(roi<0&&roi>=-10){
+      insHtml+=goldInsCard('📉','Small Loss — Monitor',
+        'Down <strong>'+Math.abs(roi).toFixed(1)+'%</strong>. Not critical, but worth watching.',
+        'watch','Gold downturns can be good accumulation opportunities if you have a long-term view. Do not panic-sell physical gold on short-term dips.');
+    } else if(roi<-10){
+      insHtml+=goldInsCard('🚨','Significant Loss — Review',
+        'Down <strong>'+Math.abs(roi).toFixed(1)+'%</strong> ('+fs(lastEarnings)+'). Review your entry timing and thesis.',
+        'watch','Consider whether the loss is due to LKR/USD movement or actual gold price decline. If macro factors are temporary, holding is usually the right call for gold.');
+    }
+
+    // Gold price trend vs your ROI
+    if(chg6m!==0){
+      if(chg6m>0&&roi>=chg6m){
+        insHtml+=goldInsCard('🎯','Beating the Market',
+          'Gold price is up <strong>'+chg6m.toFixed(1)+'%</strong> in 6 months, and your portfolio ROI is <strong>'+roi.toFixed(1)+'%</strong> — you are outperforming.',
+          'hold','Your investment timing has been good. Continue to hold and let the appreciation compound.');
+      } else if(chg6m>0&&roi<chg6m){
+        insHtml+=goldInsCard('📊','Gold Trending Up',
+          'Gold price has risen <strong>'+chg6m.toFixed(1)+'%</strong> over 6 months. Current uptrend favours holding.',
+          'hold','Gold is in a positive trend. If you can add more at current prices, you are entering in an uptrend — be mindful of your cost average.');
+      } else if(chg6m<-5){
+        insHtml+=goldInsCard('💡','Gold in Correction — Accumulate?',
+          'Gold price is down <strong>'+Math.abs(chg6m).toFixed(1)+'%</strong> over 6 months. Corrections are normal.',
+          'buy','Historically, gold corrections are buying opportunities for long-term investors. If you have spare capital, this may be a good time to add to your position at lower prices.');
+      }
+    }
+
+    // SL rupee context
+    if(price>0&&lastInvested>0){
+      var estGrams=lastInvested/price;
+      if(estGrams>0){
+        insHtml+=goldInsCard('🔢','Estimated Holdings',
+          'At current price of ₨ '+fr(price,0)+'/g, your investment of '+fs(lastInvested)+' represents approximately <strong>'+estGrams.toFixed(2)+' grams</strong> of gold.',
+          'info','This is an estimate based on your current investment value vs today\'s price. Actual grams depend on when you purchased.');
+      }
+    }
+
+    if(insHtml) html+='<div style="display:flex;flex-direction:column;gap:8px;">'+insHtml+'</div>';
+    html+='</div>';
+  }
+
   c.innerHTML=html;
 
   // ── Render price chart ──
@@ -977,6 +1051,23 @@ function glassKpi(lbl,val,color){
   return '<div class="glass" style="flex:1;min-width:140px;padding:12px 16px;text-align:center">'+
     '<div style="font-size:.55em;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">'+lbl+'</div>'+
     '<div style="font-size:1.3em;font-weight:800;color:'+color+'">'+val+'</div></div>';
+}
+function goldInsCard(ico,title,desc,type,action){
+  var borders={sell:'rgba(255,77,141,.25)',watch:'rgba(255,215,0,.25)',hold:'rgba(0,255,136,.25)',buy:'rgba(0,212,255,.25)',info:'rgba(168,85,247,.25)'};
+  var accents={sell:'rgba(255,77,141,1)',watch:'rgba(255,215,0,1)',hold:'rgba(0,255,136,1)',buy:'rgba(0,212,255,1)',info:'rgba(168,85,247,1)'};
+  var bgs={sell:'rgba(255,77,141,.06)',watch:'rgba(255,215,0,.06)',hold:'rgba(0,255,136,.06)',buy:'rgba(0,212,255,.06)',info:'rgba(168,85,247,.06)'};
+  var bdr=borders[type]||borders.buy, acc=accents[type]||accents.buy, bg=bgs[type]||bgs.buy;
+  return '<div style="background:'+bg+';border:1px solid '+bdr+';border-left:3px solid '+acc+';border-radius:10px;padding:12px 14px;">'+
+    '<div style="display:flex;align-items:flex-start;gap:10px;">'+
+      '<div style="font-size:16px;flex-shrink:0;margin-top:1px;">'+ico+'</div>'+
+      '<div>'+
+        '<div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:4px;">'+title+'</div>'+
+        '<div style="font-size:10.5px;color:var(--muted);line-height:1.5;margin-bottom:6px;">'+desc+'</div>'+
+        '<div style="font-size:10px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:6px;padding:6px 9px;color:rgba(255,255,255,.7);">'+
+          '💬 <strong>What to do:</strong> '+action+'</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
 }
 
 // ── Insights ───────────────────────────────────────────────────────
