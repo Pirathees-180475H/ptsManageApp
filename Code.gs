@@ -1,3 +1,14 @@
+/* ── Web App entry point (SPA) ── */
+function doGet(e) {
+  var appUrl = ScriptApp.getService().getUrl();
+  var html = HtmlService.createHtmlOutputFromFile('render');
+  var inject = '<script>var _WEB_APP=true; var _APP_URL="' + appUrl + '";<\/script>\n';
+  var content = html.getContent().replace('</head>', inject + '</head>');
+  return HtmlService.createHtmlOutput(content)
+    .setTitle('PTS Finance')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
 function onEdit(e) {
   if (!e || !e.range) return;
   
