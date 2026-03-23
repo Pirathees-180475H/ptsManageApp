@@ -66,6 +66,10 @@ body::before{content:'';position:fixed;inset:0;
              font-size:11px;font-weight:700;font-family:'Inter',sans-serif;transition:opacity .2s;}
 .refresh-btn:hover{opacity:.85;}
 .refresh-btn:disabled{opacity:.4;cursor:not-allowed;}
+.back-btn{background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);
+          border:1px solid rgba(255,255,255,.1);padding:5px 12px;border-radius:8px;cursor:pointer;
+          font-size:11px;font-weight:600;font-family:'Inter',sans-serif;transition:all .18s;}
+.back-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
 
 /* ── Load bar ── */
 .load-bar{height:2px;background:var(--border);flex-shrink:0;position:relative;z-index:2;overflow:hidden;}
@@ -101,22 +105,22 @@ body::before{content:'';position:fixed;inset:0;
 .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;
          padding:56px;gap:14px;color:var(--muted);font-size:12px;letter-spacing:1px;
          text-transform:uppercase;}
-/* SVG radial progress circle */
-.ring-wrap{position:relative;width:96px;height:96px;flex-shrink:0;}
-.ring-wrap svg{transform:rotate(-90deg);}
-.ring-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:5;}
-.ring-fill{fill:none;stroke:url(#ringGrad);stroke-width:5;stroke-linecap:round;
-           stroke-dasharray:264;stroke-dashoffset:264;transition:stroke-dashoffset .35s ease;}
-.ring-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-          font-size:18px;font-weight:800;letter-spacing:-.5px;
-          background:linear-gradient(135deg,var(--blue),var(--purple));
-          -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.ring-lbl{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;
-          margin-top:2px;}
-/* Small spinner for market/dividends/insights loaders */
-.mini-spin{width:28px;height:28px;border:2px solid rgba(255,255,255,.07);
-           border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg);}}
+/* Line progress loader (portfolio) */
+.ll-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;width:260px;}
+.ll-bar{width:100%;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden;}
+.ll-fill{height:100%;border-radius:2px;
+         background:linear-gradient(90deg,var(--blue),var(--purple));
+         transition:width .35s ease;width:0%;}
+.ll-pct{font-size:13px;font-weight:800;letter-spacing:-.3px;
+        background:linear-gradient(135deg,var(--blue),var(--purple));
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.ring-lbl{font-size:10px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;}
+/* Thin sweep line for other panels */
+.mini-line{width:140px;height:2px;background:rgba(255,255,255,.07);border-radius:2px;
+           overflow:hidden;position:relative;flex-shrink:0;}
+.mini-line::after{content:'';position:absolute;top:0;left:-50%;width:50%;height:100%;
+                  background:linear-gradient(90deg,transparent,var(--blue),var(--purple),transparent);
+                  animation:lbar .9s ease-in-out infinite;}
 
 /* ── Glass card ── */
 .glass{background:var(--card);border:1px solid var(--border);border-radius:16px;
@@ -371,6 +375,7 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
 <!-- Header -->
 <div class="header">
   <div class="h-left">
+    <button class="back-btn" onclick="goBack()">← Home</button>
     <span class="h-title">📈 CSE Stock Dashboard</span>
     <span class="mkt-pill" id="mktPill">—</span>
   </div>
@@ -383,46 +388,33 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
 <!-- Tabs -->
 <div class="tabs">
   <div class="tab active" onclick="switchTab(0)">💼 Portfolio <span class="tdot loading" id="td0"></span></div>
-  <div class="tab"        onclick="switchTab(1)">📊 Market   <span class="tdot" id="td1"></span></div>
-  <div class="tab"        onclick="switchTab(2)">💰 Dividends<span class="tdot" id="td2"></span></div>
-  <div class="tab"        onclick="switchTab(3)">💡 Insights <span class="tdot loading" id="td3"></span></div>
+  <div class="tab"        onclick="switchTab(1)">🏅 Gold      <span class="tdot" id="td1"></span></div>
+  <div class="tab"        onclick="switchTab(2)">💰 Dividends <span class="tdot" id="td2"></span></div>
+  <div class="tab"        onclick="switchTab(3)">💡 Insights  <span class="tdot loading" id="td3"></span></div>
 </div>
 
 <!-- Panels -->
 <div class="panels">
   <div class="panel active" id="p0">
     <div class="loading" id="l0">
-      <!-- SVG gradient def (hidden, referenced by ring-fill) -->
-      <svg width="0" height="0" style="position:absolute">
-        <defs>
-          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%"   stop-color="var(--blue)"/>
-            <stop offset="100%" stop-color="var(--purple)"/>
-          </linearGradient>
-        </defs>
-      </svg>
-      <!-- Radial progress ring -->
-      <div class="ring-wrap">
-        <svg width="96" height="96" viewBox="0 0 96 96">
-          <circle class="ring-bg"   cx="48" cy="48" r="42"/>
-          <circle class="ring-fill" cx="48" cy="48" r="42" id="ringCircle"/>
-        </svg>
-        <div class="ring-pct" id="ringPct">0%</div>
+      <div class="ll-wrap">
+        <div class="ll-bar"><div class="ll-fill" id="llFill"></div></div>
+        <div class="ll-pct" id="ringPct">0%</div>
       </div>
       <div class="ring-lbl" id="ringLbl">Reading your stocks…</div>
     </div>
     <div id="c0" style="display:none"></div>
   </div>
   <div class="panel" id="p1">
-    <div class="loading" id="l1"><div class="mini-spin"></div><div>Click tab to load market data</div></div>
+    <div class="loading" id="l1"><div class="mini-line"></div><div>Click tab to load gold data</div></div>
     <div id="c1" style="display:none"></div>
   </div>
   <div class="panel" id="p2">
-    <div class="loading" id="l2"><div class="mini-spin"></div><div>Click tab to load dividends</div></div>
+    <div class="loading" id="l2"><div class="mini-line"></div><div>Click tab to load dividends</div></div>
     <div id="c2" style="display:none"></div>
   </div>
   <div class="panel" id="p3">
-    <div class="loading" id="l3"><div class="mini-spin"></div><div>Waiting for portfolio data…</div></div>
+    <div class="loading" id="l3"><div class="mini-line"></div><div>Waiting for portfolio data…</div></div>
     <div id="c3" style="display:none"></div>
   </div>
 </div>
@@ -430,7 +422,7 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
 <script>
 // ── State ──────────────────────────────────────────────────────────
 var _stocks=[], _live={}, _liveQ=[], _liveTotal=0, _liveDone=0;
-var _mktLoaded=false, _portChart=null;
+var _goldLoaded=false, _divLoaded=false, _portChart=null, _goldChart=null;
 
 // ── Helpers ────────────────────────────────────────────────────────
 function fr(n,d){return n===null||n===undefined||n===''?'—':Number(n).toLocaleString('en-IN',{minimumFractionDigits:d===undefined?2:d,maximumFractionDigits:d===undefined?2:d});}
@@ -460,18 +452,18 @@ function mr(l,v){return '<div class="s-meta-row"><span class="ml">'+l+'</span> '
 function insMetric(l,v){return '<span class="ins-metric"><span class="iml">'+l+'</span><span class="imv">'+v+'</span></span>';}
 
 // ── Tabs ───────────────────────────────────────────────────────────
-var _mktLoaded=false;
 function switchTab(i){
   document.querySelectorAll('.tab').forEach(function(t,j){t.classList.toggle('active',j===i);});
   document.querySelectorAll('.panel').forEach(function(p,j){p.classList.toggle('active',j===i);});
-  if((i===1||i===2)&&!_mktLoaded) loadMarketData();
-  if(i===3&&_liveDone>0) renderInsights();
+  if(i===1&&!_goldLoaded) loadGoldData();
+  if(i===2&&!_divLoaded)  loadDividendsForHoldings();
+  if(i===3&&_liveDone>0)  renderInsights();
 }
 function tdot(i,s){var d=document.getElementById('td'+i);if(d)d.className='tdot'+(s?' '+s:'');}
 
 // ── Stage 1 ────────────────────────────────────────────────────────
 function startLoad(){
-  _stocks=[];_live={};_liveQ=[];_liveTotal=0;_liveDone=0;_mktLoaded=false;
+  _stocks=[];_live={};_liveQ=[];_liveTotal=0;_liveDone=0;_goldLoaded=false;_divLoaded=false;
   var btn=document.getElementById('refreshBtn');
   btn.disabled=true;
   document.getElementById('l0').style.display='flex';
@@ -518,9 +510,8 @@ function fetchNext(){
 }
 
 function setRing(pct,lbl){
-  var circ=264, offset=circ-Math.round(circ*pct/100);
-  var c=document.getElementById('ringCircle');
-  if(c) c.style.strokeDashoffset=offset;
+  var f=document.getElementById('llFill');
+  if(f) f.style.width=pct+'%';
   var p=document.getElementById('ringPct');
   if(p) p.textContent=pct+'%';
   var l=document.getElementById('ringLbl');
@@ -544,30 +535,45 @@ function allLiveDone(){
   document.getElementById('updLbl').textContent='Updated '+new Date().toLocaleTimeString();
 }
 
-// ── Stage 3 ────────────────────────────────────────────────────────
-function loadMarketData(){
-  tdot(1,'loading');tdot(2,'loading');
-  ['l1','l2'].forEach(function(id){
-    document.getElementById(id).innerHTML='<div class="mini-spin"></div><div>Fetching from CSE…</div>';
-    document.getElementById(id).style.display='flex';
-    document.getElementById('c'+id[1]).style.display='none';
-  });
+// ── Stage 3: Gold data ─────────────────────────────────────────────
+function loadGoldData(){
+  tdot(1,'loading');
+  var l1=document.getElementById('l1'),c1=document.getElementById('c1');
+  l1.innerHTML='<div class="mini-line"></div><div>Fetching gold prices…</div>';
+  l1.style.display='flex';c1.style.display='none';
   google.script.run
     .withSuccessHandler(function(d){
-      _mktLoaded=true;
-      renderMarket(d.market||{});
-      renderDividends(d.dividends||[]);
-      tdot(1,'done');tdot(2,'done');
+      _goldLoaded=true;
+      renderGold(d);
+      tdot(1,'done');
     })
     .withFailureHandler(function(e){
-      ['c1','c2'].forEach(function(id){
-        document.getElementById(id).innerHTML='<div class="err-box">'+esc(e.message)+'</div>';
-        document.getElementById(id).style.display='block';
-        document.getElementById('l'+id[1]).style.display='none';
-      });
-      tdot(1,'err');tdot(2,'err');
+      c1.innerHTML='<div class="err-box">Gold data error: '+esc(e.message)+'</div>';
+      c1.style.display='block';l1.style.display='none';
+      tdot(1,'err');
     })
-    .getCSEMarketData();
+    .getGoldData();
+}
+
+// ── Stage 3: Dividends ─────────────────────────────────────────────
+function loadDividendsForHoldings(){
+  tdot(2,'loading');
+  var l2=document.getElementById('l2'),c2=document.getElementById('c2');
+  l2.innerHTML='<div class="mini-line"></div><div>Fetching dividend data…</div>';
+  l2.style.display='flex';c2.style.display='none';
+  var heldSymbols=_stocks.filter(function(s){return s.qty>0;}).map(function(s){return s.symbol;});
+  google.script.run
+    .withSuccessHandler(function(d){
+      _divLoaded=true;
+      renderDividends(d.dividends||[], d.month||'');
+      tdot(2,'done');
+    })
+    .withFailureHandler(function(e){
+      c2.innerHTML='<div class="err-box">'+esc(e.message)+'</div>';
+      c2.style.display='block';l2.style.display='none';
+      tdot(2,'err');
+    })
+    .getCSEDividendsForHoldings(heldSymbols);
 }
 
 // ── Portfolio shell ────────────────────────────────────────────────
@@ -759,87 +765,211 @@ function buildTicker(){
   document.getElementById('tickerWrap').style.display='block';
 }
 
-// ── Market ─────────────────────────────────────────────────────────
-function renderMarket(mkt){
+// ── Gold ───────────────────────────────────────────────────────────
+function renderGold(d){
   var l=document.getElementById('l1'),c=document.getElementById('c1');
   l.style.display='none';c.style.display='block';
-  var html='',has=false;
-  if(mkt.summary){
-    has=true;var s=mkt.summary;
-    html+='<div class="kpi-row">';
-    var aspi=s.aspi||s.allSharePriceIndex||s.ASPI;
-    var sl20=s.sp20||s.spSL20;
-    var vol=s.totalVolume||s.volume;
-    var trn=s.turnover||s.totalTurnover;
-    if(aspi)html+=kpi('📊','ASPI',''+aspi,'All Share Price Index','','blue');
-    if(sl20)html+=kpi('🏆','S&P SL20',''+sl20,'Blue chips','','purple');
-    if(vol) html+=kpi('🔄','Volume',fs(vol),'Today\'s trades','','gold');
-    if(trn&&trn!==vol)html+=kpi('💵','Turnover',fs(trn),'Today','','green');
-    html+='</div>';
-  }
-  if(mkt.index&&!mkt.summary){
-    has=true;
-    html+=secHdr('Market Index','','var(--blue)');
-    html+='<div class="tbl-wrap"><pre style="color:var(--muted);font-size:9px;padding:12px;overflow:auto;max-height:200px">'+JSON.stringify(mkt.index,null,2)+'</pre></div>';
-  }
-  var g=normList(mkt.gainers),ls=normList(mkt.losers),ac=normList(mkt.mostActive);
-  if(g.length||ls.length){
-    has=true;
-    html+='<div class="two-col">';
-    html+='<div>'+secHdr('🟢 Top Gainers','','var(--green)')+movTbl(g,'green')+'</div>';
-    html+='<div>'+secHdr('🔴 Top Losers', '','var(--red)')  +movTbl(ls,'red')  +'</div>';
-    html+='</div>';
-  }
-  if(ac.length){has=true;html+=secHdr('🔥 Most Active','','var(--orange)')+movTbl(ac,'blue');}
-  if(!has) html='<div class="empty"><div class="empty-ico">📡</div>Market data not available from CSE API right now.<br><a href="https://www.cse.lk" target="_blank">Visit cse.lk →</a></div>';
-  c.innerHTML=html;
-}
 
-function normList(r){if(!r)return[];var l=Array.isArray(r)?r:(r.data||r.stockList||r.list||[]);return Array.isArray(l)?l.slice(0,12):[];}
-function movTbl(list,col){
-  if(!list.length)return '<div class="empty" style="padding:16px">No data</div>';
-  var colors={green:'var(--green)',red:'var(--red)',blue:'var(--blue)',gold:'var(--gold)'};
-  var sc=colors[col]||'var(--blue)';
-  var h='<div class="tbl-wrap"><table class="dt"><thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>%</th><th>Volume</th></tr></thead><tbody>';
-  list.forEach(function(it){
-    var sym=it.symbol||it.name||it.stockSymbol||'—';
-    var p=Number(it.lastTradedPrice||it.price||it.close||0);
-    var ch=Number(it.change||it.priceChange||0);
-    var pct=Number(it.percentageChange||it.percentChange||0);
-    var vol=Number(it.volume||it.totalVolume||0);
-    var cc=fc(pct);
-    h+='<tr><td class="sym-c" style="color:'+sc+'">'+esc(sym)+'</td>'+
-       '<td>₨ '+p.toFixed(2)+'</td>'+
-       '<td class="'+cc+'">'+(ch>=0?'+':'')+ch.toFixed(2)+'</td>'+
-       '<td class="'+cc+'">'+fp(pct)+'</td>'+
-       '<td style="color:var(--muted)">'+(vol>1000?(vol/1000).toFixed(0)+'K':vol||'—')+'</td></tr>';
-  });
-  h+='</tbody></table></div>';
-  return h;
+  var price=d.currentPrice||0;
+  var updated=d.updated||'';
+  var history=d.history||[];
+  var invested=d.currentInvested||0;
+
+  // KPIs
+  var prevPrice=0,prevMonth='';
+  if(history.length>=2){
+    prevPrice=history[history.length-2].goldInvested||0;
+    prevMonth=history[history.length-2].label||'';
+  }
+  var lastEntry=history.length?history[history.length-1]:{};
+  var lastInvested=lastEntry.goldInvested||invested||0;
+  var lastEarnings=lastEntry.goldEarnings||0;
+
+  var html='';
+
+  // Header KPI row
+  html+='<div class="kpi-row">';
+  if(price>0){
+    html+=kpi('🏅','Gold / Gram','₨ '+fr(price,0),'Live — ravijewellers.lk',updated?'Updated':'','gold');
+  } else {
+    html+=kpi('🏅','Gold / Gram','—','Price unavailable','','gold');
+  }
+  if(lastInvested>0){
+    html+=kpi('💰','Your Gold Investment',fs(lastInvested),'Latest recorded','','blue');
+  }
+  if(lastEarnings>0){
+    var gainPct=lastInvested>0?(lastEarnings/lastInvested*100).toFixed(2)+'%':'';
+    html+=kpi('📈','Gold Earnings',fs(lastEarnings),'Gain from investment',gainPct?'+'+gainPct:'','green');
+  }
+  html+='</div>';
+
+  // Chart - invested vs earnings over time
+  if(history.length>0){
+    html+='<div class="glass fade-in" style="margin-bottom:16px">'+
+      '<div class="g-hdr">'+
+        '<div class="g-dot" style="background:var(--gold)"></div>'+
+        '<span class="g-title">Gold Investment Over Time</span>'+
+        '<span class="g-sub">From your monthly log</span>'+
+      '</div>'+
+      '<div class="chart-wrap" style="height:200px"><canvas id="goldChart"></canvas></div>'+
+    '</div>';
+  }
+
+  // Price info notice
+  if(price>0){
+    html+='<div class="glass fade-in" style="margin-bottom:14px;display:flex;align-items:center;gap:14px;">'+
+      '<div style="font-size:2em;flex-shrink:0">🏅</div>'+
+      '<div>'+
+        '<div style="font-size:.55em;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px">Sri Lanka Gold Price (24K per gram)</div>'+
+        '<div style="font-size:1.5em;font-weight:800;color:var(--gold);letter-spacing:-.5px">₨ '+fr(price,0)+'</div>'+
+        (updated?'<div style="font-size:.65em;color:var(--dim);margin-top:3px">Source: ravijewellers.lk · '+updated+'</div>':'')+
+      '</div>'+
+    '</div>';
+  } else {
+    html+='<div class="err-box" style="margin-bottom:14px;">⚠ Could not fetch live gold price. Check <a href="https://ravijewellers.lk" target="_blank" style="color:var(--blue)">ravijewellers.lk →</a></div>';
+  }
+
+  if(!history.length&&!price){
+    html+='<div class="empty"><div class="empty-ico">🏅</div>No gold data found.<br>Make sure the UT_CRYPTO sheet has gold investment data and run <strong>updateGoldPrice()</strong>.</div>';
+  }
+
+  c.innerHTML=html;
+
+  // Render chart after DOM update
+  if(history.length>0){
+    setTimeout(function(){
+      var ctx=document.getElementById('goldChart');
+      if(!ctx)return;
+      if(_goldChart)_goldChart.destroy();
+      var labels=history.map(function(h){return h.label;});
+      var invData=history.map(function(h){return h.goldInvested;});
+      var earnData=history.map(function(h){return h.goldEarnings;});
+      _goldChart=new Chart(ctx,{
+        type:'line',
+        data:{
+          labels:labels,
+          datasets:[
+            {label:'Invested',data:invData,
+             borderColor:'rgba(255,215,0,.7)',backgroundColor:'rgba(255,215,0,.08)',
+             borderWidth:2,pointRadius:3,fill:true,tension:.35},
+            {label:'Earnings',data:earnData,
+             borderColor:'rgba(0,255,136,.7)',backgroundColor:'rgba(0,255,136,.06)',
+             borderWidth:2,pointRadius:3,fill:true,tension:.35}
+          ]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          plugins:{
+            legend:{labels:{color:'rgba(255,255,255,.45)',font:{size:10,family:'Inter'}}},
+            tooltip:{callbacks:{label:function(c){return c.dataset.label+': ₨ '+Number(c.raw).toLocaleString('en-IN');}}}
+          },
+          scales:{
+            x:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9,family:'Inter'}},grid:{color:'rgba(255,255,255,.04)'}},
+            y:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9,family:'Inter'},callback:function(v){return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v;}},grid:{color:'rgba(255,255,255,.04)'}}
+          }
+        }
+      });
+    },80);
+  }
 }
 
 // ── Dividends ──────────────────────────────────────────────────────
-function renderDividends(divs){
+function renderDividends(apiDivs, curMonth){
   var l=document.getElementById('l2'),c=document.getElementById('c2');
   l.style.display='none';c.style.display='block';
-  var list=Array.isArray(divs)?divs:(divs.data||divs.list||divs.dividends||[]);
-  if(!list.length){
-    c.innerHTML='<div class="empty"><div class="empty-ico">💰</div>Dividend data not available from CSE API right now.<br><a href="https://www.cse.lk/pages/listed-companies/listed-companies.component.html" target="_blank">Check cse.lk →</a></div>';
-    return;
-  }
-  var html=secHdr('Dividend Announcements',''+list.length,'var(--gold)');
-  html+='<div class="div-grid">';
-  list.forEach(function(d){
-    html+='<div class="div-card fade-in">'+
-      '<div class="div-co">'+esc(d.companyName||d.company||d.issuer||'—')+'</div>'+
-      '<div class="div-sym">('+esc(d.symbol||d.stockSymbol||'—')+')</div>'+
-      '<div class="div-type">'+(d.dividendType||d.type||'Cash')+' Dividend</div>'+
-      '<div class="div-amt">'+esc(d.dividendAmount||d.amount||d.value||'—')+'</div>'+
-      '<div class="div-dt">📅 '+esc(d.exDate||d.paymentDate||d.date||d.announcementDate||'—')+'</div>'+
-      '</div>';
+
+  var now=new Date();
+  var thisYM=curMonth||(now.getFullYear()+'-'+(('0'+(now.getMonth()+1)).slice(-2)));
+  var thisLabel=(now.toLocaleString('default',{month:'long'}))+' '+now.getFullYear();
+  var holdings=_stocks.filter(function(s){return s.qty>0;});
+  var html='';
+
+  /* ── Section header ── */
+  html+=secHdr('💰 Dividends — '+thisLabel,'Your holdings only','var(--gold)');
+
+  /* ── If CSE API returned actual announcements, filter to this month + held stocks ── */
+  var heldSymSet={};
+  holdings.forEach(function(s){heldSymSet[s.symbol.toUpperCase()]=s;});
+
+  var thisMonthDivs=apiDivs.filter(function(d){
+    var sym=(d.symbol||d.stockSymbol||'').toUpperCase();
+    if(!heldSymSet[sym]) return false;
+    // Check if date matches current month
+    var rawDate=d.exDate||d.paymentDate||d.announcementDate||d.date||'';
+    if(!rawDate) return true; // keep if no date filter
+    return String(rawDate).indexOf(thisYM)>-1 ||
+           String(rawDate).indexOf(now.getFullYear())>-1;
   });
-  html+='</div>';
+
+  if(thisMonthDivs.length){
+    html+='<div class="div-grid">';
+    thisMonthDivs.forEach(function(d){
+      var sym=(d.symbol||d.stockSymbol||'—').toUpperCase();
+      var s=heldSymSet[sym]||{};
+      var r=_live[sym]||{};
+      var co=d.companyName||d.company||r.companyName||s.name||sym;
+      var amt=d.dividendAmount||d.amount||d.dividendPerShare||d.value||'—';
+      var amtNum=Number(String(amt).replace(/[^0-9.]/g,''))||0;
+      var totalIncome=amtNum*((s.qty)||0);
+      var dt=d.exDate||d.paymentDate||d.announcementDate||d.date||'—';
+      html+='<div class="div-card fade-in">'+
+        '<div class="div-co">'+esc(co)+'</div>'+
+        '<div class="div-sym">'+sym+'</div>'+
+        '<div class="div-type">'+(d.dividendType||d.type||'Cash')+' Dividend</div>'+
+        '<div class="div-amt">₨ '+esc(String(amt))+' / share</div>'+
+        (totalIncome>0?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:3px;">Your income: ₨ '+fr(totalIncome,2)+'</div>':'')+
+        '<div class="div-dt">'+((s.qty)||0)+' shares · 📅 '+esc(String(dt))+'</div>'+
+        '</div>';
+    });
+    html+='</div>';
+  } else {
+    /* ── Fallback: show yield-based estimates per holding (always) ── */
+    var totalEstAnnual=0;
+    if(!holdings.length){
+      html+='<div class="empty"><div class="empty-ico">💰</div>No holdings found.<br>Add qty (col D) in UT_CRYPTO sheet.</div>';
+      c.innerHTML=html; return;
+    }
+    var hCards=holdings.map(function(s){
+      var r=_live[s.symbol]||{};
+      var price=r.currentPrice||s.sheetPrice||0;
+      var yld=r.dividendYield||0;
+      var estPerShare=price*yld/100;
+      var estTotal=estPerShare*s.qty;
+      totalEstAnnual+=estTotal;
+      var co=r.companyName||s.name||s.symbol;
+      var color=yld>=6?'var(--green)':yld>=3?'var(--gold)':'var(--muted)';
+      return '<div class="div-card fade-in">'+
+        '<div class="div-co">'+esc(co)+'</div>'+
+        '<div class="div-sym">'+esc(s.symbol)+'</div>'+
+        '<div class="div-type">Est. Annual Yield</div>'+
+        '<div class="div-amt" style="color:'+color+'">'+yld.toFixed(2)+'%</div>'+
+        '<div class="div-dt">'+
+          '<span style="color:var(--muted);font-size:.7em">'+s.qty+' shares · annual est.</span><br>'+
+          '<span style="font-weight:700;color:var(--gold)">₨ '+fr(estTotal,0)+' / yr</span>'+
+        '</div></div>';
+    }).join('');
+
+    html+='<div class="div-grid">'+hCards+'</div>';
+    html+='<div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">';
+    html+=glassKpi('Total Est. Annual','₨ '+fr(totalEstAnnual,0),'var(--gold)');
+    html+=glassKpi('Est. Monthly','₨ '+fr(totalEstAnnual/12,0),'var(--blue)');
+    html+=glassKpi('Holdings Tracked',''+holdings.length,'var(--purple)');
+    html+='</div>';
+    html+='<div style="font-size:.62em;color:var(--dim);margin-bottom:6px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;">'+
+      '📡 CSE dividend announcement API returned no data for this month. '+
+      'Estimates above are based on dividend yield % from CSE live data. '+
+      '<a href="https://www.cse.lk/pages/company-disclosures/company-disclosures.component.html" '+
+      'target="_blank" style="color:var(--blue)">Check official announcements →</a>'+
+    '</div>';
+  }
+
   c.innerHTML=html;
+}
+
+function glassKpi(lbl,val,color){
+  return '<div class="glass" style="flex:1;min-width:140px;padding:12px 16px;text-align:center">'+
+    '<div style="font-size:.55em;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">'+lbl+'</div>'+
+    '<div style="font-size:1.3em;font-weight:800;color:'+color+'">'+val+'</div></div>';
 }
 
 // ── Insights ───────────────────────────────────────────────────────
@@ -1029,6 +1159,20 @@ function renderInsights(){
   });
   html+='</div>';
   c.innerHTML=html;
+}
+
+// ── Navigation ─────────────────────────────────────────────────────
+function goBack(){
+  try{
+    var h=window.location.href;
+    if((typeof _WEB_APP!=='undefined'&&_WEB_APP)||h.indexOf('/exec')>-1||h.indexOf('/dev')>-1){
+      window.location.href='?page=home'; return;
+    }
+  }catch(e){}
+  try{
+    if(typeof google!=='undefined'&&google.script&&google.script.host&&
+       typeof google.script.host.close==='function') google.script.host.close();
+  }catch(e){ window.location.href='?page=home'; }
 }
 
 // ── Market status ──────────────────────────────────────────────────

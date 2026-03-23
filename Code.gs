@@ -1185,13 +1185,34 @@ function getCSEMarketData() {
       if (nb && nb.charAt(0) !== '<') result.news = JSON.parse(nb);
     }
   } catch(e) {}
-  try {
-    var dr = UrlFetchApp.fetch(base + 'dividendAnnouncements', { method: 'get', muteHttpExceptions: true });
-    if (dr.getResponseCode() === 200) {
-      var db = dr.getContentText().trim();
-      if (db && db.charAt(0) !== '<') result.dividends = JSON.parse(db);
-    }
-  } catch(e) {}
+  // Try multiple dividend endpoint variants
+  var divEndpoints = ['dividendAnnouncements','dividendAnnouncement','dividend',
+                      'corporateActions','corporateAction','announcement'];
+  for (var di = 0; di < divEndpoints.length; di++) {
+    try {
+      var dr = UrlFetchApp.fetch(base + divEndpoints[di], { method: 'get', muteHttpExceptions: true });
+      if (dr.getResponseCode() === 200) {
+        var db = dr.getContentText().trim();
+        if (db && db.charAt(0) !== '<' && db.length > 5) {
+          var parsed = JSON.parse(db);
+          var list = Array.isArray(parsed) ? parsed : (parsed.data || parsed.list || parsed.dividends || parsed.results || []);
+          if (list.length > 0) { result.dividends = list; break; }
+        }
+      }
+    } catch(e) {}
+    // also try as POST
+    try {
+      var drp = UrlFetchApp.fetch(base + divEndpoints[di], { method: 'post', payload: {}, muteHttpExceptions: true });
+      if (drp.getResponseCode() === 200) {
+        var dbp = drp.getContentText().trim();
+        if (dbp && dbp.charAt(0) !== '<' && dbp.length > 5) {
+          var parsedp = JSON.parse(dbp);
+          var listp = Array.isArray(parsedp) ? parsedp : (parsedp.data || parsedp.list || parsedp.dividends || parsedp.results || []);
+          if (listp.length > 0) { result.dividends = listp; break; }
+        }
+      }
+    } catch(e) {}
+  }
 
   return result;
 }
@@ -1202,3 +1223,110 @@ function getCSEMarketData() {
 
 
 
+
+// ── Per-symbol dividend fetch (tries multiple endpoints per symbol) ──
+function getCSEDividendsForHoldings(symbols) {
+  var base = "https://www.cse.lk/api/";
+  var result = [];
+  var now = new Date();
+  var curYM = Utilities.formatDate(now, Session.getScriptTimeZone(), 'yyyy-MM');
+
+  var variants = ['dividendHistory','dividendAnnouncements','dividend','dividendAnnouncement','corporateActions'];
+
+  symbols.forEach(function(sym) {
+    var found = false;
+    for (var i = 0; i < variants.length && !found; i++) {
+      // Try JSON POST
+      try {
+        var r = UrlFetchApp.fetch(base + variants[i], {
+          method: 'post',
+          contentType: 'application/json',
+          payload: JSON.stringify({ symbol: sym }),
+          muteHttpExceptions: true
+        });
+        if (r.getResponseCode() === 200) {
+          var body = r.getContentText().trim();
+          if (body && (body.charAt(0) === '[' || body.charAt(0) === '{')) {
+            var parsed = JSON.parse(body);
+            var list = Array.isArray(parsed) ? parsed : (parsed.data || parsed.list || parsed.dividends || parsed.results || []);
+            if (list.length > 0) {
+              list.forEach(function(d) {
+                if (!d.symbol) d.symbol = sym;
+                result.push(d);
+              });
+              found = true;
+            }
+          }
+        }
+      } catch(e) {}
+      if (found) break;
+      // Try form POST
+      try {
+        var r2 = UrlFetchApp.fetch(base + variants[i], {
+          method: 'post', payload: { symbol: sym }, muteHttpExceptions: true
+        });
+        if (r2.getResponseCode() === 200) {
+          var body2 = r2.getContentText().trim();
+          if (body2 && (body2.charAt(0) === '[' || body2.charAt(0) === '{')) {
+            var parsed2 = JSON.parse(body2);
+            var list2 = Array.isArray(parsed2) ? parsed2 : (parsed2.data || parsed2.list || parsed2.dividends || parsed2.results || []);
+            if (list2.length > 0) {
+              list2.forEach(function(d) {
+                if (!d.symbol) d.symbol = sym;
+                result.push(d);
+              });
+              found = true;
+            }
+          }
+        }
+      } catch(e) {}
+    }
+  });
+
+  return { dividends: result, month: curYM };
+}
+
+// ── Gold price data (current scrape + UT_CRYPTO monthly history) ──
+function getGoldData() {
+  var result = { currentPrice: 0, updated: '', history: [], currentInvested: 0 };
+
+  // Fetch live price from ravijewellers.lk
+  try {
+    var html = UrlFetchApp.fetch('https://ravijewellers.lk/', { muteHttpExceptions: true }).getContentText();
+    var m = html.match(/goldrate-rate[^>]*>.*?LKR\s*([\d,]+)/i)
+             || html.match(/class="[^"]*gold[^"]*"[^>]*>[\s\S]{0,200}?LKR\s*([\d,]+)/i)
+             || html.match(/LKR\s*([\d,]+)/);
+    if (m) {
+      result.currentPrice = Number(m[1].replace(/,/g, ''));
+      result.updated = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yyyy, HH:mm');
+    }
+  } catch(e) {}
+
+  // Read from UT_CRYPTO sheet
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName('UT_CRYPTO');
+    // C1 = last scraped price, C2 = gold invested
+    var c1 = sheet.getRange('C1').getValue();
+    var c2 = sheet.getRange('C2').getValue();
+    if (c1 && !result.currentPrice) result.currentPrice = Number(c1) || 0;
+    result.currentInvested = Number(c2) || 0;
+
+    // Monthly history rows 46+ : col A=date, col D=goldEarnings, col G=goldInvested
+    var lastRow = sheet.getLastRow();
+    if (lastRow >= 46) {
+      var raw = sheet.getRange(46, 1, lastRow - 45, 7).getValues();
+      result.history = raw
+        .filter(function(r) { return r[0]; })
+        .map(function(r) {
+          return {
+            month: Utilities.formatDate(new Date(r[0]), Session.getScriptTimeZone(), 'yyyy-MM'),
+            label: Utilities.formatDate(new Date(r[0]), Session.getScriptTimeZone(), 'MMM yy'),
+            goldInvested: Number(r[6]) || 0,
+            goldEarnings: Number(r[3]) || 0
+          };
+        });
+    }
+  } catch(e) {}
+
+  return result;
+}
