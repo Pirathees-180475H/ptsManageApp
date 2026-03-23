@@ -454,6 +454,189 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 }
 ::-webkit-scrollbar{width:3px;height:3px;}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px;}
+
+/* ═══════════════════════════════════════════
+   EXPENSE PAGE
+═══════════════════════════════════════════ */
+#page-exp{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#page-exp .exp-page{position:relative;z-index:1;padding:16px 16px 28px;}
+#page-exp .exp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+#page-exp .exp-hdr h1{font-size:19px;font-weight:700;}
+#page-exp .exp-hdr p{font-size:12px;color:var(--muted);margin-top:3px;}
+#page-exp .exp-badge{padding:4px 13px;border-radius:20px;font-size:11px;font-weight:600;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);box-shadow:0 0 14px rgba(99,102,241,.4);}
+#page-exp .exp-loader{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:80px 0;}
+#page-exp .exp-spinner{width:40px;height:40px;border:3px solid rgba(255,255,255,.08);
+  border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;}
+#page-exp .sec-lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;
+  letter-spacing:1px;margin-bottom:12px;padding-left:8px;border-left:3px solid #6366f1;}
+#page-exp .kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;margin-bottom:16px;}
+#page-exp .kpi{border-radius:14px;padding:13px 15px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(12px);position:relative;overflow:hidden;}
+#page-exp .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+#page-exp .kpi.c0::before{background:linear-gradient(90deg,#6366f1,#8b5cf6);}
+#page-exp .kpi.c1::before{background:linear-gradient(90deg,#06b6d4,#0ea5e9);}
+#page-exp .kpi.c2::before{background:linear-gradient(90deg,#f59e0b,#fb923c);}
+#page-exp .kpi.c3::before{background:linear-gradient(90deg,#10b981,#34d399);}
+#page-exp .kpi.c4::before{background:linear-gradient(90deg,#f97316,#f59e0b);}
+#page-exp .kpi.c5::before{background:linear-gradient(90deg,#ec4899,#f43f5e);}
+#page-exp .kpi-lbl{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;}
+#page-exp .kpi-val{font-size:17px;font-weight:700;letter-spacing:-.4px;}
+#page-exp .kpi-sub{font-size:10px;color:var(--muted);margin-top:3px;}
+#page-exp .delta{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;margin-top:4px;display:inline-block;}
+#page-exp .delta.up{background:rgba(239,68,68,.15);color:#ef4444;}
+#page-exp .delta.dn{background:rgba(16,185,129,.15);color:#10b981;}
+#page-exp .delta.nt{background:rgba(148,163,184,.1);color:var(--muted);}
+#page-exp .yr-strip{display:flex;gap:11px;margin-bottom:16px;flex-wrap:wrap;}
+#page-exp .yr-card{flex:1;min-width:170px;border-radius:14px;padding:14px 16px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;}
+#page-exp .yr-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+#page-exp .yr-card:nth-child(1)::before{background:linear-gradient(90deg,#6366f1,#8b5cf6);}
+#page-exp .yr-card:nth-child(2)::before{background:linear-gradient(90deg,#06b6d4,#0ea5e9);}
+#page-exp .yr-card:nth-child(3)::before{background:linear-gradient(90deg,#10b981,#34d399);}
+#page-exp .yr-card:nth-child(4)::before{background:linear-gradient(90deg,#f59e0b,#fb923c);}
+#page-exp .yr-card-yr{font-size:20px;font-weight:800;letter-spacing:-1px;margin-bottom:4px;}
+#page-exp .yr-card-total{font-size:12px;font-weight:600;margin-bottom:2px;}
+#page-exp .yr-card-meta{display:flex;gap:9px;flex-wrap:wrap;margin-top:5px;}
+#page-exp .yr-card-m{font-size:10px;color:var(--muted);}
+#page-exp .yr-card-m strong{color:#fff;font-weight:600;}
+#page-exp .yr-yoy{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;
+  padding:2px 7px;border-radius:10px;margin-top:6px;}
+#page-exp .yr-yoy.up{background:rgba(239,68,68,.15);color:#ef4444;}
+#page-exp .yr-yoy.dn{background:rgba(16,185,129,.15);color:#10b981;}
+#page-exp .pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:18px;}
+#page-exp .pill{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:500;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(8px);}
+#page-exp .pill em{color:var(--muted);font-style:normal;margin-right:3px;}
+#page-exp .pill.warn strong{color:#f59e0b;}
+#page-exp .pill.good strong{color:#10b981;}
+#page-exp .pill.bad  strong{color:#ef4444;}
+#page-exp .pill.info strong{color:#06b6d4;}
+#page-exp .pill.pur  strong{color:#8b5cf6;}
+#page-exp .row{display:grid;gap:12px;margin-bottom:12px;}
+#page-exp .r3{grid-template-columns:repeat(3,1fr);}
+#page-exp .r2{grid-template-columns:repeat(2,1fr);}
+#page-exp .r1{grid-template-columns:1fr;}
+#page-exp .r21{grid-template-columns:2fr 1fr;}
+#page-exp .cbox{border-radius:16px;padding:14px 14px 10px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(12px);}
+#page-exp .ctitle{font-size:12px;font-weight:600;margin-bottom:2px;}
+#page-exp .csub{font-size:10px;color:var(--muted);margin-bottom:10px;}
+#page-exp .cwrap canvas{max-height:210px;}
+#page-exp .cwrap.tall canvas{max-height:250px;}
+#page-exp .ig{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:16px;}
+#page-exp .ic{border-radius:14px;padding:13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);}
+#page-exp .ic-ico{font-size:18px;margin-bottom:6px;}
+#page-exp .ic-lbl{font-size:10px;color:var(--muted);font-weight:500;margin-bottom:3px;text-transform:uppercase;letter-spacing:.5px;}
+#page-exp .ic-val{font-size:14px;font-weight:700;}
+#page-exp .ic-val.good{color:#10b981;} #page-exp .ic-val.bad{color:#ef4444;} #page-exp .ic-val.warn{color:#f59e0b;}
+#page-exp .ic-val.info{color:#06b6d4;} #page-exp .ic-val.pur{color:#8b5cf6;} #page-exp .ic-val.nt{color:var(--muted);}
+#page-exp .ic-desc{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5;}
+#page-exp .exp-err{text-align:center;padding:48px;color:#ef4444;}
+@media(max-width:600px){
+  #page-exp .kpi-strip{grid-template-columns:repeat(2,1fr);}
+  #page-exp .r3,#page-exp .r2,#page-exp .r21{grid-template-columns:1fr;}
+  #page-exp .ig{grid-template-columns:repeat(2,1fr);}
+}
+
+/* ═══════════════════════════════════════════
+   PORTFOLIO SUMMARY PAGE
+═══════════════════════════════════════════ */
+#page-port{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#page-port .page-wrap{position:relative;z-index:1;padding:16px;padding-bottom:24px;}
+#page-port .port-header{text-align:center;padding:18px 0 22px;}
+#page-port .header-tag{display:inline-block;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);
+  color:var(--blue);font-size:.68em;font-weight:600;letter-spacing:3px;text-transform:uppercase;
+  padding:5px 14px;border-radius:20px;margin-bottom:10px;}
+#page-port .port-header h1{font-size:1.7em;font-weight:800;
+  background:linear-gradient(135deg,#fff 0%,var(--blue) 50%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:-1px;line-height:1.1;}
+#page-port .header-sub{color:rgba(255,255,255,.38);font-size:.78em;margin-top:5px;}
+#page-port .hero-cards{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:18px;}
+#page-port .hero-card{position:relative;border-radius:20px;padding:20px;overflow:hidden;border:1px solid;backdrop-filter:blur(20px);}
+#page-port .hero-card.lkr{background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,150,0,.04));
+  border-color:rgba(255,215,0,.25);box-shadow:0 0 40px rgba(255,215,0,.08),inset 0 1px 0 rgba(255,255,255,.06);}
+#page-port .hero-card.usd{background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,212,255,.04));
+  border-color:rgba(0,255,136,.25);box-shadow:0 0 40px rgba(0,255,136,.08),inset 0 1px 0 rgba(255,255,255,.06);}
+#page-port .hero-card-icon{font-size:1.7em;margin-bottom:7px;display:block;}
+#page-port .hero-card-label{font-size:.66em;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:4px;}
+#page-port .hero-card-amount{font-size:1.5em;font-weight:800;letter-spacing:-1px;line-height:1;}
+#page-port .hero-card.lkr .hero-card-amount{color:var(--gold);text-shadow:0 0 30px rgba(255,215,0,.4);}
+#page-port .hero-card.usd .hero-card-amount{color:#00ff88;text-shadow:0 0 30px rgba(0,255,136,.4);}
+#page-port .hero-card-glow{position:absolute;right:-20px;bottom:-20px;width:110px;height:110px;border-radius:50%;filter:blur(40px);opacity:.22;}
+#page-port .hero-card.lkr .hero-card-glow{background:#ffd700;}
+#page-port .hero-card.usd .hero-card-glow{background:#00ff88;}
+#page-port .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px;}
+#page-port .gauge-row{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px;}
+#page-port .glass-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+  border-radius:18px;padding:16px;backdrop-filter:blur(20px);
+  box-shadow:0 4px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);position:relative;overflow:hidden;}
+#page-port .glass-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);}
+#page-port .card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+#page-port .card-dot{width:8px;height:8px;border-radius:50%;}
+#page-port .card-title{font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.45);}
+#page-port canvas{max-height:210px;}
+#page-port .assets-section{margin-bottom:16px;}
+#page-port .section-heading{font-size:.65em;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);margin-bottom:11px;display:flex;align-items:center;gap:10px;}
+#page-port .section-heading::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06);}
+#page-port .assets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:9px;}
+#page-port .asset-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;padding:13px;position:relative;overflow:hidden;}
+#page-port .asset-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;}
+#page-port .asset-name{font-size:.74em;font-weight:500;color:rgba(255,255,255,.48);line-height:1.3;flex:1;}
+#page-port .asset-badge{font-size:.56em;font-weight:700;padding:2px 6px;border-radius:6px;letter-spacing:1px;text-transform:uppercase;margin-left:5px;flex-shrink:0;}
+#page-port .badge-positive{background:rgba(0,255,136,.15);color:#00ff88;}
+#page-port .badge-negative{background:rgba(255,77,141,.15);color:var(--red2);}
+#page-port .badge-neutral {background:rgba(0,212,255,.15);color:var(--blue);}
+#page-port .asset-amount{font-size:1.25em;font-weight:700;letter-spacing:-.4px;color:#fff;}
+#page-port .asset-amount.positive{color:#00ff88;}
+#page-port .asset-amount.negative{color:var(--red2);}
+#page-port .asset-amount.neutral {color:var(--blue);}
+#page-port .asset-bar-wrap{margin-top:7px;height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;}
+#page-port .asset-bar{height:100%;border-radius:2px;transition:width 1.2s cubic-bezier(.4,0,.2,1);width:0;}
+#page-port .log-btn{display:inline-flex;align-items:center;gap:7px;margin-top:11px;padding:9px 20px;
+  border-radius:12px;border:1px solid rgba(255,215,0,.35);background:rgba(255,215,0,.09);
+  color:var(--gold);font-family:'Inter',sans-serif;font-size:.74em;font-weight:700;letter-spacing:1px;
+  cursor:pointer;transition:all .2s;}
+#page-port .log-btn:hover:not(:disabled){background:rgba(255,215,0,.18);border-color:rgba(255,215,0,.65);transform:translateY(-1px);}
+#page-port .log-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+#page-port .log-btn .btn-spin{width:12px;height:12px;border-radius:50%;
+  border:2px solid rgba(255,215,0,.25);border-top-color:var(--gold);animation:spin .7s linear infinite;display:none;}
+#page-port .log-btn.logging .btn-spin{display:block;}
+#page-port .log-btn.logging .btn-ico{display:none;}
+#page-port .log-note-wrap{display:none;margin-top:9px;}
+#page-port .log-note-wrap.open{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+#page-port .log-note-input{background:rgba(255,255,255,.05);border:1px solid rgba(255,215,0,.25);
+  border-radius:9px;padding:8px 13px;color:#fff;font-size:.74em;font-family:'Inter',sans-serif;
+  width:230px;outline:none;transition:border-color .2s;}
+#page-port .log-note-input:focus{border-color:rgba(255,215,0,.55);}
+#page-port .log-confirm-btn{padding:8px 15px;border-radius:9px;border:1px solid rgba(255,215,0,.4);
+  background:rgba(255,215,0,.15);color:var(--gold);font-size:.74em;font-weight:700;
+  cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;}
+#page-port .port-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:13px;}
+#page-port .port-spinner{width:42px;height:42px;border:3px solid rgba(0,212,255,.12);
+  border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+#page-port .port-loading-txt{color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:1px;}
+#page-port .error-box{background:rgba(255,77,141,.08);border:1px solid rgba(255,77,141,.25);
+  border-radius:14px;padding:22px;text-align:center;color:var(--red2);font-size:.88em;}
+.port-toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%) translateY(70px);
+  background:rgba(6,11,24,.97);border:1px solid rgba(255,255,255,.1);border-radius:14px;
+  padding:11px 20px;font-size:.78em;font-weight:600;backdrop-filter:blur(20px);
+  z-index:200;white-space:nowrap;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s ease;
+  opacity:0;display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;}
+.port-toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.port-toast.success{border-color:rgba(255,215,0,.4);color:var(--gold);}
+.port-toast.info   {border-color:rgba(0,212,255,.35);color:var(--blue);}
+.port-toast.error  {border-color:rgba(255,77,141,.35);color:var(--red2);}
+@media(max-width:600px){
+  #page-port .hero-cards,#page-port .charts-row,#page-port .gauge-row{grid-template-columns:1fr;}
+  #page-port .assets-grid{grid-template-columns:1fr 1fr;}
+  #page-port .port-header h1{font-size:1.45em;}
+}
 </style>
 </head>
 <body>
@@ -528,6 +711,31 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 </section>
 
 <!-- ═══════════════════════════════════════════
+     EXPENSE PAGE
+═══════════════════════════════════════════ -->
+<section id="page-exp" class="spa-page">
+  <div class="exp-page" id="exp-root">
+    <div class="exp-loader">
+      <div class="exp-spinner"></div>
+      <p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     PORTFOLIO SUMMARY PAGE
+═══════════════════════════════════════════ -->
+<section id="page-port" class="spa-page">
+  <div class="port-toast" id="portToast"></div>
+  <div class="page-wrap" id="port-root">
+    <div class="port-loading">
+      <div class="port-spinner"></div>
+      <div class="port-loading-txt">FETCHING PORTFOLIO DATA…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
      BOTTOM NAV
 ═══════════════════════════════════════════ -->
 <nav class="bottom-nav">
@@ -539,13 +747,21 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
     <span class="bnav-ico">💳</span>
     <span class="bnav-lbl">Cards</span>
   </button>
+  <button class="bnav-btn" data-page="exp" onclick="showPage('exp')">
+    <span class="bnav-ico">📊</span>
+    <span class="bnav-lbl">Expenses</span>
+  </button>
+  <button class="bnav-btn" data-page="port" onclick="showPage('port')">
+    <span class="bnav-ico">💼</span>
+    <span class="bnav-lbl">Summary</span>
+  </button>
 </nav>
 
 <script>
 /* ═══════════════════════════════════════════
    SPA ROUTER
 ═══════════════════════════════════════════ */
-var _spaLoaded = {cse:false, cc:false};
+var _spaLoaded = {cse:false, cc:false, exp:false, port:false};
 
 function showPage(name){
   document.querySelectorAll('.spa-page').forEach(function(p){
@@ -557,8 +773,10 @@ function showPage(name){
   });
   if(!_spaLoaded[name]){
     _spaLoaded[name]=true;
-    if(name==='cse') cseStartLoad();
-    if(name==='cc')  ccLoad();
+    if(name==='cse')  cseStartLoad();
+    if(name==='cc')   ccLoad();
+    if(name==='exp')  expLoad();
+    if(name==='port') portLoad();
   }
 }
 
@@ -1170,6 +1388,475 @@ function ccDisplayData(data){
 
 function ccShowError(err){
   document.getElementById('cc-root').innerHTML='<div class="error-box">⚠️ '+(err.message||err)+'</div>';
+}
+
+/* ═══════════════════════════════════════════
+   EXPENSE PAGE JS
+═══════════════════════════════════════════ */
+var EXP_CAT_COLORS={
+  'Food':'#f59e0b','Super market':'#10b981','Uber':'#6366f1',
+  'Uber Work':'#8b5cf6','Movies & outing':'#ec4899','Other Expences':'#f97316',
+  'Bus Fair':'#06b6d4','Party':'#ef4444','Dress and Appearance':'#84cc16','Rent':'#64748b'
+};
+var EXP_FALLBACK=['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981','#ec4899','#f97316','#ef4444','#84cc16','#64748b'];
+var EXP_YR_COLORS=['#6366f1','#06b6d4','#10b981','#f59e0b','#ec4899','#f97316'];
+var EXP_MON_ORDER=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function expCc(name,i){return EXP_CAT_COLORS[name]||EXP_FALLBACK[i%EXP_FALLBACK.length];}
+function expSl(s){var p=s.trim().split(/\s+/);if(p.length<2)return s.substring(0,6);var m=p[0].substring(0,3);if(m.toUpperCase()==='OTC')m='Oct';return m+" '"+p[p.length-1].substring(2);}
+function expF(n){return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':Math.round(n).toLocaleString('en-IN');}
+function expFr(n){return '₨ '+Math.round(n).toLocaleString('en-IN');}
+var EXP_GC='rgba(255,255,255,0.05)',EXP_TC='#475569';
+var EXP_LEG={labels:{color:'#94a3b8',boxWidth:10,padding:14,font:{size:11}}};
+function expSc(stacked){
+  return {
+    x:{grid:{color:EXP_GC},ticks:{color:EXP_TC,maxRotation:35},stacked:!!stacked},
+    y:{grid:{color:EXP_GC},ticks:{color:EXP_TC,callback:function(v){return '₨'+expF(v);}},stacked:!!stacked}
+  };
+}
+function expMonKey(lbl){return lbl.split(' ')[0];}
+function expMonIdx(k){var i=EXP_MON_ORDER.findIndex(function(m){return m.toLowerCase()===k.toLowerCase();});return i>=0?i:11;}
+
+function expLoad(){
+  google.script.run
+    .withSuccessHandler(function(d){try{expBuild(d);}catch(e){expShowErr('Render error: '+e.message);}})
+    .withFailureHandler(function(e){expShowErr(e.message||e.toString());})
+    .getExpenseData();
+}
+
+function expShowErr(m){
+  document.getElementById('exp-root').innerHTML='<div class="exp-err">⚠️ '+m+'</div>';
+}
+
+function expBuild(D){
+  var months=D.months,totals=D.monthlyTotals,cats=D.categories,yg=D.yearGroups,latest=D.latestMonth;
+  var labels=months.map(expSl),n=months.length,li=n-1;
+  var years=Object.keys(yg).sort();
+  var cur=totals[li]||0,prev=totals[li-1]||0;
+  var mom=prev>0?(cur-prev)/prev*100:0;
+  var avg=totals.reduce(function(a,b){return a+b;},0)/(n||1);
+  var bestI=totals.indexOf(Math.min.apply(null,totals));
+  var worstI=totals.indexOf(Math.max.apply(null,totals));
+  var catCur=cats.map(function(c,i){return {name:c.name,val:c.values[li]||0,i:i};}).sort(function(a,b){return b.val-a.val;});
+  var topCat=catCur[0]||{name:'–',val:0};
+  var rentObj=cats.find(function(c){return c.name.toLowerCase()==='rent';});
+  var rentVal=rentObj?rentObj.values[li]||0:0;
+  var varSpd=cur-rentVal,rentPct=cur>0?rentVal/cur*100:0;
+  var foodObj=cats.find(function(c){return c.name.toLowerCase()==='food';});
+  var foodVal=foodObj?foodObj.values[li]||0:0,foodPct=cur>0?foodVal/cur*100:0;
+  var discNames=['movies & outing','party','dress and appearance'];
+  var discVal=cats.filter(function(c){return discNames.includes(c.name.toLowerCase());}).reduce(function(s,c){return s+(c.values[li]||0);},0);
+  var discPct=cur>0?discVal/cur*100:0;
+  var momArr=totals.map(function(v,i){return i===0?0:v-totals[i-1];});
+  var catAll=cats.map(function(c,i){return {name:c.name,tot:c.values.reduce(function(s,v){return s+v;},0),i:i};}).sort(function(a,b){return b.tot-a.tot;});
+  var transVal=['uber','uber work','bus fair'].reduce(function(s,nm){var c=cats.find(function(x){return x.name.toLowerCase()===nm;});return s+(c?c.values[li]||0:0);},0);
+
+  var yrCards=years.map(function(yr,yi){
+    var g=yg[yr];
+    var yrTotal=g.totals.reduce(function(a,b){return a+b;},0);
+    var yrAvg=yrTotal/(g.months.length||1);
+    var yrBestI=g.totals.indexOf(Math.min.apply(null,g.totals));
+    var yrWorstI=g.totals.indexOf(Math.max.apply(null,g.totals));
+    var yoyHtml='';
+    if(yi>0){var prevYr=years[yi-1];var prevTotal=yg[prevYr].totals.reduce(function(a,b){return a+b;},0);
+      if(prevTotal>0){var yoyPct=(yrTotal-prevTotal)/prevTotal*100;
+        yoyHtml='<div class="yr-yoy '+(yoyPct>0?'up':'dn')+'">'+(yoyPct>0?'▲':'▼')+' '+Math.abs(yoyPct).toFixed(1)+'% vs '+prevYr+'</div>';}}
+    return '<div class="yr-card"><div class="yr-card-yr">'+yr+'</div>'+
+      '<div class="yr-card-total">'+expFr(yrTotal)+' total · '+g.months.length+' months</div>'+
+      '<div class="yr-card-meta">'+
+        '<div class="yr-card-m"><span style="opacity:.5">Avg/mo</span> <strong>'+expFr(yrAvg)+'</strong></div>'+
+        '<div class="yr-card-m"><span style="opacity:.5">Best</span> <strong style="color:#10b981">'+expSl(g.months[yrBestI]||'–')+'</strong></div>'+
+        '<div class="yr-card-m"><span style="opacity:.5">Worst</span> <strong style="color:#ef4444">'+expSl(g.months[yrWorstI]||'–')+'</strong></div>'+
+      '</div>'+yoyHtml+'</div>';
+  }).join('');
+
+  var root=document.getElementById('exp-root');
+  root.innerHTML=
+    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div class="exp-badge" id="exp-badge">–</div></div>'+
+    '<div class="sec-lbl">Overall</div>'+
+    '<div class="kpi-strip">'+
+      '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div></div>'+
+      '<div class="kpi c1"><div class="kpi-lbl">Avg Monthly</div><div class="kpi-val">'+expFr(avg)+'</div><div class="kpi-sub">Over '+n+' months</div></div>'+
+      '<div class="kpi c2"><div class="kpi-lbl">Top Category</div><div class="kpi-val" style="font-size:13px">'+topCat.name+'</div><div class="kpi-sub">'+expFr(topCat.val)+' this month</div></div>'+
+      '<div class="kpi c3"><div class="kpi-lbl">Best Month</div><div class="kpi-val" style="font-size:13px">'+expSl(months[bestI]||'–')+'</div><div class="kpi-sub">'+expFr(totals[bestI]||0)+'</div></div>'+
+      '<div class="kpi c4"><div class="kpi-lbl">Rent</div><div class="kpi-val">'+expFr(rentVal)+'</div><div class="kpi-sub">'+rentPct.toFixed(1)+'% of total</div></div>'+
+      '<div class="kpi c5"><div class="kpi-lbl">Variable Spend</div><div class="kpi-val">'+expFr(varSpd)+'</div><div class="kpi-sub">Excl. rent</div></div>'+
+    '</div>'+
+    '<div class="pills">'+
+      '<div class="pill '+(rentPct>40?'warn':'good')+'"><em>🏠 Rent</em><strong>'+rentPct.toFixed(1)+'%</strong></div>'+
+      '<div class="pill '+(foodPct>30?'warn':'')+'"><em>🍜 Food</em><strong>'+foodPct.toFixed(1)+'%</strong></div>'+
+      '<div class="pill '+(discPct>15?'warn':'')+'"><em>🎉 Discretionary</em><strong>'+discPct.toFixed(1)+'%</strong></div>'+
+      '<div class="pill info"><em>🚗 Transport</em><strong>'+expFr(transVal)+'</strong></div>'+
+      '<div class="pill '+(cur<avg?'good':'bad')+'"><em>vs Avg</em><strong>'+(cur<avg?'Below avg ✓':'Above avg')+'</strong></div>'+
+      '<div class="pill pur"><em>📉 Worst</em><strong>'+expSl(months[worstI]||'–')+'</strong></div>'+
+      '<div class="pill"><em>📈 All-time</em><strong>'+expFr(totals.reduce(function(a,b){return a+b;},0))+'</strong></div>'+
+    '</div>'+
+    '<div class="sec-lbl" style="margin-top:6px">Year Comparison</div>'+
+    '<div class="yr-strip">'+yrCards+'</div>'+
+    '<div class="row r2" style="margin-bottom:12px">'+
+      '<div class="cbox"><div class="ctitle">📅 Year-over-Year Monthly Totals</div><div class="csub">Same calendar month across years</div><div class="cwrap tall"><canvas id="expCYoY"></canvas></div></div>'+
+      '<div class="cbox"><div class="ctitle">🏷️ Year-over-Year by Category</div><div class="csub">Total per category grouped by year</div><div class="cwrap tall"><canvas id="expCYrCat"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row r1" style="margin-bottom:12px">'+
+      '<div class="cbox"><div class="ctitle">📊 Avg Monthly Spend per Category (YoY)</div><div class="csub">Average monthly spend per category compared across years</div><div class="cwrap"><canvas id="expCYrAvgCat"></canvas></div></div>'+
+    '</div>'+
+    '<div class="sec-lbl" style="margin-top:6px">Monthly View</div>'+
+    '<div class="row r21">'+
+      '<div class="cbox"><div class="ctitle">📈 Monthly Expense Trend</div><div class="csub">Total spend each month + average line</div><div class="cwrap tall"><canvas id="expCTrend"></canvas></div></div>'+
+      '<div class="cbox"><div class="ctitle">🍩 '+latest+' Breakdown</div><div class="csub">Current month by category</div><div class="cwrap"><canvas id="expCDonut"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row r1">'+
+      '<div class="cbox"><div class="ctitle">📊 Monthly Spend by Category (Stacked)</div><div class="csub">Stacked view across all months</div><div class="cwrap tall"><canvas id="expCStack"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row r2">'+
+      '<div class="cbox"><div class="ctitle">📉 Top Category Trends</div><div class="csub">Top 4 categories over time</div><div class="cwrap"><canvas id="expCCatTrend"></canvas></div></div>'+
+      '<div class="cbox"><div class="ctitle">📊 Month-on-Month Change</div><div class="csub">Δ vs previous month</div><div class="cwrap"><canvas id="expCMom"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row r1">'+
+      '<div class="cbox"><div class="ctitle">🏆 All-Time Category Ranking</div><div class="csub">Total spend per category across all months</div><div class="cwrap"><canvas id="expCRank"></canvas></div></div>'+
+    '</div>'+
+    '<div class="ig" id="exp-ig"></div>';
+
+  document.getElementById('exp-sub').textContent=n+' months tracked · Latest: '+latest;
+  document.getElementById('exp-badge').textContent=latest;
+
+  // Build YoY month key list
+  var allMonKeys=[];
+  years.forEach(function(yr){yg[yr].months.map(expSl).forEach(function(lbl){var k=expMonKey(lbl);if(!allMonKeys.includes(k))allMonKeys.push(k);});});
+  allMonKeys.sort(function(a,b){return expMonIdx(a)-expMonIdx(b);});
+
+  // YoY line chart
+  var yoyDs=years.map(function(yr,yi){var g=yg[yr],map={};g.months.forEach(function(m,i){map[expMonKey(expSl(m))]=g.totals[i]||0;});
+    return {label:yr,data:allMonKeys.map(function(k){return map[k]!==undefined?map[k]:null;}),
+      borderColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length],backgroundColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length]+'25',
+      fill:false,tension:.4,pointRadius:4,pointHoverRadius:7,borderWidth:2.5,spanGaps:false};});
+  new Chart(document.getElementById('expCYoY'),{type:'line',data:{labels:allMonKeys,datasets:yoyDs},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);}}}},scales:expSc()}});
+
+  // YoY by category grouped bar
+  var yrCatDs=years.map(function(yr,yi){var g=yg[yr];
+    return {label:yr,data:cats.map(function(c){return g.catTotals[c.name]||0;}),backgroundColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length]+'bb',borderWidth:0,borderRadius:4};});
+  new Chart(document.getElementById('expCYrCat'),{type:'bar',data:{labels:cats.map(function(c){return c.name;}),datasets:yrCatDs},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);}}}},scales:expSc()}});
+
+  // YoY avg per category
+  var yrAvgDs=years.map(function(yr,yi){var g=yg[yr],mo=g.months.length||1;
+    return {label:yr,data:cats.map(function(c){return (g.catTotals[c.name]||0)/mo;}),backgroundColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length]+'99',borderColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length],borderWidth:1,borderRadius:4};});
+  new Chart(document.getElementById('expCYrAvgCat'),{type:'bar',data:{labels:cats.map(function(c){return c.name;}),datasets:yrAvgDs},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+' avg/mo: ₨'+expF(c.raw);}}}},scales:expSc()}});
+
+  // Trend line
+  new Chart(document.getElementById('expCTrend'),{type:'line',data:{labels:labels,datasets:[
+    {label:'Total Spend',data:totals,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',fill:true,tension:.4,pointBackgroundColor:'#6366f1',pointRadius:4,pointHoverRadius:7,borderWidth:2.5},
+    {label:'Average',data:totals.map(function(){return avg;}),borderColor:'rgba(239,68,68,.5)',borderDash:[5,5],borderWidth:1.5,fill:false,pointRadius:0,tension:0}
+  ]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw);}}}},scales:expSc()}});
+
+  // Donut
+  var dCats=catCur.filter(function(c){return c.val>0;});
+  new Chart(document.getElementById('expCDonut'),{type:'doughnut',data:{
+    labels:dCats.map(function(c){return c.name;}),
+    datasets:[{data:dCats.map(function(c){return c.val;}),backgroundColor:dCats.map(function(c){return expCc(c.name,c.i);}),borderWidth:0,hoverOffset:8}]
+  },options:{responsive:true,maintainAspectRatio:true,cutout:'62%',
+    plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,padding:10,font:{size:10}},position:'bottom'},
+      tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw)+' ('+(c.raw/cur*100).toFixed(1)+'%)';}}}}}});
+
+  // Stacked bar
+  new Chart(document.getElementById('expCStack'),{type:'bar',data:{labels:labels,
+    datasets:cats.map(function(c,i){return {label:c.name,data:c.values,backgroundColor:expCc(c.name,i)+'cc',borderWidth:0,stack:'a'};})
+  },options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:EXP_LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);}}}},
+    scales:expSc(true)}});
+
+  // Top 4 category trends
+  var top4Cats=[].concat(cats).sort(function(a,b){return b.values.reduce(function(s,v){return s+v;},0)-a.values.reduce(function(s,v){return s+v;},0);}).slice(0,4);
+  new Chart(document.getElementById('expCCatTrend'),{type:'line',data:{labels:labels,
+    datasets:top4Cats.map(function(c){return {label:c.name,data:c.values,borderColor:expCc(c.name,cats.indexOf(c)),backgroundColor:'transparent',tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2};})
+  },options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw);}}}},scales:expSc()}});
+
+  // MoM delta bar
+  var momColors=momArr.map(function(v){return v>0?'rgba(239,68,68,.8)':v<0?'rgba(16,185,129,.8)':'rgba(148,163,184,.4)';});
+  new Chart(document.getElementById('expCMom'),{type:'bar',data:{labels:labels.slice(1),
+    datasets:[{label:'MoM Δ',data:momArr.slice(1),backgroundColor:momColors.slice(1),borderWidth:0,borderRadius:3}]
+  },options:{responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' ₨'+expF(Math.abs(c.raw))+(c.raw>=0?' ▲':' ▼');}}}},
+    scales:expSc()}});
+
+  // Category ranking (horizontal)
+  new Chart(document.getElementById('expCRank'),{type:'bar',data:{
+    labels:catAll.map(function(c){return c.name;}),
+    datasets:[{label:'All-time Total',data:catAll.map(function(c){return c.tot;}),
+      backgroundColor:catAll.map(function(c){return expCc(c.name,c.i)+'cc';}),borderWidth:0,borderRadius:4}]
+  },options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw);}}}},
+    scales:{x:{grid:{color:EXP_GC},ticks:{color:EXP_TC,callback:function(v){return '₨'+expF(v);}}},y:{grid:{color:'transparent'},ticks:{color:EXP_TC}}}}});
+
+  // Insights
+  var biggestMomIdx=momArr.slice(1).reduce(function(mx,v,i,a){return Math.abs(v)>Math.abs(a[mx])?i:mx;},0);
+  var biggestMomVal=momArr[biggestMomIdx+1]||0,biggestMomLbl=labels[biggestMomIdx+1]||'–';
+  var topAllCat=catAll[0]||{name:'–',tot:0};
+  var allTotal=totals.reduce(function(a,b){return a+b;},0);
+  var topAllPct=allTotal>0?topAllCat.tot/allTotal*100:0;
+  var foodTrend=foodObj?foodObj.values.slice(-3):[];
+  var foodDir=foodTrend.length>=2?(foodTrend[foodTrend.length-1]>foodTrend[0]?'↑ Rising':'↓ Falling'):'–';
+  var rentVals2=rentObj?rentObj.values.filter(function(v){return v>0;}):[];
+  var avgRent=rentVals2.length>0?rentVals2.reduce(function(a,b){return a+b;},0)/rentVals2.length:0;
+  var abvAvg=totals.filter(function(v){return v>avg;}).length;
+  var yrTotals=years.map(function(yr){return {yr:yr,tot:yg[yr].totals.reduce(function(a,b){return a+b;},0)};});
+  var bestYr=yrTotals.reduce(function(b,y){return y.tot<b.tot?y:b;},yrTotals[0]||{yr:'–',tot:0});
+  var worstYr2=yrTotals.reduce(function(b,y){return y.tot>b.tot?y:b;},yrTotals[0]||{yr:'–',tot:0});
+  var expYoyTxt='–',expYoyCls='nt';
+  if(years.length>=2){var ya=years[years.length-2],yb=years[years.length-1];
+    var ta=yg[ya].totals.reduce(function(a,b){return a+b;},0),tb=yg[yb].totals.reduce(function(a,b){return a+b;},0);
+    var pc=(tb-ta)/ta*100;expYoyTxt=(pc>0?'▲ +':'▼ ')+Math.abs(pc).toFixed(1)+'% vs '+ya;expYoyCls=pc>0?'bad':'good';}
+  var expIns=[
+    {ico:'📊',lbl:'Above-Avg Months',val:abvAvg+' / '+n,cls:abvAvg>n/2?'bad':'good',desc:abvAvg+' months exceeded avg of ₨'+expF(avg)},
+    {ico:'📅',lbl:'Year-over-Year',val:expYoyTxt,cls:expYoyCls,desc:years.map(function(yr){return yr+': ₨'+expF(yg[yr].totals.reduce(function(a,b){return a+b;},0));}).join(' · ')},
+    {ico:'🏆',lbl:'Best Year',val:bestYr.yr,cls:'good',desc:'₨'+expF(bestYr.tot)+' total · '+(yg[bestYr.yr]||{months:[]}).months.length+' months'},
+    {ico:'⚠️',lbl:'Highest Year',val:worstYr2.yr,cls:'bad',desc:'₨'+expF(worstYr2.tot)+' total · '+(yg[worstYr2.yr]||{months:[]}).months.length+' months'},
+    {ico:'🍜',lbl:'Food Trend (3mo)',val:foodDir,cls:foodDir.includes('Rising')?'bad':'good',desc:foodTrend.map(function(v){return '₨'+expF(v);}).join(' → ')||'–'},
+    {ico:'🏠',lbl:'Avg Rent',val:expFr(avgRent),cls:'info',desc:'Over '+rentVals2.length+' months. Now '+expFr(rentVal)},
+    {ico:'🏷️',lbl:'Biggest Category',val:topAllCat.name,cls:'pur',desc:'₨'+expF(topAllCat.tot)+' · '+topAllPct.toFixed(1)+'% of all spending'},
+    {ico:'📈',lbl:'Biggest MoM Jump',val:(biggestMomVal>=0?'+':'')+expFr(biggestMomVal),cls:biggestMomVal>0?'bad':'good',desc:'Happened in '+biggestMomLbl}
+  ];
+  document.getElementById('exp-ig').innerHTML=expIns.map(function(x){
+    return '<div class="ic"><div class="ic-ico">'+x.ico+'</div><div class="ic-lbl">'+x.lbl+'</div><div class="ic-val '+x.cls+'">'+x.val+'</div><div class="ic-desc">'+x.desc+'</div></div>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════
+   PORTFOLIO SUMMARY PAGE JS
+═══════════════════════════════════════════ */
+var PORT_PALETTE=['#00d4ff','#00ff88','#ffd700','#a855f7','#ff6b35','#ff4d8d','#38bdf8','#34d399','#fbbf24','#c084fc','#fb923c','#f472b6'];
+
+function portFmt(value,currency){
+  currency=currency||'LKR';
+  if(!value&&value!==0)return '—';
+  var num=parseFloat(value.toString().replace(/,/g,''));
+  if(isNaN(num))return value;
+  var f2=Math.abs(num).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  var sign=num<0?'-':'';
+  return sign+(currency==='USD'?'$':'₨')+f2;
+}
+
+function portAnimateCounter(el,target,duration,prefix){
+  duration=duration||1400;prefix=prefix||'₨';
+  var start=performance.now();
+  function upd(now){
+    var pct=Math.min((now-start)/duration,1);
+    var ease=1-Math.pow(1-pct,4);
+    var val=target*ease;
+    el.textContent=prefix+Math.abs(val).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(pct<1)requestAnimationFrame(upd);
+  }
+  requestAnimationFrame(upd);
+}
+
+function portGetClass(cat){
+  var c=cat.toLowerCase();
+  if(c.includes('earn')||c.includes('stock')||c.includes('gold')||c.includes('cash')||c.includes('saving'))return 'positive';
+  if(c.includes('due')||c.includes('splitwise')||c.includes('loan')||c.includes('borrow'))return 'negative';
+  return 'neutral';
+}
+
+function portShowToast(msg,type){
+  var t=document.getElementById('portToast');if(!t)return;
+  t.textContent=msg;t.className='port-toast '+(type||'info');
+  void t.offsetWidth;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3400);
+}
+
+function portStartLog(){
+  var wrap=document.getElementById('portLogNoteWrap');if(!wrap)return;
+  wrap.classList.toggle('open');
+  if(wrap.classList.contains('open')){var inp=document.getElementById('portLogNoteInput');if(inp){inp.value='';inp.focus();}}
+}
+
+function portConfirmLog(){
+  var btn=document.getElementById('portLogBtn'),wrap=document.getElementById('portLogNoteWrap');
+  var note=(document.getElementById('portLogNoteInput')||{}).value||'';
+  if(btn){btn.disabled=true;btn.classList.add('logging');}
+  if(wrap)wrap.classList.remove('open');
+  google.script.run
+    .withSuccessHandler(function(result){
+      if(btn){btn.disabled=false;btn.classList.remove('logging');}
+      if(result&&!result.logged){portShowToast('⏭️ '+result.message,'error');return;}
+      portShowToast('✅ '+result.message+' — refreshing…','success');
+      google.script.run
+        .withSuccessHandler(function(data){portDisplayPortfolio(data);portShowToast('✅ Growth chart updated!','success');})
+        .withFailureHandler(function(err){portShowToast('⚠️ Logged but refresh failed: '+(err.message||err),'error');})
+        .getPortfolioData();
+    })
+    .withFailureHandler(function(err){
+      if(btn){btn.disabled=false;btn.classList.remove('logging');}
+      portShowToast('⚠️ '+(err.message||err),'error');
+    })
+    .logPortfolioAmount(note);
+}
+
+document.addEventListener('keydown',function(e){
+  var wrap=document.getElementById('portLogNoteWrap');
+  if(e.key==='Enter'&&wrap&&wrap.classList.contains('open'))portConfirmLog();
+});
+
+function portLoad(){
+  google.script.run
+    .withSuccessHandler(portDisplayPortfolio)
+    .withFailureHandler(portShowError)
+    .getPortfolioData();
+}
+
+function portShowError(err){
+  document.getElementById('port-root').innerHTML='<div class="error-box">⚠️ Error loading portfolio<br><small style="opacity:.6">'+(err.message||err)+'</small></div>';
+}
+
+function portDisplayPortfolio(data){
+  var rawAssets=(data&&data.assets)?data.assets:(Array.isArray(data)?data:[]);
+  var growthData=(data&&data.growth)?data.growth:[];
+  if(!rawAssets||!rawAssets.length){document.getElementById('port-root').innerHTML='<div class="error-box">No portfolio data found.</div>';return;}
+  var totalLKR=0,totalUSD=0,assets=[],portTotals=[];
+  rawAssets.forEach(function(row){
+    var cat=(row[0]||'').trim();
+    var amt=parseFloat((row[1]||0).toString().replace(/,/g,''))||0;
+    if(!cat)return;
+    if(cat.toLowerCase().includes('total'))portTotals.push({cat:cat,amt:amt});
+    else assets.push({cat:cat,amt:amt});
+  });
+  portTotals.forEach(function(t){if(t.cat.toLowerCase().includes('usd'))totalUSD=t.amt;else totalLKR=t.amt;});
+  var posAssets=assets.filter(function(a){return a.amt>0;});
+  var totalPositive=posAssets.reduce(function(s,a){return s+a.amt;},0);
+
+  var assetCards=assets.map(function(a,i){
+    var cls=portGetClass(a.cat);
+    var badge=cls==='positive'?'badge-positive':cls==='negative'?'badge-negative':'badge-neutral';
+    var badgeText=cls==='positive'?'ASSET':cls==='negative'?'OWE':'OTHER';
+    var amtCls=a.amt<0?'negative':cls==='positive'?'positive':'neutral';
+    var barPct=totalPositive>0&&a.amt>0?(a.amt/totalPositive*100).toFixed(1):0;
+    var barColor=PORT_PALETTE[i%PORT_PALETTE.length];
+    return '<div class="asset-card" data-bar="'+barPct+'" data-color="'+barColor+'">'+
+      '<div class="asset-card-top"><div class="asset-name">'+a.cat+'</div><span class="asset-badge '+badge+'">'+badgeText+'</span></div>'+
+      '<div class="asset-amount '+amtCls+'">'+portFmt(a.amt)+'</div>'+
+      (a.amt>0?'<div class="asset-bar-wrap"><div class="asset-bar" style="background:'+barColor+'"></div></div>':'')+
+    '</div>';
+  }).join('');
+
+  document.getElementById('port-root').innerHTML=
+    '<div class="port-header">'+
+      '<div class="header-tag">Live Dashboard</div>'+
+      '<h1>Portfolio Summary</h1>'+
+      '<div class="header-sub">Updated just now</div>'+
+      '<button class="log-btn" id="portLogBtn" onclick="portStartLog()"><span class="btn-ico">💾</span><div class="btn-spin"></div> Log Portfolio Value</button>'+
+      '<div class="log-note-wrap" id="portLogNoteWrap">'+
+        '<input class="log-note-input" id="portLogNoteInput" type="text" placeholder="Optional note (e.g. Saudi money, bonus…)" maxlength="60">'+
+        '<button class="log-confirm-btn" onclick="portConfirmLog()">✓ Confirm</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="hero-cards">'+
+      '<div class="hero-card lkr"><div class="hero-card-glow"></div><span class="hero-card-icon">🏦</span><div class="hero-card-label">Total Portfolio · LKR</div><div class="hero-card-amount" id="portLkrCounter">'+portFmt(totalLKR)+'</div></div>'+
+      '<div class="hero-card usd"><div class="hero-card-glow"></div><span class="hero-card-icon">💵</span><div class="hero-card-label">Total Portfolio · USD</div><div class="hero-card-amount" id="portUsdCounter">'+portFmt(totalUSD,'USD')+'</div></div>'+
+    '</div>'+
+    '<div class="charts-row">'+
+      '<div class="glass-card"><div class="card-header"><div class="card-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div><div class="card-title">Asset Allocation</div></div><canvas id="portDonutChart"></canvas></div>'+
+      '<div class="glass-card"><div class="card-header"><div class="card-dot" style="background:#00d4ff;box-shadow:0 0 6px #00d4ff"></div><div class="card-title">Value Comparison</div></div><canvas id="portBarChart"></canvas></div>'+
+    '</div>'+
+    '<div class="gauge-row">'+
+      '<div class="glass-card"><div class="card-header"><div class="card-dot" style="background:#00ff88;box-shadow:0 0 6px #00ff88"></div><div class="card-title">Polar Distribution</div></div><canvas id="portPolarChart"></canvas></div>'+
+      '<div class="glass-card"><div class="card-header"><div class="card-dot" style="background:#ffd700;box-shadow:0 0 6px #ffd700"></div><div class="card-title">Horizontal Bars</div></div><canvas id="portHbarChart"></canvas></div>'+
+    '</div>'+
+    (growthData.length>0?
+      '<div class="assets-section">'+
+        '<div class="section-heading">📈 Growth Trajectory</div>'+
+        '<div class="glass-card" style="margin-bottom:16px">'+
+          '<div class="card-header"><div class="card-dot" style="background:#2dd4bf;box-shadow:0 0 6px #2dd4bf"></div><div class="card-title">Portfolio Value Over Time</div></div>'+
+          '<div id="portGrowthStats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>'+
+          '<canvas id="portGrowthChart" style="max-height:190px"></canvas>'+
+          '<div id="portGrowthMilestones" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:11px"></div>'+
+        '</div>'+
+      '</div>':'')+
+    '<div class="assets-section"><div class="section-heading">All Assets &amp; Balances</div><div class="assets-grid">'+assetCards+'</div></div>';
+
+  setTimeout(function(){
+    var lEl=document.getElementById('portLkrCounter'),uEl=document.getElementById('portUsdCounter');
+    if(lEl)portAnimateCounter(lEl,totalLKR,1600,'₨');
+    if(uEl)portAnimateCounter(uEl,totalUSD,1600,'$');
+  },200);
+
+  setTimeout(function(){
+    document.querySelectorAll('#page-port .asset-card[data-bar]').forEach(function(card){
+      var bar=card.querySelector('.asset-bar');if(bar)bar.style.width=card.dataset.bar+'%';
+    });
+  },400);
+
+  portBuildCharts(posAssets);
+  if(growthData.length>0)setTimeout(function(){portBuildGrowthChart(growthData);},300);
+}
+
+function portBuildCharts(posAssets){
+  var labels=posAssets.map(function(a){return a.cat;});
+  var values=posAssets.map(function(a){return a.amt;});
+  var colors=posAssets.map(function(_,i){return PORT_PALETTE[i%PORT_PALETTE.length];});
+  var colAlpha=colors.map(function(c){return c+'33';});
+  var TIP3={backgroundColor:'rgba(6,11,24,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.7)',padding:11};
+  var tickCb=function(v){return '₨'+(v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v);};
+
+  new Chart(document.getElementById('portDonutChart'),{type:'doughnut',
+    data:{labels:labels,datasets:[{data:values,backgroundColor:colAlpha,borderColor:colors,borderWidth:2,hoverBorderWidth:3,hoverOffset:8}]},
+    options:{responsive:true,cutout:'68%',animation:{animateRotate:true,duration:1200},
+      plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.5)',font:{size:9},padding:9,boxWidth:9,usePointStyle:true,pointStyleWidth:7}},
+        tooltip:{backgroundColor:TIP3.backgroundColor,borderColor:TIP3.borderColor,borderWidth:1,titleColor:TIP3.titleColor,bodyColor:TIP3.bodyColor,padding:11,
+          callbacks:{label:function(ctx){return ' '+ctx.label+': '+portFmt(ctx.parsed);}}}}}});
+
+  new Chart(document.getElementById('portBarChart'),{type:'bar',
+    data:{labels:labels,datasets:[{data:values,backgroundColor:colAlpha,borderColor:colors,borderWidth:2,borderRadius:8,borderSkipped:false}]},
+    options:{responsive:true,animation:{duration:1200},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:TIP3.backgroundColor,borderColor:TIP3.borderColor,borderWidth:1,titleColor:TIP3.titleColor,bodyColor:TIP3.bodyColor,padding:11,callbacks:{label:function(ctx){return ' '+portFmt(ctx.parsed.y);}}}},
+      scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:tickCb},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+  new Chart(document.getElementById('portPolarChart'),{type:'polarArea',
+    data:{labels:labels,datasets:[{data:values,backgroundColor:colAlpha,borderColor:colors,borderWidth:2}]},
+    options:{responsive:true,animation:{duration:1400},
+      scales:{r:{ticks:{display:false},grid:{color:'rgba(255,255,255,.06)'},pointLabels:{display:false}}},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:TIP3.backgroundColor,borderColor:TIP3.borderColor,borderWidth:1,titleColor:TIP3.titleColor,bodyColor:TIP3.bodyColor,padding:11,callbacks:{label:function(ctx){return ' '+ctx.label+': '+portFmt(ctx.parsed.r);}}}}}});
+
+  new Chart(document.getElementById('portHbarChart'),{type:'bar',
+    data:{labels:labels,datasets:[{data:values,backgroundColor:colAlpha,borderColor:colors,borderWidth:2,borderRadius:6}]},
+    options:{indexAxis:'y',responsive:true,animation:{duration:1200},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:TIP3.backgroundColor,borderColor:TIP3.borderColor,borderWidth:1,titleColor:TIP3.titleColor,bodyColor:TIP3.bodyColor,padding:11,callbacks:{label:function(ctx){return ' '+portFmt(ctx.parsed.x);}}}},
+      scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:tickCb},grid:{color:'rgba(255,255,255,.05)'}},
+        y:{ticks:{color:'rgba(255,255,255,.5)',font:{size:9}},grid:{display:false}}}}});
+}
+
+function portBuildGrowthChart(growth){
+  var canvas=document.getElementById('portGrowthChart');if(!canvas)return;
+  var ctx=canvas.getContext('2d');
+  var glabels=growth.map(function(g){return g.date;});
+  var amounts=growth.map(function(g){return g.amount;});
+  var notes=growth.map(function(g){return g.note;});
+  var fill=ctx.createLinearGradient(0,0,0,190);
+  fill.addColorStop(0,'rgba(45,212,191,.38)');fill.addColorStop(1,'rgba(45,212,191,.02)');
+  new Chart(ctx,{type:'line',data:{labels:glabels,datasets:[{label:'Portfolio Value',data:amounts,
+    borderColor:'#2dd4bf',backgroundColor:fill,borderWidth:3,fill:true,tension:.38,
+    pointBackgroundColor:amounts.map(function(v,i){return notes[i]?'#ffd700':'#2dd4bf';}),
+    pointRadius:amounts.map(function(v,i){return notes[i]?7:4;}),
+    pointHoverRadius:9,pointBorderColor:'rgba(0,0,0,.5)',pointBorderWidth:2}]},
+    options:{responsive:true,animation:{duration:1600},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(6,11,24,.96)',borderColor:'rgba(45,212,191,.3)',borderWidth:1,titleColor:'#2dd4bf',bodyColor:'rgba(255,255,255,.65)',padding:11,
+        callbacks:{title:function(c){return glabels[c[0].dataIndex];},
+          label:function(c){var n2=notes[c.dataIndex];var base=' ₨'+Number(c.parsed.y).toLocaleString('en-IN',{minimumFractionDigits:0});return n2?[base,' 📌 '+n2]:base;}}}},
+      scales:{x:{ticks:{color:'rgba(255,255,255,.45)',font:{size:10},maxRotation:0},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{min:Math.floor((Math.min.apply(null,amounts)*.94)/1e5)*1e5,max:Math.ceil((Math.max.apply(null,amounts)*1.04)/1e5)*1e5,
+          ticks:{color:'rgba(255,255,255,.4)',font:{size:10},callback:function(v){return '₨'+(v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v);}},
+          grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+  var first=amounts[0]||0,last=amounts[amounts.length-1]||0;
+  var growPct=first>0?((last-first)/first*100):0;
+  var statsEl=document.getElementById('portGrowthStats');
+  if(statsEl){
+    var pill2=function(lbl,val,col){return '<div style="flex:1;min-width:90px;background:rgba(45,212,191,.07);border:1px solid rgba(45,212,191,.16);border-radius:11px;padding:9px 12px;text-align:center"><div style="font-size:.58em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.32);margin-bottom:2px">'+lbl+'</div><div style="font-size:1em;font-weight:800;color:'+(col||'#2dd4bf')+'">'+val+'</div></div>';};
+    var fmtM=function(v){return '₨'+(v/1e6).toFixed(2)+'M';};
+    statsEl.innerHTML=pill2('Start',fmtM(first))+pill2('Latest',fmtM(last))+pill2('Growth',(growPct>=0?'+':'')+growPct.toFixed(1)+'%',growPct>=0?'#00ff88':'#ff4d8d')+pill2('Entries',growth.length);
+  }
+  var msEl=document.getElementById('portGrowthMilestones');
+  if(msEl)msEl.innerHTML=growth.filter(function(g){return g.note;}).map(function(g){return '<span style="font-size:.65em;padding:3px 9px;border-radius:6px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);color:#ffd700">📌 '+g.date+' · '+g.note+'</span>';}).join('');
 }
 </script>
 </body>
