@@ -66,11 +66,6 @@ body::before{content:'';position:fixed;inset:0;
              font-size:11px;font-weight:700;font-family:'Inter',sans-serif;transition:opacity .2s;}
 .refresh-btn:hover{opacity:.85;}
 .refresh-btn:disabled{opacity:.4;cursor:not-allowed;}
-.back-btn{background:rgba(255,255,255,.06);color:rgba(255,255,255,.6);
-          border:1px solid rgba(255,255,255,.1);padding:5px 12px;border-radius:8px;cursor:pointer;
-          font-size:11px;font-weight:600;font-family:'Inter',sans-serif;transition:all .18s;}
-.back-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
-
 /* ── Load bar ── */
 .load-bar{height:2px;background:var(--border);flex-shrink:0;position:relative;z-index:2;overflow:hidden;}
 .load-fill{position:absolute;top:0;left:-30%;width:30%;height:100%;
@@ -87,11 +82,13 @@ body::before{content:'';position:fixed;inset:0;
 .tab.active{color:var(--blue);border-color:rgba(0,212,255,.3);
             background:rgba(0,212,255,.08);text-shadow:0 0 12px rgba(0,212,255,.4);}
 .tab:hover:not(.active){color:rgba(255,255,255,.7);background:rgba(255,255,255,.04);}
-.tdot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;
-      background:var(--muted);margin-left:5px;vertical-align:middle;transition:background .3s;}
-.tdot.loading{background:transparent!important;border:1.5px solid transparent;
-              border-top-color:var(--blue);border-radius:50%;
-              animation:spin .65s linear infinite;margin-bottom:-1px;}
+.tdot{display:inline-block;width:6px;height:6px;border-radius:50%;flex-shrink:0;
+      background:var(--muted);margin-left:6px;vertical-align:middle;transition:background .3s;}
+.tdot.loading{background:transparent!important;border:none;width:auto;height:auto;
+              border-radius:0;font-size:11px;letter-spacing:1px;color:var(--blue);
+              vertical-align:middle;margin-bottom:1px;}
+.tdot.loading::after{content:'···';animation:dotpulse 1.1s ease-in-out infinite;}
+@keyframes dotpulse{0%,100%{opacity:.25;}50%{opacity:1;}}
 .tdot.done{background:var(--green);}
 .tdot.err{background:var(--red);}
 @keyframes blink{0%,100%{opacity:1;}50%{opacity:.25;}}
@@ -375,7 +372,6 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
 <!-- Header -->
 <div class="header">
   <div class="h-left">
-    <button class="back-btn" onclick="goBack()">← Home</button>
     <span class="h-title">📈 CSE Stock Dashboard</span>
     <span class="mkt-pill" id="mktPill">—</span>
   </div>
@@ -772,100 +768,111 @@ function renderGold(d){
 
   var price=d.currentPrice||0;
   var updated=d.updated||'';
-  var history=d.history||[];
-  var invested=d.currentInvested||0;
-
-  // KPIs
-  var prevPrice=0,prevMonth='';
-  if(history.length>=2){
-    prevPrice=history[history.length-2].goldInvested||0;
-    prevMonth=history[history.length-2].label||'';
-  }
-  var lastEntry=history.length?history[history.length-1]:{};
-  var lastInvested=lastEntry.goldInvested||invested||0;
+  var ph=d.priceHistory||[];
+  var lkrRate=d.lkrRate||0;
+  var lastEntry=(d.history&&d.history.length)?d.history[d.history.length-1]:{};
+  var lastInvested=lastEntry.goldInvested||d.currentInvested||0;
   var lastEarnings=lastEntry.goldEarnings||0;
 
   var html='';
 
-  // Header KPI row
+  // ── KPI strip ──
   html+='<div class="kpi-row">';
   if(price>0){
-    html+=kpi('🏅','Gold / Gram','₨ '+fr(price,0),'Live — ravijewellers.lk',updated?'Updated':'','gold');
+    // calc change vs 1 week ago from priceHistory
+    var priceDelta='';
+    if(ph.length>=2){
+      var prev=ph[ph.length-2].lkr;
+      var diff=price-prev;
+      priceDelta=(diff>=0?'+':'')+fr(diff,0)+' vs last wk';
+    }
+    html+=kpi('🏅','Gold / Gram','₨ '+fr(price,0),'Sri Lanka 24K · per gram',priceDelta,'gold');
   } else {
     html+=kpi('🏅','Gold / Gram','—','Price unavailable','','gold');
   }
-  if(lastInvested>0){
-    html+=kpi('💰','Your Gold Investment',fs(lastInvested),'Latest recorded','','blue');
+  if(ph.length){
+    var first=ph[0].lkr, last=ph[ph.length-1].lkr;
+    var chg6m=first>0?((last-first)/first*100):0;
+    html+=kpi('📊','6-Month Change',fr(chg6m,1)+'%','XAU → LKR trend',(chg6m>=0?'+':'')+fr(chg6m,2)+'%',chg6m>=0?'green':'red');
   }
-  if(lastEarnings>0){
-    var gainPct=lastInvested>0?(lastEarnings/lastInvested*100).toFixed(2)+'%':'';
-    html+=kpi('📈','Gold Earnings',fs(lastEarnings),'Gain from investment',gainPct?'+'+gainPct:'','green');
-  }
+  if(lkrRate>0) html+=kpi('💱','USD / LKR','₨ '+fr(lkrRate,2),'Exchange rate','','blue');
   html+='</div>';
 
-  // Chart - invested vs earnings over time
-  if(history.length>0){
+  // ── Price history chart ──
+  if(ph.length>0){
     html+='<div class="glass fade-in" style="margin-bottom:16px">'+
       '<div class="g-hdr">'+
         '<div class="g-dot" style="background:var(--gold)"></div>'+
-        '<span class="g-title">Gold Investment Over Time</span>'+
-        '<span class="g-sub">From your monthly log</span>'+
+        '<span class="g-title">Gold Price — LKR per Gram (6 months)</span>'+
+        '<span class="g-sub">XAU/USD × USD/LKR ÷ 31.1g</span>'+
       '</div>'+
-      '<div class="chart-wrap" style="height:200px"><canvas id="goldChart"></canvas></div>'+
+      '<div class="chart-wrap" style="height:220px"><canvas id="goldChart"></canvas></div>'+
     '</div>';
   }
 
-  // Price info notice
+  // ── Price banner ──
   if(price>0){
-    html+='<div class="glass fade-in" style="margin-bottom:14px;display:flex;align-items:center;gap:14px;">'+
-      '<div style="font-size:2em;flex-shrink:0">🏅</div>'+
+    html+='<div class="glass fade-in" style="margin-bottom:14px;display:flex;align-items:center;gap:16px;">'+
+      '<div style="font-size:2.2em;flex-shrink:0">🏅</div>'+
       '<div>'+
-        '<div style="font-size:.55em;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px">Sri Lanka Gold Price (24K per gram)</div>'+
-        '<div style="font-size:1.5em;font-weight:800;color:var(--gold);letter-spacing:-.5px">₨ '+fr(price,0)+'</div>'+
-        (updated?'<div style="font-size:.65em;color:var(--dim);margin-top:3px">Source: ravijewellers.lk · '+updated+'</div>':'')+
+        '<div style="font-size:.52em;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:3px">Current Sri Lanka Gold Price · 24K per gram</div>'+
+        '<div style="font-size:1.6em;font-weight:800;color:var(--gold);letter-spacing:-.5px">₨ '+fr(price,0)+'</div>'+
+        (updated?'<div style="font-size:.62em;color:var(--dim);margin-top:3px">Source: ravijewellers.lk · '+updated+'</div>':'')+
       '</div>'+
     '</div>';
   } else {
-    html+='<div class="err-box" style="margin-bottom:14px;">⚠ Could not fetch live gold price. Check <a href="https://ravijewellers.lk" target="_blank" style="color:var(--blue)">ravijewellers.lk →</a></div>';
+    html+='<div class="err-box">⚠ Live gold price unavailable — <a href="https://ravijewellers.lk" target="_blank" style="color:var(--blue)">ravijewellers.lk →</a></div>';
   }
 
-  if(!history.length&&!price){
-    html+='<div class="empty"><div class="empty-ico">🏅</div>No gold data found.<br>Make sure the UT_CRYPTO sheet has gold investment data and run <strong>updateGoldPrice()</strong>.</div>';
+  if(!ph.length&&!price){
+    html+='<div class="empty"><div class="empty-ico">🏅</div>No gold price data available.<br>Check network or run <strong>updateGoldPrice()</strong> in the script.</div>';
   }
 
   c.innerHTML=html;
 
-  // Render chart after DOM update
-  if(history.length>0){
+  // ── Render price chart ──
+  if(ph.length>0){
     setTimeout(function(){
       var ctx=document.getElementById('goldChart');
       if(!ctx)return;
       if(_goldChart)_goldChart.destroy();
-      var labels=history.map(function(h){return h.label;});
-      var invData=history.map(function(h){return h.goldInvested;});
-      var earnData=history.map(function(h){return h.goldEarnings;});
+      var labels=ph.map(function(p){return p.label;});
+      var lkrData=ph.map(function(p){return p.lkr;});
+      // gradient fill
+      var canvas=ctx.getContext('2d');
+      var grad=canvas.createLinearGradient(0,0,0,220);
+      grad.addColorStop(0,'rgba(255,215,0,.25)');
+      grad.addColorStop(1,'rgba(255,215,0,0)');
       _goldChart=new Chart(ctx,{
         type:'line',
         data:{
           labels:labels,
-          datasets:[
-            {label:'Invested',data:invData,
-             borderColor:'rgba(255,215,0,.7)',backgroundColor:'rgba(255,215,0,.08)',
-             borderWidth:2,pointRadius:3,fill:true,tension:.35},
-            {label:'Earnings',data:earnData,
-             borderColor:'rgba(0,255,136,.7)',backgroundColor:'rgba(0,255,136,.06)',
-             borderWidth:2,pointRadius:3,fill:true,tension:.35}
-          ]
+          datasets:[{
+            label:'LKR / gram',
+            data:lkrData,
+            borderColor:'rgba(255,215,0,.9)',
+            backgroundColor:grad,
+            borderWidth:2,
+            pointRadius:3,
+            pointBackgroundColor:'rgba(255,215,0,.9)',
+            fill:true,
+            tension:.35
+          }]
         },
         options:{
           responsive:true,maintainAspectRatio:false,
           plugins:{
-            legend:{labels:{color:'rgba(255,255,255,.45)',font:{size:10,family:'Inter'}}},
-            tooltip:{callbacks:{label:function(c){return c.dataset.label+': ₨ '+Number(c.raw).toLocaleString('en-IN');}}}
+            legend:{display:false},
+            tooltip:{callbacks:{
+              label:function(c){return '₨ '+Number(c.raw).toLocaleString('en-IN')+' / gram';}
+            }}
           },
           scales:{
-            x:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9,family:'Inter'}},grid:{color:'rgba(255,255,255,.04)'}},
-            y:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9,family:'Inter'},callback:function(v){return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v;}},grid:{color:'rgba(255,255,255,.04)'}}
+            x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9,family:'Inter'},maxRotation:45},
+               grid:{color:'rgba(255,255,255,.04)'}},
+            y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9,family:'Inter'},
+                      callback:function(v){return v>=1000?(v/1000).toFixed(0)+'K':v;}},
+               grid:{color:'rgba(255,255,255,.04)'}}
           }
         }
       });
@@ -1159,20 +1166,6 @@ function renderInsights(){
   });
   html+='</div>';
   c.innerHTML=html;
-}
-
-// ── Navigation ─────────────────────────────────────────────────────
-function goBack(){
-  try{
-    var h=window.location.href;
-    if((typeof _WEB_APP!=='undefined'&&_WEB_APP)||h.indexOf('/exec')>-1||h.indexOf('/dev')>-1){
-      window.location.href='?page=home'; return;
-    }
-  }catch(e){}
-  try{
-    if(typeof google!=='undefined'&&google.script&&google.script.host&&
-       typeof google.script.host.close==='function') google.script.host.close();
-  }catch(e){ window.location.href='?page=home'; }
 }
 
 // ── Market status ──────────────────────────────────────────────────

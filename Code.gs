@@ -1286,9 +1286,9 @@ function getCSEDividendsForHoldings(symbols) {
   return { dividends: result, month: curYM };
 }
 
-// ── Gold price data (current scrape + UT_CRYPTO monthly history) ──
+// ── Gold price data (current scrape + UT_CRYPTO monthly history + price chart) ──
 function getGoldData() {
-  var result = { currentPrice: 0, updated: '', history: [], currentInvested: 0 };
+  var result = { currentPrice: 0, updated: '', history: [], priceHistory: [], currentInvested: 0, lkrRate: 0 };
 
   // Fetch live price from ravijewellers.lk
   try {
@@ -1305,7 +1305,6 @@ function getGoldData() {
   // Read from UT_CRYPTO sheet
   try {
     var sheet = SpreadsheetApp.getActive().getSheetByName('UT_CRYPTO');
-    // C1 = last scraped price, C2 = gold invested
     var c1 = sheet.getRange('C1').getValue();
     var c2 = sheet.getRange('C2').getValue();
     if (c1 && !result.currentPrice) result.currentPrice = Number(c1) || 0;
@@ -1325,6 +1324,44 @@ function getGoldData() {
             goldEarnings: Number(r[3]) || 0
           };
         });
+    }
+  } catch(e) {}
+
+  // Historical gold price chart: XAU/USD (Yahoo Finance) → LKR per gram
+  try {
+    // Get USD/LKR exchange rate
+    var lkrRate = 320;
+    try {
+      var er = UrlFetchApp.fetch('https://open.er-api.com/v6/latest/USD', { muteHttpExceptions: true });
+      if (er.getResponseCode() === 200) {
+        var erJson = JSON.parse(er.getContentText());
+        if (erJson.rates && erJson.rates.LKR) lkrRate = erJson.rates.LKR;
+      }
+    } catch(e2) {}
+    result.lkrRate = lkrRate;
+
+    // 6 months weekly gold price from Yahoo Finance (GC=F = Gold futures)
+    var yf = UrlFetchApp.fetch(
+      'https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1wk&range=6mo',
+      { muteHttpExceptions: true }
+    );
+    if (yf.getResponseCode() === 200) {
+      var yfJson = JSON.parse(yf.getContentText());
+      var res0 = yfJson.chart && yfJson.chart.result && yfJson.chart.result[0];
+      if (res0) {
+        var timestamps = res0.timestamp || [];
+        var closes = res0.indicators && res0.indicators.quote[0].close || [];
+        result.priceHistory = [];
+        for (var i = 0; i < timestamps.length; i++) {
+          if (!closes[i]) continue;
+          var d = new Date(timestamps[i] * 1000);
+          result.priceHistory.push({
+            label: Utilities.formatDate(d, Session.getScriptTimeZone(), 'dd MMM'),
+            usd:   Math.round(closes[i] * 100) / 100,
+            lkr:   Math.round(closes[i] * lkrRate / 31.1035)
+          });
+        }
+      }
     }
   } catch(e) {}
 
