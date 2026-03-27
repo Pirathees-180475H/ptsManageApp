@@ -41,6 +41,9 @@ function onEdit(e) {
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'H1') {
     showCSEDashboard();
   }
+  if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'I1') {
+    openHabitDashboard();
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -607,41 +610,90 @@ const CONSUMER_KEY = 'Gdg3ICNvkIyre7PAYsj6FRrgxeaOdnHob0mSYtHp';
 const CONSUMER_SECRET = 'HGoLJOypYGNA1GA4pChql6uquVqzbVDuZ0LONrNZ';
 
 function getSplitwiseData() {
-  
   const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
-  const url = 'https://secure.splitwise.com/api/v3.0/get_current_user';
-  
-  const options = {
-    'method': 'get',
-    'headers': {
-      'Authorization': 'Bearer ' + apiKey
-    }
-  };
-  
-  const response = UrlFetchApp.fetch(url, options);
-  const data = JSON.parse(response.getContentText());
-  Logger.log(data);
-  
-  return data;
-}
+  const headers = { 'Authorization': 'Bearer ' + apiKey };
+  const opts = { method: 'get', headers: headers };
 
-function getSplitwiseData() {
-  
-  const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
-  const url = 'https://secure.splitwise.com/api/v3.0/get_current_user';
-  
-  const options = {
-    'method': 'get',
-    'headers': {
-      'Authorization': 'Bearer ' + apiKey
-    }
-  };
-  
-  const response = UrlFetchApp.fetch(url, options);
-  const data = JSON.parse(response.getContentText());
-  Logger.log(data);
-  
-  return data;
+  try {
+    // ── 1. Friend balances ──
+    const friendsResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_friends', opts);
+    const friends = JSON.parse(friendsResp.getContentText()).friends;
+
+    const balanceData = [];
+    const totals = {};
+
+    friends.forEach(function(friend) {
+      const fullName = (friend.first_name + ' ' + (friend.last_name || '')).trim();
+      friend.balance.forEach(function(bal) {
+        const amount = parseFloat(bal.amount);
+        const currency = bal.currency_code;
+        balanceData.push({
+          name: fullName,
+          friendId: friend.id,
+          amount: amount,
+          currency: currency,
+          status: amount < 0 ? 'I need to pay' : amount > 0 ? 'They need to pay' : 'Settled up'
+        });
+        totals[currency] = (totals[currency] || 0) + amount;
+      });
+    });
+
+    // ── 2. Current user ID ──
+    var currentUserId = null;
+    try {
+      const meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', opts);
+      currentUserId = JSON.parse(meResp.getContentText()).user.id;
+    } catch(e) {}
+
+    // ── 3. Recent 10 expenses ──
+    var recentTransactions = [];
+    try {
+      const expResp = UrlFetchApp.fetch(
+        'https://secure.splitwise.com/api/v3.0/get_expenses?limit=15&offset=0', opts);
+      const expenses = JSON.parse(expResp.getContentText()).expenses;
+      recentTransactions = expenses
+        .filter(function(e) { return !e.deleted_at; })
+        .slice(0, 10)
+        .map(function(e) {
+          var myNet = 0, paidByMe = false;
+          if (currentUserId) {
+            for (var i = 0; i < e.users.length; i++) {
+              if (e.users[i].user_id === currentUserId) {
+                myNet = parseFloat(e.users[i].net_balance || 0);
+                paidByMe = parseFloat(e.users[i].paid_share || 0) > 0;
+                break;
+              }
+            }
+          }
+          return {
+            id: e.id,
+            description: e.description || '(no description)',
+            date: Utilities.formatDate(new Date(e.date), Session.getScriptTimeZone(), 'dd MMM yyyy'),
+            cost: parseFloat(e.cost),
+            currency: e.currency_code,
+            myNet: myNet,
+            paidByMe: paidByMe,
+            isPayment: e.payment === true
+          };
+        });
+    } catch(e) {}
+
+    // ── 4. Validate LKR balance ──
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('CC_SW_CL_INST');
+    const sheetBalance = sheet ? sheet.getRange('C44').getValue() : 0;
+    const lkrTotal = totals['LKR'] || 0;
+    const validationResult = validateBalance(lkrTotal, sheetBalance);
+
+    return {
+      balanceData: balanceData,
+      recentTransactions: recentTransactions,
+      validationResult: validationResult
+    };
+
+  } catch (error) {
+    Logger.log('getSplitwiseData error: ' + error);
+    return { balanceData: [], recentTransactions: [], validationResult: null };
+  }
 }
 
 function getFriendBalances() {
@@ -1377,4 +1429,146 @@ function getGoldData() {
   } catch(e) {}
 
   return result;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   HABIT TRACKER  (Sheet: Habbit · Trigger: Monthly Expences I1)
+═══════════════════════════════════════════════════════════════ */
+
+function openHabitDashboard() {
+  try {
+    var html = HtmlService.createHtmlOutputFromFile('habit')
+      .setWidth(460)
+      .setHeight(700);
+    SpreadsheetApp.getUi().showModalDialog(html, '🔥 Habit Tracker');
+  } catch (err) { /* silent fail */ }
+}
+
+function getHabitData() {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Habbit');
+  if (!sheet) return { rows: [] };
+
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return { rows: [] };
+
+  var tz   = Session.getScriptTimeZone();
+  var rows = [];
+
+  for (var i = 1; i < data.length; i++) {
+    var r = data[i];
+    if (!r[0] && !r[1] && !r[3]) continue; // skip fully empty rows
+
+    // ── Parse date ──
+    var rawDate = r[0];
+    var dateStr;
+    if (rawDate instanceof Date && !isNaN(rawDate)) {
+      dateStr = Utilities.formatDate(rawDate, tz, 'yyyy-MM-dd');
+    } else {
+      dateStr = String(rawDate).trim();
+      // Handle M-DD or MM-DD → assume current year
+      if (/^\d{1,2}-\d{1,2}$/.test(dateStr)) {
+        var parts = dateStr.split('-');
+        var yr = new Date().getFullYear();
+        dateStr = yr + '-' + ('0'+parts[0]).slice(-2) + '-' + ('0'+parts[1]).slice(-2);
+      }
+    }
+    if (!dateStr || dateStr === 'NaN-NaN-NaN') continue;
+
+    var sugar     = Number(r[1]) || 0;
+    var sugarMax  = Number(r[2]) || 1;
+    var runMin    = Number(r[3]) || 0;
+    var runTarget = Number(r[4]) || 60;
+    var walk      = Number(r[5]) || 0;
+    var walkAim   = Number(r[6]) || 2;
+    var cook      = Number(r[7]) || 0;
+    var cookAim   = Number(r[8]) || 2;
+    var notes     = String(r[9] || '').trim();
+    // Col K (index 10) may already have score — we recalculate anyway
+    var sugarPass = sugar  <= sugarMax  ? 1 : 0;
+    var runPass   = runMin >= runTarget ? 1 : 0;
+    var walkPass  = walk   >= walkAim   ? 1 : 0;
+    var cookPass  = cook   >= cookAim   ? 1 : 0;
+    var score     = sugarPass + runPass + walkPass + cookPass;
+
+    rows.push({
+      date:      dateStr,
+      sugar:     sugar,    sugarMax:  sugarMax,  sugarPass:  sugarPass,
+      runMin:    runMin,   runTarget: runTarget,  runPass:    runPass,
+      walk:      walk,     walkAim:   walkAim,    walkPass:   walkPass,
+      cook:      cook,     cookAim:   cookAim,    cookPass:   cookPass,
+      notes:     notes,
+      score:     score,
+      rowIndex:  i + 1
+    });
+  }
+
+  rows.sort(function(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  return { rows: rows };
+}
+
+function logHabitDay(payload) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Habbit');
+    if (!sheet) return { success: false, error: 'Sheet "Habbit" not found' };
+
+    var data = sheet.getDataRange().getValues();
+    var tz   = Session.getScriptTimeZone();
+
+    // ── Pull thresholds from the most recent complete row ──
+    var thresholds = { sugarMax: 1, runTarget: 60, walkAim: 2, cookAim: 2 };
+    for (var i = data.length - 1; i >= 1; i--) {
+      if (data[i][2] || data[i][4] || data[i][6] || data[i][8]) {
+        thresholds = {
+          sugarMax:  Number(data[i][2]) || 1,
+          runTarget: Number(data[i][4]) || 60,
+          walkAim:   Number(data[i][6]) || 2,
+          cookAim:   Number(data[i][8]) || 2
+        };
+        break;
+      }
+    }
+
+    var sugarPass = payload.sugar  <= thresholds.sugarMax  ? 1 : 0;
+    var runPass   = payload.runMin >= thresholds.runTarget  ? 1 : 0;
+    var walkPass  = payload.walk   >= thresholds.walkAim    ? 1 : 0;
+    var cookPass  = payload.cook   >= thresholds.cookAim    ? 1 : 0;
+    var score     = sugarPass + runPass + walkPass + cookPass;
+
+    var dateVal  = new Date(payload.date + 'T00:00:00');
+    var rowData  = [
+      dateVal,
+      payload.sugar,  thresholds.sugarMax,
+      payload.runMin, thresholds.runTarget,
+      payload.walk,   thresholds.walkAim,
+      payload.cook,   thresholds.cookAim,
+      payload.notes || '',
+      score
+    ];
+
+    // ── Update existing row or append new row ──
+    var found = false;
+    for (var j = 1; j < data.length; j++) {
+      if (!data[j][0]) continue;
+      var existDate = (data[j][0] instanceof Date && !isNaN(data[j][0]))
+        ? Utilities.formatDate(data[j][0], tz, 'yyyy-MM-dd')
+        : String(data[j][0]).replace(/^(\d{1,2})-(\d{1,2})$/, function(_, m, d) {
+            return new Date().getFullYear() + '-' + ('0'+m).slice(-2) + '-' + ('0'+d).slice(-2);
+          });
+      if (existDate === payload.date) {
+        sheet.getRange(j + 1, 1, 1, 11).setValues([rowData]);
+        found = true;
+        break;
+      }
+    }
+    if (!found) sheet.appendRow(rowData);
+
+    return { success: true, score: score };
+
+  } catch (err) {
+    Logger.log('logHabitDay error: ' + err);
+    return { success: false, error: err.message || String(err) };
+  }
 }
