@@ -637,6 +637,164 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   #page-port .assets-grid{grid-template-columns:1fr 1fr;}
   #page-port .port-header h1{font-size:1.45em;}
 }
+
+/* ═══════════════════════════════════════════
+   INVESTMENT DASHBOARD PAGE
+═══════════════════════════════════════════ */
+#page-inv{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#page-inv .inv-scroll-wrap{position:relative;z-index:1;padding:18px;width:100%;padding-bottom:16px;}
+#page-inv .glass{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:18px;backdrop-filter:blur(20px);box-shadow:0 4px 24px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.04);position:relative;overflow:hidden;margin-bottom:14px;}
+#page-inv .glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);}
+#page-inv .card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05);}
+#page-inv .card-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+#page-inv .card-title{font-size:.72em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+#page-inv .card-sub{font-size:.62em;color:rgba(255,255,255,.22);margin-left:auto;}
+#page-inv .inv-header{text-align:center;padding:16px 0 22px;}
+#page-inv .inv-header-chip{display:inline-block;padding:5px 16px;border-radius:20px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);color:#3b82f6;font-size:.68em;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;}
+#page-inv .inv-header h1{font-size:1.7em;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#fff 0%,#3b82f6 40%,#a855f7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#page-inv .inv-header-sub{color:rgba(255,255,255,.35);font-size:.78em;margin-top:5px;}
+#page-inv .inv-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;animation:fadeUp .5s ease both;}
+#page-inv .kpi{border-radius:14px;padding:14px 16px;border:1px solid;backdrop-filter:blur(20px);position:relative;overflow:hidden;transition:transform .2s ease;}
+#page-inv .kpi:hover{transform:translateY(-3px);}
+#page-inv .kpi-glow{position:absolute;right:-18px;bottom:-18px;width:90px;height:90px;border-radius:50%;filter:blur(36px);opacity:.2;}
+#page-inv .kpi-icon{font-size:1.4em;margin-bottom:6px;display:block;}
+#page-inv .kpi-label{font-size:.58em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.33);margin-bottom:3px;}
+#page-inv .kpi-value{font-size:1.05em;font-weight:800;letter-spacing:-.5px;line-height:1;}
+#page-inv .kpi-sub{font-size:.6em;color:rgba(255,255,255,.22);margin-top:4px;}
+#page-inv .kpi-delta{font-size:.62em;font-weight:700;padding:1px 6px;border-radius:5px;display:inline-block;margin-top:3px;}
+#page-inv .delta-up{background:rgba(0,230,118,.15);color:#00e676;}
+#page-inv .delta-down{background:rgba(255,77,141,.15);color:#ff4d8d;}
+#page-inv .delta-flat{background:rgba(255,255,255,.06);color:rgba(255,255,255,.4);}
+#page-inv .kpi.blue{background:linear-gradient(135deg,rgba(59,130,246,.09),rgba(59,130,246,.04));border-color:rgba(59,130,246,.22);}
+#page-inv .kpi.blue .kpi-value{color:#3b82f6;text-shadow:0 0 20px rgba(59,130,246,.4);}
+#page-inv .kpi.blue .kpi-glow{background:#3b82f6;}
+#page-inv .kpi.green{background:linear-gradient(135deg,rgba(0,230,118,.09),rgba(0,230,118,.04));border-color:rgba(0,230,118,.22);}
+#page-inv .kpi.green .kpi-value{color:#00e676;text-shadow:0 0 20px rgba(0,230,118,.4);}
+#page-inv .kpi.green .kpi-glow{background:#00e676;}
+#page-inv .kpi.gold{background:linear-gradient(135deg,rgba(255,215,0,.09),rgba(255,215,0,.04));border-color:rgba(255,215,0,.22);}
+#page-inv .kpi.gold .kpi-value{color:#ffd700;text-shadow:0 0 20px rgba(255,215,0,.4);}
+#page-inv .kpi.gold .kpi-glow{background:#ffd700;}
+#page-inv .kpi.purple{background:linear-gradient(135deg,rgba(168,85,247,.09),rgba(168,85,247,.04));border-color:rgba(168,85,247,.22);}
+#page-inv .kpi.purple .kpi-value{color:#a855f7;text-shadow:0 0 20px rgba(168,85,247,.4);}
+#page-inv .kpi.purple .kpi-glow{background:#a855f7;}
+#page-inv .kpi.orange{background:linear-gradient(135deg,rgba(255,107,53,.09),rgba(255,107,53,.04));border-color:rgba(255,107,53,.22);}
+#page-inv .kpi.orange .kpi-value{color:#ff6b35;text-shadow:0 0 20px rgba(255,107,53,.4);}
+#page-inv .kpi.orange .kpi-glow{background:#ff6b35;}
+#page-inv .row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+#page-inv .row-3{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+#page-inv .row-3b{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px;}
+#page-inv .row-full{margin-bottom:14px;}
+#page-inv .chart-wrap{position:relative;height:240px;}
+#page-inv .chart-wrap.tall{height:280px;}
+#page-inv .chart-wrap.short{height:180px;}
+#page-inv .insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#page-inv .insight-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:12px 14px;display:flex;align-items:flex-start;gap:10px;}
+#page-inv .insight-emoji{font-size:1.5em;flex-shrink:0;margin-top:1px;}
+#page-inv .insight-label{font-size:.6em;color:rgba(255,255,255,.3);font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px;}
+#page-inv .insight-value{font-size:.9em;font-weight:700;color:#fff;}
+#page-inv .insight-sub{font-size:.62em;color:rgba(255,255,255,.3);margin-top:2px;}
+#page-inv .perf-row{display:flex;flex-direction:column;gap:10px;}
+#page-inv .perf-item{display:flex;flex-direction:column;gap:4px;}
+#page-inv .perf-top{display:flex;justify-content:space-between;align-items:center;}
+#page-inv .perf-name{font-size:.72em;color:rgba(255,255,255,.55);font-weight:500;}
+#page-inv .perf-val{font-size:.72em;font-weight:700;}
+#page-inv .perf-bar-bg{height:6px;background:rgba(255,255,255,.05);border-radius:4px;overflow:hidden;}
+#page-inv .perf-bar{height:100%;border-radius:4px;width:0;transition:width 1.3s cubic-bezier(.4,0,.2,1);}
+#page-inv .inv-log-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:12px;border:1px solid rgba(0,230,118,.35);background:rgba(0,230,118,.1);color:#00e676;font-family:'Inter',sans-serif;font-size:.78em;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s ease;margin-top:12px;}
+#page-inv .inv-log-btn:hover:not(:disabled){background:rgba(0,230,118,.2);border-color:rgba(0,230,118,.6);box-shadow:0 0 18px rgba(0,230,118,.2);transform:translateY(-1px);}
+#page-inv .inv-log-btn:active:not(:disabled){transform:scale(.97);}
+#page-inv .inv-log-btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+#page-inv .inv-log-btn .btn-spin{width:13px;height:13px;border-radius:50%;border:2px solid rgba(0,230,118,.25);border-top-color:#00e676;animation:spin .7s linear infinite;display:none;}
+#page-inv .inv-log-btn.logging .btn-spin{display:block;}
+#page-inv .inv-log-btn.logging .btn-ico{display:none;}
+.inv-toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%) translateY(60px);background:rgba(10,16,28,.96);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:13px 22px;font-size:.82em;font-weight:600;backdrop-filter:blur(20px);z-index:200;white-space:nowrap;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s ease;opacity:0;display:flex;align-items:center;gap:9px;}
+.inv-toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.inv-toast.success{border-color:rgba(0,230,118,.35);color:#00e676;}
+.inv-toast.error{border-color:rgba(255,77,141,.35);color:#ff4d8d;}
+@media(max-width:760px){
+  #page-inv .inv-kpi-row{grid-template-columns:repeat(2,1fr);}
+  #page-inv .row-2,#page-inv .row-3,#page-inv .row-3b{grid-template-columns:1fr;}
+  #page-inv .insight-grid{grid-template-columns:1fr;}
+}
+
+/* ═══════════════════════════════════════════
+   MONEY FLOW PAGE
+═══════════════════════════════════════════ */
+#page-mf{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#page-mf .mf-scroll-wrap{position:relative;z-index:1;padding:18px;width:100%;padding-bottom:16px;}
+#page-mf .glass{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:18px;backdrop-filter:blur(20px);box-shadow:0 4px 24px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.04);position:relative;overflow:hidden;margin-bottom:14px;}
+#page-mf .glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);}
+#page-mf .card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05);}
+#page-mf .card-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+#page-mf .card-title{font-size:.72em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+#page-mf .card-sub{font-size:.62em;color:rgba(255,255,255,.22);margin-left:auto;}
+#page-mf .mf-header{text-align:center;padding:16px 0 22px;}
+#page-mf .mf-header-chip{display:inline-block;padding:5px 16px;border-radius:20px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:#00d4ff;font-size:.68em;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;}
+#page-mf .mf-header h1{font-size:1.7em;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#fff 0%,#00d4ff 40%,#a855f7 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#page-mf .mf-header-sub{color:rgba(255,255,255,.35);font-size:.78em;margin-top:5px;}
+#page-mf .mf-kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;animation:fadeUp .5s ease both;}
+#page-mf .kpi{border-radius:14px;padding:14px 16px;border:1px solid;backdrop-filter:blur(20px);position:relative;overflow:hidden;transition:transform .2s ease;}
+#page-mf .kpi:hover{transform:translateY(-3px);}
+#page-mf .kpi-glow{position:absolute;right:-18px;bottom:-18px;width:90px;height:90px;border-radius:50%;filter:blur(36px);opacity:.2;}
+#page-mf .kpi-icon{font-size:1.4em;margin-bottom:6px;display:block;}
+#page-mf .kpi-label{font-size:.58em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.33);margin-bottom:3px;}
+#page-mf .kpi-value{font-size:1.15em;font-weight:800;letter-spacing:-.5px;line-height:1;}
+#page-mf .kpi-sub{font-size:.6em;color:rgba(255,255,255,.22);margin-top:4px;}
+#page-mf .kpi.blue{background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(0,212,255,.04));border-color:rgba(0,212,255,.22);}
+#page-mf .kpi.blue .kpi-value{color:#00d4ff;text-shadow:0 0 20px rgba(0,212,255,.4);}
+#page-mf .kpi.blue .kpi-glow{background:#00d4ff;}
+#page-mf .kpi.purple{background:linear-gradient(135deg,rgba(168,85,247,.09),rgba(168,85,247,.04));border-color:rgba(168,85,247,.22);}
+#page-mf .kpi.purple .kpi-value{color:#a855f7;text-shadow:0 0 20px rgba(168,85,247,.4);}
+#page-mf .kpi.purple .kpi-glow{background:#a855f7;}
+#page-mf .kpi.green{background:linear-gradient(135deg,rgba(0,230,118,.09),rgba(0,230,118,.04));border-color:rgba(0,230,118,.22);}
+#page-mf .kpi.green .kpi-value{color:#00e676;text-shadow:0 0 20px rgba(0,230,118,.4);}
+#page-mf .kpi.green .kpi-glow{background:#00e676;}
+#page-mf .kpi.gold{background:linear-gradient(135deg,rgba(255,215,0,.09),rgba(255,215,0,.04));border-color:rgba(255,215,0,.22);}
+#page-mf .kpi.gold .kpi-value{color:#ffd700;text-shadow:0 0 20px rgba(255,215,0,.4);}
+#page-mf .kpi.gold .kpi-glow{background:#ffd700;}
+#page-mf .kpi.orange{background:linear-gradient(135deg,rgba(255,107,53,.09),rgba(255,107,53,.04));border-color:rgba(255,107,53,.22);}
+#page-mf .kpi.orange .kpi-value{color:#ff6b35;text-shadow:0 0 20px rgba(255,107,53,.4);}
+#page-mf .kpi.orange .kpi-glow{background:#ff6b35;}
+#page-mf .row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+#page-mf .row-3{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+#page-mf .row-2b{display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-bottom:14px;}
+#page-mf .row-full{margin-bottom:14px;}
+#page-mf .chart-wrap{position:relative;height:240px;}
+#page-mf .chart-wrap.tall{height:280px;}
+#page-mf .chart-wrap.short{height:200px;}
+#page-mf .heatmap{overflow-x:auto;}
+#page-mf .hm-table{width:100%;border-collapse:separate;border-spacing:4px;}
+#page-mf .hm-table th{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);padding:6px 8px;text-align:center;white-space:nowrap;}
+#page-mf .hm-table td.month-lbl{font-size:.7em;font-weight:600;color:rgba(255,255,255,.5);padding:0 10px 0 0;white-space:nowrap;text-align:right;}
+#page-mf .hm-cell{width:70px;height:36px;border-radius:8px;font-size:.68em;font-weight:700;text-align:center;vertical-align:middle;transition:transform .2s ease;cursor:default;position:relative;}
+#page-mf .hm-cell:hover{transform:scale(1.1);z-index:2;}
+#page-mf .hm-cell.zero{background:rgba(255,255,255,.04);color:rgba(255,255,255,.15);}
+#page-mf .saving-badge{display:inline-block;font-size:.6em;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:1px;text-transform:uppercase;white-space:nowrap;}
+#page-mf .badge-great{background:rgba(0,230,118,.15);color:#00e676;}
+#page-mf .badge-good{background:rgba(0,212,255,.15);color:#00d4ff;}
+#page-mf .badge-ok{background:rgba(255,215,0,.15);color:#ffd700;}
+#page-mf .badge-low{background:rgba(255,77,141,.15);color:#ff4d8d;}
+#page-mf .plan-section{margin-bottom:18px;animation:fadeUp .4s ease both;}
+#page-mf .plan-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+#page-mf .plan-chip{display:inline-block;padding:4px 14px;border-radius:20px;background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.3);color:#00e676;font-size:.63em;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;}
+#page-mf .plan-month-label{font-size:1.05em;font-weight:800;letter-spacing:-.5px;color:#fff;margin-top:3px;}
+#page-mf .plan-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px;}
+#page-mf .plan-card{border-radius:14px;padding:14px 16px;border:1px solid;backdrop-filter:blur(20px);position:relative;overflow:hidden;}
+#page-mf .plan-card.invested{background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(0,212,255,.03));border-color:rgba(0,212,255,.3);}
+#page-mf .plan-card.ntm{background:linear-gradient(135deg,rgba(255,107,53,.07),rgba(255,107,53,.02));border-color:rgba(255,107,53,.25);}
+#page-mf .pc-emoji{font-size:1.3em;margin-bottom:6px;display:block;}
+#page-mf .pc-name{font-size:.75em;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.5px;margin-bottom:4px;}
+#page-mf .pc-amount{font-size:1.05em;font-weight:800;letter-spacing:-.5px;}
+#page-mf .pc-amount.has-val{color:#00d4ff;text-shadow:0 0 16px rgba(0,212,255,.3);}
+#page-mf .pc-amount.is-ntm{color:rgba(255,107,53,.8);font-size:.75em;font-weight:700;letter-spacing:2px;}
+#page-mf .plan-notes-strip{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);}
+#page-mf .pn-label{font-size:.6em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);white-space:nowrap;flex-shrink:0;}
+#page-mf .pn-text{font-size:.78em;color:rgba(255,255,255,.55);font-style:italic;}
+@media(max-width:760px){
+  #page-mf .mf-kpi-row{grid-template-columns:repeat(3,1fr);}
+  #page-mf .row-2,#page-mf .row-3,#page-mf .row-2b{grid-template-columns:1fr;}
+  #page-mf .plan-cards{grid-template-columns:repeat(2,1fr);}
+}
 </style>
 </head>
 <body>
@@ -736,12 +894,37 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 </section>
 
 <!-- ═══════════════════════════════════════════
+     INVESTMENT DASHBOARD PAGE
+═══════════════════════════════════════════ -->
+<section id="page-inv" class="spa-page">
+  <div id="invToast" class="inv-toast"></div>
+  <div id="inv-root" class="inv-scroll-wrap">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
+      <div style="width:44px;height:44px;border:3px solid rgba(59,130,246,.15);border-top-color:#3b82f6;border-radius:50%;animation:spin .8s linear infinite"></div>
+      <div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Data…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     MONEY FLOW PAGE
+═══════════════════════════════════════════ -->
+<section id="page-mf" class="spa-page">
+  <div id="mf-root" class="mf-scroll-wrap">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
+      <div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div>
+      <div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Flow…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
      BOTTOM NAV
 ═══════════════════════════════════════════ -->
 <nav class="bottom-nav">
   <button class="bnav-btn active" data-page="cse" onclick="showPage('cse')">
     <span class="bnav-ico">📈</span>
-    <span class="bnav-lbl">Portfolio</span>
+    <span class="bnav-lbl">CSE·Gold</span>
   </button>
   <button class="bnav-btn" data-page="cc" onclick="showPage('cc')">
     <span class="bnav-ico">💳</span>
@@ -755,13 +938,21 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
     <span class="bnav-ico">💼</span>
     <span class="bnav-lbl">Summary</span>
   </button>
+  <button class="bnav-btn" data-page="inv" onclick="showPage('inv')">
+    <span class="bnav-ico">💹</span>
+    <span class="bnav-lbl">Invest</span>
+  </button>
+  <button class="bnav-btn" data-page="mf" onclick="showPage('mf')">
+    <span class="bnav-ico">💸</span>
+    <span class="bnav-lbl">Flow</span>
+  </button>
 </nav>
 
 <script>
 /* ═══════════════════════════════════════════
    SPA ROUTER
 ═══════════════════════════════════════════ */
-var _spaLoaded = {cse:false, cc:false, exp:false, port:false};
+var _spaLoaded = {cse:false, cc:false, exp:false, port:false, inv:false, mf:false};
 
 function showPage(name){
   document.querySelectorAll('.spa-page').forEach(function(p){
@@ -777,6 +968,8 @@ function showPage(name){
     if(name==='cc')   ccLoad();
     if(name==='exp')  expLoad();
     if(name==='port') portLoad();
+    if(name==='inv')  invLoad();
+    if(name==='mf')   mfLoad();
   }
 }
 
@@ -1857,6 +2050,473 @@ function portBuildGrowthChart(growth){
   }
   var msEl=document.getElementById('portGrowthMilestones');
   if(msEl)msEl.innerHTML=growth.filter(function(g){return g.note;}).map(function(g){return '<span style="font-size:.65em;padding:3px 9px;border-radius:6px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);color:#ffd700">📌 '+g.date+' · '+g.note+'</span>';}).join('');
+}
+
+/* ═══════════════════════════════════════════
+   INVESTMENT DASHBOARD PAGE JS
+═══════════════════════════════════════════ */
+var INV_TIP = {
+  backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',
+  borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',
+  padding:12,titleFont:{size:11,weight:'700'},bodyFont:{size:10}
+};
+
+function invFmtLKR(n){ return '₨'+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function invK(n){ return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':n.toFixed(0); }
+function invPct(earn,inv){ return inv>0?((earn/inv)*100).toFixed(1):0; }
+
+function invAnimCounter(el, target, isCurrency, dur) {
+  if(isCurrency===undefined) isCurrency=true;
+  if(dur===undefined) dur=1300;
+  var s=performance.now();
+  function tick(now){
+    var p=Math.min((now-s)/dur,1), e=1-Math.pow(1-p,4);
+    el.textContent=isCurrency?('₨'+Math.round(target*e).toLocaleString('en-IN')):((target*e).toFixed(1)+'%');
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function invShowToast(msg, type) {
+  var t=document.getElementById('invToast');
+  if(!t) return;
+  t.textContent=msg; t.className='inv-toast '+type;
+  void t.offsetWidth;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3200);
+}
+
+function invLogData() {
+  var btn=document.getElementById('invLogBtn');
+  if(!btn||btn.disabled) return;
+  btn.disabled=true; btn.classList.add('logging');
+  google.script.run
+    .withSuccessHandler(function(result){
+      if(result && !result.logged){
+        btn.disabled=false; btn.classList.remove('logging');
+        invShowToast('⏭️ '+(result.message||'Already logged'),'error'); return;
+      }
+      invShowToast('✅ Logged! Refreshing…','success');
+      google.script.run
+        .withSuccessHandler(function(rows){
+          btn.disabled=false; btn.classList.remove('logging');
+          invRenderDashboard(rows);
+          invShowToast('✅ Dashboard updated!','success');
+        })
+        .withFailureHandler(function(err){
+          btn.disabled=false; btn.classList.remove('logging');
+          invShowToast('⚠️ Logged but refresh failed: '+(err.message||err),'error');
+        })
+        .getInvestmentData();
+    })
+    .withFailureHandler(function(err){
+      btn.disabled=false; btn.classList.remove('logging');
+      invShowToast('⚠️ '+(err.message||err),'error');
+    })
+    .logMonthlyEarnings();
+}
+
+function invLoad() {
+  google.script.run
+    .withSuccessHandler(invRenderDashboard)
+    .withFailureHandler(function(err){
+      document.getElementById('inv-root').innerHTML=
+        '<div style="text-align:center;padding:80px;color:#ff4d8d;font-size:.9em">⚠️ '+(err.message||err)+'</div>';
+    })
+    .getInvestmentData();
+}
+
+function invRenderDashboard(rows) {
+  if(!rows||!rows.length){
+    document.getElementById('inv-root').innerHTML=
+      '<div style="text-align:center;padding:80px;color:rgba(255,255,255,.3)">No data found in UT_CRYPTO sheet.</div>';
+    return;
+  }
+  var months=rows.map(function(r){return r[0];});
+  var utEarn=rows.map(function(r){return +r[1];});
+  var stkEarn=rows.map(function(r){return +r[2];});
+  var gldEarn=rows.map(function(r){return +r[3];});
+  var utInv=rows.map(function(r){return +r[4];});
+  var stkInv=rows.map(function(r){return +r[5];});
+  var gldInv=rows.map(function(r){return +r[6];});
+  var latest=rows[rows.length-1];
+  var prev=rows.length>1?rows[rows.length-2]:latest;
+  var totEarn=rows.map(function(_,i){return utEarn[i]+stkEarn[i]+gldEarn[i];});
+  var totInv=rows.map(function(_,i){return utInv[i]+stkInv[i]+gldInv[i];});
+  var roiUT=rows.map(function(_,i){return invPct(utEarn[i],utInv[i]);});
+  var roiStk=rows.map(function(_,i){return invPct(stkEarn[i],stkInv[i]);});
+  var roiGld=rows.map(function(_,i){return invPct(gldEarn[i],gldInv[i]);});
+  var deltaEarn=rows.map(function(_,i){return i===0?0:totEarn[i]-totEarn[i-1];});
+  var allUtEarn=+latest[1],allStkEarn=+latest[2],allGldEarn=+latest[3];
+  var allUtInv=+latest[4],allStkInv=+latest[5],allGldInv=+latest[6];
+  var allTotEarn=allUtEarn+allStkEarn+allGldEarn;
+  var allTotInv=allUtInv+allStkInv+allGldInv;
+  var overallROI=invPct(allTotEarn,allTotInv);
+  var bestEarnIdx=totEarn.indexOf(Math.max.apply(null,totEarn));
+  var dUT=latest[1]-prev[1],dStk=latest[2]-prev[2],dGld=latest[3]-prev[3],dTot=dUT+dStk+dGld;
+  function dCls(v){return v>0?'delta-up':v<0?'delta-down':'delta-flat';}
+  function dStr(v){return v>0?'▲ '+invFmtLKR(v):v<0?'▼ '+invFmtLKR(Math.abs(v)):'— no change';}
+
+  document.getElementById('inv-root').innerHTML=
+    '<div class="inv-header">'+
+    '<div class="inv-header-chip">📊 Live · UT_CRYPTO</div>'+
+    '<h1>Investment Performance Dashboard</h1>'+
+    '<div class="inv-header-sub">Unit Trusts · Stocks · Gold — earnings &amp; ROI overview</div>'+
+    '<button class="inv-log-btn" id="invLogBtn" onclick="invLogData()">'+
+    '<span class="btn-ico">📝</span><div class="btn-spin"></div>Log This Month</button>'+
+    '</div>'+
+    '<div class="inv-kpi-row">'+
+    '<div class="kpi blue"><div class="kpi-glow"></div><span class="kpi-icon">🔵</span><div class="kpi-label">UT Earnings</div><div class="kpi-value" id="inv-kpi-ut">₨0</div><span class="kpi-delta '+dCls(dUT)+'">'+dStr(dUT)+'</span></div>'+
+    '<div class="kpi green"><div class="kpi-glow"></div><span class="kpi-icon">📈</span><div class="kpi-label">Stock Earnings</div><div class="kpi-value" id="inv-kpi-stk">₨0</div><span class="kpi-delta '+dCls(dStk)+'">'+dStr(dStk)+'</span></div>'+
+    '<div class="kpi gold"><div class="kpi-glow"></div><span class="kpi-icon">🥇</span><div class="kpi-label">Gold Earnings</div><div class="kpi-value" id="inv-kpi-gld">₨0</div><span class="kpi-delta '+dCls(dGld)+'">'+dStr(dGld)+'</span></div>'+
+    '<div class="kpi purple"><div class="kpi-glow"></div><span class="kpi-icon">💰</span><div class="kpi-label">Total Earnings</div><div class="kpi-value" id="inv-kpi-tot">₨0</div><span class="kpi-delta '+dCls(dTot)+'">'+dStr(dTot)+'</span></div>'+
+    '<div class="kpi blue"><div class="kpi-glow"></div><span class="kpi-icon">🏦</span><div class="kpi-label">UT Invested</div><div class="kpi-value">'+invFmtLKR(latest[4])+'</div><div class="kpi-sub">current month</div></div>'+
+    '<div class="kpi green"><div class="kpi-glow"></div><span class="kpi-icon">📉</span><div class="kpi-label">Stock Invested</div><div class="kpi-value">'+invFmtLKR(latest[5])+'</div><div class="kpi-sub">current month</div></div>'+
+    '<div class="kpi gold"><div class="kpi-glow"></div><span class="kpi-icon">🪙</span><div class="kpi-label">Gold Invested</div><div class="kpi-value">'+invFmtLKR(latest[6])+'</div><div class="kpi-sub">current month</div></div>'+
+    '<div class="kpi orange"><div class="kpi-glow"></div><span class="kpi-icon">🎯</span><div class="kpi-label">Overall ROI</div><div class="kpi-value" id="inv-kpi-roi">0%</div><div class="kpi-sub">all-time</div></div>'+
+    '</div>'+
+    '<div class="row-2">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#3b82f6;box-shadow:0 0 6px #3b82f6"></div><div class="card-title">Monthly Earnings Trend</div><div class="card-sub">UT · Stock · Gold</div></div><div class="chart-wrap tall"><canvas id="invEarnLine"></canvas></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div><div class="card-title">Earnings History</div><div class="card-sub">portfolio value over time</div></div><div class="chart-wrap tall"><canvas id="invCumLine"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row-full glass"><div class="card-hdr"><div class="card-dot" style="background:#ffd700;box-shadow:0 0 6px #ffd700"></div><div class="card-title">Monthly Investment Amounts</div><div class="card-sub">stacked by asset</div></div><div class="chart-wrap tall"><canvas id="invInvStacked"></canvas></div></div>'+
+    '<div class="row-3">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#ff6b35;box-shadow:0 0 6px #ff6b35"></div><div class="card-title">ROI % Over Time</div></div><div class="chart-wrap tall"><canvas id="invRoiLine"></canvas></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#00e676;box-shadow:0 0 6px #00e676"></div><div class="card-title">Current Allocation</div><div class="card-sub">latest month</div></div><div class="chart-wrap tall"><canvas id="invAllocDonut"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row-2">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#38bdf8;box-shadow:0 0 6px #38bdf8"></div><div class="card-title">Earnings vs Invested</div></div><div class="chart-wrap"><canvas id="invEarnVsInv"></canvas></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#f472b6;box-shadow:0 0 6px #f472b6"></div><div class="card-title">Month-over-Month Earnings Δ</div></div><div class="chart-wrap"><canvas id="invDeltaBar"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row-3b">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#c084fc;box-shadow:0 0 6px #c084fc"></div><div class="card-title">Insights</div></div><div class="insight-grid" id="inv-insights"></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#fb923c;box-shadow:0 0 6px #fb923c"></div><div class="card-title">All-Time Performance</div></div><div class="chart-wrap"><canvas id="invAllTimePolar"></canvas></div></div>'+
+    '</div>'+
+    '<div class="glass row-full"><div class="card-hdr"><div class="card-dot" style="background:#34d399;box-shadow:0 0 6px #34d399"></div><div class="card-title">Earnings by Month — Performance Bars</div></div><div class="perf-row" id="inv-perfBars"></div></div>';
+
+  setTimeout(function(){
+    invAnimCounter(document.getElementById('inv-kpi-ut'),  +latest[1]);
+    invAnimCounter(document.getElementById('inv-kpi-stk'), +latest[2]);
+    invAnimCounter(document.getElementById('inv-kpi-gld'), +latest[3]);
+    invAnimCounter(document.getElementById('inv-kpi-tot'), +latest[1]+ +latest[2]+ +latest[3]);
+    invAnimCounter(document.getElementById('inv-kpi-roi'), parseFloat(overallROI), false);
+  }, 150);
+
+  var iT=INV_TIP;
+  new Chart(document.getElementById('invEarnLine'),{type:'line',data:{labels:months,datasets:[
+    {label:'UT',data:utEarn,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.12)',tension:.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#3b82f6',pointRadius:4,pointHoverRadius:7},
+    {label:'Stock',data:stkEarn,borderColor:'#00e676',backgroundColor:'rgba(0,230,118,0.1)',tension:.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#00e676',pointRadius:4,pointHoverRadius:7},
+    {label:'Gold',data:gldEarn,borderColor:'#ffd700',backgroundColor:'rgba(255,215,0,0.1)',tension:.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#ffd700',pointRadius:4,pointHoverRadius:7},
+    {label:'Total',data:totEarn,borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.06)',tension:.4,fill:false,borderWidth:2,pointBackgroundColor:'#a855f7',pointRadius:3,pointHoverRadius:6}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1200},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},tooltip:{...iT,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+invFmtLKR(ctx.parsed.y);}}}},
+    scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+invK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  new Chart(document.getElementById('invCumLine'),{type:'line',data:{labels:months,datasets:[
+    {label:'Total',data:totEarn,borderColor:'#a855f7',backgroundColor:function(ctx){var g=ctx.chart.ctx.createLinearGradient(0,0,0,280);g.addColorStop(0,'rgba(168,85,247,0.28)');g.addColorStop(1,'rgba(168,85,247,0)');return g;},tension:.4,fill:true,borderWidth:2.5,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#a855f7'},
+    {label:'UT',data:utEarn,borderColor:'#3b82f6',backgroundColor:'transparent',tension:.4,borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
+    {label:'Stock',data:stkEarn,borderColor:'#00e676',backgroundColor:'transparent',tension:.4,borderWidth:1.5,pointRadius:3,borderDash:[4,3]},
+    {label:'Gold',data:gldEarn,borderColor:'#ffd700',backgroundColor:'transparent',tension:.4,borderWidth:1.5,pointRadius:3,borderDash:[4,3]}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1300},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},tooltip:{...iT,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+invFmtLKR(ctx.parsed.y);}}}},
+    scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+invK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  new Chart(document.getElementById('invInvStacked'),{type:'bar',data:{labels:months,datasets:[
+    {label:'UT',data:utInv,backgroundColor:'rgba(59,130,246,.35)',borderColor:'#3b82f6',borderWidth:1,borderRadius:0,borderSkipped:false},
+    {label:'Stock',data:stkInv,backgroundColor:'rgba(0,230,118,.3)',borderColor:'#00e676',borderWidth:1,borderSkipped:false},
+    {label:'Gold',data:gldInv,backgroundColor:'rgba(255,215,0,.3)',borderColor:'#ffd700',borderWidth:1,borderRadius:8,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},tooltip:{...iT,mode:'index',intersect:false,callbacks:{label:function(ctx){return ctx.parsed.y>0?' '+ctx.dataset.label+': '+invFmtLKR(ctx.parsed.y):null;},footer:function(items){return ' Total: '+invFmtLKR(items.reduce(function(s,i){return s+i.parsed.y;},0));}}}},
+    scales:{x:{stacked:true,ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'}},y:{stacked:true,ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+invK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  new Chart(document.getElementById('invRoiLine'),{type:'line',data:{labels:months,datasets:[
+    {label:'UT ROI %',data:roiUT,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.1)',tension:.4,fill:true,borderWidth:2,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#3b82f6'},
+    {label:'Stock ROI %',data:roiStk,borderColor:'#00e676',backgroundColor:'rgba(0,230,118,.08)',tension:.4,fill:true,borderWidth:2,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#00e676'},
+    {label:'Gold ROI %',data:roiGld,borderColor:'#ffd700',backgroundColor:'rgba(255,215,0,.08)',tension:.4,fill:true,borderWidth:2,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#ffd700'}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1200},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},tooltip:{...iT,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+ctx.parsed.y+'%';}}}},
+    scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  new Chart(document.getElementById('invAllocDonut'),{type:'doughnut',data:{labels:['UT','Stock','Gold'],datasets:[{
+    data:[latest[4],latest[5],latest[6]],backgroundColor:['rgba(59,130,246,.3)','rgba(0,230,118,.28)','rgba(255,215,0,.28)'],
+    borderColor:['#3b82f6','#00e676','#ffd700'],borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',animation:{animateRotate:true,duration:1300},
+    plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.5)',font:{size:10},padding:12,usePointStyle:true,pointStyleWidth:7}},
+      tooltip:{...iT,callbacks:{label:function(ctx){return ' '+ctx.label+': '+invFmtLKR(ctx.parsed)+' ('+((ctx.parsed/(+latest[4]+ +latest[5]+ +latest[6]))*100).toFixed(1)+'%)';}}}}}});
+
+  new Chart(document.getElementById('invEarnVsInv'),{type:'bar',data:{labels:months,datasets:[
+    {label:'Total Invested',data:totInv,backgroundColor:'rgba(56,189,248,.2)',borderColor:'#38bdf8',borderWidth:2,borderRadius:6,borderSkipped:false},
+    {label:'Total Earned',data:totEarn,backgroundColor:'rgba(168,85,247,.2)',borderColor:'#a855f7',borderWidth:2,borderRadius:6,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},tooltip:{...iT,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+invFmtLKR(ctx.parsed.y);}}}},
+    scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'}},y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+invK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  var dColors=deltaEarn.map(function(v){return v>0?'rgba(0,230,118,.35)':'rgba(255,77,141,.3)';});
+  var dBorders=deltaEarn.map(function(v){return v>0?'#00e676':'#ff4d8d';});
+  new Chart(document.getElementById('invDeltaBar'),{type:'bar',data:{labels:months,datasets:[{
+    label:'Earnings Change',data:deltaEarn,backgroundColor:dColors,borderColor:dBorders,borderWidth:2,borderRadius:7,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
+    plugins:{legend:{display:false},tooltip:{...iT,callbacks:{label:function(ctx){return ' '+(ctx.parsed.y>=0?'▲ +':'▼ ')+invFmtLKR(ctx.parsed.y);}}}},
+    scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'}},y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return (v>=0?'+':'')+invK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  new Chart(document.getElementById('invAllTimePolar'),{type:'polarArea',data:{labels:['UT Earned','Stock Earned','Gold Earned'],datasets:[{
+    data:[allUtEarn,allStkEarn,allGldEarn],backgroundColor:['rgba(59,130,246,.3)','rgba(0,230,118,.28)','rgba(255,215,0,.28)'],
+    borderColor:['#3b82f6','#00e676','#ffd700'],borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:1400},
+    scales:{r:{ticks:{display:false},grid:{color:'rgba(255,255,255,.06)'}}},
+    plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.5)',font:{size:10},padding:10,usePointStyle:true,pointStyleWidth:7}},
+      tooltip:{...iT,callbacks:{label:function(ctx){return ' '+ctx.label+': '+invFmtLKR(ctx.parsed.r);}}}}}});
+
+  var uniqueMonthCount=new Set(months.map(function(m){return m.substring(0,7);})).size||1;
+  var roiUT_now=allUtInv>0?(allUtEarn/allUtInv*100):0;
+  var roiStk_now=allStkInv>0?(allStkEarn/allStkInv*100):0;
+  var roiGld_now=allGldInv>0?(allGldEarn/allGldInv*100):0;
+  var annualTotal=parseFloat(overallROI)*(12/uniqueMonthCount);
+  var annualUT=roiUT_now*(12/uniqueMonthCount);
+  var annualStk=roiStk_now*(12/uniqueMonthCount);
+  var annualGld=roiGld_now*(12/uniqueMonthCount);
+  var allMonthlyROI=rows.map(function(_,i){return totInv[i]>0?totEarn[i]/totInv[i]*100:0;});
+  var avgMonthlyROI=allMonthlyROI.reduce(function(s,v){return s+v;},0)/allMonthlyROI.length;
+  var prevTotEarn=+prev[1]+ +prev[2]+ +prev[3];
+  var latestGainPct=(+prev[4]+ +prev[5]+ +prev[6])>0?((allTotEarn-prevTotEarn)/(+prev[4]+ +prev[5]+ +prev[6])*100):0;
+  var insightsData=[
+    {icon:'🎯',label:'Overall ROI',value:overallROI+'%',sub:invFmtLKR(allTotEarn)+' earned · '+invFmtLKR(allTotInv)+' invested'},
+    {icon:'📅',label:'Avg Monthly ROI',value:avgMonthlyROI.toFixed(2)+'%',sub:'average across '+rows.length+' readings'},
+    {icon:'🚀',label:'Est. Annual Return',value:annualTotal.toFixed(1)+'%',sub:'based on '+uniqueMonthCount+' month'+(uniqueMonthCount>1?'s':'')+' of data'},
+    {icon:'📊',label:'Latest vs Prev',value:(latestGainPct>=0?'+':'')+latestGainPct.toFixed(2)+'%',sub:invFmtLKR(allTotEarn-prevTotEarn)+' change'},
+    {icon:'🔵',label:'UT Return',value:roiUT_now.toFixed(2)+'%',sub:'~'+annualUT.toFixed(1)+'% p.a.'},
+    {icon:'📈',label:'Stock Return',value:roiStk_now.toFixed(2)+'%',sub:'~'+annualStk.toFixed(1)+'% p.a.'},
+    {icon:'🥇',label:'Gold Return',value:roiGld_now.toFixed(2)+'%',sub:'~'+annualGld.toFixed(1)+'% p.a.'},
+    {icon:'🏆',label:'Best Earning Point',value:months[bestEarnIdx],sub:invFmtLKR(totEarn[bestEarnIdx])+' total'}
+  ];
+  var insEl=document.getElementById('inv-insights');
+  if(insEl) insEl.innerHTML=insightsData.map(function(i){
+    var v=parseFloat(i.value);
+    var col=isNaN(v)?'#fff':v>0?'#00e676':v<0?'#ff4d8d':'rgba(255,255,255,.6)';
+    return '<div class="insight-item"><div class="insight-emoji">'+i.icon+'</div><div><div class="insight-label">'+i.label+'</div><div class="insight-value" style="color:'+col+'">'+i.value+'</div><div class="insight-sub">'+i.sub+'</div></div></div>';
+  }).join('');
+
+  var maxEarn=Math.max.apply(null,totEarn.concat([1]));
+  var pbEl=document.getElementById('inv-perfBars');
+  if(pbEl) pbEl.innerHTML=rows.map(function(_,i){
+    var te=totEarn[i],pW=(te/maxEarn*100).toFixed(1);
+    var col=te===Math.max.apply(null,totEarn)?'#ffd700':te>=0?'#00e676':'#ff4d8d';
+    return '<div class="perf-item"><div class="perf-top"><span class="perf-name">'+months[i]+'</span><span class="perf-val" style="color:'+col+'">'+invFmtLKR(te)+'</span></div><div class="perf-bar-bg"><div class="perf-bar" data-w="'+pW+'" style="background:'+col+'"></div></div></div>';
+  }).join('');
+  setTimeout(function(){
+    document.querySelectorAll('#page-inv .perf-bar').forEach(function(b){b.style.width=b.dataset.w+'%';});
+  }, 400);
+}
+
+/* ═══════════════════════════════════════════
+   MONEY FLOW PAGE JS
+═══════════════════════════════════════════ */
+var MF_CATS = ['CAL','NDB','Binance','Stock','FD','Gold','Sent Home'];
+var MF_KEYS = ['cal','ndb','binance','stock','fd','gold','sentHome'];
+var MF_COLORS = ['#00d4ff','#a855f7','#f59e0b','#00e676','#ff6b35','#ffd700','#ff4d8d'];
+var MF_COLORS_A = MF_COLORS.map(function(c){return c+'44';});
+var MF_TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:12,titleFont:{size:11,weight:'700'},bodyFont:{size:10}};
+var MF_EMOJIS = {cal:'🏦',ndb:'🏛️',binance:'₿',stock:'📊',fd:'🔒',gold:'🥇',sentHome:'🏠'};
+
+function mfK(n){ return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n.toFixed(0); }
+function mfFmt(n){ return '₨'+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+
+function mfAnimCounter(el, target, dur) {
+  if(dur===undefined) dur=1200;
+  var s=performance.now();
+  function tick(now){
+    var p=Math.min((now-s)/dur,1), e=1-Math.pow(1-p,4);
+    el.textContent='₨'+Math.round(target*e).toLocaleString('en-IN');
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+function mfAnimPct(el, target, dur) {
+  if(dur===undefined) dur=1200;
+  var s=performance.now();
+  function tick(now){
+    var p=Math.min((now-s)/dur,1), e=1-Math.pow(1-p,4);
+    el.textContent=(target*e).toFixed(1)+'%';
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function mfHeatColor(val, max) {
+  if(!val||max===0) return null;
+  var p=Math.min(val/max,1);
+  var r=Math.round(0+p*0), g=Math.round(100+p*130), b=Math.round(180+p*75);
+  return 'rgba('+r+','+g+','+b+','+(0.2+p*0.55)+')';
+}
+
+function mfLoad() {
+  google.script.run
+    .withSuccessHandler(mfRender)
+    .withFailureHandler(function(err){
+      document.getElementById('mf-root').innerHTML=
+        '<div style="text-align:center;padding:80px;color:#ff4d8d;font-size:.9em">⚠️ '+(err.message||err)+'</div>';
+    })
+    .getMoneyFlowData();
+}
+
+function mfRender(DATA) {
+  if(!DATA||!DATA.length){
+    document.getElementById('mf-root').innerHTML=
+      '<div style="text-align:center;padding:80px;color:rgba(255,255,255,.3)">No data found in "Money Flow and invest" sheet.</div>';
+    return;
+  }
+  var totalInvested=DATA.reduce(function(s,d){return s+d.totalInvested;},0);
+  var totalIncome=DATA.reduce(function(s,d){return s+d.income;},0);
+  var avgSaving=DATA.reduce(function(s,d){return s+d.savingPct;},0)/DATA.length;
+  var best=DATA.reduce(function(a,b){return b.savingPct>a.savingPct?b:a;});
+  var worst=DATA.reduce(function(a,b){return b.savingPct<a.savingPct?b:a;});
+  var catTotals=MF_KEYS.map(function(k){return DATA.reduce(function(s,d){return s+d[k];},0);});
+  var maxCatVal=Math.max.apply(null,MF_KEYS.map(function(k){return Math.max.apply(null,DATA.map(function(d){return d[k];}));}));
+  var months=DATA.map(function(d){return d.month;});
+
+  document.getElementById('mf-root').innerHTML=
+    '<div class="mf-header"><div class="mf-header-chip">📊 Live · Money Flow</div><h1>Investment Flow Dashboard</h1><div class="mf-header-sub">Your complete investment history at a glance</div></div>'+
+    '<div class="plan-section glass" id="mf-planSection">'+
+    '<div class="plan-hdr"><div><span class="plan-chip">📅 Current Month</span><div class="plan-month-label" id="mf-planTitle">Investment Plan</div></div></div>'+
+    '<div class="plan-cards" id="mf-planCards"></div>'+
+    '<div class="plan-notes-strip" id="mf-planNotes" style="display:none"></div></div>'+
+    '<div class="mf-kpi-row">'+
+    '<div class="kpi blue"><div class="kpi-glow"></div><span class="kpi-icon">💰</span><div class="kpi-label">Total Invested</div><div class="kpi-value" id="mf-kpi-ti">₨0</div><div class="kpi-sub">'+DATA.length+' months tracked</div></div>'+
+    '<div class="kpi purple"><div class="kpi-glow"></div><span class="kpi-icon">📈</span><div class="kpi-label">Avg Saving Rate</div><div class="kpi-value" id="mf-kpi-avg">0%</div><div class="kpi-sub">across all months</div></div>'+
+    '<div class="kpi green"><div class="kpi-glow"></div><span class="kpi-icon">🏆</span><div class="kpi-label">Best Month</div><div class="kpi-value" style="font-size:1.1em">'+best.month+'</div><div class="kpi-sub">'+best.savingPct.toFixed(1)+'% saved</div></div>'+
+    '<div class="kpi gold"><div class="kpi-glow"></div><span class="kpi-icon">📉</span><div class="kpi-label">Lowest Month</div><div class="kpi-value" style="font-size:1.1em">'+worst.month+'</div><div class="kpi-sub">'+worst.savingPct.toFixed(1)+'% saved</div></div>'+
+    '<div class="kpi orange"><div class="kpi-glow"></div><span class="kpi-icon">🏦</span><div class="kpi-label">Total Income</div><div class="kpi-value" id="mf-kpi-inc">₨0</div><div class="kpi-sub">cumulative earnings</div></div>'+
+    '</div>'+
+    '<div class="row-3">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#00d4ff;box-shadow:0 0 6px #00d4ff"></div><div class="card-title">Saving % Trend</div><div class="card-sub">monthly saving rate</div></div><div class="chart-wrap tall"><canvas id="mfLineChart"></canvas></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div><div class="card-title">Category Allocation</div><div class="card-sub">all-time total</div></div><div class="chart-wrap tall"><canvas id="mfDonutChart"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row-full glass"><div class="card-hdr"><div class="card-dot" style="background:#ffd700;box-shadow:0 0 6px #ffd700"></div><div class="card-title">Monthly Investment Breakdown</div><div class="card-sub">stacked by category</div></div><div class="chart-wrap tall"><canvas id="mfStackedBar"></canvas></div></div>'+
+    '<div class="row-2">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#00e676;box-shadow:0 0 6px #00e676"></div><div class="card-title">Income vs Invested</div></div><div class="chart-wrap"><canvas id="mfGroupedBar"></canvas></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#ff6b35;box-shadow:0 0 6px #ff6b35"></div><div class="card-title">Category Spread</div><div class="card-sub">polar area</div></div><div class="chart-wrap"><canvas id="mfPolarChart"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row-full glass"><div class="card-hdr"><div class="card-dot" style="background:#ff4d8d;box-shadow:0 0 6px #ff4d8d"></div><div class="card-title">Investment Heatmap</div><div class="card-sub">amount per category per month — darker = higher</div></div><div class="heatmap" id="mf-heatmap"></div></div>'+
+    '<div class="row-2b">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#38bdf8;box-shadow:0 0 6px #38bdf8"></div><div class="card-title">Saving % Bars</div></div><div id="mf-savingBars" style="display:flex;flex-direction:column;gap:8px;"></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#c084fc;box-shadow:0 0 6px #c084fc"></div><div class="card-title">Month Insights</div></div><div id="mf-insights" style="display:flex;flex-direction:column;gap:8px;"></div></div>'+
+    '</div>';
+
+  setTimeout(function(){
+    mfAnimCounter(document.getElementById('mf-kpi-ti'), totalInvested);
+    mfAnimCounter(document.getElementById('mf-kpi-inc'), totalIncome);
+    mfAnimPct(document.getElementById('mf-kpi-avg'), avgSaving);
+  }, 150);
+
+  var mT=MF_TIP;
+  new Chart(document.getElementById('mfLineChart'),{type:'line',data:{labels:months,datasets:[
+    {label:'Saving %',data:DATA.map(function(d){return d.savingPct;}),borderColor:'#00d4ff',
+      backgroundColor:function(ctx){var g=ctx.chart.ctx.createLinearGradient(0,0,0,280);g.addColorStop(0,'rgba(0,212,255,0.25)');g.addColorStop(1,'rgba(0,212,255,0)');return g;},
+      borderWidth:2.5,fill:true,tension:0.4,
+      pointBackgroundColor:DATA.map(function(d){return d.savingPct>=70?'#00e676':d.savingPct>=50?'#ffd700':'#ff4d8d';}),
+      pointRadius:5,pointHoverRadius:8},
+    {label:'Target 60%',data:DATA.map(function(){return 60;}),borderColor:'rgba(255,215,0,0.3)',borderDash:[6,4],borderWidth:1.5,fill:false,pointRadius:0,tension:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1200},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:10},usePointStyle:true}},tooltip:{...mT,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+ctx.parsed.y.toFixed(2)+'%';}}}},
+    scales:{x:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y:{min:0,max:110,ticks:{color:'rgba(255,255,255,0.4)',font:{size:9},callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  var donutLabels=MF_CATS.filter(function(_,i){return catTotals[i]>0;});
+  var donutVals=catTotals.filter(function(v){return v>0;});
+  var donutColors=MF_COLORS.filter(function(_,i){return catTotals[i]>0;});
+  new Chart(document.getElementById('mfDonutChart'),{type:'doughnut',data:{labels:donutLabels,datasets:[{
+    data:donutVals,backgroundColor:donutColors.map(function(c){return c+'44';}),borderColor:donutColors,borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',animation:{animateRotate:true,duration:1300},
+    plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,0.5)',font:{size:9},padding:10,usePointStyle:true,pointStyleWidth:7}},
+      tooltip:{...mT,callbacks:{label:function(ctx){return ' '+ctx.label+': '+mfFmt(ctx.parsed)+' ('+((ctx.parsed/donutVals.reduce(function(a,b){return a+b;},0))*100).toFixed(1)+'%)';}}}}}});
+
+  new Chart(document.getElementById('mfStackedBar'),{type:'bar',data:{labels:months,datasets:MF_KEYS.map(function(k,i){return {
+    label:MF_CATS[i],data:DATA.map(function(d){return d[k];}),backgroundColor:MF_COLORS[i]+'55',borderColor:MF_COLORS[i],borderWidth:1,
+    borderRadius:i===MF_KEYS.length-1?6:0,borderSkipped:false};})},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:9},usePointStyle:true,pointStyleWidth:7}},
+      tooltip:{...mT,mode:'index',intersect:false,callbacks:{label:function(ctx){return ctx.parsed.y>0?' '+ctx.dataset.label+': '+mfFmt(ctx.parsed.y):null;},footer:function(items){return ' Total: '+mfFmt(items.reduce(function(s,i){return s+i.parsed.y;},0));}}}},
+    scales:{x:{stacked:true,ticks:{color:'rgba(255,255,255,0.4)',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},y:{stacked:true,ticks:{color:'rgba(255,255,255,0.4)',font:{size:9},callback:function(v){return '₨'+mfK(v);}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  new Chart(document.getElementById('mfGroupedBar'),{type:'bar',data:{labels:months,datasets:[
+    {label:'Income',data:DATA.map(function(d){return d.income;}),backgroundColor:'rgba(0,212,255,0.2)',borderColor:'#00d4ff',borderWidth:2,borderRadius:6,borderSkipped:false},
+    {label:'Invested',data:DATA.map(function(d){return d.totalInvested;}),backgroundColor:'rgba(0,230,118,0.2)',borderColor:'#00e676',borderWidth:2,borderRadius:6,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:10},usePointStyle:true}},tooltip:{...mT,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+mfFmt(ctx.parsed.y);}}}},
+    scales:{x:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:9},callback:function(v){return '₨'+mfK(v);}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  new Chart(document.getElementById('mfPolarChart'),{type:'polarArea',data:{labels:donutLabels,datasets:[{
+    data:donutVals,backgroundColor:donutColors.map(function(c){return c+'44';}),borderColor:donutColors,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:1400},
+    scales:{r:{ticks:{display:false},grid:{color:'rgba(255,255,255,0.05)'}}},
+    plugins:{legend:{display:false},tooltip:{...mT,callbacks:{label:function(ctx){return ' '+ctx.label+': '+mfFmt(ctx.parsed.r);}}}}}});
+
+  var hmCats=MF_CATS.filter(function(_,i){return catTotals[i]>0;});
+  var hmKeys=MF_KEYS.filter(function(_,i){return catTotals[i]>0;});
+  var hmMax=Math.max.apply(null,hmKeys.reduce(function(a,k){return a.concat(DATA.map(function(d){return d[k];}));},[]));
+  var hmHtml='<table class="hm-table"><thead><tr><th style="text-align:right">Month</th>'+hmCats.map(function(c){return '<th>'+c+'</th>';}).join('')+'<th>Saving%</th><th>Total</th></tr></thead><tbody>';
+  DATA.forEach(function(d){
+    var sp=d.savingPct;
+    var bCls=sp>=80?'badge-great':sp>=60?'badge-good':sp>=45?'badge-ok':'badge-low';
+    hmHtml+='<tr><td class="month-lbl">'+d.month+'</td>';
+    hmKeys.forEach(function(k){
+      var v=d[k];
+      var bg=v>0?mfHeatColor(v,hmMax):null;
+      hmHtml+='<td class="hm-cell'+(v===0?' zero':'')+'" style="'+(bg?'background:'+bg+';color:#fff':'')+'">'+(v>0?mfK(v):'—')+'</td>';
+    });
+    hmHtml+='<td style="text-align:center;padding:0 6px"><span class="saving-badge '+bCls+'">'+sp.toFixed(1)+'%</span></td>'+
+      '<td style="text-align:right;padding:0 0 0 6px;font-size:.7em;font-weight:700;color:rgba(255,255,255,0.6)">₨'+mfK(d.totalInvested)+'</td></tr>';
+  });
+  hmHtml+='<tr style="border-top:1px solid rgba(255,255,255,0.08)"><td class="month-lbl" style="color:rgba(255,255,255,0.6)">TOTAL</td>'+
+    hmKeys.map(function(k){return '<td class="hm-cell" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7)">₨'+mfK(DATA.reduce(function(s,d){return s+d[k];},0))+'</td>';}).join('')+
+    '<td style="text-align:center;padding:0 6px"><span class="saving-badge badge-good">'+avgSaving.toFixed(1)+'%</span></td>'+
+    '<td style="text-align:right;padding:0 0 0 6px;font-size:.7em;font-weight:700;color:#00d4ff">₨'+mfK(totalInvested)+'</td></tr></tbody></table>';
+  document.getElementById('mf-heatmap').innerHTML=hmHtml;
+
+  var maxSP=Math.max.apply(null,DATA.map(function(d){return d.savingPct;}));
+  var barsEl=document.getElementById('mf-savingBars');
+  if(barsEl) barsEl.innerHTML=DATA.map(function(d){
+    var sp=d.savingPct, p=(sp/maxSP*100).toFixed(1);
+    var col=sp>=80?'#00e676':sp>=60?'#00d4ff':sp>=45?'#ffd700':'#ff4d8d';
+    return '<div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:.68em;color:rgba(255,255,255,0.5)">'+d.month+'</span><span style="font-size:.68em;font-weight:700;color:'+col+'">'+sp.toFixed(1)+'%</span></div>'+
+      '<div style="height:6px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden"><div class="mf-sbar" data-w="'+p+'" style="height:100%;width:0;background:'+col+';border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1)"></div></div></div>';
+  }).join('');
+
+  var insEl2=document.getElementById('mf-insights');
+  if(insEl2) insEl2.innerHTML=DATA.map(function(d){
+    var sp=d.savingPct, cls=sp>=80?'badge-great':sp>=60?'badge-good':sp>=45?'badge-ok':'badge-low';
+    var note=d.notes&&d.notes!=='N/A'&&d.notes?d.notes:null;
+    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.05)">'+
+      '<span class="saving-badge '+cls+'" style="flex-shrink:0;margin-top:1px">'+d.month+'</span>'+
+      '<div><div style="font-size:.72em;font-weight:700;color:rgba(255,255,255,0.7)">₨'+mfK(d.totalInvested)+' invested &nbsp;·&nbsp; '+sp.toFixed(1)+'%</div>'+
+      (note?'<div style="font-size:.65em;color:rgba(255,255,255,0.3);margin-top:2px">'+note+'</div>':'')+
+      '</div></div>';
+  }).join('');
+
+  setTimeout(function(){
+    document.querySelectorAll('#page-mf .mf-sbar').forEach(function(b){b.style.width=b.dataset.w+'%';});
+  }, 400);
+
+  mfInitPlan(DATA);
+}
+
+function mfInitPlan(DATA) {
+  var cur=DATA[DATA.length-1];
+  var titleEl=document.getElementById('mf-planTitle');
+  if(titleEl) titleEl.textContent=cur.month+' · Investment Plan';
+  var cardsEl=document.getElementById('mf-planCards');
+  if(cardsEl) cardsEl.innerHTML=MF_KEYS.map(function(k,i){
+    var val=cur[k], isNTM=val<=0;
+    return '<div class="plan-card '+(isNTM?'ntm':'invested')+'">'+
+      '<span class="pc-emoji">'+(MF_EMOJIS[k]||'💼')+'</span>'+
+      '<div class="pc-name">'+MF_CATS[i]+'</div>'+
+      '<div class="pc-amount '+(isNTM?'is-ntm':'has-val')+'">'+(isNTM?'NTM':'₨'+val.toLocaleString('en-IN'))+'</div></div>';
+  }).join('');
+  var notes=cur.notes||'';
+  var notesEl=document.getElementById('mf-planNotes');
+  if(notesEl && notes && notes.trim()){
+    notesEl.style.display='flex';
+    notesEl.innerHTML='<span class="pn-label">📝 Notes</span><span class="pn-text">'+notes+'</span>';
+  }
 }
 </script>
 </body>
