@@ -383,7 +383,11 @@
 /* ── globals ── */
 var D = null; // all habit data {rows:[]}
 var THR = {sugarMax:1, runTarget:60, walkAim:2, cookAim:2};
-var TODAY = new Date().toISOString().slice(0,10);
+// Local-timezone date string — avoids UTC offset shifting the date backwards
+function localYMD(d) {
+  return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+}
+var TODAY = localYMD(new Date());
 var _viewMonth = new Date();
 var _charts = {};
 var _tabDone = {};
@@ -643,7 +647,7 @@ function renderWeek(){
   var wScore=0, wMax=0, gridHtml='';
   for (var i=0;i<7;i++){
     var d = new Date(monStart); d.setDate(monStart.getDate()+i);
-    var dStr = d.toISOString().slice(0,10);
+    var dStr = localYMD(d);
     var future = dStr > TODAY, isToday = dStr===TODAY;
     var r = rowForDate(dStr);
     var sc = r ? score(r) : null;
@@ -672,7 +676,7 @@ function renderWeek(){
     var pass=0,tot=0;
     for(var i=0;i<7;i++){
       var d=new Date(monStart); d.setDate(monStart.getDate()+i);
-      var dStr=d.toISOString().slice(0,10);
+      var dStr=localYMD(d);
       if(dStr>TODAY) continue;
       tot++;
       var r=rowForDate(dStr);
@@ -816,7 +820,7 @@ function renderMonthCharts(yr,mo){
   });
   // 30-day completion
   var last30=[]; var now2=new Date();
-  for(var i=29;i>=0;i--){ var dd=new Date(now2); dd.setDate(now2.getDate()-i); last30.push(dd.toISOString().slice(0,10)); }
+  for(var i=29;i>=0;i--){ var dd=new Date(now2); dd.setDate(now2.getDate()-i); last30.push(localYMD(dd)); }
   var cp={sugar:0,run:0,walk:0,cook:0,tot:0};
   last30.forEach(function(dt){ var r=rowForDate(dt); if(!r) return; cp.tot++; if(r.sugar<=r.sugarMax)cp.sugar++; if(r.runMin>=r.runTarget)cp.run++; if(r.walk>=r.walkAim)cp.walk++; if(r.cook>=r.cookAim)cp.cook++; });
   var t2=cp.tot||1;
@@ -889,7 +893,7 @@ function renderStats(){
   for(var ww=7;ww>=0;ww--){
     var ws=new Date(mon4); ws.setDate(mon4.getDate()-ww*7);
     var we=new Date(ws); we.setDate(ws.getDate()+6);
-    var wsStr=ws.toISOString().slice(0,10), weStr=we.toISOString().slice(0,10);
+    var wsStr=localYMD(ws), weStr=localYMD(we);
     wkLbls.push((ws.getMonth()+1)+'/'+ws.getDate());
     var wRows=rows.filter(function(r){return r.date>=wsStr&&r.date<=weStr;});
     wkAvgs.push(wRows.length ? parseFloat((wRows.reduce(function(s,r){return s+score(r);},0)/wRows.length).toFixed(2)) : null);

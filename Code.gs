@@ -1537,7 +1537,7 @@ function logHabitDay(payload) {
     var cookPass  = payload.cook   >= thresholds.cookAim    ? 1 : 0;
     var score     = sugarPass + runPass + walkPass + cookPass;
 
-    var dateVal  = new Date(payload.date + 'T00:00:00');
+    var dateVal  = new Date(payload.date + 'T12:00:00'); // noon avoids midnight timezone boundary issues
     var rowData  = [
       dateVal,
       payload.sugar,  thresholds.sugarMax,
