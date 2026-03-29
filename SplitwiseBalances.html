@@ -521,25 +521,28 @@
       }
       #sw-fab:active{transform:scale(.9);box-shadow:0 2px 10px rgba(255,77,109,.3);}
 
-      /* ── Add Expense Modal (bottom sheet) ── */
+      /* ── Add Expense Modal (centered) ── */
       #swae-bg{
         position:fixed;inset:0;z-index:500;
-        background:rgba(0,0,0,.65);backdrop-filter:blur(8px);
-        display:none;align-items:flex-end;justify-content:center;
+        background:rgba(0,0,0,.7);backdrop-filter:blur(10px);
+        display:none;align-items:center;justify-content:center;
+        padding:16px;
       }
       #swae-bg.open{display:flex;}
       #swae-sheet{
-        background:linear-gradient(160deg,#0d1220,#080d18);
-        border:1px solid rgba(255,255,255,.08);
-        border-radius:28px 28px 0 0;
-        width:100%;max-width:520px;
-        max-height:92vh;overflow-y:auto;
-        padding:0 0 32px;
-        animation:swaeUp .3s cubic-bezier(.4,0,.2,1);
+        background:linear-gradient(160deg,#0e1425,#080d18);
+        border:1px solid rgba(255,255,255,.1);
+        border-radius:24px;
+        width:100%;max-width:480px;
+        max-height:88vh;overflow-y:auto;
+        padding:0 0 24px;
+        animation:swaeIn .25s cubic-bezier(.34,1.56,.64,1);
+        scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;
       }
-      @keyframes swaeUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
-      .swae-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:14px auto 0;}
-      .swae-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0;}
+      #swae-sheet::-webkit-scrollbar{width:3px;}
+      #swae-sheet::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px;}
+      @keyframes swaeIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+      .swae-head{display:flex;align-items:center;justify-content:space-between;padding:20px 20px 0;}
       .swae-title{font-size:.92em;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.7);}
       .swae-close{background:none;border:none;color:rgba(255,255,255,.35);font-size:1.3em;cursor:pointer;padding:4px 8px;border-radius:8px;line-height:1;}
       .swae-close:hover{color:#fff;background:rgba(255,255,255,.07);}
@@ -549,9 +552,12 @@
       .swae-step-dot.active{background:rgba(255,107,53,.8);}
       .swae-body{padding:18px 20px 0;}
       .swae-label{font-size:.65em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:6px;display:block;}
-      .swae-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px 14px;color:#fff;font-size:.95em;font-family:inherit;outline:none;transition:border-color .2s;}
-      .swae-input:focus{border-color:rgba(255,107,53,.6);}
-      .swae-row{display:grid;gap:10px;margin-bottom:14px;}
+      .swae-input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 14px;color:#fff;font-size:.9em;font-family:inherit;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none;color-scheme:dark;}
+      .swae-input:focus{border-color:rgba(255,107,53,.7);background:rgba(255,255,255,.08);}
+      select.swae-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.4)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer;}
+      select.swae-input option{background:#0e1425;color:#fff;}
+      input[type=date].swae-input{color-scheme:dark;}
+      .swae-row{display:grid;gap:10px;margin-bottom:12px;}
       .swae-row.col2{grid-template-columns:1fr 1fr;}
       .swae-friends-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
       .swae-chip{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);cursor:pointer;transition:all .18s;-webkit-tap-highlight-color:transparent;font-size:.78em;font-weight:600;color:rgba(255,255,255,.55);}
@@ -562,17 +568,22 @@
       .swae-mode-btn{padding:10px 8px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:rgba(255,255,255,.45);font-size:.7em;font-weight:700;letter-spacing:.5px;text-align:center;cursor:pointer;transition:all .18s;-webkit-tap-highlight-color:transparent;line-height:1.4;}
       .swae-mode-btn:hover{border-color:rgba(255,107,53,.4);color:rgba(255,255,255,.7);}
       .swae-mode-btn.sel{background:rgba(255,107,53,.15);border-color:rgba(255,107,53,.6);color:#ff6b35;}
-      .swae-preview{border-radius:14px;border:1px solid rgba(255,255,255,.07);overflow:hidden;margin-bottom:14px;}
-      .swae-pv-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);}
+      /* split preview grid */
+      .swae-preview{border-radius:14px;border:1px solid rgba(255,255,255,.07);overflow:hidden;margin-bottom:12px;}
+      .swae-pv-hdr{display:grid;grid-template-columns:28px 1fr 72px 72px 28px;gap:6px;align-items:center;padding:6px 12px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.06);}
+      .swae-pv-hdr span{font-size:.55em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.25);text-align:right;}
+      .swae-pv-hdr span:nth-child(2){text-align:left;}
+      .swae-pv-row{display:grid;grid-template-columns:28px 1fr 72px 72px 28px;gap:6px;align-items:center;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.05);}
       .swae-pv-row:last-child{border-bottom:none;}
-      .swae-pv-av{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.7em;font-weight:800;background:rgba(255,255,255,.07);flex-shrink:0;}
-      .swae-pv-name{flex:1;font-size:.82em;font-weight:600;color:rgba(255,255,255,.75);}
-      .swae-pv-paid{font-size:.7em;color:rgba(0,230,118,.7);background:rgba(0,230,118,.1);padding:2px 7px;border-radius:6px;margin-right:4px;}
-      .swae-pv-share{font-size:.88em;font-weight:700;color:rgba(255,255,255,.6);min-width:72px;text-align:right;}
-      .swae-pv-input{width:82px;background:rgba(255,255,255,.07);border:1px solid rgba(255,107,53,.4);border-radius:8px;padding:5px 8px;color:#fff;font-size:.85em;font-family:inherit;outline:none;text-align:right;}
-      .swae-anchor-wrap{margin-bottom:14px;}
-      .swae-anchor-label{font-size:.68em;color:rgba(255,255,255,.4);margin-bottom:6px;display:block;}
-      .swae-anchor-sel{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:#fff;font-size:.85em;font-family:inherit;outline:none;}
+      .swae-pv-av{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.65em;font-weight:800;background:rgba(255,255,255,.07);flex-shrink:0;}
+      .swae-pv-name{font-size:.8em;font-weight:600;color:rgba(255,255,255,.8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+      .swae-pv-cell-in{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 6px;color:#fff;font-size:.78em;font-family:inherit;outline:none;text-align:right;-webkit-appearance:none;}
+      .swae-pv-cell-in:focus{border-color:rgba(255,107,53,.6);}
+      .swae-pv-cell-in.owed{border-color:rgba(0,212,255,.25);}
+      .swae-pv-cell-in.owed:focus{border-color:rgba(0,212,255,.6);}
+      .swae-pv-cell-txt{font-size:.8em;font-weight:700;color:rgba(255,255,255,.55);text-align:right;}
+      .swae-pv-lock{width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);cursor:pointer;font-size:.8em;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+      .swae-pv-lock.locked{background:rgba(255,107,53,.15);border-color:rgba(255,107,53,.45);}
       .swae-warn{font-size:.72em;color:#ffd700;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.25);border-radius:10px;padding:9px 12px;margin-bottom:12px;display:none;}
       .swae-warn.show{display:block;}
       .swae-receipt-zone{border:2px dashed rgba(255,255,255,.12);border-radius:16px;padding:22px;text-align:center;cursor:pointer;margin-bottom:14px;transition:border-color .2s,background .2s;}
@@ -1173,21 +1184,18 @@
         return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
       }
 
-      var _swaeStep    = 0;
-      var _swaeMode    = 'equal-me';
-      var _swaeSelIds  = [];
-      var _swaePayer   = 'me';
-      var _swaeImgB64  = null;
-      var _swaeSplits  = [];
+      var _swaeStep   = 0;
+      var _swaeMode   = 'equal-me';
+      var _swaeSelIds = [];  // selected friend user IDs
+      var _swaeImgB64 = null;
+      var _swaeSplits = [];  // [{userId,name,initials,isCurUser,paidAmt,owedAmt,isFixed}]
 
       function swaeOpen() {
-        _swaeStep=0; _swaeMode='equal-me'; _swaeSelIds=[]; _swaePayer='me'; _swaeImgB64=null;
+        _swaeStep=0; _swaeMode='equal-me'; _swaeSelIds=[]; _swaeImgB64=null; _swaeSplits=[];
         document.getElementById('swae-desc').value='';
         document.getElementById('swae-amt').value='';
         document.getElementById('swae-date').value=localYMD(new Date());
         document.getElementById('swae-cur').value='LKR';
-        document.getElementById('swae-anchor-amt').value='';
-        document.getElementById('swae-anchor-includeme').checked=false;
         document.getElementById('swae-thumb').style.display='none';
         document.getElementById('swae-zone').classList.remove('has-img');
         document.querySelector('.swae-receipt-txt').textContent='Tap to add bill / receipt photo';
@@ -1196,8 +1204,7 @@
         document.querySelectorAll('.swae-mode-btn').forEach(function(b){
           b.classList.toggle('sel', b.getAttribute('data-mode')==='equal-me');
         });
-        _swaeMode='equal-me';
-        document.getElementById('swae-anchor-wrap').style.display='none';
+        document.getElementById('swae-fixed-hint').style.display='none';
         swaeRenderPreview();
         swaeShowStep(0);
         document.getElementById('swae-bg').classList.add('open');
@@ -1208,7 +1215,7 @@
       }
 
       function swaeOutsideClose(e) {
-        if (e.target===document.getElementById('swae-bg')) swaeClose();
+        if(e.target===document.getElementById('swae-bg')) swaeClose();
       }
 
       function swaeShowStep(n) {
@@ -1245,54 +1252,35 @@
         if(!swFriendsList.length){ wrap.innerHTML='<span style="font-size:.75em;color:rgba(255,255,255,.3)">No friends found</span>'; return; }
         wrap.innerHTML='';
         swFriendsList.forEach(function(f){
+          var sid=String(f.id);
+          var sel=false;
+          for(var i=0;i<_swaeSelIds.length;i++){ if(String(_swaeSelIds[i])===sid){ sel=true; break; } }
           var el=document.createElement('div');
-          el.className='swae-chip'+(_swaeSelIds.indexOf(f.id)>=0?' sel':'');
+          el.className='swae-chip'+(sel?' sel':'');
           el.setAttribute('data-fid',f.id);
           el.innerHTML='<div class="swae-chip-av">'+f.initials+'</div>'+escHtml(f.name.split(' ')[0]);
           el.addEventListener('click',function(){ swaeToggleFriend(f.id); });
           wrap.appendChild(el);
         });
-        swaeRebuildAnchorSel();
-        swaeRebuildPayerSel();
       }
 
       function swaeToggleFriend(id) {
-        var idx=_swaeSelIds.indexOf(id);
+        var sid=String(id);
+        var idx=-1;
+        for(var i=0;i<_swaeSelIds.length;i++){ if(String(_swaeSelIds[i])===sid){ idx=i; break; } }
         if(idx>=0) _swaeSelIds.splice(idx,1); else _swaeSelIds.push(id);
         document.querySelectorAll('.swae-chip').forEach(function(c){
-          c.classList.toggle('sel', _swaeSelIds.indexOf(parseInt(c.getAttribute('data-fid')))>=0
-                                 || _swaeSelIds.indexOf(c.getAttribute('data-fid'))>=0);
+          var cfid=String(c.getAttribute('data-fid'));
+          var inSel=false;
+          for(var i=0;i<_swaeSelIds.length;i++){ if(String(_swaeSelIds[i])===cfid){ inSel=true; break; } }
+          c.classList.toggle('sel', inSel);
         });
-        swaeRebuildAnchorSel(); swaeRebuildPayerSel(); swaeCalcSplit();
-      }
-
-      function swaeRebuildAnchorSel() {
-        var sel=document.getElementById('swae-anchor-who');
-        var prev=sel.value; sel.innerHTML='';
-        _swaeSelIds.forEach(function(id){
-          var f=swaeFriendById(id); if(!f) return;
-          var o=document.createElement('option');
-          o.value=id; o.textContent=f.name; sel.appendChild(o);
-        });
-        if(prev) sel.value=prev;
-      }
-
-      function swaeRebuildPayerSel() {
-        var sel=document.getElementById('swae-payer'); if(!sel) return;
-        var prev=sel.value||'me';
-        sel.innerHTML='<option value="me">👤 Me</option>';
-        _swaeSelIds.forEach(function(id){
-          var f=swaeFriendById(id); if(!f) return;
-          var o=document.createElement('option');
-          o.value=String(id); o.textContent='👤 '+f.name; sel.appendChild(o);
-        });
-        var valid=false;
-        Array.prototype.forEach.call(sel.options,function(o){ if(o.value===prev) valid=true; });
-        sel.value=valid?prev:'me'; _swaePayer=sel.value;
+        swaeCalcSplit();
       }
 
       function swaeFriendById(id) {
-        for(var i=0;i<swFriendsList.length;i++) if(String(swFriendsList[i].id)===String(id)) return swFriendsList[i];
+        var sid=String(id);
+        for(var i=0;i<swFriendsList.length;i++) if(String(swFriendsList[i].id)===sid) return swFriendsList[i];
         return null;
       }
 
@@ -1300,42 +1288,52 @@
         document.querySelectorAll('.swae-mode-btn').forEach(function(b){ b.classList.remove('sel'); });
         btn.classList.add('sel');
         _swaeMode=btn.getAttribute('data-mode');
-        document.getElementById('swae-anchor-wrap').style.display= _swaeMode==='custom-anchor'?'block':'none';
+        document.getElementById('swae-fixed-hint').style.display=_swaeMode==='fixed-split'?'block':'none';
         swaeCalcSplit();
       }
 
+      function swaeAmtChange(){ if(_swaeStep===1) swaeCalcSplit(); }
+
       function swaeCalcSplit() {
         var total=parseFloat(document.getElementById('swae-amt').value)||0;
+        var prev={};
+        _swaeSplits.forEach(function(s){
+          prev[String(s.userId)]={paidAmt:s.paidAmt||0,owedAmt:s.owedAmt||0,isFixed:s.isFixed||false};
+        });
         _swaeSplits=[];
-        var payerSel=document.getElementById('swae-payer');
-        if(payerSel) _swaePayer=payerSel.value||'me';
-        function paidAmt(uid){ return String(uid)===String(_swaePayer)?total:0; }
         var fds=_swaeSelIds.map(function(id){ return swaeFriendById(id); }).filter(Boolean);
         if(!fds.length){ swaeRenderPreview(); return; }
+        var parts=[{userId:'me',name:'Me',initials:'ME',isCurUser:true}];
+        fds.forEach(function(f){ parts.push({userId:f.id,name:f.name,initials:f.initials,isCurUser:false}); });
+        function gp(uid,key,def){ var p=prev[String(uid)]; return (p&&p[key]!==undefined)?p[key]:def; }
         if(_swaeMode==='equal-me'){
-          var each=total/(fds.length+1);
-          _swaeSplits.push({userId:'me',name:'Me',initials:'ME',share:each,paid:paidAmt('me'),isCurUser:true});
-          fds.forEach(function(f){ _swaeSplits.push({userId:f.id,name:f.name,initials:f.initials,share:each,paid:paidAmt(f.id),isCurUser:false}); });
-        } else if(_swaeMode==='equal-notme'){
-          var each=total/fds.length;
-          _swaeSplits.push({userId:'me',name:'Me',initials:'ME',share:0,paid:paidAmt('me'),isCurUser:true});
-          fds.forEach(function(f){ _swaeSplits.push({userId:f.id,name:f.name,initials:f.initials,share:each,paid:paidAmt(f.id),isCurUser:false}); });
-        } else if(_swaeMode==='custom'){
-          _swaeSplits.push({userId:'me',name:'Me',initials:'ME',share:0,paid:paidAmt('me'),isCurUser:true,custom:true});
-          fds.forEach(function(f){ _swaeSplits.push({userId:f.id,name:f.name,initials:f.initials,share:0,paid:paidAmt(f.id),isCurUser:false,custom:true}); });
-        } else if(_swaeMode==='custom-anchor'){
-          var anchorId=document.getElementById('swae-anchor-who').value;
-          var anchorAmt=parseFloat(document.getElementById('swae-anchor-amt').value)||0;
-          var includeMe=document.getElementById('swae-anchor-includeme').checked;
-          var restFds=fds.filter(function(f){ return String(f.id)!==String(anchorId); });
-          var divisor=restFds.length+(includeMe?1:0);
-          var remaining=Math.max(0,total-anchorAmt);
-          var restShare=divisor>0?remaining/divisor:0;
-          _swaeSplits.push({userId:'me',name:'Me',initials:'ME',share:includeMe?restShare:0,paid:paidAmt('me'),isCurUser:true});
-          fds.forEach(function(f){
-            var isAnchor=String(f.id)===String(anchorId);
-            _swaeSplits.push({userId:f.id,name:f.name,initials:f.initials,share:isAnchor?anchorAmt:restShare,paid:paidAmt(f.id),isCurUser:false});
+          var each=parts.length>0?total/parts.length:0;
+          parts.forEach(function(p){
+            _swaeSplits.push({userId:p.userId,name:p.name,initials:p.initials,isCurUser:p.isCurUser,
+              paidAmt:gp(p.userId,'paidAmt',0),owedAmt:each,isFixed:false});
           });
+        } else if(_swaeMode==='equal-notme'){
+          var each=fds.length>0?total/fds.length:0;
+          parts.forEach(function(p){
+            _swaeSplits.push({userId:p.userId,name:p.name,initials:p.initials,isCurUser:p.isCurUser,
+              paidAmt:gp(p.userId,'paidAmt',0),owedAmt:p.isCurUser?0:each,isFixed:false});
+          });
+        } else if(_swaeMode==='custom'){
+          parts.forEach(function(p){
+            _swaeSplits.push({userId:p.userId,name:p.name,initials:p.initials,isCurUser:p.isCurUser,
+              paidAmt:gp(p.userId,'paidAmt',0),owedAmt:gp(p.userId,'owedAmt',0),isFixed:false});
+          });
+        } else if(_swaeMode==='fixed-split'){
+          var fixedSum=0; var unlockedCnt=0;
+          parts.forEach(function(p){
+            var isFixed=gp(p.userId,'isFixed',false);
+            var owedFixed=isFixed?gp(p.userId,'owedAmt',0):0;
+            if(isFixed) fixedSum+=owedFixed; else unlockedCnt++;
+            _swaeSplits.push({userId:p.userId,name:p.name,initials:p.initials,isCurUser:p.isCurUser,
+              paidAmt:gp(p.userId,'paidAmt',0),owedAmt:owedFixed,isFixed:isFixed});
+          });
+          var each=unlockedCnt>0?Math.max(0,total-fixedSum)/unlockedCnt:0;
+          _swaeSplits.forEach(function(s){ if(!s.isFixed) s.owedAmt=each; });
         }
         swaeRenderPreview();
       }
@@ -1343,50 +1341,99 @@
       function swaeRenderPreview() {
         var cur=document.getElementById('swae-cur').value;
         var el=document.getElementById('swae-preview');
-        if(!_swaeSplits.length){ el.innerHTML='<div style="padding:14px;text-align:center;font-size:.78em;color:rgba(255,255,255,.25)">Select friends above</div>'; return; }
-        var html='';
+        if(!_swaeSplits.length){
+          el.innerHTML='<div style="padding:14px;text-align:center;font-size:.78em;color:rgba(255,255,255,.25)">Select friends above</div>';
+          return;
+        }
+        var showLock=_swaeMode==='fixed-split';
+        var html='<div class="swae-pv-hdr">'
+          +'<span></span><span style="text-align:left">Name</span>'
+          +'<span>Paid ↑</span><span>Owes ↓</span>'
+          +'<span>'+(showLock?'🔒':'')+'</span></div>';
         _swaeSplits.forEach(function(s){
-          var shareHtml=s.custom
-            ? '<input class="swae-pv-input" type="number" placeholder="0.00" min="0" step="0.01" data-uid="'+s.userId+'" oninput="swaeCustomInput(this)">'
-            : '<span class="swae-pv-share">'+cur+' '+s.share.toFixed(2)+'</span>';
-          var paidBadge=s.paid>0?'<span class="swae-pv-paid">paid</span>':'';
-          html+='<div class="swae-pv-row"><div class="swae-pv-av">'+s.initials+'</div><span class="swae-pv-name">'+escHtml(s.name)+'</span>'+paidBadge+shareHtml+'</div>';
+          var paidVal=s.paidAmt?s.paidAmt.toFixed(2):'';
+          var paidInp='<input class="swae-pv-cell-in" type="number" min="0" step="0.01" placeholder="0" value="'+paidVal+'" data-uid="'+s.userId+'" oninput="swaePaidChange(this)">';
+          var owedCell;
+          if(_swaeMode==='custom'){
+            var owedVal=s.owedAmt?s.owedAmt.toFixed(2):'';
+            owedCell='<input class="swae-pv-cell-in owed" type="number" min="0" step="0.01" placeholder="0" value="'+owedVal+'" data-uid="'+s.userId+'" oninput="swaeOwedChange(this)">';
+          } else if(_swaeMode==='fixed-split' && s.isFixed){
+            owedCell='<input class="swae-pv-cell-in owed" type="number" min="0" step="0.01" placeholder="0" value="'+s.owedAmt.toFixed(2)+'" data-uid="'+s.userId+'" oninput="swaeOwedChange(this)">';
+          } else {
+            owedCell='<span class="swae-pv-cell-txt">'+s.owedAmt.toFixed(2)+'</span>';
+          }
+          var lockBtn=showLock
+            ?'<button class="swae-pv-lock'+(s.isFixed?' locked':'')+'" data-uid="'+s.userId+'" onclick="swaeToggleLock(\''+s.userId+'\')">'+(s.isFixed?'🔒':'🔓')+'</button>'
+            :'<span></span>';
+          html+='<div class="swae-pv-row">'
+            +'<div class="swae-pv-av">'+s.initials+'</div>'
+            +'<span class="swae-pv-name">'+escHtml(s.name)+'</span>'
+            +paidInp+owedCell+lockBtn+'</div>';
         });
-        el.innerHTML=html; swaeValidateSplit();
+        el.innerHTML=html;
+        swaeValidateSplit();
       }
 
-      function swaeCustomInput(input) {
-        var uid=input.getAttribute('data-uid');
+      function swaePaidChange(input){
+        var uid=String(input.getAttribute('data-uid'));
         var val=parseFloat(input.value)||0;
-        for(var i=0;i<_swaeSplits.length;i++){ if(String(_swaeSplits[i].userId)===String(uid)){ _swaeSplits[i].share=val; break; } }
-        var total=parseFloat(document.getElementById('swae-amt').value)||0;
-        var friendSum=0;
-        _swaeSplits.forEach(function(s){ if(!s.isCurUser) friendSum+=s.share; });
-        var me=null; for(var i=0;i<_swaeSplits.length;i++) if(_swaeSplits[i].isCurUser){ me=_swaeSplits[i]; break; }
-        if(me) me.share=Math.max(0,total-friendSum);
-        document.querySelectorAll('#swae-preview .swae-pv-row').forEach(function(row){
-          if(!row.querySelector('input')){
-            var name=row.querySelector('.swae-pv-name').textContent;
+        for(var i=0;i<_swaeSplits.length;i++){
+          if(String(_swaeSplits[i].userId)===uid){ _swaeSplits[i].paidAmt=val; break; }
+        }
+        swaeValidateSplit();
+      }
+
+      function swaeOwedChange(input){
+        var uid=String(input.getAttribute('data-uid'));
+        var val=parseFloat(input.value)||0;
+        for(var i=0;i<_swaeSplits.length;i++){
+          if(String(_swaeSplits[i].userId)===uid){ _swaeSplits[i].owedAmt=val; break; }
+        }
+        if(_swaeMode==='fixed-split'){
+          var total=parseFloat(document.getElementById('swae-amt').value)||0;
+          var fixedSum=0; var unlockedCnt=0;
+          _swaeSplits.forEach(function(s){ if(s.isFixed) fixedSum+=s.owedAmt; else unlockedCnt++; });
+          var each=unlockedCnt>0?Math.max(0,total-fixedSum)/unlockedCnt:0;
+          _swaeSplits.forEach(function(s){ if(!s.isFixed) s.owedAmt=each; });
+          document.querySelectorAll('#swae-preview .swae-pv-row').forEach(function(row){
+            var lb=row.querySelector('.swae-pv-lock:not(.locked)');
+            if(!lb) return;
+            var uid2=String(lb.getAttribute('data-uid'));
             for(var i=0;i<_swaeSplits.length;i++){
-              if(_swaeSplits[i].name===name && _swaeSplits[i].isCurUser){
-                row.querySelector('.swae-pv-share').textContent=document.getElementById('swae-cur').value+' '+_swaeSplits[i].share.toFixed(2);
+              if(String(_swaeSplits[i].userId)===uid2){
+                var txt=row.querySelector('.swae-pv-cell-txt');
+                if(txt) txt.textContent=_swaeSplits[i].owedAmt.toFixed(2);
+                break;
               }
             }
-          }
-        });
+          });
+        }
         swaeValidateSplit();
+      }
+
+      function swaeToggleLock(uid){
+        var suid=String(uid);
+        for(var i=0;i<_swaeSplits.length;i++){
+          if(String(_swaeSplits[i].userId)===suid){ _swaeSplits[i].isFixed=!_swaeSplits[i].isFixed; break; }
+        }
+        var total=parseFloat(document.getElementById('swae-amt').value)||0;
+        var fixedSum=0; var unlockedCnt=0;
+        _swaeSplits.forEach(function(s){ if(s.isFixed) fixedSum+=s.owedAmt; else unlockedCnt++; });
+        var each=unlockedCnt>0?Math.max(0,total-fixedSum)/unlockedCnt:0;
+        _swaeSplits.forEach(function(s){ if(!s.isFixed) s.owedAmt=each; });
+        swaeRenderPreview();
       }
 
       function swaeValidateSplit() {
         var total=parseFloat(document.getElementById('swae-amt').value)||0;
         if(!_swaeSplits.length) return '';
-        var sum=0; _swaeSplits.forEach(function(s){ sum+=s.share; });
-        var diff=Math.abs(sum-total);
+        var paidSum=0; var owedSum=0;
+        _swaeSplits.forEach(function(s){ paidSum+=s.paidAmt||0; owedSum+=s.owedAmt||0; });
         var btn=document.getElementById('swae-btn1');
-        if(diff>0.02 && _swaeMode==='custom'){
-          var msg='Shares sum '+document.getElementById('swae-cur').value+' '+sum.toFixed(2)+' — total '+total.toFixed(2)+'. Diff: '+diff.toFixed(2);
-          swaeShowWarn(msg); if(btn) btn.disabled=true; return msg;
-        }
+        var msgs=[];
+        if(Math.abs(paidSum-total)>0.02) msgs.push('Paid sums to '+paidSum.toFixed(2)+' (need '+total.toFixed(2)+')');
+        if(Math.abs(owedSum-total)>0.02) msgs.push('Owes sums to '+owedSum.toFixed(2)+' (need '+total.toFixed(2)+')');
+        if(msgs.length){ swaeShowWarn(msgs.join(' • ')); if(btn) btn.disabled=true; return msgs.join(' • '); }
         swaeHideWarn(); if(btn) btn.disabled=false; return '';
       }
 
@@ -1399,13 +1446,17 @@
         var desc=document.getElementById('swae-desc').value;
         var el=document.getElementById('swae-review');
         var html='<div class="swae-pv-row" style="background:rgba(255,107,53,.05);border-bottom:1px solid rgba(255,107,53,.15)">'
-          +'<span class="swae-pv-name" style="font-weight:800;color:#fff">'+escHtml(desc)+'</span>'
-          +'<span class="swae-pv-share" style="color:#ff6b35;font-size:1em">'+cur+' '+total.toFixed(2)+'</span></div>';
+          +'<span></span>'
+          +'<span class="swae-pv-name" style="font-weight:800;color:#fff;grid-column:2/5">'+escHtml(desc)+' — '+cur+' '+total.toFixed(2)+'</span>'
+          +'<span></span><span></span></div>';
         _swaeSplits.forEach(function(s){
-          html+='<div class="swae-pv-row"><div class="swae-pv-av">'+s.initials+'</div>'
-            +'<span class="swae-pv-name">'+escHtml(s.name)+'</span>'
-            +(s.paid>0?'<span class="swae-pv-paid">paid</span>':'')
-            +'<span class="swae-pv-share">'+cur+' '+s.share.toFixed(2)+'</span></div>';
+          html+='<div class="swae-pv-row">'
+            +'<div class="swae-pv-av">'+s.initials+'</div>'
+            +'<span class="swae-pv-name">'+escHtml(s.name)
+              +(s.paidAmt>0?'<br><span style="font-size:.65em;color:#00e676;font-weight:700">paid '+cur+' '+s.paidAmt.toFixed(2)+'</span>':'')+'</span>'
+            +'<span class="swae-pv-cell-txt" style="color:#00e676">'+(s.paidAmt?s.paidAmt.toFixed(2):'—')+'</span>'
+            +'<span class="swae-pv-cell-txt">'+s.owedAmt.toFixed(2)+'</span>'
+            +'<span></span></div>';
         });
         el.innerHTML=html;
       }
@@ -1434,7 +1485,7 @@
           amount:      parseFloat(document.getElementById('swae-amt').value)||0,
           currency:    document.getElementById('swae-cur').value,
           date:        document.getElementById('swae-date').value,
-          splits:      _swaeSplits.map(function(s){ return {userId:s.userId,share:s.share,paid:s.paid,name:s.name}; }),
+          splits:      _swaeSplits.map(function(s){ return {userId:s.userId,share:s.owedAmt,paid:s.paidAmt,name:s.name}; }),
           receiptBase64: _swaeImgB64||null
         };
         google.script.run
@@ -1458,8 +1509,7 @@
     <!-- ── Add Expense Modal ── -->
     <div id="swae-bg" onclick="swaeOutsideClose(event)">
       <div id="swae-sheet">
-        <div class="swae-handle"></div>
-        <div class="swae-head">
+        <div class="swae-head" style="padding-top:20px">
           <span class="swae-title" id="swae-title">Add Expense</span>
           <button class="swae-close" onclick="swaeClose()">✕</button>
         </div>
@@ -1470,14 +1520,14 @@
         </div>
         <!-- Step 0 -->
         <div class="swae-body" id="swae-s0">
-          <div class="swae-row" style="margin-bottom:14px"><div>
+          <div class="swae-row"><div>
             <label class="swae-label">Description</label>
             <input id="swae-desc" class="swae-input" type="text" placeholder="e.g. Dinner, Grab, Groceries…" maxlength="80">
           </div></div>
           <div class="swae-row col2">
-            <div><label class="swae-label">Total Amount</label><input id="swae-amt" class="swae-input" type="number" placeholder="0.00" min="0" step="0.01"></div>
+            <div><label class="swae-label">Total Amount</label><input id="swae-amt" class="swae-input" type="number" placeholder="0.00" min="0" step="0.01" oninput="swaeAmtChange()"></div>
             <div><label class="swae-label">Currency</label>
-              <select id="swae-cur" class="swae-input swae-anchor-sel">
+              <select id="swae-cur" class="swae-input">
                 <option value="LKR">LKR 🇱🇰</option><option value="USD">USD 🇺🇸</option><option value="EUR">EUR 🇪🇺</option><option value="GBP">GBP 🇬🇧</option>
               </select>
             </div>
@@ -1489,28 +1539,17 @@
         <div class="swae-body" id="swae-s1" style="display:none">
           <label class="swae-label">Select Friends</label>
           <div class="swae-friends-wrap" id="swae-chips"></div>
-          <label class="swae-label" style="margin-top:2px">Who Paid?</label>
-          <select id="swae-payer" class="swae-input swae-anchor-sel" style="margin-bottom:14px" onchange="swaeCalcSplit()">
-            <option value="me">👤 Me</option>
-          </select>
-          <label class="swae-label">Split Method</label>
+          <label class="swae-label" style="margin-top:2px">Split Method</label>
           <div class="swae-mode-grid">
             <div class="swae-mode-btn sel" data-mode="equal-me" onclick="swaeSetMode(this)">⚖️ Equal<br><span style="opacity:.7;font-weight:500">Include me</span></div>
             <div class="swae-mode-btn" data-mode="equal-notme" onclick="swaeSetMode(this)">👥 Equal<br><span style="opacity:.7;font-weight:500">Friends only</span></div>
             <div class="swae-mode-btn" data-mode="custom" onclick="swaeSetMode(this)">✏️ Custom<br><span style="opacity:.7;font-weight:500">Per person</span></div>
-            <div class="swae-mode-btn" data-mode="custom-anchor" onclick="swaeSetMode(this)">📌 Custom+<br><span style="opacity:.7;font-weight:500">One fixed, split rest</span></div>
+            <div class="swae-mode-btn" data-mode="fixed-split" onclick="swaeSetMode(this)">📌 Fixed+<br><span style="opacity:.7;font-weight:500">Lock some, split rest</span></div>
           </div>
-          <div id="swae-anchor-wrap" style="display:none" class="swae-anchor-wrap">
-            <span class="swae-anchor-label">Who gets the fixed amount?</span>
-            <select id="swae-anchor-who" class="swae-anchor-sel" onchange="swaeCalcSplit()" style="margin-bottom:10px"></select>
-            <span class="swae-anchor-label">Their fixed amount</span>
-            <input id="swae-anchor-amt" class="swae-input" type="number" placeholder="0.00" min="0" step="0.01" oninput="swaeCalcSplit()" style="margin-bottom:10px">
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.78em;color:rgba(255,255,255,.5);margin-bottom:10px">
-              <input type="checkbox" id="swae-anchor-includeme" onchange="swaeCalcSplit()" style="width:16px;height:16px;accent-color:#ff6b35">
-              Include me in the remaining split
-            </label>
+          <div id="swae-fixed-hint" style="display:none;font-size:.7em;color:rgba(255,255,255,.35);margin-bottom:10px;padding:0 2px">
+            🔒 Tap the lock icon on any row to fix their share. Unlocked people share the remainder equally.
           </div>
-          <label class="swae-label" style="margin-top:6px">Split Preview</label>
+          <label class="swae-label">Paid &amp; Owes — edit any cell</label>
           <div class="swae-preview" id="swae-preview"></div>
           <div class="swae-warn" id="swae-warn"></div>
           <div class="swae-foot">
