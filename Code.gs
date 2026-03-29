@@ -1433,6 +1433,99 @@ function getGoldData() {
 
 
 /* ═══════════════════════════════════════════════════════════════
+   SPLITWISE — CREATE EXPENSE
+   payload: { description, amount, currency, date,
+              splits:[{userId,share,paid,name}],
+              receiptBase64 }
+   splits must include a "me" entry (userId==='me') and friend entries.
+   The person who paid (paid > 0) is always the current user.
+═══════════════════════════════════════════════════════════════ */
+function createSplitwiseExpense(payload) {
+  try {
+    var apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
+    var headers = { 'Authorization': 'Bearer ' + apiKey };
+
+    // 1. Get current user ID
+    var meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', { method:'get', headers:headers });
+    var meData = JSON.parse(meResp.getContentText());
+    var meId   = meData.user && meData.user.id ? meData.user.id : null;
+    if (!meId) return { success:false, error:'Could not retrieve current user ID' };
+
+    // 2. Build form payload for create_expense
+    var total   = parseFloat(payload.amount) || 0;
+    var splits  = payload.splits || [];
+    var params  = {};
+    params['cost']          = total.toFixed(2);
+    params['description']   = String(payload.description || 'Expense');
+    params['currency_code'] = String(payload.currency || 'LKR');
+    params['date']          = String(payload.date || new Date().toISOString().slice(0,10));
+    params['group_id']      = '0'; // non-group expense
+
+    var userIdx = 0;
+    splits.forEach(function(s) {
+      var uid = String(s.userId) === 'me' ? String(meId) : String(s.userId);
+      params['users__' + userIdx + '__user_id']    = uid;
+      params['users__' + userIdx + '__paid_share'] = (parseFloat(s.paid) || 0).toFixed(2);
+      params['users__' + userIdx + '__owed_share'] = (parseFloat(s.share) || 0).toFixed(2);
+      userIdx++;
+    });
+
+    // 3. Submit expense (JSON body is simpler than multipart for non-image)
+    var body = JSON.stringify(params);
+    var opts = {
+      method:      'post',
+      headers:     Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+      payload:     body,
+      muteHttpExceptions: true
+    };
+    var resp    = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/create_expense', opts);
+    var result  = JSON.parse(resp.getContentText());
+    var code    = resp.getResponseCode();
+
+    if (code !== 200 && code !== 201) {
+      var errMsg = (result.errors && (result.errors.base||[]).join(', ')) || ('HTTP '+code);
+      Logger.log('createSplitwiseExpense error: ' + errMsg);
+      return { success:false, error: errMsg };
+    }
+
+    var expenses = result.expenses || [];
+    if (!expenses.length) return { success:false, error:'No expense returned by API' };
+
+    var expId = expenses[0].id;
+
+    // 4. Attach receipt image if provided (multipart)
+    if (payload.receiptBase64 && expId) {
+      try {
+        var b64 = payload.receiptBase64;
+        // strip data URL prefix if present
+        var commaIdx = b64.indexOf(',');
+        if (commaIdx >= 0) b64 = b64.slice(commaIdx + 1);
+        var mimeMatch = payload.receiptBase64.match(/^data:([^;]+);/);
+        var mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        var imgBytes = Utilities.base64Decode(b64);
+        var blob = Utilities.newBlob(imgBytes, mime, 'receipt.jpg');
+        var imgOpts = {
+          method:  'post',
+          headers: headers,
+          payload: { 'receipt[original]': blob },
+          muteHttpExceptions: true
+        };
+        UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/update_expense/'+expId, imgOpts);
+      } catch(imgErr) {
+        Logger.log('Receipt upload warning: ' + imgErr);
+        // not fatal — expense was created
+      }
+    }
+
+    return { success:true, expenseId: expId };
+
+  } catch(err) {
+    Logger.log('createSplitwiseExpense exception: ' + err);
+    return { success:false, error: err.message || String(err) };
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
    HABIT TRACKER  (Sheet: Habbit · Trigger: Monthly Expences I1)
 ═══════════════════════════════════════════════════════════════ */
 

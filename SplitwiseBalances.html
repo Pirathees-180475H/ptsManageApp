@@ -507,6 +507,90 @@
       .friend-card[data-friend-id]:hover .friend-name::after {
         color:rgba(255,255,255,.5); margin-left:9px;
       }
+      /* ── Add Expense FAB ── */
+      #sw-fab{
+        position:fixed;bottom:22px;right:22px;
+        width:54px;height:54px;border-radius:16px;
+        background:linear-gradient(135deg,#ff4d6d,#ff6b35);
+        border:none;color:#fff;font-size:1.65em;line-height:1;
+        cursor:pointer;z-index:200;
+        box-shadow:0 6px 24px rgba(255,77,109,.5),0 2px 8px rgba(0,0,0,.4);
+        display:flex;align-items:center;justify-content:center;
+        transition:transform .15s,box-shadow .15s;
+        -webkit-tap-highlight-color:transparent;
+      }
+      #sw-fab:active{transform:scale(.9);box-shadow:0 2px 10px rgba(255,77,109,.3);}
+
+      /* ── Add Expense Modal (bottom sheet) ── */
+      #swae-bg{
+        position:fixed;inset:0;z-index:500;
+        background:rgba(0,0,0,.65);backdrop-filter:blur(8px);
+        display:none;align-items:flex-end;justify-content:center;
+      }
+      #swae-bg.open{display:flex;}
+      #swae-sheet{
+        background:linear-gradient(160deg,#0d1220,#080d18);
+        border:1px solid rgba(255,255,255,.08);
+        border-radius:28px 28px 0 0;
+        width:100%;max-width:520px;
+        max-height:92vh;overflow-y:auto;
+        padding:0 0 32px;
+        animation:swaeUp .3s cubic-bezier(.4,0,.2,1);
+      }
+      @keyframes swaeUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+      .swae-handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin:14px auto 0;}
+      .swae-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0;}
+      .swae-title{font-size:.92em;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.7);}
+      .swae-close{background:none;border:none;color:rgba(255,255,255,.35);font-size:1.3em;cursor:pointer;padding:4px 8px;border-radius:8px;line-height:1;}
+      .swae-close:hover{color:#fff;background:rgba(255,255,255,.07);}
+      .swae-steps{display:flex;gap:6px;padding:14px 20px 0;margin-bottom:2px;}
+      .swae-step-dot{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.1);transition:background .3s;}
+      .swae-step-dot.done{background:#ff4d6d;}
+      .swae-step-dot.active{background:rgba(255,107,53,.8);}
+      .swae-body{padding:18px 20px 0;}
+      .swae-label{font-size:.65em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:6px;display:block;}
+      .swae-input{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px 14px;color:#fff;font-size:.95em;font-family:inherit;outline:none;transition:border-color .2s;}
+      .swae-input:focus{border-color:rgba(255,107,53,.6);}
+      .swae-row{display:grid;gap:10px;margin-bottom:14px;}
+      .swae-row.col2{grid-template-columns:1fr 1fr;}
+      .swae-friends-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+      .swae-chip{display:flex;align-items:center;gap:7px;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.1);cursor:pointer;transition:all .18s;-webkit-tap-highlight-color:transparent;font-size:.78em;font-weight:600;color:rgba(255,255,255,.55);}
+      .swae-chip.sel{background:rgba(255,77,109,.15);border-color:rgba(255,77,109,.5);color:#fff;}
+      .swae-chip-av{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:.7em;font-weight:800;background:rgba(255,255,255,.08);flex-shrink:0;}
+      .swae-chip.sel .swae-chip-av{background:rgba(255,77,109,.25);color:#ff4d6d;}
+      .swae-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+      .swae-mode-btn{padding:10px 8px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:rgba(255,255,255,.45);font-size:.7em;font-weight:700;letter-spacing:.5px;text-align:center;cursor:pointer;transition:all .18s;-webkit-tap-highlight-color:transparent;line-height:1.4;}
+      .swae-mode-btn:hover{border-color:rgba(255,107,53,.4);color:rgba(255,255,255,.7);}
+      .swae-mode-btn.sel{background:rgba(255,107,53,.15);border-color:rgba(255,107,53,.6);color:#ff6b35;}
+      .swae-preview{border-radius:14px;border:1px solid rgba(255,255,255,.07);overflow:hidden;margin-bottom:14px;}
+      .swae-pv-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);}
+      .swae-pv-row:last-child{border-bottom:none;}
+      .swae-pv-av{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.7em;font-weight:800;background:rgba(255,255,255,.07);flex-shrink:0;}
+      .swae-pv-name{flex:1;font-size:.82em;font-weight:600;color:rgba(255,255,255,.75);}
+      .swae-pv-paid{font-size:.7em;color:rgba(0,230,118,.7);background:rgba(0,230,118,.1);padding:2px 7px;border-radius:6px;margin-right:4px;}
+      .swae-pv-share{font-size:.88em;font-weight:700;color:rgba(255,255,255,.6);min-width:72px;text-align:right;}
+      .swae-pv-input{width:82px;background:rgba(255,255,255,.07);border:1px solid rgba(255,107,53,.4);border-radius:8px;padding:5px 8px;color:#fff;font-size:.85em;font-family:inherit;outline:none;text-align:right;}
+      .swae-anchor-wrap{margin-bottom:14px;}
+      .swae-anchor-label{font-size:.68em;color:rgba(255,255,255,.4);margin-bottom:6px;display:block;}
+      .swae-anchor-sel{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 14px;color:#fff;font-size:.85em;font-family:inherit;outline:none;}
+      .swae-warn{font-size:.72em;color:#ffd700;background:rgba(255,215,0,.08);border:1px solid rgba(255,215,0,.25);border-radius:10px;padding:9px 12px;margin-bottom:12px;display:none;}
+      .swae-warn.show{display:block;}
+      .swae-receipt-zone{border:2px dashed rgba(255,255,255,.12);border-radius:16px;padding:22px;text-align:center;cursor:pointer;margin-bottom:14px;transition:border-color .2s,background .2s;}
+      .swae-receipt-zone:hover{border-color:rgba(255,107,53,.4);background:rgba(255,107,53,.04);}
+      .swae-receipt-zone.has-img{border-color:rgba(0,230,118,.4);background:rgba(0,230,118,.04);}
+      .swae-receipt-ico{font-size:2em;margin-bottom:6px;}
+      .swae-receipt-txt{font-size:.73em;color:rgba(255,255,255,.35);}
+      .swae-receipt-thumb{max-width:100%;max-height:180px;border-radius:10px;margin-top:8px;display:none;}
+      .swae-foot{display:flex;gap:10px;padding:20px 20px 0;margin-top:4px;}
+      .swae-btn{flex:1;padding:14px;border-radius:14px;font-size:.85em;font-weight:700;font-family:inherit;cursor:pointer;border:none;letter-spacing:.5px;transition:opacity .2s,transform .1s;}
+      .swae-btn:active{transform:scale(.97);}
+      .swae-btn.back{background:rgba(255,255,255,.07);color:rgba(255,255,255,.55);}
+      .swae-btn.next{background:linear-gradient(135deg,#ff4d6d,#ff6b35);color:#fff;box-shadow:0 4px 18px rgba(255,77,109,.35);}
+      .swae-btn:disabled{opacity:.35;pointer-events:none;}
+      .swae-success{text-align:center;padding:40px 20px;}
+      .swae-success-ico{font-size:3.5em;margin-bottom:12px;}
+      .swae-success-msg{font-size:1em;font-weight:700;color:#00e676;margin-bottom:6px;}
+      .swae-success-sub{font-size:.78em;color:rgba(255,255,255,.4);}
     </style>
   </head>
   <body>
@@ -1070,9 +1154,397 @@
 
       // Close on Escape
       document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') closeDrawer();
+        if (e.key === 'Escape') { closeDrawer(); swaeClose(); }
       });
+
+      /* ═══════════════════════════════════════════
+         ADD EXPENSE — friend list from RAW data
+      ═══════════════════════════════════════════ */
+      var swFriendsList = (RAW || []).map(function(item) {
+        return {
+          id:       item.friendId || item.id || 0,
+          name:     item.name,
+          initials: item.name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2),
+          currency: item.currency || 'LKR'
+        };
+      });
+
+      function localYMD(d) {
+        return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+      }
+
+      var _swaeStep    = 0;
+      var _swaeMode    = 'equal-me';
+      var _swaeSelIds  = [];
+      var _swaePayer   = 'me';
+      var _swaeImgB64  = null;
+      var _swaeSplits  = [];
+
+      function swaeOpen() {
+        _swaeStep=0; _swaeMode='equal-me'; _swaeSelIds=[]; _swaePayer='me'; _swaeImgB64=null;
+        document.getElementById('swae-desc').value='';
+        document.getElementById('swae-amt').value='';
+        document.getElementById('swae-date').value=localYMD(new Date());
+        document.getElementById('swae-cur').value='LKR';
+        document.getElementById('swae-anchor-amt').value='';
+        document.getElementById('swae-anchor-includeme').checked=false;
+        document.getElementById('swae-thumb').style.display='none';
+        document.getElementById('swae-zone').classList.remove('has-img');
+        document.querySelector('.swae-receipt-txt').textContent='Tap to add bill / receipt photo';
+        document.getElementById('swae-submit-err').textContent='';
+        swaeRenderChips();
+        document.querySelectorAll('.swae-mode-btn').forEach(function(b){
+          b.classList.toggle('sel', b.getAttribute('data-mode')==='equal-me');
+        });
+        _swaeMode='equal-me';
+        document.getElementById('swae-anchor-wrap').style.display='none';
+        swaeRenderPreview();
+        swaeShowStep(0);
+        document.getElementById('swae-bg').classList.add('open');
+      }
+
+      function swaeClose() {
+        document.getElementById('swae-bg').classList.remove('open');
+      }
+
+      function swaeOutsideClose(e) {
+        if (e.target===document.getElementById('swae-bg')) swaeClose();
+      }
+
+      function swaeShowStep(n) {
+        _swaeStep=n;
+        [0,1,2,3].forEach(function(i){
+          var s=document.getElementById('swae-s'+i);
+          if(s) s.style.display= i===n ? 'block' : 'none';
+        });
+        [0,1,2].forEach(function(i){
+          var d=document.getElementById('swae-sd'+i);
+          if(!d) return;
+          d.className='swae-step-dot'+(i<n?' done':i===n?' active':'');
+        });
+        var titles=['Add Expense','Who & How','Review & Submit',''];
+        document.getElementById('swae-title').textContent=titles[n]||'Add Expense';
+      }
+
+      function swaeGoStep(n) {
+        if(n===1){
+          var amt=parseFloat(document.getElementById('swae-amt').value)||0;
+          var desc=(document.getElementById('swae-desc').value||'').trim();
+          if(!desc){ document.getElementById('swae-desc').focus(); return; }
+          if(amt<=0){ document.getElementById('swae-amt').focus(); return; }
+          swaeRenderChips(); swaeCalcSplit(); swaeShowStep(1);
+        } else if(n===2){
+          if(_swaeSelIds.length===0){ swaeShowWarn('Select at least one friend.'); return; }
+          var warn=swaeValidateSplit(); if(warn){ swaeShowWarn(warn); return; }
+          swaeHideWarn(); swaeRenderReview(); swaeShowStep(2);
+        } else { swaeShowStep(n); }
+      }
+
+      function swaeRenderChips() {
+        var wrap=document.getElementById('swae-chips');
+        if(!swFriendsList.length){ wrap.innerHTML='<span style="font-size:.75em;color:rgba(255,255,255,.3)">No friends found</span>'; return; }
+        wrap.innerHTML='';
+        swFriendsList.forEach(function(f){
+          var el=document.createElement('div');
+          el.className='swae-chip'+(_swaeSelIds.indexOf(f.id)>=0?' sel':'');
+          el.setAttribute('data-fid',f.id);
+          el.innerHTML='<div class="swae-chip-av">'+f.initials+'</div>'+escHtml(f.name.split(' ')[0]);
+          el.addEventListener('click',function(){ swaeToggleFriend(f.id); });
+          wrap.appendChild(el);
+        });
+        swaeRebuildAnchorSel();
+        swaeRebuildPayerSel();
+      }
+
+      function swaeToggleFriend(id) {
+        var idx=_swaeSelIds.indexOf(id);
+        if(idx>=0) _swaeSelIds.splice(idx,1); else _swaeSelIds.push(id);
+        document.querySelectorAll('.swae-chip').forEach(function(c){
+          c.classList.toggle('sel', _swaeSelIds.indexOf(parseInt(c.getAttribute('data-fid')))>=0
+                                 || _swaeSelIds.indexOf(c.getAttribute('data-fid'))>=0);
+        });
+        swaeRebuildAnchorSel(); swaeRebuildPayerSel(); swaeCalcSplit();
+      }
+
+      function swaeRebuildAnchorSel() {
+        var sel=document.getElementById('swae-anchor-who');
+        var prev=sel.value; sel.innerHTML='';
+        _swaeSelIds.forEach(function(id){
+          var f=swaeFriendById(id); if(!f) return;
+          var o=document.createElement('option');
+          o.value=id; o.textContent=f.name; sel.appendChild(o);
+        });
+        if(prev) sel.value=prev;
+      }
+
+      function swaeRebuildPayerSel() {
+        var sel=document.getElementById('swae-payer'); if(!sel) return;
+        var prev=sel.value||'me';
+        sel.innerHTML='<option value="me">👤 Me</option>';
+        _swaeSelIds.forEach(function(id){
+          var f=swaeFriendById(id); if(!f) return;
+          var o=document.createElement('option');
+          o.value=String(id); o.textContent='👤 '+f.name; sel.appendChild(o);
+        });
+        var valid=false;
+        Array.prototype.forEach.call(sel.options,function(o){ if(o.value===prev) valid=true; });
+        sel.value=valid?prev:'me'; _swaePayer=sel.value;
+      }
+
+      function swaeFriendById(id) {
+        for(var i=0;i<swFriendsList.length;i++) if(String(swFriendsList[i].id)===String(id)) return swFriendsList[i];
+        return null;
+      }
+
+      function swaeSetMode(btn) {
+        document.querySelectorAll('.swae-mode-btn').forEach(function(b){ b.classList.remove('sel'); });
+        btn.classList.add('sel');
+        _swaeMode=btn.getAttribute('data-mode');
+        document.getElementById('swae-anchor-wrap').style.display= _swaeMode==='custom-anchor'?'block':'none';
+        swaeCalcSplit();
+      }
+
+      function swaeCalcSplit() {
+        var total=parseFloat(document.getElementById('swae-amt').value)||0;
+        _swaeSplits=[];
+        var payerSel=document.getElementById('swae-payer');
+        if(payerSel) _swaePayer=payerSel.value||'me';
+        function paidAmt(uid){ return String(uid)===String(_swaePayer)?total:0; }
+        var fds=_swaeSelIds.map(function(id){ return swaeFriendById(id); }).filter(Boolean);
+        if(!fds.length){ swaeRenderPreview(); return; }
+        if(_swaeMode==='equal-me'){
+          var each=total/(fds.length+1);
+          _swaeSplits.push({userId:'me',name:'Me',initials:'ME',share:each,paid:paidAmt('me'),isCurUser:true});
+          fds.forEach(function(f){ _swaeSplits.push({userId:f.id,name:f.name,initials:f.initials,share:each,paid:paidAmt(f.id),isCurUser:false}); });
+        } else if(_swaeMode==='equal-notme'){
+          var each=total/fds.length;
+          _swaeSplits.push({userId:'me',name:'Me',initials:'ME',share:0,paid:paidAmt('me'),isCurUser:true});
+          fds.forEach(function(f){ _swaeSplits.push({userId:f.id,name:f.name,initials:f.initials,share:each,paid:paidAmt(f.id),isCurUser:false}); });
+        } else if(_swaeMode==='custom'){
+          _swaeSplits.push({userId:'me',name:'Me',initials:'ME',share:0,paid:paidAmt('me'),isCurUser:true,custom:true});
+          fds.forEach(function(f){ _swaeSplits.push({userId:f.id,name:f.name,initials:f.initials,share:0,paid:paidAmt(f.id),isCurUser:false,custom:true}); });
+        } else if(_swaeMode==='custom-anchor'){
+          var anchorId=document.getElementById('swae-anchor-who').value;
+          var anchorAmt=parseFloat(document.getElementById('swae-anchor-amt').value)||0;
+          var includeMe=document.getElementById('swae-anchor-includeme').checked;
+          var restFds=fds.filter(function(f){ return String(f.id)!==String(anchorId); });
+          var divisor=restFds.length+(includeMe?1:0);
+          var remaining=Math.max(0,total-anchorAmt);
+          var restShare=divisor>0?remaining/divisor:0;
+          _swaeSplits.push({userId:'me',name:'Me',initials:'ME',share:includeMe?restShare:0,paid:paidAmt('me'),isCurUser:true});
+          fds.forEach(function(f){
+            var isAnchor=String(f.id)===String(anchorId);
+            _swaeSplits.push({userId:f.id,name:f.name,initials:f.initials,share:isAnchor?anchorAmt:restShare,paid:paidAmt(f.id),isCurUser:false});
+          });
+        }
+        swaeRenderPreview();
+      }
+
+      function swaeRenderPreview() {
+        var cur=document.getElementById('swae-cur').value;
+        var el=document.getElementById('swae-preview');
+        if(!_swaeSplits.length){ el.innerHTML='<div style="padding:14px;text-align:center;font-size:.78em;color:rgba(255,255,255,.25)">Select friends above</div>'; return; }
+        var html='';
+        _swaeSplits.forEach(function(s){
+          var shareHtml=s.custom
+            ? '<input class="swae-pv-input" type="number" placeholder="0.00" min="0" step="0.01" data-uid="'+s.userId+'" oninput="swaeCustomInput(this)">'
+            : '<span class="swae-pv-share">'+cur+' '+s.share.toFixed(2)+'</span>';
+          var paidBadge=s.paid>0?'<span class="swae-pv-paid">paid</span>':'';
+          html+='<div class="swae-pv-row"><div class="swae-pv-av">'+s.initials+'</div><span class="swae-pv-name">'+escHtml(s.name)+'</span>'+paidBadge+shareHtml+'</div>';
+        });
+        el.innerHTML=html; swaeValidateSplit();
+      }
+
+      function swaeCustomInput(input) {
+        var uid=input.getAttribute('data-uid');
+        var val=parseFloat(input.value)||0;
+        for(var i=0;i<_swaeSplits.length;i++){ if(String(_swaeSplits[i].userId)===String(uid)){ _swaeSplits[i].share=val; break; } }
+        var total=parseFloat(document.getElementById('swae-amt').value)||0;
+        var friendSum=0;
+        _swaeSplits.forEach(function(s){ if(!s.isCurUser) friendSum+=s.share; });
+        var me=null; for(var i=0;i<_swaeSplits.length;i++) if(_swaeSplits[i].isCurUser){ me=_swaeSplits[i]; break; }
+        if(me) me.share=Math.max(0,total-friendSum);
+        document.querySelectorAll('#swae-preview .swae-pv-row').forEach(function(row){
+          if(!row.querySelector('input')){
+            var name=row.querySelector('.swae-pv-name').textContent;
+            for(var i=0;i<_swaeSplits.length;i++){
+              if(_swaeSplits[i].name===name && _swaeSplits[i].isCurUser){
+                row.querySelector('.swae-pv-share').textContent=document.getElementById('swae-cur').value+' '+_swaeSplits[i].share.toFixed(2);
+              }
+            }
+          }
+        });
+        swaeValidateSplit();
+      }
+
+      function swaeValidateSplit() {
+        var total=parseFloat(document.getElementById('swae-amt').value)||0;
+        if(!_swaeSplits.length) return '';
+        var sum=0; _swaeSplits.forEach(function(s){ sum+=s.share; });
+        var diff=Math.abs(sum-total);
+        var btn=document.getElementById('swae-btn1');
+        if(diff>0.02 && _swaeMode==='custom'){
+          var msg='Shares sum '+document.getElementById('swae-cur').value+' '+sum.toFixed(2)+' — total '+total.toFixed(2)+'. Diff: '+diff.toFixed(2);
+          swaeShowWarn(msg); if(btn) btn.disabled=true; return msg;
+        }
+        swaeHideWarn(); if(btn) btn.disabled=false; return '';
+      }
+
+      function swaeShowWarn(msg){ var w=document.getElementById('swae-warn'); w.textContent=msg; w.classList.add('show'); }
+      function swaeHideWarn(){ document.getElementById('swae-warn').classList.remove('show'); }
+
+      function swaeRenderReview() {
+        var total=parseFloat(document.getElementById('swae-amt').value)||0;
+        var cur=document.getElementById('swae-cur').value;
+        var desc=document.getElementById('swae-desc').value;
+        var el=document.getElementById('swae-review');
+        var html='<div class="swae-pv-row" style="background:rgba(255,107,53,.05);border-bottom:1px solid rgba(255,107,53,.15)">'
+          +'<span class="swae-pv-name" style="font-weight:800;color:#fff">'+escHtml(desc)+'</span>'
+          +'<span class="swae-pv-share" style="color:#ff6b35;font-size:1em">'+cur+' '+total.toFixed(2)+'</span></div>';
+        _swaeSplits.forEach(function(s){
+          html+='<div class="swae-pv-row"><div class="swae-pv-av">'+s.initials+'</div>'
+            +'<span class="swae-pv-name">'+escHtml(s.name)+'</span>'
+            +(s.paid>0?'<span class="swae-pv-paid">paid</span>':'')
+            +'<span class="swae-pv-share">'+cur+' '+s.share.toFixed(2)+'</span></div>';
+        });
+        el.innerHTML=html;
+      }
+
+      function swaePickImg(input) {
+        var file=input.files[0]; if(!file) return;
+        var reader=new FileReader();
+        reader.onload=function(e){
+          _swaeImgB64=e.target.result;
+          var thumb=document.getElementById('swae-thumb');
+          thumb.src=_swaeImgB64; thumb.style.display='block';
+          document.getElementById('swae-zone').classList.add('has-img');
+          document.querySelector('.swae-receipt-txt').textContent='Receipt attached ✓';
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function swaeSubmit() {
+        var btn=document.getElementById('swae-submit-btn');
+        var errEl=document.getElementById('swae-submit-err');
+        if(_swaeSelIds.length===0){ errEl.textContent='No friends selected.'; return; }
+        var warn=swaeValidateSplit(); if(warn){ errEl.textContent=warn; return; }
+        btn.disabled=true; btn.textContent='⏳ Adding…'; errEl.textContent='';
+        var payload={
+          description: document.getElementById('swae-desc').value.trim(),
+          amount:      parseFloat(document.getElementById('swae-amt').value)||0,
+          currency:    document.getElementById('swae-cur').value,
+          date:        document.getElementById('swae-date').value,
+          splits:      _swaeSplits.map(function(s){ return {userId:s.userId,share:s.share,paid:s.paid,name:s.name}; }),
+          receiptBase64: _swaeImgB64||null
+        };
+        google.script.run
+          .withSuccessHandler(function(res){
+            btn.disabled=false; btn.textContent='✓ Add to Splitwise';
+            if(res && res.success){
+              document.getElementById('swae-success-msg').textContent='Expense Added! 🎉';
+              document.getElementById('swae-success-sub').textContent=payload.currency+' '+payload.amount.toFixed(2)+' — '+payload.description;
+              swaeShowStep(3);
+              setTimeout(function(){ swaeClose(); }, 2200);
+            } else { errEl.textContent='⚠ '+(res&&res.error?res.error:'Unknown error'); }
+          })
+          .withFailureHandler(function(e){ btn.disabled=false; btn.textContent='✓ Add to Splitwise'; errEl.textContent='⚠ '+(e.message||String(e)); })
+          .createSplitwiseExpense(payload);
+      }
     </script>
+
+    <!-- ── Add Expense FAB ── -->
+    <button id="sw-fab" onclick="swaeOpen()" title="Add Expense">＋</button>
+
+    <!-- ── Add Expense Modal ── -->
+    <div id="swae-bg" onclick="swaeOutsideClose(event)">
+      <div id="swae-sheet">
+        <div class="swae-handle"></div>
+        <div class="swae-head">
+          <span class="swae-title" id="swae-title">Add Expense</span>
+          <button class="swae-close" onclick="swaeClose()">✕</button>
+        </div>
+        <div class="swae-steps">
+          <div class="swae-step-dot active" id="swae-sd0"></div>
+          <div class="swae-step-dot" id="swae-sd1"></div>
+          <div class="swae-step-dot" id="swae-sd2"></div>
+        </div>
+        <!-- Step 0 -->
+        <div class="swae-body" id="swae-s0">
+          <div class="swae-row" style="margin-bottom:14px"><div>
+            <label class="swae-label">Description</label>
+            <input id="swae-desc" class="swae-input" type="text" placeholder="e.g. Dinner, Grab, Groceries…" maxlength="80">
+          </div></div>
+          <div class="swae-row col2">
+            <div><label class="swae-label">Total Amount</label><input id="swae-amt" class="swae-input" type="number" placeholder="0.00" min="0" step="0.01"></div>
+            <div><label class="swae-label">Currency</label>
+              <select id="swae-cur" class="swae-input swae-anchor-sel">
+                <option value="LKR">LKR 🇱🇰</option><option value="USD">USD 🇺🇸</option><option value="EUR">EUR 🇪🇺</option><option value="GBP">GBP 🇬🇧</option>
+              </select>
+            </div>
+          </div>
+          <div class="swae-row"><div><label class="swae-label">Date</label><input id="swae-date" class="swae-input" type="date"></div></div>
+          <div class="swae-foot"><button class="swae-btn next" onclick="swaeGoStep(1)">Select Friends →</button></div>
+        </div>
+        <!-- Step 1 -->
+        <div class="swae-body" id="swae-s1" style="display:none">
+          <label class="swae-label">Select Friends</label>
+          <div class="swae-friends-wrap" id="swae-chips"></div>
+          <label class="swae-label" style="margin-top:2px">Who Paid?</label>
+          <select id="swae-payer" class="swae-input swae-anchor-sel" style="margin-bottom:14px" onchange="swaeCalcSplit()">
+            <option value="me">👤 Me</option>
+          </select>
+          <label class="swae-label">Split Method</label>
+          <div class="swae-mode-grid">
+            <div class="swae-mode-btn sel" data-mode="equal-me" onclick="swaeSetMode(this)">⚖️ Equal<br><span style="opacity:.7;font-weight:500">Include me</span></div>
+            <div class="swae-mode-btn" data-mode="equal-notme" onclick="swaeSetMode(this)">👥 Equal<br><span style="opacity:.7;font-weight:500">Friends only</span></div>
+            <div class="swae-mode-btn" data-mode="custom" onclick="swaeSetMode(this)">✏️ Custom<br><span style="opacity:.7;font-weight:500">Per person</span></div>
+            <div class="swae-mode-btn" data-mode="custom-anchor" onclick="swaeSetMode(this)">📌 Custom+<br><span style="opacity:.7;font-weight:500">One fixed, split rest</span></div>
+          </div>
+          <div id="swae-anchor-wrap" style="display:none" class="swae-anchor-wrap">
+            <span class="swae-anchor-label">Who gets the fixed amount?</span>
+            <select id="swae-anchor-who" class="swae-anchor-sel" onchange="swaeCalcSplit()" style="margin-bottom:10px"></select>
+            <span class="swae-anchor-label">Their fixed amount</span>
+            <input id="swae-anchor-amt" class="swae-input" type="number" placeholder="0.00" min="0" step="0.01" oninput="swaeCalcSplit()" style="margin-bottom:10px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.78em;color:rgba(255,255,255,.5);margin-bottom:10px">
+              <input type="checkbox" id="swae-anchor-includeme" onchange="swaeCalcSplit()" style="width:16px;height:16px;accent-color:#ff6b35">
+              Include me in the remaining split
+            </label>
+          </div>
+          <label class="swae-label" style="margin-top:6px">Split Preview</label>
+          <div class="swae-preview" id="swae-preview"></div>
+          <div class="swae-warn" id="swae-warn"></div>
+          <div class="swae-foot">
+            <button class="swae-btn back" onclick="swaeGoStep(0)">← Back</button>
+            <button class="swae-btn next" id="swae-btn1" onclick="swaeGoStep(2)">Review →</button>
+          </div>
+        </div>
+        <!-- Step 2 -->
+        <div class="swae-body" id="swae-s2" style="display:none">
+          <label class="swae-label">Summary</label>
+          <div class="swae-preview" id="swae-review"></div>
+          <label class="swae-label" style="margin-top:14px">Receipt Photo <span style="font-weight:400;opacity:.5">(optional)</span></label>
+          <div class="swae-receipt-zone" id="swae-zone" onclick="document.getElementById('swae-file').click()">
+            <div class="swae-receipt-ico">📷</div>
+            <div class="swae-receipt-txt">Tap to add bill / receipt photo</div>
+            <img id="swae-thumb" class="swae-receipt-thumb">
+          </div>
+          <input type="file" id="swae-file" accept="image/*" capture="environment" style="display:none" onchange="swaePickImg(this)">
+          <div id="swae-submit-err" style="font-size:.72em;color:#ff4d6d;min-height:1em;text-align:center;margin-bottom:4px"></div>
+          <div class="swae-foot">
+            <button class="swae-btn back" onclick="swaeGoStep(1)">← Back</button>
+            <button class="swae-btn next" id="swae-submit-btn" onclick="swaeSubmit()">✓ Add to Splitwise</button>
+          </div>
+        </div>
+        <!-- Success -->
+        <div id="swae-s3" style="display:none">
+          <div class="swae-success">
+            <div class="swae-success-ico">✅</div>
+            <div class="swae-success-msg" id="swae-success-msg">Expense Added! 🎉</div>
+            <div class="swae-success-sub" id="swae-success-sub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
 
