@@ -44,6 +44,57 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .up{color:var(--green);} .dn{color:var(--red2);} .fl{color:var(--muted);}
 
 /* ═══════════════════════════════════════════
+   PIN MODAL (Summary tab only)
+═══════════════════════════════════════════ */
+#pin-modal-bg{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;
+}
+#pin-modal-bg.open{ display:flex; }
+#pin-modal{
+  background:#0d1220;border:1px solid rgba(255,255,255,.1);
+  border-radius:26px;padding:30px 24px 24px;
+  display:flex;flex-direction:column;align-items:center;gap:0;
+  width:280px;box-shadow:0 24px 60px rgba(0,0,0,.6);
+  animation:pinModalIn .25s ease;
+}
+@keyframes pinModalIn{from{opacity:0;transform:scale(.92) translateY(12px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.pin-m-icon{ font-size:2em;margin-bottom:8px; }
+.pin-m-title{ font-size:.88em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:20px; }
+.pin-dots{ display:flex;gap:12px;margin-bottom:22px; }
+.pin-dot{
+  width:13px;height:13px;border-radius:50%;
+  border:2px solid rgba(255,255,255,.2);background:transparent;
+  transition:background .15s,border-color .15s,transform .15s;
+}
+.pin-dot.filled{ background:var(--blue);border-color:var(--blue);transform:scale(1.18); }
+.pin-dot.error{ background:var(--red);border-color:var(--red);animation:pinShake .35s ease; }
+@keyframes pinShake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-5px);}40%{transform:translateX(5px);}
+  60%{transform:translateX(-3px);}80%{transform:translateX(3px);}
+}
+.pin-grid{ display:grid;grid-template-columns:repeat(3,68px);gap:8px; }
+.pin-key{
+  height:62px;border-radius:16px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  color:#fff;font-size:1.3em;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:background .12s,transform .1s;
+  display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;user-select:none;
+}
+.pin-key:active,.pin-key.pressed{ background:rgba(0,212,255,.18);transform:scale(.92); }
+.pin-key.pin-del{ font-size:1em;color:rgba(255,255,255,.4); }
+.pin-key.pin-zero{ grid-column:2; }
+.pin-err-msg{
+  margin-top:14px;font-size:.68em;color:var(--red);letter-spacing:1px;
+  min-height:1.1em;text-align:center;font-weight:600;
+  opacity:0;transition:opacity .2s;
+}
+.pin-err-msg.show{ opacity:1; }
+
+/* ═══════════════════════════════════════════
    SPA LAYOUT
 ═══════════════════════════════════════════ */
 .spa-page{
@@ -952,6 +1003,34 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 </head>
 <body>
 
+<!-- ── PIN Modal (Summary tab) ── -->
+<div id="pin-modal-bg">
+  <div id="pin-modal">
+    <div class="pin-m-icon">🔐</div>
+    <div class="pin-m-title">Summary PIN</div>
+    <div class="pin-dots">
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-key" data-v="1">1</button>
+      <button class="pin-key" data-v="2">2</button>
+      <button class="pin-key" data-v="3">3</button>
+      <button class="pin-key" data-v="4">4</button>
+      <button class="pin-key" data-v="5">5</button>
+      <button class="pin-key" data-v="6">6</button>
+      <button class="pin-key" data-v="7">7</button>
+      <button class="pin-key" data-v="8">8</button>
+      <button class="pin-key" data-v="9">9</button>
+      <button class="pin-key pin-zero" data-v="0">0</button>
+      <button class="pin-key pin-del" data-v="del">⌫</button>
+    </div>
+    <div class="pin-err-msg"></div>
+  </div>
+</div>
+
 <div class="bg-orbs">
   <div class="orb o1"></div><div class="orb o2"></div>
   <div class="orb o3"></div><div class="orb o4"></div>
@@ -1102,17 +1181,13 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
      BOTTOM NAV
 ═══════════════════════════════════════════ -->
 <nav class="bottom-nav">
-  <button class="bnav-btn active" data-page="port" onclick="showPage('port')">
-    <span class="bnav-ico">💼</span>
-    <span class="bnav-lbl">Summary</span>
+  <button class="bnav-btn active" data-page="exp" onclick="showPage('exp')">
+    <span class="bnav-ico">📊</span>
+    <span class="bnav-lbl">Expenses</span>
   </button>
   <button class="bnav-btn" data-page="cc" onclick="showPage('cc')">
     <span class="bnav-ico">💳</span>
     <span class="bnav-lbl">Cards</span>
-  </button>
-  <button class="bnav-btn" data-page="exp" onclick="showPage('exp')">
-    <span class="bnav-ico">📊</span>
-    <span class="bnav-lbl">Expenses</span>
   </button>
   <button class="bnav-btn" data-page="inv" onclick="showPage('inv')">
     <span class="bnav-ico">💹</span>
@@ -1130,6 +1205,10 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
     <span class="bnav-ico">🤝</span>
     <span class="bnav-lbl">Splits</span>
   </button>
+  <button class="bnav-btn" data-page="port" onclick="showPage('port')">
+    <span class="bnav-ico">💼</span>
+    <span class="bnav-lbl">Summary</span>
+  </button>
 </nav>
 
 <script>
@@ -1138,7 +1217,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 ═══════════════════════════════════════════ */
 var _spaLoaded = {cse:false, cc:false, exp:false, port:false, inv:false, mf:false, sw:false};
 
-function showPage(name){
+function _doShowPage(name){
   document.querySelectorAll('.spa-page').forEach(function(p){
     p.classList.remove('active');
   });
@@ -1158,7 +1237,16 @@ function showPage(name){
   }
 }
 
-window.onload = function(){ showPage('port'); };
+function showPage(name){
+  if(name==='port'){
+    // Always require PIN for Summary tab
+    window._pinGuard(function(){ _doShowPage('port'); });
+  } else {
+    _doShowPage(name);
+  }
+}
+
+window.onload = function(){ showPage('exp'); };
 
 /* ═══════════════════════════════════════════
    CSE / PORTFOLIO PAGE JS
@@ -3152,6 +3240,87 @@ function swRenderDrawerTxns(result){
 document.addEventListener('keydown',function(e){
   if(e.key==='Escape') swCloseDrawer();
 });
+
+/* ═══════════════════════════════════════════
+   PIN MODAL — Summary tab only, every visit
+═══════════════════════════════════════════ */
+(function(){
+  var PIN = '9965';
+  var _pinEntry = '';
+  var _pinCb    = null;
+  var _pinAttempts = 0;
+
+  var bg   = document.getElementById('pin-modal-bg');
+  var dots = bg.querySelectorAll('.pin-dot');
+  var errEl= bg.querySelector('.pin-err-msg');
+
+  function pinDots(){
+    for(var i=0;i<dots.length;i++){
+      dots[i].classList.toggle('filled', i < _pinEntry.length);
+      dots[i].classList.remove('error');
+    }
+  }
+  function pinShake(){
+    for(var i=0;i<dots.length;i++) dots[i].classList.add('error');
+  }
+  function pinErr(msg){ errEl.textContent=msg; errEl.classList.add('show'); }
+  function pinErrHide(){ errEl.classList.remove('show'); }
+
+  function pinReset(){
+    _pinEntry=''; _pinAttempts=0; pinDots(); pinErrHide();
+  }
+
+  function pinPress(val){
+    pinErrHide();
+    if(val==='del'){
+      if(_pinEntry.length>0){ _pinEntry=_pinEntry.slice(0,-1); pinDots(); }
+      return;
+    }
+    if(_pinEntry.length>=4) return;
+    _pinEntry+=val; pinDots();
+    if(_pinEntry.length===4) pinCheck();
+  }
+
+  function pinCheck(){
+    if(_pinEntry===PIN){
+      bg.classList.remove('open');
+      pinReset();
+      if(_pinCb){ _pinCb(); _pinCb=null; }
+    } else {
+      _pinAttempts++;
+      pinShake();
+      pinErr(_pinAttempts>=3 ? 'Wrong PIN ('+_pinAttempts+' tries)' : 'Incorrect PIN');
+      setTimeout(function(){ _pinEntry=''; pinDots(); }, 500);
+    }
+  }
+
+  // Wire up buttons
+  var keys = bg.querySelectorAll('.pin-key');
+  for(var k=0;k<keys.length;k++){
+    (function(btn){
+      btn.addEventListener('click', function(){
+        btn.classList.add('pressed');
+        setTimeout(function(){ btn.classList.remove('pressed'); },120);
+        pinPress(btn.getAttribute('data-v'));
+      });
+    })(keys[k]);
+  }
+
+  // Physical keyboard — only active when modal is open
+  document.addEventListener('keydown', function(e){
+    if(!bg.classList.contains('open')) return;
+    if(e.key>='0'&&e.key<='9') pinPress(e.key);
+    else if(e.key==='Backspace') pinPress('del');
+    else if(e.key==='Escape'){ bg.classList.remove('open'); pinReset(); }
+  });
+
+  // Expose global so showPage can call it
+  window._pinGuard = function(cb){
+    pinReset();
+    _pinCb = cb;
+    bg.classList.add('open');
+  };
+})();
 </script>
 </body>
 </html>
