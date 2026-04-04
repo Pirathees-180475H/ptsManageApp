@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADD EXP</title>
+<style>
+:root{
+  --bg:#0d1117;--card:#161b22;--card2:#1c2230;--bdr:rgba(255,255,255,.08);
+  --text:#e6edf3;--muted:#8b949e;--green:#3fb950;--red:#f85149;
+  --blue:#58a6ff;--yellow:#e3b341;--acc:#1f6feb;
+  --r:#3fb950;--nr:#f0883e;--sw:#bc8cff;--cc:#58a6ff;--ra:10px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;
+  overflow-y:auto;padding-bottom:60px;}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--card);border-bottom:1px solid var(--bdr);padding:10px 14px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;gap:10px;}
+.tb-left{display:flex;align-items:center;gap:9px;}
+.tb-icon{font-size:18px;}
+.tb-title{font-size:14px;font-weight:700;line-height:1.1;}
+.tb-sub{font-size:10px;color:var(--muted);}
+.tz-chip{background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);color:var(--blue);
+  font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.4px;white-space:nowrap;}
+.save-btn{background:var(--acc);color:#fff;border:none;padding:7px 14px;border-radius:7px;
+  font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.save-btn:hover{background:#388bfd;}
+.save-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── DATE ROW ── */
+.date-row{max-width:680px;margin:12px auto 0;padding:0 13px;
+  display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.date-row label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.4px;text-transform:uppercase;}
+.date-inp{background:var(--card2);border:1px solid var(--bdr);color:var(--text);
+  padding:6px 10px;border-radius:7px;font-size:13px;outline:none;color-scheme:dark;}
+.date-inp:focus{border-color:var(--blue);}
+.dnav{display:flex;gap:3px;}
+.dnav button{background:var(--card2);border:1px solid var(--bdr);color:var(--muted);
+  width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;}
+.dnav button:hover{border-color:var(--blue);color:var(--blue);}
+.today-btn{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2);color:var(--r);
+  font-size:10px;font-weight:700;padding:4px 9px;border-radius:6px;cursor:pointer;}
+.row-status{margin-left:auto;font-size:10px;display:flex;align-items:center;gap:5px;color:var(--muted);}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;}
+.sdot.loading{background:var(--yellow);animation:blink 1s infinite;}
+.sdot.error{background:var(--red);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── MAIN ── */
+.main{max-width:680px;margin:12px auto;padding:0 13px;display:flex;flex-direction:column;gap:11px;}
+
+/* ── SECTION ── */
+.sec{background:var(--card);border:1px solid var(--bdr);border-radius:var(--ra);overflow:hidden;}
+.sec-hd{display:flex;align-items:center;gap:8px;padding:10px 13px;
+  border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none;}
+.sec-hd:hover{background:rgba(255,255,255,.02);}
+.sec-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sec-title{font-size:12px;font-weight:700;flex:1;}
+.sec-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;letter-spacing:.3px;}
+.sec-sum{font-size:11px;font-weight:700;margin-right:3px;}
+.chev{color:var(--muted);font-size:10px;transition:transform .2s;flex-shrink:0;}
+.sec.collapsed>.sec-bd{display:none;}
+.sec.collapsed .chev{transform:rotate(-90deg);}
+.sec-bd{padding:12px 13px;display:flex;flex-direction:column;gap:8px;}
+
+/* ── FIELD ROW ── */
+.frow{display:grid;grid-template-columns:110px 1fr 1fr;gap:6px;align-items:start;}
+.frow.single{grid-template-columns:110px 1fr;}
+.flbl{font-size:11px;color:var(--muted);font-weight:600;padding-top:9px;display:flex;flex-direction:column;gap:2px;}
+.cid{font-size:9px;font-family:monospace;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.3);
+  padding:1px 3px;border-radius:3px;display:inline-block;margin-top:1px;width:fit-content;}
+.fcol{display:flex;flex-direction:column;gap:2px;}
+.fsub{font-size:9px;color:var(--muted);padding-left:1px;}
+
+/* ── INPUTS ── */
+.inp{width:100%;background:var(--card2);border:1px solid var(--bdr);color:var(--text);
+  padding:6px 9px;border-radius:6px;font-size:12px;outline:none;transition:border-color .15s;}
+.inp:focus{border-color:var(--blue);}
+.inp.fml{font-family:'Courier New',monospace;font-size:11px;color:#d2a679;}
+.inp.ref{color:var(--muted);font-size:11px;}
+.inp.r:focus{border-color:var(--r);}
+.inp.nr:focus{border-color:var(--nr);}
+.inp.sw:focus{border-color:var(--sw);}
+.inp.cc:focus{border-color:var(--cc);}
+.inp.changed{border-color:var(--yellow)!important;}
+.calc{font-size:10px;color:var(--green);min-height:14px;padding-left:1px;}
+.calc.empty{color:var(--muted);}
+.divider{height:1px;background:var(--bdr);}
+.sub-lbl{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--cc);padding:2px 0 4px;}
+
+/* ── NET CHIP ── */
+.net-chip{border-radius:8px;padding:8px 11px;display:flex;align-items:center;gap:9px;margin-top:2px;}
+.net-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;}
+.net-val{font-size:13px;font-weight:800;}
+.net-hint{font-size:10px;color:var(--muted);margin-left:auto;}
+
+/* ── TOTAL BAR ── */
+.tot-bar{background:var(--card);border:1px solid var(--bdr);border-radius:var(--ra);
+  padding:12px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.tot-lbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.tot-val{font-size:19px;font-weight:800;}
+.tot-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto;}
+.chip{font-size:9px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.2px;border:1px solid;}
+.chip-r{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.25);color:var(--r);}
+.chip-nr{background:rgba(240,136,62,.08);border-color:rgba(240,136,62,.25);color:var(--nr);}
+.chip-sw{background:rgba(188,140,255,.08);border-color:rgba(188,140,255,.25);color:var(--sw);}
+.chip-cc{background:rgba(88,166,255,.08);border-color:rgba(88,166,255,.25);color:var(--cc);}
+
+/* ── ACTIONS ── */
+.actions{display:flex;gap:8px;}
+.btn-save2{flex:1;background:var(--acc);border:none;color:#fff;padding:10px;border-radius:8px;
+  font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-save2:hover{background:#388bfd;}
+.btn-save2:disabled{opacity:.5;cursor:not-allowed;}
+.btn-clr{background:var(--card2);border:1px solid var(--bdr);color:var(--muted);
+  padding:10px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-clr:hover{border-color:var(--red);color:var(--red);}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--card2);border:1px solid var(--bdr);color:var(--text);
+  padding:9px 16px;border-radius:9px;font-size:12px;font-weight:600;
+  transition:transform .3s;z-index:999;white-space:nowrap;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+#toast.ok{border-color:rgba(63,185,80,.4);color:var(--green);}
+#toast.err{border-color:rgba(248,81,73,.4);color:var(--red);}
+
+/* ── LOG TABLE ── */
+.log-card{background:var(--card);border:1px solid var(--bdr);border-radius:var(--ra);overflow:hidden;}
+.log-hd{padding:10px 13px;border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:space-between;}
+.log-title{font-size:12px;font-weight:700;}
+.log-meta{font-size:10px;color:var(--muted);}
+.log-empty{padding:20px;text-align:center;color:var(--muted);font-size:12px;}
+.log-tbl{width:100%;border-collapse:collapse;}
+.log-tbl th{font-size:9px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+  padding:6px 13px;text-align:left;border-bottom:1px solid var(--bdr);background:rgba(255,255,255,.015);}
+.log-tbl td{padding:8px 13px;font-size:11px;border-bottom:1px solid rgba(255,255,255,.04);}
+.log-tbl tr:last-child td{border-bottom:none;}
+.log-tbl tr:hover td{background:rgba(255,255,255,.02);}
+.cat-pill{display:inline-flex;align-items:center;font-size:9px;font-weight:700;
+  padding:2px 5px;border-radius:20px;}
+.cat-r{background:rgba(63,185,80,.1);color:var(--r);}
+.cat-nr{background:rgba(240,136,62,.1);color:var(--nr);}
+.cat-sw{background:rgba(188,140,255,.1);color:var(--sw);}
+.cat-cc{background:rgba(88,166,255,.1);color:var(--cc);}
+.fml-tag{font-family:monospace;font-size:10px;color:#d2a679;
+  background:rgba(210,166,121,.08);padding:1px 3px;border-radius:3px;}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+  <div class="tb-left">
+    <span class="tb-icon">💸</span>
+    <div>
+      <div class="tb-title">ADD EXP</div>
+      <div class="tb-sub">Monthly Expense Tracker</div>
+    </div>
+    <span class="tz-chip">🕐 UTC+5:30 LKA</span>
+  </div>
+  <button class="save-btn" id="topSaveBtn" onclick="saveAll()">⬆ Save to Sheet</button>
+</div>
+
+<!-- ── DATE ROW ── -->
+<div class="date-row">
+  <label>Date</label>
+  <div class="dnav">
+    <button onclick="shiftDate(-1)">‹</button>
+    <button onclick="shiftDate(1)">›</button>
+  </div>
+  <input type="date" class="date-inp" id="dateInp" onchange="onDateChange()">
+  <button class="today-btn" onclick="goToday()">TODAY</button>
+  <div class="row-status">
+    <div class="sdot loading" id="sdot"></div>
+    <span id="statusTxt">Loading…</span>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <!-- §1 Regular -->
+  <div class="sec" id="sec-r">
+    <div class="sec-hd" onclick="toggleSec('sec-r')">
+      <div class="sec-dot" style="background:var(--r)"></div>
+      <div class="sec-title">Regular Expenses</div>
+      <div class="sec-badge" style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.2);color:var(--r)">R</div>
+      <div class="sec-sum" id="sum-r" style="color:var(--r)"></div>
+      <span class="chev">▾</span>
+    </div>
+    <div class="sec-bd">
+      <div class="frow">
+        <div class="flbl">🍛 Food<span class="cid">C · D</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount</div>
+          <input class="inp fml r" id="fC" data-col="C"
+            oninput="calcPreview(this,'calcC');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcC">—</div>
+        </div>
+        <div class="fcol">
+          <div class="fsub">Reference</div>
+          <input class="inp ref r" id="fD" data-col="D"
+            oninput="markChanged(this)">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="frow">
+        <div class="flbl">🛒 Supermarket<span class="cid">E · F</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount</div>
+          <input class="inp fml r" id="fE" data-col="E"
+            oninput="calcPreview(this,'calcE');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcE">—</div>
+        </div>
+        <div class="fcol">
+          <div class="fsub">Reference</div>
+          <input class="inp ref r" id="fF" data-col="F"
+            oninput="markChanged(this)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §2 Non-Regular (collapsed by default) -->
+  <div class="sec collapsed" id="sec-nr">
+    <div class="sec-hd" onclick="toggleSec('sec-nr')">
+      <div class="sec-dot" style="background:var(--nr)"></div>
+      <div class="sec-title">Non-Regular Expenses</div>
+      <div class="sec-badge" style="background:rgba(240,136,62,.1);border:1px solid rgba(240,136,62,.2);color:var(--nr)">NR</div>
+      <div class="sec-sum" id="sum-nr" style="color:var(--nr)"></div>
+      <span class="chev">▾</span>
+    </div>
+    <div class="sec-bd">
+      <div class="frow single">
+        <div class="flbl">🚗 Uber<span class="cid">G</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount</div>
+          <input class="inp fml nr" id="fG" data-col="G"
+            oninput="calcPreview(this,'calcG');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcG">—</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="frow single">
+        <div class="flbl">🏢 Uber Work<span class="cid">H</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount</div>
+          <input class="inp fml nr" id="fH" data-col="H"
+            oninput="calcPreview(this,'calcH');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcH">—</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="frow">
+        <div class="flbl">🎬 Movies/Out<span class="cid">J · I</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount</div>
+          <input class="inp fml nr" id="fJ" data-col="J"
+            oninput="calcPreview(this,'calcJ');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcJ">—</div>
+        </div>
+        <div class="fcol">
+          <div class="fsub">Reference</div>
+          <input class="inp ref nr" id="fI" data-col="I"
+            oninput="markChanged(this)">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="frow">
+        <div class="flbl">📦 Other<span class="cid">K · L</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount</div>
+          <input class="inp fml nr" id="fK" data-col="K"
+            oninput="calcPreview(this,'calcK');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcK">—</div>
+        </div>
+        <div class="fcol">
+          <div class="fsub">Reference</div>
+          <input class="inp ref nr" id="fL" data-col="L"
+            oninput="markChanged(this)">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="frow single">
+        <div class="flbl">🚌 Bus Fair<span class="cid">M</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount</div>
+          <input class="inp fml nr" id="fM" data-col="M"
+            oninput="calcPreview(this,'calcM');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcM">—</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="frow">
+        <div class="flbl">🎉 Party<span class="cid">O · N</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount</div>
+          <input class="inp fml nr" id="fO" data-col="O"
+            oninput="calcPreview(this,'calcO');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcO">—</div>
+        </div>
+        <div class="fcol">
+          <div class="fsub">Reference</div>
+          <input class="inp ref nr" id="fN" data-col="N"
+            oninput="markChanged(this)">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="frow">
+        <div class="flbl">👗 D&amp;A<span class="cid">Q · P</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount</div>
+          <input class="inp fml nr" id="fQ" data-col="Q"
+            oninput="calcPreview(this,'calcQ');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcQ">—</div>
+        </div>
+        <div class="fcol">
+          <div class="fsub">Reference</div>
+          <input class="inp ref nr" id="fP" data-col="P"
+            oninput="markChanged(this)">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="frow single">
+        <div class="flbl">🏠 Rent<span class="cid">R</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount (monthly)</div>
+          <input class="inp fml nr" id="fR" data-col="R"
+            oninput="calcPreview(this,'calcR');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcR">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- §3 Splitwise -->
+  <div class="sec" id="sec-sw">
+    <div class="sec-hd" onclick="toggleSec('sec-sw')">
+      <div class="sec-dot" style="background:var(--sw)"></div>
+      <div class="sec-title">Splitwise</div>
+      <div class="sec-badge" style="background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.2);color:var(--sw)">SW</div>
+      <div class="sec-sum" id="sum-sw" style="color:var(--sw)"></div>
+      <span class="chev">▾</span>
+    </div>
+    <div class="sec-bd">
+      <div class="frow">
+        <div class="flbl">💳 I Paid<span class="cid">T</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount I covered</div>
+          <input class="inp fml sw" id="fT" data-col="T"
+            oninput="calcPreview(this,'calcT');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcT">—</div>
+        </div>
+        <div class="fcol">
+          <div class="fsub">Others Paid Me <span class="cid">U</span></div>
+          <input class="inp fml sw" id="fU" data-col="U"
+            oninput="calcPreview(this,'calcU');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcU">—</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="frow single">
+        <div class="flbl">📝 Reference<span class="cid">W</span></div>
+        <div class="fcol">
+          <div class="fsub">Description</div>
+          <input class="inp ref sw" id="fW" data-col="W"
+            oninput="markChanged(this)">
+        </div>
+      </div>
+      <div class="net-chip" style="background:rgba(188,140,255,.05);border:1px solid rgba(188,140,255,.12);">
+        <span class="net-lbl">Net</span>
+        <span class="net-val" id="swNetVal" style="color:var(--muted)">—</span>
+        <span class="net-hint" id="swNetHint"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- §4 Credit Cards -->
+  <div class="sec" id="sec-cc">
+    <div class="sec-hd" onclick="toggleSec('sec-cc')">
+      <div class="sec-dot" style="background:var(--cc)"></div>
+      <div class="sec-title">Credit Cards</div>
+      <div class="sec-badge" style="background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.2);color:var(--cc)">CC</div>
+      <div class="sec-sum" id="sum-cc" style="color:var(--cc)"></div>
+      <span class="chev">▾</span>
+    </div>
+    <div class="sec-bd">
+      <div class="frow single">
+        <div class="flbl">📋 Ref<span class="cid">AE</span></div>
+        <div class="fcol">
+          <div class="fsub">Shared reference</div>
+          <input class="inp ref cc" id="fAE" data-col="AE"
+            oninput="markChanged(this)">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="sub-lbl">AMEX</div>
+      <div class="frow">
+        <div class="flbl">💸 Expense<span class="cid">AF</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount charged</div>
+          <input class="inp fml cc" id="fAF" data-col="AF"
+            oninput="calcPreview(this,'calcAF');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcAF">—</div>
+        </div>
+        <div class="fcol">
+          <div class="fsub">Payment <span class="cid">AG</span></div>
+          <input class="inp fml cc" id="fAG" data-col="AG"
+            oninput="calcPreview(this,'calcAG');markChanged(this)">
+          <div class="calc empty" id="calcAG">—</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="sub-lbl">HSBC</div>
+      <div class="frow">
+        <div class="flbl">💸 Expense<span class="cid">AH</span></div>
+        <div class="fcol">
+          <div class="fsub">Amount charged</div>
+          <input class="inp fml cc" id="fAH" data-col="AH"
+            oninput="calcPreview(this,'calcAH');updateTotals();markChanged(this)">
+          <div class="calc empty" id="calcAH">—</div>
+        </div>
+        <div class="fcol">
+          <div class="fsub">Payment <span class="cid">AI</span></div>
+          <input class="inp fml cc" id="fAI" data-col="AI"
+            oninput="calcPreview(this,'calcAI');markChanged(this)">
+          <div class="calc empty" id="calcAI">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TOTAL BAR ── -->
+  <div class="tot-bar">
+    <div>
+      <div class="tot-lbl">Today's Total <span class="cid">S</span></div>
+      <div class="tot-val" id="totVal">LKR 0</div>
+      <div class="tot-sub" id="totSub">—</div>
+    </div>
+    <div class="chips">
+      <div class="chip chip-r"  id="chipR">R · 0</div>
+      <div class="chip chip-nr" id="chipNR">NR · 0</div>
+      <div class="chip chip-sw" id="chipSW">SW · 0</div>
+      <div class="chip chip-cc" id="chipCC">CC · 0</div>
+    </div>
+  </div>
+
+  <!-- ── ACTIONS ── -->
+  <div class="actions">
+    <button class="btn-save2" id="mainSaveBtn" onclick="saveAll()">
+      ⬆ Save to Sheet (cell-by-cell)
+    </button>
+    <button class="btn-clr" onclick="clearChanges()">✕ Clear</button>
+  </div>
+
+  <!-- ── LOG TABLE ── -->
+  <div class="log-card">
+    <div class="log-hd">
+      <div class="log-title">📋 Sheet Row Preview</div>
+      <div class="log-meta" id="logMeta">—</div>
+    </div>
+    <div id="logBody"><div class="log-empty">Loading…</div></div>
+  </div>
+
+</div><!-- /main -->
+<div id="toast">✓ Saved</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   COL MAP  (column letter → input element ID)
+═══════════════════════════════════════════════ */
+var COL_MAP = {
+  C:'fC',D:'fD',E:'fE',F:'fF',G:'fG',H:'fH',I:'fI',J:'fJ',
+  K:'fK',L:'fL',M:'fM',N:'fN',O:'fO',P:'fP',Q:'fQ',R:'fR',
+  T:'fT',U:'fU',W:'fW',
+  AE:'fAE',AF:'fAF',AG:'fAG',AH:'fAH',AI:'fAI'
+};
+
+/* ═══════════════════════════════════════════════
+   TIMEZONE  — Sri Lanka UTC+5:30
+═══════════════════════════════════════════════ */
+function getLKADate(offsetDays) {
+  var d   = new Date();
+  var lka = new Date(d.getTime() + (5*60+30)*60*1000);
+  if (offsetDays) lka = new Date(lka.getTime() + offsetDays*86400000);
+  var y   = lka.getUTCFullYear();
+  var m   = String(lka.getUTCMonth()+1).padStart(2,'0');
+  var day = String(lka.getUTCDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+// "2026-04-04" → "4-4"  (matches sheet column A)
+function toKey(ds) {
+  var p = ds.split('-');
+  return parseInt(p[1])+'-'+parseInt(p[2]);
+}
+// Previous calendar day key (for timezone-boundary fallback)
+function toPrevKey(ds) {
+  var d = new Date(ds+'T12:00:00'); // noon avoids DST/TZ edge cases
+  d.setDate(d.getDate()-1);
+  return (d.getMonth()+1)+'-'+d.getDate();
+}
+
+/* ═══════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════ */
+var _date    = '';
+var _row     = null;   // last loaded row data from sheet
+var _changed = {};     // {col: currentValue} for pending save
+var _saving  = false;
+
+/* ═══════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function() { goToday(); });
+
+function goToday() {
+  _date = getLKADate(0);
+  document.getElementById('dateInp').value = _date;
+  fetchRow();
+}
+function onDateChange() {
+  _date = document.getElementById('dateInp').value;
+  fetchRow();
+}
+function shiftDate(n) {
+  var d = new Date(_date+'T12:00:00');
+  d.setDate(d.getDate()+n);
+  var y = d.getFullYear();
+  var m = String(d.getMonth()+1).padStart(2,'0');
+  var day = String(d.getDate()).padStart(2,'0');
+  _date = y+'-'+m+'-'+day;
+  document.getElementById('dateInp').value = _date;
+  fetchRow();
+}
+
+/* ═══════════════════════════════════════════════
+   FETCH ROW  — google.script.run
+═══════════════════════════════════════════════ */
+function fetchRow() {
+  _changed = {};
+  setStatus('loading','Fetching…');
+  var key     = toKey(_date);
+  var prevKey = toPrevKey(_date);
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      if (!data || data.error) {
+        setStatus('error', (data&&data.error)||'Row not found');
+        clearForm();
+        return;
+      }
+      _row = data;
+      populateForm(data);
+      renderLog(data);
+      var note = data._prevDay ? ' (prev-day TZ match)' : '';
+      setStatus('ok', 'Row '+data._row+' · Monthly Expences'+note);
+    })
+    .withFailureHandler(function(err) {
+      setStatus('error', (err&&err.message)||String(err));
+      clearForm();
+    })
+    .getExpenseRow(key, prevKey);
+}
+
+/* ═══════════════════════════════════════════════
+   POPULATE FORM FROM ROW DATA
+═══════════════════════════════════════════════ */
+function populateForm(data) {
+  Object.keys(COL_MAP).forEach(function(col) {
+    var inp = document.getElementById(COL_MAP[col]);
+    if (!inp) return;
+    var raw = data[col];
+    // Treat '0', 0, null, undefined, '' as empty
+    var val = (raw===undefined||raw===null||raw===0||raw==='0'||raw==='') ? '' : String(raw);
+    inp.value = val;
+    inp.classList.remove('changed');
+    var cid = 'calc'+col;
+    if (document.getElementById(cid)) calcPreview(inp, cid);
+  });
+  _changed = {};
+  updateTotals();
+}
+
+function clearForm() {
+  Object.values(COL_MAP).forEach(function(id) {
+    var inp = document.getElementById(id);
+    if (inp) { inp.value = ''; inp.classList.remove('changed'); }
+  });
+  document.querySelectorAll('.calc').forEach(function(el) {
+    el.textContent='—'; el.className='calc empty';
+  });
+  _changed = {};
+  updateTotals();
+  document.getElementById('logBody').innerHTML='<div class="log-empty">No data loaded</div>';
+  document.getElementById('logMeta').textContent='—';
+}
+
+/* ═══════════════════════════════════════════════
+   FORMULA EVALUATOR  (safe: only digits + operators)
+═══════════════════════════════════════════════ */
+function evalF(raw) {
+  if (!raw || raw.trim()==='') return null;
+  var expr = raw.trim().startsWith('=') ? raw.trim().slice(1) : raw.trim();
+  try {
+    if (!/^[\d\s\+\-\*\/\.\(\)]+$/.test(expr)) return parseFloat(expr)||null;
+    var r = Function('"use strict";return('+expr+')')();
+    return isNaN(r) ? null : r;
+  } catch(e) { return null; }
+}
+function calcPreview(inp, cid) {
+  var el = document.getElementById(cid);
+  if (!el) return;
+  var v = evalF(inp.value);
+  if (v===null) {
+    el.textContent='—'; el.className='calc empty';
+  } else {
+    el.innerHTML='<span style="color:var(--muted)">＝</span> LKR '+fmt(v);
+    el.className='calc';
+  }
+}
+function fmt(n){ return Number(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+function getV(id){ return evalF(document.getElementById(id).value)||0; }
+
+/* ═══════════════════════════════════════════════
+   TOTALS
+═══════════════════════════════════════════════ */
+function updateTotals() {
+  var r  = getV('fC')+getV('fE');
+  var nr = getV('fG')+getV('fH')+getV('fJ')+getV('fK')
+          +getV('fM')+getV('fO')+getV('fQ')+getV('fR');
+  var cc = getV('fAF')+getV('fAH');
+  var tot = r+nr;
+
+  document.getElementById('totVal').textContent = 'LKR '+fmt(tot);
+  document.getElementById('totSub').textContent = nr===0 ? 'Regular only' : 'Regular + NR';
+  document.getElementById('sum-r').textContent  = r  ? 'LKR '+fmt(r) : '';
+  document.getElementById('sum-nr').textContent = nr ? 'LKR '+fmt(nr): '';
+  document.getElementById('chipR').textContent  = 'R · '+(r ?fmt(r):'0');
+  document.getElementById('chipNR').textContent = 'NR · '+(nr?fmt(nr):'0');
+  document.getElementById('chipCC').textContent = 'CC · '+(cc?fmt(cc):'0');
+
+  var t=getV('fT'), u=getV('fU'), net=t-u;
+  document.getElementById('sum-sw').textContent = (t||u) ? fmt(Math.abs(net)) : '';
+  document.getElementById('chipSW').textContent = 'SW · '+((t||u)?(net>=0?'+':'')+fmt(net):'0');
+
+  var nv=document.getElementById('swNetVal'), nh=document.getElementById('swNetHint');
+  if (!t&&!u){ nv.textContent='—'; nv.style.color='var(--muted)'; nh.textContent=''; }
+  else if (net>0){ nv.textContent='You covered LKR '+fmt(net)+' net'; nv.style.color='var(--red)'; nh.textContent='Others owe you'; }
+  else if (net<0){ nv.textContent='Received LKR '+fmt(-net)+' net'; nv.style.color='var(--green)'; nh.textContent='You are net positive'; }
+  else { nv.textContent='Balanced'; nv.style.color='var(--green)'; nh.textContent=''; }
+}
+
+/* ═══════════════════════════════════════════════
+   CHANGE TRACKING
+═══════════════════════════════════════════════ */
+function markChanged(inp) {
+  var col = inp.dataset.col;
+  if (!col) return;
+  _changed[col] = inp.value;
+  inp.classList.add('changed');
+}
+function clearChanges() {
+  if (_row) populateForm(_row);
+  else clearForm();
+  showToast('Changes cleared','ok');
+}
+
+/* ═══════════════════════════════════════════════
+   SAVE — cell-by-cell via google.script.run
+═══════════════════════════════════════════════ */
+function saveAll() {
+  if (_saving) return;
+  var cols = Object.keys(_changed);
+  if (cols.length===0) { showToast('No changes to save','ok'); return; }
+
+  _saving = true;
+  setSaving(true);
+
+  // Re-read current input values (user may have typed more since markChanged)
+  var cells = {};
+  cols.forEach(function(col) {
+    cells[col] = document.getElementById(COL_MAP[col]).value;
+  });
+
+  var payload = {
+    dateKey: toKey(_date),
+    prevKey: toPrevKey(_date),
+    cells:   cells
+  };
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      _saving = false;
+      setSaving(false);
+      if (res.success) {
+        var n = res.updatedCols ? res.updatedCols.length : cols.length;
+        showToast('✓ Saved '+n+' cell'+(n!==1?'s':''),'ok');
+        fetchRow(); // refresh preview log
+      } else {
+        showToast('⚠ '+(res.error||'Save failed'),'err');
+      }
+    })
+    .withFailureHandler(function(err) {
+      _saving = false;
+      setSaving(false);
+      showToast('⚠ '+(err&&err.message||'Error saving'),'err');
+    })
+    .updateExpenseCells(payload);
+}
+
+function setSaving(s) {
+  ['topSaveBtn','mainSaveBtn'].forEach(function(id) {
+    var b = document.getElementById(id);
+    b.disabled = s;
+    b.textContent = s ? '⏳ Saving…'
+      : (id==='topSaveBtn' ? '⬆ Save to Sheet' : '⬆ Save to Sheet (cell-by-cell)');
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   LOG TABLE RENDER
+═══════════════════════════════════════════════ */
+function renderLog(data) {
+  document.getElementById('logMeta').textContent =
+    'Row '+data._row+' · Monthly Expences'+(data._prevDay?' (prev-day)':'');
+
+  var rows = [
+    { col:'A',        cat:'',   label:'Date',       val:data.A },
+    { col:'C · D',    cat:'r',  label:'Food',        val:data.C, ref:data.D },
+    { col:'E · F',    cat:'r',  label:'Supermarket', val:data.E, ref:data.F },
+    { col:'G',        cat:'nr', label:'Uber',        val:data.G },
+    { col:'H',        cat:'nr', label:'Uber Work',   val:data.H },
+    { col:'I · J',    cat:'nr', label:'Movies/Out',  val:data.J, ref:data.I },
+    { col:'K · L',    cat:'nr', label:'Other',       val:data.K, ref:data.L },
+    { col:'M',        cat:'nr', label:'Bus Fair',    val:data.M },
+    { col:'N · O',    cat:'nr', label:'Party',       val:data.O, ref:data.N },
+    { col:'P · Q',    cat:'nr', label:'D&A',         val:data.Q, ref:data.P },
+    { col:'R',        cat:'nr', label:'Rent',        val:data.R },
+    { col:'S',        cat:'',   label:'TOTAL',       val:data.S, bold:true },
+    { col:'T · U · W',cat:'sw', label:'Splitwise',   val:data.T, ref2:data.U, ref:data.W },
+    { col:'AE · AF · AG',cat:'cc',label:'Amex',      val:data.AF,ref2:data.AG,ref:data.AE },
+    { col:'AH · AI',  cat:'cc', label:'HSBC',        val:data.AH,ref2:data.AI }
+  ];
+
+  function skip(v){ return v===undefined||v===null||v===''||v==='0'||v===0; }
+
+  var html = '<table class="log-tbl"><thead><tr>'
+    +'<th>Col</th><th>Category</th><th>Sheet Value</th><th>Resolved</th>'
+    +'</tr></thead><tbody>';
+
+  rows.forEach(function(r) {
+    var hasData = !skip(r.val)||(r.ref&&!skip(r.ref))||(r.ref2&&!skip(r.ref2));
+    if (!hasData && r.col!=='A' && r.col!=='S') return;
+
+    var pill = r.cat
+      ? '<span class="cat-pill cat-'+r.cat+'">'+r.cat.toUpperCase()+'</span> '
+      : '';
+
+    var isFml = String(r.val||'').trim().startsWith('=');
+    var valH  = skip(r.val)
+      ? '<span style="color:var(--muted)">—</span>'
+      : (isFml ? '<span class="fml-tag">'+esc(r.val)+'</span>' : esc(String(r.val)));
+    if (!skip(r.ref2)) valH += ' / '+esc(String(r.ref2));
+
+    var num   = evalF(String(r.val||''));
+    var calcH = num!==null
+      ? '<span style="font-weight:'+(r.bold?800:600)+';font-size:'+(r.bold?13:11)+'px">LKR '+fmt(num)+'</span>'
+      : (skip(r.val)?'—':esc(String(r.val)));
+    if (r.ref&&!skip(r.ref))
+      calcH += '<div style="font-size:10px;color:var(--muted);margin-top:1px">'+esc(String(r.ref))+'</div>';
+
+    html += '<tr>'
+      +'<td style="font-family:monospace;font-size:9px;color:var(--muted)">'+r.col+'</td>'
+      +'<td>'+pill+esc(r.label)+'</td>'
+      +'<td>'+valH+'</td>'
+      +'<td>'+calcH+'</td>'
+      +'</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('logBody').innerHTML = html;
+}
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ═══════════════════════════════════════════════
+   UI HELPERS
+═══════════════════════════════════════════════ */
+function toggleSec(id) { document.getElementById(id).classList.toggle('collapsed'); }
+
+function setStatus(state, text) {
+  var d = document.getElementById('sdot');
+  d.className = 'sdot'+(state==='loading'?' loading':state==='error'?' error':'');
+  document.getElementById('statusTxt').textContent = text;
+}
+
+var _tt;
+function showToast(msg, type) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show '+(type||'');
+  clearTimeout(_tt);
+  _tt = setTimeout(function(){ el.className=''; }, 3000);
+}
+</script>
+</body>
+</html>

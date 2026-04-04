@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADD EXP — Mock UI</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --card2: #1c2230;
+    --border: rgba(255,255,255,.08);
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --green: #3fb950;
+    --red: #f85149;
+    --blue: #58a6ff;
+    --yellow: #d29922;
+    --purple: #bc8cff;
+    --teal: #39d353;
+    --accent: #1f6feb;
+    --r-color: #3fb950;
+    --nr-color: #f0883e;
+    --sw-color: #bc8cff;
+    --cc-color: #58a6ff;
+    --radius: 10px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .app-icon { font-size: 22px; }
+  .app-title { font-size: 16px; font-weight: 700; }
+  .app-sub { font-size: 11px; color: var(--muted); }
+  .tz-badge {
+    background: rgba(88,166,255,.12);
+    border: 1px solid rgba(88,166,255,.25);
+    color: var(--blue);
+    font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 20px;
+    letter-spacing: .5px;
+  }
+  .sync-btn {
+    background: var(--accent);
+    color: #fff; border: none;
+    padding: 8px 18px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+  }
+  .sync-btn:hover { background: #388bfd; }
+
+  /* ── DATE ROW ── */
+  .date-row {
+    max-width: 700px; margin: 18px auto 0;
+    padding: 0 16px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .date-row label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+  .date-input {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--text); padding: 8px 14px;
+    border-radius: 8px; font-size: 14px;
+    outline: none; cursor: pointer;
+    color-scheme: dark;
+  }
+  .date-nav { display: flex; gap: 4px; }
+  .date-nav button {
+    background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); width: 32px; height: 32px;
+    border-radius: 7px; cursor: pointer; font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .date-nav button:hover { border-color: var(--blue); color: var(--blue); }
+  .today-btn {
+    background: rgba(63,185,80,.1); border: 1px solid rgba(63,185,80,.25);
+    color: var(--green); font-size: 11px; font-weight: 700;
+    padding: 5px 12px; border-radius: 6px; cursor: pointer; letter-spacing: .4px;
+  }
+  .fetch-status {
+    margin-left: auto;
+    font-size: 11px; display: flex; align-items: center; gap: 6px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+  .dot.loading { background: var(--yellow); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── MAIN LAYOUT ── */
+  .main { max-width: 700px; margin: 16px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── SECTION CARD ── */
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none;
+  }
+  .section-header:hover { background: rgba(255,255,255,.02); }
+  .section-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .section-title { font-size: 13px; font-weight: 700; flex: 1; }
+  .section-badge {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 20px; letter-spacing: .4px;
+  }
+  .section-total { font-size: 13px; font-weight: 700; margin-left: auto; margin-right: 8px; }
+  .chevron { color: var(--muted); font-size: 12px; transition: transform .2s; }
+  .collapsed .chevron { transform: rotate(-90deg); }
+  .section-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .section.collapsed .section-body { display: none; }
+
+  /* ── FIELD ROW ── */
+  .field-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 1fr;
+    gap: 8px;
+    align-items: start;
+  }
+  .field-row.ref-only { grid-template-columns: 130px 1fr; }
+  .field-label {
+    font-size: 11px; color: var(--muted); font-weight: 600;
+    padding-top: 10px; letter-spacing: .3px;
+  }
+  .field-col { display: flex; flex-direction: column; gap: 3px; }
+  .field-sub { font-size: 10px; color: var(--muted); padding-left: 2px; }
+
+  /* ── INPUTS ── */
+  .inp {
+    width: 100%;
+    background: var(--card2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 11px; border-radius: 7px;
+    font-size: 13px; outline: none;
+    transition: border-color .15s;
+    font-family: var(--font);
+  }
+  .inp:focus { border-color: var(--blue); }
+  .inp.formula { font-family: 'Courier New', monospace; font-size: 12px; color: #d2a679; }
+  .inp.ref-inp { color: var(--muted); font-size: 12px; }
+  .calc-preview {
+    font-size: 10px; color: var(--green);
+    padding: 2px 4px; letter-spacing: .3px;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .calc-preview span { font-weight: 700; }
+  .calc-eq { color: var(--muted); }
+
+  /* Color accents per type */
+  .r-inp:focus { border-color: var(--r-color); }
+  .nr-inp:focus { border-color: var(--nr-color); }
+  .sw-inp:focus { border-color: var(--sw-color); }
+  .cc-inp:focus { border-color: var(--cc-color); }
+
+  /* ── NR EXPAND TOGGLE ── */
+  .nr-toggle-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 16px 14px;
+  }
+  .nr-toggle-btn {
+    background: rgba(240,136,62,.1);
+    border: 1px solid rgba(240,136,62,.25);
+    color: var(--nr-color); font-size: 11px; font-weight: 700;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    letter-spacing: .4px; display: flex; align-items: center; gap: 6px;
+  }
+  .nr-toggle-btn:hover { background: rgba(240,136,62,.18); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px; background: var(--border);
+    margin: 4px 0;
+  }
+
+  /* ── TOTAL PREVIEW BAR ── */
+  .total-bar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .total-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+  .total-val { font-size: 22px; font-weight: 800; color: var(--text); }
+  .total-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+  .total-chip {
+    font-size: 10px; font-weight: 700; padding: 4px 10px;
+    border-radius: 20px; letter-spacing: .3px;
+    border: 1px solid;
+  }
+  .chip-r  { background: rgba(63,185,80,.1);  border-color: rgba(63,185,80,.3);  color: var(--r-color);  }
+  .chip-nr { background: rgba(240,136,62,.1); border-color: rgba(240,136,62,.3); color: var(--nr-color); }
+  .chip-sw { background: rgba(188,140,255,.1);border-color: rgba(188,140,255,.3);color: var(--sw-color); }
+  .chip-cc { background: rgba(88,166,255,.1); border-color: rgba(88,166,255,.3); color: var(--cc-color); }
+
+  /* ── ACTION BUTTONS ── */
+  .actions { display: flex; gap: 10px; }
+  .btn-save {
+    flex: 1; background: var(--accent); border: none;
+    color: #fff; padding: 12px; border-radius: 9px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-save:hover { background: #388bfd; }
+  .btn-clear {
+    background: var(--card2); border: 1px solid var(--border);
+    color: var(--muted); padding: 12px 20px; border-radius: 9px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .btn-clear:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── ENTRY LOG ── */
+  .log-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .log-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .log-title { font-size: 13px; font-weight: 700; }
+  .log-count { font-size: 11px; color: var(--muted); }
+  .log-table { width: 100%; border-collapse: collapse; }
+  .log-table th {
+    font-size: 10px; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: .5px;
+    padding: 8px 16px; text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,.02);
+  }
+  .log-table td {
+    padding: 10px 16px; font-size: 12px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+  }
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-table tr:hover td { background: rgba(255,255,255,.02); }
+  .log-cat {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700; padding: 2px 7px;
+    border-radius: 20px;
+  }
+  .log-cat.r  { background: rgba(63,185,80,.12);  color: var(--r-color);  }
+  .log-cat.nr { background: rgba(240,136,62,.12); color: var(--nr-color); }
+  .log-cat.sw { background: rgba(188,140,255,.12);color: var(--sw-color); }
+  .log-cat.cc { background: rgba(88,166,255,.12); color: var(--cc-color); }
+  .formula-tag {
+    display: inline; font-family: monospace;
+    font-size: 10px; color: #d2a679;
+    background: rgba(210,166,121,.1);
+    padding: 1px 5px; border-radius: 3px;
+  }
+  .edit-btn {
+    background: none; border: none;
+    color: var(--blue); cursor: pointer; font-size: 11px;
+    padding: 2px 6px; border-radius: 4px;
+  }
+  .edit-btn:hover { background: rgba(88,166,255,.1); }
+
+  /* ── COLUMN INDICATOR ── */
+  .col-badge {
+    font-size: 9px; font-weight: 700;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: var(--muted); padding: 1px 5px; border-radius: 4px;
+    font-family: monospace; letter-spacing: .3px;
+    vertical-align: middle; margin-left: 4px;
+  }
+
+  /* ── MOCK ANNOTATION ── */
+  .mock-note {
+    background: rgba(209,153,34,.07);
+    border: 1px solid rgba(209,153,34,.2);
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 11px; color: #d2a679; line-height: 1.6;
+    display: flex; gap: 8px;
+  }
+  .mock-note-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  /* responsive */
+  @media(max-width:520px){
+    .field-row { grid-template-columns: 100px 1fr 1fr; }
+    .total-chips { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ TOP BAR ══ -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="app-icon">💸</span>
+    <div>
+      <div class="app-title">ADD EXP</div>
+      <div class="app-sub">Monthly Expense Tracker</div>
+    </div>
+    <span class="tz-badge">🕐 UTC+5:30</span>
+  </div>
+  <button class="sync-btn">
+    <span>⬆</span> Save to Sheet
+  </button>
+</div>
+
+<!-- ══ DATE ROW ══ -->
+<div class="date-row">
+  <label>Date</label>
+  <div class="date-nav">
+    <button title="Previous day">‹</button>
+    <button title="Next day">›</button>
+  </div>
+  <input type="date" class="date-input" value="2026-04-04">
+  <button class="today-btn">TODAY</button>
+  <div class="fetch-status">
+    <div class="dot"></div>
+    <span style="color:var(--muted)">Row 42 found · Sheet: APRIL 2026</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ══ MOCK NOTE ══ -->
+  <div class="mock-note">
+    <span class="mock-note-icon">🎨</span>
+    <span>
+      <strong>UI MOCK</strong> — This is a visual preview only. Green = Regular (R), Orange = Non-Regular (NR, collapsed by default), Purple = Splitwise, Blue = Credit Cards. Formula inputs like <code>=40+500</code> show live calculated value. Click <em>Save to Sheet</em> to confirm the design.
+    </span>
+  </div>
+
+  <!-- ══ SECTION 1: REGULAR EXPENSES ══ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot" style="background:var(--r-color)"></div>
+      <div class="section-title">Regular Expenses</div>
+      <div class="section-badge" style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.25);color:var(--r-color)">R</div>
+      <div class="section-total" style="color:var(--r-color)">LKR 2,450</div>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <!-- Food -->
+      <div class="field-row">
+        <div class="field-label">🍛 Food <span class="col-badge">C</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp formula r-inp" value="=800+350" placeholder="=800+350 or 1150">
+          <div class="calc-preview"><span class="calc-eq">＝</span><span>LKR 1,150</span></div>
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Reference <span class="col-badge">D</span></div>
+          <input class="inp ref-inp r-inp" value="Kottu + Delivery" placeholder="e.g. Kottu + PickMe Food">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Supermarket -->
+      <div class="field-row">
+        <div class="field-label">🛒 Supermarket <span class="col-badge">E</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp r-inp" value="1300" placeholder="0">
+          <div class="calc-preview"><span class="calc-eq">＝</span><span>LKR 1,300</span></div>
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Reference <span class="col-badge">F</span></div>
+          <input class="inp ref-inp r-inp" value="Keells - Weekly" placeholder="e.g. Keells">
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ SECTION 2: NON-REGULAR EXPENSES (Collapsed) ══ -->
+  <div class="section collapsed">
+    <div class="section-header">
+      <div class="section-dot" style="background:var(--nr-color)"></div>
+      <div class="section-title">Non-Regular Expenses</div>
+      <div class="section-badge" style="background:rgba(240,136,62,.1);border:1px solid rgba(240,136,62,.25);color:var(--nr-color)">NR</div>
+      <div class="section-total" style="color:var(--muted); font-size:11px">hidden — tap to expand</div>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+      <!-- Uber -->
+      <div class="field-row">
+        <div class="field-label">🚗 Uber <span class="col-badge">G</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp formula nr-inp" value="" placeholder="=200+150">
+          <div class="calc-preview" style="color:var(--muted)">—</div>
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Reference — implicit</div>
+          <input class="inp ref-inp nr-inp" value="" placeholder="Uber app">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- Uber Work -->
+      <div class="field-row">
+        <div class="field-label">🏢 Uber Work <span class="col-badge">H</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp nr-inp" value="" placeholder="0">
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Reference — implicit</div>
+          <input class="inp ref-inp nr-inp" value="" placeholder="Office commute">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- Movies/Outing -->
+      <div class="field-row">
+        <div class="field-label">🎬 Movies/Out <span class="col-badge">J</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp formula nr-inp" value="" placeholder="=850">
+          <div class="calc-preview" style="color:var(--muted)">—</div>
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Reference <span class="col-badge">I</span></div>
+          <input class="inp ref-inp nr-inp" value="" placeholder="e.g. Scope Cinemas">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- Other Expenses -->
+      <div class="field-row">
+        <div class="field-label">📦 Other <span class="col-badge">K</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp nr-inp" value="" placeholder="0">
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Reference <span class="col-badge">L</span></div>
+          <input class="inp ref-inp nr-inp" value="" placeholder="e.g. Haircut, Stationery">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- Bus Fair -->
+      <div class="field-row ref-only">
+        <div class="field-label">🚌 Bus Fair <span class="col-badge">M</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp nr-inp" value="" placeholder="0">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- Party -->
+      <div class="field-row">
+        <div class="field-label">🎉 Party <span class="col-badge">O</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp formula nr-inp" value="" placeholder="=1500+700">
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Reference <span class="col-badge">N</span></div>
+          <input class="inp ref-inp nr-inp" value="" placeholder="e.g. Dinner @ Cinnamon">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- D&A -->
+      <div class="field-row">
+        <div class="field-label">👗 D&A <span class="col-badge">Q</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp nr-inp" value="" placeholder="0">
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Reference <span class="col-badge">P</span></div>
+          <input class="inp ref-inp nr-inp" value="" placeholder="e.g. Salon, Clothing">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <!-- Rent -->
+      <div class="field-row ref-only">
+        <div class="field-label">🏠 Rent <span class="col-badge">R</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount</div>
+          <input class="inp nr-inp" value="27900" placeholder="0">
+          <div class="calc-preview" style="color:var(--nr-color)"><span>LKR 27,900</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 3: SPLITWISE ══ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot" style="background:var(--sw-color)"></div>
+      <div class="section-title">Splitwise</div>
+      <div class="section-badge" style="background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.25);color:var(--sw-color)">SW</div>
+      <div class="section-total" style="color:var(--sw-color)">Net −LKR 600</div>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <div class="field-row">
+        <div class="field-label">💳 I Paid <span class="col-badge">T</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount I covered</div>
+          <input class="inp formula sw-inp" value="=600+400" placeholder="=600+400">
+          <div class="calc-preview" style="color:var(--sw-color)"><span class="calc-eq">＝</span><span>LKR 1,000</span></div>
+        </div>
+        <div class="field-col">
+          <div class="field-sub" style="opacity:0"> </div>
+          <!-- spacer -->
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field-row">
+        <div class="field-label">💰 Others Paid <span class="col-badge">U</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount paid to me</div>
+          <input class="inp sw-inp" value="400" placeholder="0">
+          <div class="calc-preview" style="color:var(--sw-color)"><span>LKR 400</span></div>
+        </div>
+        <div class="field-col">
+          <div class="field-sub"> </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="field-row ref-only">
+        <div class="field-label">📝 Reference <span class="col-badge">W</span></div>
+        <div class="field-col">
+          <div class="field-sub">Description</div>
+          <input class="inp ref-inp sw-inp" value="Dinner split @Burger King" placeholder="e.g. Dinner split with Ashan">
+        </div>
+      </div>
+
+      <!-- Net summary -->
+      <div style="background:rgba(188,140,255,.06);border:1px solid rgba(188,140,255,.15);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-top:4px;">
+        <span style="font-size:11px;color:var(--muted);font-weight:600;">NET POSITION</span>
+        <span style="font-size:15px;font-weight:800;color:var(--red);">−LKR 600</span>
+        <span style="font-size:10px;color:var(--muted);margin-left:auto;">You're owed back LKR 600</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ SECTION 4: CREDIT CARDS ══ -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot" style="background:var(--cc-color)"></div>
+      <div class="section-title">Credit Cards</div>
+      <div class="section-badge" style="background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.25);color:var(--cc-color)">CC</div>
+      <div class="section-total" style="color:var(--cc-color)">LKR 5,200</div>
+      <span class="chevron">▾</span>
+    </div>
+    <div class="section-body">
+
+      <!-- Ref row -->
+      <div class="field-row ref-only">
+        <div class="field-label">📋 Reference <span class="col-badge">AE</span></div>
+        <div class="field-col">
+          <div class="field-sub">Shared description</div>
+          <input class="inp ref-inp cc-inp" value="Amex + HSBC Apr cycle" placeholder="e.g. Monthly CC entries">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- AMEX -->
+      <div style="font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.8px;text-transform:uppercase;padding: 2px 0 6px;">AMEX</div>
+      <div class="field-row">
+        <div class="field-label">💸 Expense <span class="col-badge">AF</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount charged</div>
+          <input class="inp formula cc-inp" value="=2700+800" placeholder="=2700+800">
+          <div class="calc-preview" style="color:var(--cc-color)"><span class="calc-eq">＝</span><span>LKR 3,500</span></div>
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Payment <span class="col-badge">AG</span></div>
+          <input class="inp cc-inp" value="3500" placeholder="0">
+          <div class="calc-preview" style="color:var(--green)"><span>Paid LKR 3,500</span></div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- HSBC -->
+      <div style="font-size:10px;font-weight:700;color:var(--blue);letter-spacing:.8px;text-transform:uppercase;padding: 2px 0 6px;">HSBC</div>
+      <div class="field-row">
+        <div class="field-label">💸 Expense <span class="col-badge">AH</span></div>
+        <div class="field-col">
+          <div class="field-sub">Amount charged</div>
+          <input class="inp cc-inp" value="1700" placeholder="0">
+          <div class="calc-preview" style="color:var(--cc-color)"><span>LKR 1,700</span></div>
+        </div>
+        <div class="field-col">
+          <div class="field-sub">Payment <span class="col-badge">AI</span></div>
+          <input class="inp cc-inp" value="" placeholder="0">
+          <div class="calc-preview" style="color:var(--muted)">—</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ DAILY TOTAL BAR ══ -->
+  <div class="total-bar">
+    <div>
+      <div class="total-label">Today's Total <span class="col-badge">S</span></div>
+      <div class="total-val">LKR 2,450</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px;">Regular only · NR excluded (collapsed)</div>
+    </div>
+    <div class="total-chips">
+      <div class="total-chip chip-r">R · 2,450</div>
+      <div class="total-chip chip-nr">NR · hidden</div>
+      <div class="total-chip chip-sw">SW · −600</div>
+      <div class="total-chip chip-cc">CC · 5,200</div>
+    </div>
+  </div>
+
+  <!-- ══ ACTIONS ══ -->
+  <div class="actions">
+    <button class="btn-save">⬆&nbsp; Save to Sheet (cell-by-cell)</button>
+    <button class="btn-clear">✕ Clear</button>
+  </div>
+
+  <!-- ══ ENTRY LOG (Today's Sheet Row) ══ -->
+  <div class="log-card">
+    <div class="log-header">
+      <div class="log-title">📋 Today's Row — Sheet View</div>
+      <div class="log-count" style="color:var(--muted)">Row 42 · APRIL 2026</div>
+    </div>
+    <table class="log-table">
+      <thead>
+        <tr>
+          <th>Column</th>
+          <th>Category</th>
+          <th>Value in Sheet</th>
+          <th>Resolved</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-family:monospace;color:var(--muted)">A</td>
+          <td>Date</td>
+          <td>04/04/2026</td>
+          <td style="color:var(--muted)">Sat, 4 Apr</td>
+          <td><button class="edit-btn">Edit</button></td>
+        </tr>
+        <tr>
+          <td style="font-family:monospace;color:var(--muted)">C · D</td>
+          <td><span class="log-cat r">R</span> Food</td>
+          <td><span class="formula-tag">=800+350</span></td>
+          <td style="color:var(--r-color);font-weight:600;">1,150</td>
+          <td><button class="edit-btn">Edit</button></td>
+        </tr>
+        <tr>
+          <td style="font-family:monospace;color:var(--muted)">E · F</td>
+          <td><span class="log-cat r">R</span> Supermarket</td>
+          <td>1300</td>
+          <td style="color:var(--r-color);font-weight:600;">1,300</td>
+          <td><button class="edit-btn">Edit</button></td>
+        </tr>
+        <tr>
+          <td style="font-family:monospace;color:var(--muted)">T · U · W</td>
+          <td><span class="log-cat sw">SW</span> Splitwise</td>
+          <td><span class="formula-tag">=600+400</span> / 400</td>
+          <td style="color:var(--sw-color);font-weight:600;">Net −600</td>
+          <td><button class="edit-btn">Edit</button></td>
+        </tr>
+        <tr>
+          <td style="font-family:monospace;color:var(--muted)">AF · AG</td>
+          <td><span class="log-cat cc">CC</span> Amex</td>
+          <td><span class="formula-tag">=2700+800</span> / 3500</td>
+          <td style="color:var(--cc-color);font-weight:600;">3,500</td>
+          <td><button class="edit-btn">Edit</button></td>
+        </tr>
+        <tr>
+          <td style="font-family:monospace;color:var(--muted)">AH · AI</td>
+          <td><span class="log-cat cc">CC</span> HSBC</td>
+          <td>1700 / —</td>
+          <td style="color:var(--cc-color);font-weight:600;">1,700</td>
+          <td><button class="edit-btn">Edit</button></td>
+        </tr>
+        <tr style="background:rgba(255,255,255,.02)">
+          <td style="font-family:monospace;color:var(--muted)">S</td>
+          <td style="font-weight:700;">TOTAL</td>
+          <td style="color:var(--muted)">=SUM(formula)</td>
+          <td style="color:var(--text);font-weight:800;font-size:14px;">2,450</td>
+          <td></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+  // Toggle sections on header click
+  document.querySelectorAll('.section-header').forEach(h=>{
+    h.addEventListener('click',()=>{
+      h.closest('.section').classList.toggle('collapsed');
+    });
+  });
+
+  // Formula preview calc (mock demo)
+  document.querySelectorAll('.inp.formula').forEach(inp=>{
+    const preview = inp.nextElementSibling;
+    function calc(){
+      const v = inp.value.trim();
+      if(!v){ if(preview) preview.innerHTML='<span style="color:var(--muted)">—</span>'; return; }
+      try{
+        const expr = v.startsWith('=') ? v.slice(1) : v;
+        const result = Function('"use strict";return('+expr+')')();
+        if(preview && !isNaN(result)){
+          preview.innerHTML = `<span class="calc-eq">＝</span><span>LKR ${Number(result).toLocaleString()}</span>`;
+        }
+      }catch(e){
+        if(preview) preview.innerHTML='<span style="color:var(--red)">Invalid</span>';
+      }
+    }
+    inp.addEventListener('input', calc);
+    calc();
+  });
+</script>
+</body>
+</html>

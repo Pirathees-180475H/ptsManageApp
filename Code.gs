@@ -44,6 +44,9 @@ function onEdit(e) {
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'I1') {
     openHabitDashboard();
   }
+  if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'J1') {
+    showAddExpDialog();
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1662,6 +1665,162 @@ function logHabitDay(payload) {
 
   } catch (err) {
     Logger.log('logHabitDay error: ' + err);
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// ADD EXPENSE DIALOG  (Trigger: Monthly Expences · J1)
+// ═══════════════════════════════════════════════════════════════
+
+function showAddExpDialog() {
+  try {
+    var html = HtmlService.createHtmlOutputFromFile('ADD_EXP')
+      .setWidth(720)
+      .setHeight(900);
+    SpreadsheetApp.getUi().showModalDialog(html, '💸 Add Expense');
+  } catch (err) { /* silent fail on mobile */ }
+}
+
+// ── Helper: column letter(s) → 1-based column number ───────────
+function _colToNum(col) {
+  col = col.toUpperCase();
+  var n = 0;
+  for (var i = 0; i < col.length; i++) {
+    n = n * 26 + (col.charCodeAt(i) - 64);
+  }
+  return n;
+}
+
+// ── Helper: normalise a raw cell value to string ────────────────
+// dateMode=true → formats Date as "M-d" (no leading zeros) to match col A keys like "4-4"
+// IMPORTANT: must use the *spreadsheet* timezone so Date objects match what the
+// user sees in the sheet (e.g. "4-4" for April 4 Colombo time).
+// Using Session.getScriptTimeZone() causes an off-by-one if the script tz ≠ sheet tz.
+function _cellStr(v, dateMode) {
+  if (v === null || v === undefined || v === '') return '';
+  if (v instanceof Date && !isNaN(v)) {
+    if (dateMode) {
+      var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+      return Utilities.formatDate(v, tz, 'M-d');
+    }
+    return ''; // non-date-mode: skip Date cells (they're not expense values)
+  }
+  return String(v);
+}
+
+/* ── getExpenseRow ──────────────────────────────────────────────
+   dateKey: "M-D" string matching column A, e.g. "4-4" for Apr 4
+   Returns an object keyed by column letter with raw cell values,
+   plus _row (1-based row number) and _sheet (sheet name).
+   Also accepts the previous day's key as prevKey for TZ fallback.
+─────────────────────────────────────────────────────────────── */
+function getExpenseRow(dateKey, prevKey) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { error: 'Sheet "Monthly Expences" not found' };
+
+    var lastRow = sheet.getLastRow();
+    // Read only column A to find the matching row
+    var colA = sheet.getRange(1, 1, lastRow, 1).getValues();
+
+    var targetRow  = -1;
+    var fallbackRow = -1;
+    var isPrevDay   = false;
+
+    for (var i = 0; i < colA.length; i++) {
+      // Pass dateMode=true so Date objects are formatted as "M-d"
+      var cell = _cellStr(colA[i][0], true).trim();
+      if (cell === dateKey)  { targetRow  = i + 1; break; }
+      if (prevKey && cell === prevKey) { fallbackRow = i + 1; }
+    }
+
+    if (targetRow < 0) {
+      if (fallbackRow > 0) {
+        targetRow = fallbackRow;
+        isPrevDay = true;
+      } else {
+        return { error: 'Row not found for date: ' + dateKey };
+      }
+    }
+
+    // Read both values (computed results) and formulas for the row
+    var numCols  = 37; // A through AK
+    var rowRange = sheet.getRange(targetRow, 1, 1, numCols);
+    var rowVals  = rowRange.getValues()[0];
+    var rowFmls  = rowRange.getFormulas()[0];  // "" if cell has no formula
+
+    var COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S',
+                'T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK'];
+
+    var result = { _row: targetRow, _sheet: 'Monthly Expences', _prevDay: isPrevDay };
+    for (var c = 0; c < COLS.length && c < rowVals.length; c++) {
+      var fml = rowFmls[c];  // e.g. "=800+350" or ""
+      var val = rowVals[c];  // e.g. 1150 (computed)
+      if (fml && fml.trim() !== '') {
+        // Preserve the formula string so the input box shows "=800+350"
+        result[COLS[c]] = fml;
+      } else {
+        // Use computed value; format Date in col A as "M-d"
+        result[COLS[c]] = _cellStr(val, COLS[c] === 'A');
+      }
+    }
+    return result;
+
+  } catch (err) {
+    return { error: err.message || String(err) };
+  }
+}
+
+/* ── updateExpenseCells ─────────────────────────────────────────
+   payload: { dateKey, prevKey, cells: { 'C': '=800+350', 'D': 'Kottu', ... } }
+   Finds the matching row then updates each specified cell individually.
+   Formula strings (starting with =) are written as formulas.
+   Empty string → writes empty string (clears the cell).
+─────────────────────────────────────────────────────────────── */
+function updateExpenseCells(payload) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    // Re-find the row (safe against stale _row if sheet was edited)
+    var rowInfo = getExpenseRow(payload.dateKey, payload.prevKey);
+    if (rowInfo.error) return { success: false, error: rowInfo.error };
+
+    var rowNum = rowInfo._row;
+    var cells  = payload.cells || {};
+    var updated = [];
+
+    Object.keys(cells).forEach(function(col) {
+      var colNum = _colToNum(col);
+      var val    = cells[col];
+      var cell   = sheet.getRange(rowNum, colNum);
+
+      if (val === '' || val === null || val === undefined) {
+        cell.clearContent();
+      } else if (String(val).trim().charAt(0) === '=') {
+        // Write as a formula — Google Sheets will evaluate it
+        cell.setFormula(String(val).trim());
+      } else {
+        // Try to preserve numbers as numbers (not strings)
+        var num = parseFloat(String(val).replace(/,/g,''));
+        if (!isNaN(num) && String(val).trim() === String(num)) {
+          cell.setValue(num);
+        } else {
+          cell.setValue(val);
+        }
+      }
+      updated.push(col);
+    });
+
+    SpreadsheetApp.flush();
+    return { success: true, updatedCols: updated, row: rowNum };
+
+  } catch (err) {
+    Logger.log('updateExpenseCells error: ' + err);
     return { success: false, error: err.message || String(err) };
   }
 }
