@@ -3176,7 +3176,7 @@ function swRender(data){
   // Populate global friend list for Add Expense modal
   swFriendsList = RAW.map(function(item){
     return {
-      id:       item.userId || item.id || 0,
+      id:       item.friendId || item.userId || item.id || 0,
       name:     item.name,
       initials: item.name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2),
       currency: item.currency || 'LKR'
