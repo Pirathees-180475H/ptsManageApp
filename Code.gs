@@ -1683,6 +1683,11 @@ function showAddExpDialog() {
   } catch (err) { /* silent fail on mobile */ }
 }
 
+// Returns raw ADD_EXP.html content so render.html can embed it in an iframe
+function getAddExpHtmlContent() {
+  return HtmlService.createHtmlOutputFromFile('ADD_EXP').getContent();
+}
+
 // ── Helper: column letter(s) → 1-based column number ───────────
 function _colToNum(col) {
   col = col.toUpperCase();

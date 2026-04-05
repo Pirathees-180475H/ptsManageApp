@@ -378,19 +378,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 
         <div class="divider"></div>
 
-        <!-- Other K / ref L -->
+        <!-- Other L / ref K -->
         <div class="nr-item">
-          <div class="nr-item-lbl">📦 Other <span class="cid">K · L</span></div>
+          <div class="nr-item-lbl">📦 Other <span class="cid">L · K</span></div>
           <div class="card-row">
             <div class="card-field">
               <div class="fsub">Amount</div>
-              <input class="inp fml nr" id="fK" data-col="K"
-                oninput="calcPreview(this,'calcK');updateTotals();markChanged(this)">
-              <div class="calc empty" id="calcK">—</div>
+              <input class="inp fml nr" id="fL" data-col="L"
+                oninput="calcPreview(this,'calcL');updateTotals();markChanged(this)">
+              <div class="calc empty" id="calcL">—</div>
             </div>
             <div class="card-field">
               <div class="fsub">Reference</div>
-              <input class="inp ref nr" id="fL" data-col="L" oninput="markChanged(this)">
+              <input class="inp ref nr" id="fK" data-col="K" oninput="markChanged(this)">
             </div>
           </div>
         </div>
@@ -741,7 +741,7 @@ function getV(id){ return evalF(document.getElementById(id).value)||0; }
 ═══════════════════════════════════════════════ */
 function updateTotals(){
   var r  = getV('fC')+getV('fE');
-  var nr = getV('fG')+getV('fH')+getV('fJ')+getV('fK')
+  var nr = getV('fG')+getV('fH')+getV('fJ')+getV('fL')
           +getV('fM')+getV('fO')+getV('fQ')+getV('fR');
   var cc = getV('fAF')+getV('fAH');
   var tot= r+nr;

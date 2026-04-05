@@ -1144,6 +1144,55 @@ input[type=date].swae-input{color-scheme:dark;}
   text-transform:uppercase;letter-spacing:.5px;}
 .gprice-sub-cell .gsc-val{font-size:.88em;font-weight:700;color:rgba(255,215,0,.85);}
 .up-text{color:var(--green);} .dn-text{color:var(--red);}
+
+/* ═══ ADD EXP FAB + OVERLAY ═══ */
+.ae-fab{
+  position:absolute;bottom:24px;right:20px;
+  width:54px;height:54px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  border:none;color:#fff;font-size:30px;font-weight:300;line-height:1;
+  cursor:pointer;z-index:10;
+  box-shadow:0 8px 28px rgba(0,212,255,.35);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .18s,box-shadow .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.ae-fab:hover{transform:scale(1.1);box-shadow:0 12px 36px rgba(0,212,255,.5);}
+.ae-fab:active{transform:scale(.95);}
+
+#ae-overlay{
+  position:fixed;inset:0;z-index:9500;
+  background:rgba(0,0,0,.82);backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;
+  animation:aeFadeIn .2s ease;
+}
+@keyframes aeFadeIn{from{opacity:0;}to{opacity:1;}}
+#ae-overlay.open{display:flex;}
+.ae-close-btn{
+  position:absolute;top:14px;right:14px;
+  width:38px;height:38px;border-radius:50%;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.7);font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s;z-index:2;
+}
+.ae-close-btn:hover{background:rgba(255,77,109,.2);color:#fff;}
+#ae-iframe{
+  width:min(1440px,98vw);
+  height:90vh;
+  border:none;
+  border-radius:16px;
+  overflow:hidden;
+  background:#0d1117;
+  box-shadow:0 32px 80px rgba(0,0,0,.8);
+  display:block;
+}
+.ae-loading{
+  position:absolute;display:flex;flex-direction:column;
+  align-items:center;gap:12px;color:rgba(255,255,255,.5);font-size:13px;
+}
+.ae-spin{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);
+  border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;}
 </style>
 </head>
 <body>
@@ -1255,7 +1304,19 @@ input[type=date].swae-input{color-scheme:dark;}
       <p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p>
     </div>
   </div>
+  <!-- ＋ Add Expense FAB -->
+  <button class="ae-fab" onclick="openAddExp()" title="Add Expense">+</button>
 </section>
+
+<!-- ═══ ADD EXPENSE OVERLAY ═══ -->
+<div id="ae-overlay">
+  <button class="ae-close-btn" onclick="closeAddExp()">✕</button>
+  <div class="ae-loading" id="ae-loading">
+    <div class="ae-spin"></div>
+    <span>Loading Add Expense…</span>
+  </div>
+  <iframe id="ae-iframe" style="display:none" src="about:blank"></iframe>
+</div>
 
 <!-- ═══════════════════════════════════════════
      PORTFOLIO SUMMARY PAGE
@@ -4034,6 +4095,105 @@ function swaeSubmit(){
     _pinCb = cb;
     bg.classList.add('open');
   };
+})();
+
+/* ═══════════════════════════════════════════════════
+   ADD EXPENSE OVERLAY — open / close / bridge
+═══════════════════════════════════════════════════ */
+(function(){
+  var _loaded = false;
+
+  /* ── The google.script.run shim injected into the iframe ── */
+  var BRIDGE_SCRIPT = [
+    '(function(){',
+    '  var _cbs={};',
+    '  window.addEventListener("message",function(e){',
+    '    if(!e.data||e.data.type!=="gsres")return;',
+    '    var c=_cbs[e.data.cbId];',
+    '    if(!c)return;',
+    '    if(e.data.isErr)c._f&&c._f(e.data.payload);',
+    '    else c._s&&c._s(e.data.payload);',
+    '    delete _cbs[e.data.cbId];',
+    '  });',
+    '  function mk(){',
+    '    var o={_s:null,_f:null};',
+    '    o.withSuccessHandler=function(c){o._s=c;return o;};',
+    '    o.withFailureHandler=function(c){o._f=c;return o;};',
+    '    var fns=["getExpenseRow","updateExpenseCells"];',
+    '    fns.forEach(function(fn){',
+    '      o[fn]=function(){',
+    '        var id=Math.random().toString(36).slice(2);',
+    '        _cbs[id]={_s:o._s,_f:o._f};',
+    '        o._s=null;o._f=null;',
+    '        window.parent.postMessage({type:"gsrun",fn:fn,args:Array.prototype.slice.call(arguments),cbId:id},"*");',
+    '      };',
+    '    });',
+    '    return o;',
+    '  }',
+    '  var _runner=mk();',
+    '  window.google={script:{run:{',
+    '    withSuccessHandler:function(c){_runner=mk();_runner._s=c;return _runner;},',
+    '    withFailureHandler:function(c){_runner._f=c;return _runner;},',
+    '    getExpenseRow:function(){_runner.getExpenseRow.apply(_runner,arguments);_runner=mk();},',
+    '    updateExpenseCells:function(){_runner.updateExpenseCells.apply(_runner,arguments);_runner=mk();}',
+    '  }}};',
+    '})();'
+  ].join('\n');
+
+  /* ── Relay: parent listens for iframe's gsrun messages ── */
+  window.addEventListener('message', function(e) {
+    if (!e.data || e.data.type !== 'gsrun') return;
+    var cbId = e.data.cbId;
+    var iframe = document.getElementById('ae-iframe');
+    if (!iframe || !iframe.contentWindow) return;
+    google.script.run
+      .withSuccessHandler(function(r) {
+        iframe.contentWindow.postMessage({type:'gsres', cbId:cbId, isErr:false, payload:r}, '*');
+      })
+      .withFailureHandler(function(err) {
+        iframe.contentWindow.postMessage({type:'gsres', cbId:cbId, isErr:true, payload:err}, '*');
+      })
+      [e.data.fn].apply(null, e.data.args);
+  });
+
+  /* ── Open overlay ── */
+  window.openAddExp = function() {
+    var overlay = document.getElementById('ae-overlay');
+    overlay.classList.add('open');
+    if (_loaded) return;
+    _loaded = true;
+    google.script.run
+      .withSuccessHandler(function(html) {
+        // Inject the bridge shim into the HTML
+        var patched = html.replace('</head>', '<script>' + BRIDGE_SCRIPT + '<\/script></head>');
+        var iframe = document.getElementById('ae-iframe');
+        iframe.srcdoc = patched;
+        iframe.onload = function() {
+          document.getElementById('ae-loading').style.display = 'none';
+          iframe.style.display = 'block';
+        };
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('ae-loading').innerHTML =
+          '<span style="color:#ff4d6d">Failed to load: ' + (err && err.message || err) + '</span>';
+      })
+      .getAddExpHtmlContent();
+  };
+
+  /* ── Close overlay ── */
+  window.closeAddExp = function() {
+    document.getElementById('ae-overlay').classList.remove('open');
+  };
+
+  /* Close on backdrop click */
+  document.getElementById('ae-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeAddExp();
+  });
+
+  /* Close on Escape key */
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAddExp();
+  });
 })();
 </script>
 </body>
