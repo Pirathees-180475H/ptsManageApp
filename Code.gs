@@ -1677,8 +1677,8 @@ function logHabitDay(payload) {
 function showAddExpDialog() {
   try {
     var html = HtmlService.createHtmlOutputFromFile('ADD_EXP')
-      .setWidth(720)
-      .setHeight(900);
+      .setWidth(2000)
+      .setHeight(2000);
     SpreadsheetApp.getUi().showModalDialog(html, '💸 Add Expense');
   } catch (err) { /* silent fail on mobile */ }
 }
