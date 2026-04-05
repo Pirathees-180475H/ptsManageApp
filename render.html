@@ -1112,6 +1112,32 @@ input[type=date].swae-input{color-scheme:dark;}
 .sw-dtxn-pay-badge{font-size:.52em;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:5px;flex-shrink:0;text-transform:uppercase;background:rgba(168,85,247,.2);color:#a855f7;border:1px solid rgba(168,85,247,.3);}
 .sw-dtxn-empty{text-align:center;padding:36px 20px;color:rgba(255,255,255,.2);font-size:.85em;}
 .sw-dtxn-err{color:#ff4d6d;font-size:.8em;text-align:center;padding:28px;}
+/* ── SW drawer tabs ── */
+.sw-drawer-tabs{display:flex;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.015);}
+.sw-drawer-tab{flex:1;padding:11px 8px;font-size:.68em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;color:rgba(255,255,255,.28);border-bottom:2px solid transparent;text-align:center;transition:all .18s;}
+.sw-drawer-tab:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.03);}
+.sw-drawer-tab.active{color:#ff4d6d;border-bottom-color:#ff4d6d;background:rgba(255,77,109,.04);}
+/* ── SW pager ── */
+.sw-dtxn-pager{display:flex;align-items:center;justify-content:center;gap:5px;padding:14px 0 4px;flex-wrap:wrap;}
+.sw-page-btn{min-width:30px;height:30px;padding:0 8px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);cursor:pointer;font-size:.72em;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:inherit;}
+.sw-page-btn:hover:not(:disabled){border-color:rgba(255,77,109,.4);color:#ff4d6d;background:rgba(255,77,109,.08);}
+.sw-page-btn.cur{background:rgba(255,77,109,.15);border-color:rgba(255,77,109,.5);color:#ff4d6d;}
+.sw-page-btn:disabled{opacity:.25;cursor:not-allowed;}
+.sw-page-info{font-size:.65em;color:rgba(255,255,255,.28);padding:0 6px;white-space:nowrap;text-align:center;}
+/* ── SW suspect panel ── */
+.sw-suspect-hd{font-size:.62em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,107,53,.65);padding:14px 0 8px;border-bottom:1px solid rgba(255,107,53,.12);margin-bottom:10px;}
+.sw-suspect-card{background:rgba(255,107,53,.04);border:1px solid rgba(255,107,53,.18);border-radius:12px;padding:12px 13px;margin-bottom:8px;}
+.sw-suspect-card .sw-dtxn-desc{margin-bottom:4px;}
+.sw-suspect-meta{font-size:.62em;color:rgba(255,255,255,.3);display:flex;gap:8px;margin-bottom:8px;}
+.sw-suspect-reasons{display:flex;flex-direction:column;gap:4px;}
+.sw-suspect-reason{font-size:.68em;color:rgba(255,130,60,.9);display:flex;align-items:flex-start;gap:5px;line-height:1.4;}
+.sw-suspect-net{font-size:.78em;font-weight:700;padding:2px 8px;border-radius:6px;float:right;}
+.sw-suspect-net.owe{color:#ff4d6d;background:rgba(255,77,109,.12);}
+.sw-suspect-net.owed{color:#00e676;background:rgba(0,230,118,.12);}
+.sw-suspect-clean{text-align:center;padding:44px 20px;color:rgba(0,230,118,.45);font-size:.85em;}
+.sw-suspect-summary{background:rgba(255,107,53,.06);border:1px solid rgba(255,107,53,.15);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.72em;color:rgba(255,255,255,.55);line-height:1.8;}
+.sw-suspect-summary strong{color:rgba(255,107,53,.9);}
+.sw-dtxn-flag{font-size:.6em;vertical-align:middle;margin-left:5px;}
 @media(max-width:640px){
   #page-sw .charts-grid{grid-template-columns:1fr;}
   #page-sw .friends-grid{grid-template-columns:1fr 1fr;}
@@ -1374,7 +1400,11 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="sw-drawer-avatar" id="sw-drawerAvatar"></div>
     <div class="sw-drawer-name" id="sw-drawerName"></div>
     <div class="sw-drawer-balance" id="sw-drawerBalance"></div>
-    <div class="sw-drawer-sub">Latest 10 Transactions</div>
+    <div class="sw-drawer-sub" id="sw-drawerSub">Loading…</div>
+  </div>
+  <div class="sw-drawer-tabs">
+    <div class="sw-drawer-tab active" id="sw-tabTxn"     onclick="swShowDrawerTab('txn')">📋 Transactions</div>
+    <div class="sw-drawer-tab"        id="sw-tabSuspect" onclick="swShowDrawerTab('suspect')">🔍 Suspects</div>
   </div>
   <div class="sw-drawer-body" id="sw-drawerBody">
     <div class="sw-drawer-spin">
@@ -1528,9 +1558,9 @@ input[type=date].swae-input{color-scheme:dark;}
 var _spaLoaded = {cse:false, cc:false, exp:false, port:false, inv:false, mf:false, sw:false};
 
 function _doShowPage(name){
-  // Hide SW FAB when leaving SW page
+  // Show/hide SW FAB — only on Splitwise tab
   var fab=document.getElementById('sw-fab');
-  if(fab && name!=='sw') fab.style.display='none';
+  if(fab) fab.style.display = name==='sw' ? 'flex' : 'none';
 
   // Show/hide Add Expense FAB — only on Expenses tab
   var aeFab=document.getElementById('ae-fab');
@@ -3619,35 +3649,146 @@ function swCloseDrawer(){
   document.getElementById('sw-friendDrawer').classList.remove('open');
 }
 
+/* ── SW drawer state ── */
+var _swAllTxns   = [];
+var _swSuspects  = [];
+var _swTxnPage   = 0;
+var _swPageSize  = 10;
+var _swDrawerTab = 'txn';
+
+function swShowDrawerTab(tab){
+  _swDrawerTab = tab;
+  document.getElementById('sw-tabTxn').classList.toggle('active', tab==='txn');
+  document.getElementById('sw-tabSuspect').classList.toggle('active', tab==='suspect');
+  if(tab==='txn') swRenderPage(_swTxnPage);
+  else swRenderSuspectPanel();
+}
+
 function swRenderDrawerTxns(result){
   var body = document.getElementById('sw-drawerBody');
   if(!result||!result.success){
     body.innerHTML='<div class="sw-dtxn-err">⚠ '+(result&&result.error?result.error:'Unknown error')+'</div>';
     return;
   }
-  var txns = result.transactions||[];
-  if(!txns.length){
+  _swAllTxns   = result.transactions||[];
+  _swTxnPage   = 0;
+  _swDrawerTab = 'txn';
+  document.getElementById('sw-tabTxn').classList.add('active');
+  document.getElementById('sw-tabSuspect').classList.remove('active');
+
+  document.getElementById('sw-drawerSub').textContent =
+    _swAllTxns.length+' Transaction'+(_swAllTxns.length!==1?'s':'');
+
+  _swSuspects = swDetectSuspects(_swAllTxns);
+  document.getElementById('sw-tabSuspect').textContent =
+    '🔍 Suspects'+(_swSuspects.length?' ('+_swSuspects.length+')':'');
+
+  if(!_swAllTxns.length){
     body.innerHTML='<div class="sw-dtxn-empty">🎉 No transactions found with this person.</div>';
     return;
   }
+  swRenderPage(0);
+}
+
+function swRenderPage(page){
+  _swTxnPage = page;
+  var body  = document.getElementById('sw-drawerBody');
+  var total = _swAllTxns.length;
+  var pages = Math.ceil(total/_swPageSize);
+  var slice = _swAllTxns.slice(page*_swPageSize, (page+1)*_swPageSize);
+
+  var flagIds={};
+  _swSuspects.forEach(function(s){ flagIds[s.tx.id]=true; });
+
   var html='';
-  txns.forEach(function(tx){
+  slice.forEach(function(tx){
     var icon    = tx.isPayment?'💸':(tx.paidByMe?'🧾':'📋');
     var netCls  = tx.myNet>0?'owed':tx.myNet<0?'owe':'zero';
     var netLbl  = tx.myNet>0?'+'+tx.myNet.toFixed(2):tx.myNet<0?tx.myNet.toFixed(2):'—';
     var payBadge= tx.isPayment?'<span class="sw-dtxn-pay-badge">Payment</span>':'';
+    var flag    = flagIds[tx.id]?'<span class="sw-dtxn-flag">🚩</span>':'';
     var others  = (tx.participants||[]).filter(function(p){return p;}).join(', ');
     html+=
       '<div class="sw-dtxn">'
         +'<div class="sw-dtxn-ico">'+icon+'</div>'
         +'<div class="sw-dtxn-info">'
-          +'<div class="sw-dtxn-desc">'+swEscHtml(tx.description)+'</div>'
+          +'<div class="sw-dtxn-desc">'+swEscHtml(tx.description)+flag+'</div>'
           +'<div class="sw-dtxn-meta"><span>'+tx.date+'</span>'+(others?'<span>👥 '+swEscHtml(others)+'</span>':'')+'</div>'
         +'</div>'
         +'<div class="sw-dtxn-cost">'+(tx.currency||'')+' '+tx.cost.toFixed(2)+'</div>'
         +payBadge
         +'<div class="sw-dtxn-net '+netCls+'">'+netLbl+'</div>'
       +'</div>';
+  });
+  html += swRenderPager(page, pages, total);
+  body.innerHTML=html;
+}
+
+function swRenderPager(page, pages, total){
+  if(pages<=1) return '<div class="sw-page-info" style="padding:10px 0">'+total+' transactions</div>';
+  var out='<div class="sw-dtxn-pager">';
+  out+='<button class="sw-page-btn" onclick="swRenderPage('+(page-1)+')" '+(page===0?'disabled':'')+'>‹</button>';
+  var s=Math.max(0,page-2), e=Math.min(pages-1,page+2);
+  if(s>0) out+='<button class="sw-page-btn" onclick="swRenderPage(0)">1</button>'+(s>1?'<span class="sw-page-info">…</span>':'');
+  for(var i=s;i<=e;i++)
+    out+='<button class="sw-page-btn'+(i===page?' cur':'')+'" onclick="swRenderPage('+i+')">'+(i+1)+'</button>';
+  if(e<pages-1) out+=(e<pages-2?'<span class="sw-page-info">…</span>':'')+'<button class="sw-page-btn" onclick="swRenderPage('+(pages-1)+')">'+ pages+'</button>';
+  out+='<button class="sw-page-btn" onclick="swRenderPage('+(page+1)+')" '+(page>=pages-1?'disabled':'')+'>›</button>';
+  out+='</div><div class="sw-page-info">Page '+(page+1)+' of '+pages+' · '+total+' total</div>';
+  return out;
+}
+
+function swDetectSuspects(txns){
+  var suspects=[];
+  var expenses=txns.filter(function(t){return !t.isPayment;});
+  if(!expenses.length) return suspects;
+  var costs=expenses.map(function(t){return Math.abs(t.cost);});
+  var mean=costs.reduce(function(a,b){return a+b;},0)/costs.length;
+  var stddev=Math.sqrt(costs.map(function(c){return Math.pow(c-mean,2);}).reduce(function(a,b){return a+b;},0)/costs.length);
+  var descMap={};
+  txns.forEach(function(t){ var k=(t.description||'').toLowerCase().trim(); descMap[k]=(descMap[k]||0)+1; });
+  var timestamps=txns.map(function(t){return t.rawDate||0;}).filter(Boolean);
+  var newest=timestamps.length?Math.max.apply(null,timestamps):0;
+  var oweCount=expenses.filter(function(t){return t.myNet<0;}).length;
+  var oweRatio=expenses.length?oweCount/expenses.length:0;
+  txns.forEach(function(tx){
+    var reasons=[];
+    if(!tx.isPayment&&stddev>50&&Math.abs(tx.cost)>mean+2.5*stddev)
+      reasons.push('Amount '+tx.currency+' '+tx.cost.toFixed(0)+' far above average (avg '+tx.currency+' '+mean.toFixed(0)+')');
+    var dk=(tx.description||'').toLowerCase().trim();
+    if(descMap[dk]>=3) reasons.push('Description "'+tx.description+'" appears '+descMap[dk]+' times');
+    if(!tx.isPayment&&tx.cost>=5000&&tx.cost%500===0)
+      reasons.push('Suspiciously round amount ('+tx.currency+' '+tx.cost.toFixed(0)+')');
+    if(tx.rawDate&&newest&&(newest-tx.rawDate)>180*86400000)
+      reasons.push('Old transaction — may be forgotten or backdated');
+    if(!tx.isPayment&&expenses.length>=5&&oweRatio>0.80&&tx.myNet<0)
+      reasons.push('You owe on '+Math.round(oweRatio*100)+'% of all expenses — imbalanced');
+    if(reasons.length) suspects.push({tx:tx,reasons:reasons});
+  });
+  return suspects;
+}
+
+function swRenderSuspectPanel(){
+  var body=document.getElementById('sw-drawerBody');
+  if(!_swSuspects.length){
+    body.innerHTML='<div class="sw-suspect-clean">✅ No suspicious transactions detected</div>';
+    return;
+  }
+  var html='<div class="sw-suspect-summary"><strong>'+_swSuspects.length+' suspect transaction'+(_swSuspects.length>1?'s':'')+' detected</strong> across '+_swAllTxns.length+' total. Review these carefully — they may be duplicates, backdated, unusually large, or part of an imbalanced pattern.</div>';
+  html+='<div class="sw-suspect-hd">⚠ Flagged Transactions</div>';
+  _swSuspects.forEach(function(s){
+    var tx=s.tx;
+    var nc=tx.myNet<0?'owe':'owed';
+    var nl=tx.myNet<0?tx.myNet.toFixed(2):'+'+tx.myNet.toFixed(2);
+    html+='<div class="sw-suspect-card">'
+      +'<span class="sw-suspect-net '+nc+'">'+tx.currency+' '+nl+'</span>'
+      +'<div class="sw-dtxn-desc">'+swEscHtml(tx.description)+'</div>'
+      +'<div class="sw-suspect-meta"><span>'+tx.date+'</span><span>'+tx.currency+' '+tx.cost.toFixed(2)+'</span></div>'
+      +'<div class="sw-suspect-reasons">';
+    s.reasons.forEach(function(r){
+      html+='<div class="sw-suspect-reason"><span>⚠</span><span>'+swEscHtml(r)+'</span></div>';
+    });
+    html+='</div></div>';
   });
   body.innerHTML=html;
 }
@@ -4009,6 +4150,9 @@ function swaeSubmit(){
           swaeClose();
           _spaLoaded.sw=false;
           swLoad();
+          // Keep FAB visible regardless of reload timing
+          var _fab=document.getElementById('sw-fab');
+          if(_fab) _fab.style.display='flex';
         }, 2200);
       } else {
         errEl.textContent='⚠ '+(res&&res.error?res.error:'Unknown error. Check GAS logs.');

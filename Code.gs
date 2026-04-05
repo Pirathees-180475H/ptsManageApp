@@ -1083,15 +1083,24 @@ function getExpensesForFriend(friendId) {
       currentUserId = JSON.parse(meResp.getContentText()).user.id;
     } catch(e) {}
 
-    // ── 2. Fetch expenses for this specific friend ──
-    var url = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=20&offset=0&friend_id=' + friendId;
-    var expResp = UrlFetchApp.fetch(url, opts);
-    var expenses = JSON.parse(expResp.getContentText()).expenses || [];
+    // ── 2. Fetch ALL expenses for this friend (up to 200 per Splitwise API limit) ──
+    var allExpenses = [];
+    var offset = 0;
+    var pageLimit = 200;
+    while (true) {
+      var url = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=' + pageLimit
+              + '&offset=' + offset + '&friend_id=' + friendId;
+      var expResp = UrlFetchApp.fetch(url, opts);
+      var page = JSON.parse(expResp.getContentText()).expenses || [];
+      var active = page.filter(function(e) { return !e.deleted_at; });
+      allExpenses = allExpenses.concat(active);
+      if (page.length < pageLimit) break;   // last page
+      offset += pageLimit;
+      if (offset >= 1000) break;            // safety cap
+    }
 
-    var transactions = expenses
-      .filter(function(e) { return !e.deleted_at; })
-      .slice(0, 10)
-      .map(function(e) {
+    var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+    var transactions = allExpenses.map(function(e) {
         var myNet = 0, paidByMe = false;
         if (currentUserId) {
           for (var i = 0; i < e.users.length; i++) {
@@ -1102,14 +1111,15 @@ function getExpensesForFriend(friendId) {
             }
           }
         }
-        // All participant first names
         var participants = (e.users || []).map(function(u) {
           return (u.user && u.user.first_name) ? u.user.first_name : 'User';
         });
+        var rawDate = new Date(e.date);
         return {
           id:           e.id,
           description:  e.description || '(no description)',
-          date:         Utilities.formatDate(new Date(e.date), Session.getScriptTimeZone(), 'dd MMM yyyy'),
+          date:         Utilities.formatDate(rawDate, tz, 'dd MMM yyyy'),
+          rawDate:      rawDate.getTime(),   // ms timestamp for suspect analysis
           cost:         parseFloat(e.cost),
           currency:     e.currency_code,
           myNet:        myNet,

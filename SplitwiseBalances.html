@@ -497,6 +497,96 @@
 
       /* clickable friend card */
       .friend-card[data-friend-id] { cursor:pointer; }
+
+      /* ── Drawer tabs ── */
+      .drawer-tabs {
+        display:flex; gap:0; flex-shrink:0;
+        border-bottom:1px solid rgba(255,255,255,.07);
+        background:rgba(255,255,255,.015);
+      }
+      .drawer-tab {
+        flex:1; padding:11px 8px; font-size:.68em; font-weight:700;
+        letter-spacing:.8px; text-transform:uppercase;
+        cursor:pointer; color:rgba(255,255,255,.28);
+        border-bottom:2px solid transparent;
+        text-align:center; transition:all .18s;
+      }
+      .drawer-tab:hover { color:rgba(255,255,255,.6); background:rgba(255,255,255,.03); }
+      .drawer-tab.active { color:#00d4ff; border-bottom-color:#00d4ff; background:rgba(0,212,255,.04); }
+
+      /* ── Pagination ── */
+      .dtxn-pager {
+        display:flex; align-items:center; justify-content:center;
+        gap:5px; padding:14px 0 4px; flex-wrap:wrap;
+      }
+      .dtxn-page-btn {
+        min-width:30px; height:30px; padding:0 8px;
+        border-radius:7px; border:1px solid rgba(255,255,255,.1);
+        background:rgba(255,255,255,.04); color:rgba(255,255,255,.5);
+        cursor:pointer; font-size:.72em; font-weight:700;
+        display:flex; align-items:center; justify-content:center;
+        transition:all .15s; font-family:inherit;
+      }
+      .dtxn-page-btn:hover:not(:disabled) {
+        border-color:rgba(0,212,255,.4); color:#00d4ff;
+        background:rgba(0,212,255,.08);
+      }
+      .dtxn-page-btn.cur {
+        background:rgba(0,212,255,.15); border-color:rgba(0,212,255,.45);
+        color:#00d4ff;
+      }
+      .dtxn-page-btn:disabled { opacity:.25; cursor:not-allowed; }
+      .dtxn-page-info {
+        font-size:.65em; color:rgba(255,255,255,.28);
+        padding:0 6px; white-space:nowrap;
+      }
+
+      /* ── Suspect panel ── */
+      .suspect-section-hd {
+        font-size:.62em; font-weight:700; letter-spacing:1.8px;
+        text-transform:uppercase; color:rgba(255,107,53,.65);
+        padding:14px 0 8px;
+        border-bottom:1px solid rgba(255,107,53,.12);
+        margin-bottom:10px;
+      }
+      .suspect-card {
+        background:rgba(255,107,53,.04); border:1px solid rgba(255,107,53,.18);
+        border-radius:12px; padding:12px 13px; margin-bottom:8px;
+        transition:background .18s;
+      }
+      .suspect-card:hover { background:rgba(255,107,53,.07); }
+      .suspect-card .dtxn-desc {
+        font-size:.82em; font-weight:600; color:rgba(255,255,255,.85);
+        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        margin-bottom:4px;
+      }
+      .suspect-card .dtxn-meta {
+        font-size:.62em; color:rgba(255,255,255,.3);
+        display:flex; gap:8px; margin-bottom:8px;
+      }
+      .suspect-reasons { display:flex; flex-direction:column; gap:4px; }
+      .suspect-reason {
+        font-size:.68em; color:rgba(255,130,60,.9);
+        display:flex; align-items:flex-start; gap:5px; line-height:1.4;
+      }
+      .suspect-reason-ico { flex-shrink:0; }
+      .suspect-net {
+        font-size:.78em; font-weight:700;
+        padding:2px 8px; border-radius:6px; float:right;
+      }
+      .suspect-net.owe  { color:#ff4d6d; background:rgba(255,77,109,.12); }
+      .suspect-net.owed { color:#00e676; background:rgba(0,230,118,.12); }
+      .suspect-clean {
+        text-align:center; padding:44px 20px;
+        color:rgba(0,230,118,.45); font-size:.85em;
+      }
+      .suspect-summary {
+        background:rgba(255,107,53,.06); border:1px solid rgba(255,107,53,.15);
+        border-radius:10px; padding:12px 14px; margin-bottom:14px;
+        font-size:.72em; color:rgba(255,255,255,.55); line-height:1.8;
+      }
+      .suspect-summary strong { color:rgba(255,107,53,.9); }
+      .dtxn-flag { font-size:.6em; vertical-align:middle; margin-left:5px; }
       .friend-card[data-friend-id]:hover::after { width:5px; }
       .friend-card[data-friend-id] .friend-name::after {
         content:'→';
@@ -785,7 +875,11 @@
         <div class="drawer-avatar" id="drawerAvatar"></div>
         <div class="drawer-name" id="drawerName"></div>
         <div class="drawer-balance" id="drawerBalance"></div>
-        <div class="drawer-sub">Latest 10 Transactions</div>
+        <div class="drawer-sub" id="drawerSub">Loading…</div>
+      </div>
+      <div class="drawer-tabs">
+        <div class="drawer-tab active" id="tabTxn"     onclick="showDrawerTab('txn')">📋 Transactions</div>
+        <div class="drawer-tab"        id="tabSuspect" onclick="showDrawerTab('suspect')">🔍 Suspects</div>
       </div>
       <div class="drawer-body" id="drawerBody">
         <div class="drawer-spin">
@@ -1108,30 +1202,81 @@
         document.getElementById('friendDrawer').classList.remove('open');
       }
 
+      /* ═══════════════════════════════════════════
+         DRAWER STATE
+      ═══════════════════════════════════════════ */
+      var _allTxns    = [];
+      var _suspects   = [];
+      var _txnPage    = 0;
+      var _PAGE_SIZE  = 10;
+      var _drawerTab  = 'txn';
+
+      /* ── Tab switcher ── */
+      function showDrawerTab(tab) {
+        _drawerTab = tab;
+        document.getElementById('tabTxn').classList.toggle('active', tab === 'txn');
+        document.getElementById('tabSuspect').classList.toggle('active', tab === 'suspect');
+        if (tab === 'txn') {
+          renderPage(_txnPage);
+        } else {
+          renderSuspectPanel();
+        }
+      }
+
+      /* ── Main entry: called after server returns ── */
       function renderDrawerTxns(result, friendAmt) {
         var body = document.getElementById('drawerBody');
         if (!result || !result.success) {
           body.innerHTML = '<div class="dtxn-err">⚠ ' + (result&&result.error ? result.error : 'Unknown error') + '</div>';
           return;
         }
-        var txns = result.transactions || [];
-        if (txns.length === 0) {
+        _allTxns  = result.transactions || [];
+        _txnPage  = 0;
+        _drawerTab = 'txn';
+        document.getElementById('tabTxn').classList.add('active');
+        document.getElementById('tabSuspect').classList.remove('active');
+
+        // Update sub-label
+        document.getElementById('drawerSub').textContent =
+          _allTxns.length + ' Transaction' + (_allTxns.length !== 1 ? 's' : '');
+
+        // Update suspect tab label
+        _suspects = detectSuspects(_allTxns);
+        document.getElementById('tabSuspect').textContent =
+          '🔍 Suspects' + (_suspects.length ? ' (' + _suspects.length + ')' : '');
+
+        if (_allTxns.length === 0) {
           body.innerHTML = '<div class="dtxn-empty">🎉 No transactions found with this person.</div>';
           return;
         }
+        renderPage(0);
+      }
+
+      /* ── Render one page of transactions ── */
+      function renderPage(page) {
+        _txnPage = page;
+        var body   = document.getElementById('drawerBody');
+        var total  = _allTxns.length;
+        var pages  = Math.ceil(total / _PAGE_SIZE);
+        var start  = page * _PAGE_SIZE;
+        var slice  = _allTxns.slice(start, start + _PAGE_SIZE);
+
+        var suspectIds = {};
+        _suspects.forEach(function(s){ suspectIds[s.tx.id] = true; });
 
         var html = '';
-        txns.forEach(function(tx) {
-          var icon = tx.isPayment ? '💸' : (tx.paidByMe ? '🧾' : '📋');
-          var netCls = tx.myNet > 0 ? 'owed' : (tx.myNet < 0 ? 'owe' : 'zero');
+        slice.forEach(function(tx) {
+          var icon     = tx.isPayment ? '💸' : (tx.paidByMe ? '🧾' : '📋');
+          var netCls   = tx.myNet > 0 ? 'owed' : (tx.myNet < 0 ? 'owe' : 'zero');
           var netLabel = tx.myNet > 0 ? '+' + tx.myNet.toFixed(2)
                        : tx.myNet < 0 ? tx.myNet.toFixed(2) : '—';
           var payBadge = tx.isPayment ? '<span class="dtxn-pay-badge">Payment</span>' : '';
-          var others = (tx.participants||[]).filter(function(p){ return p; }).join(', ');
+          var flagBadge = suspectIds[tx.id] ? '<span class="dtxn-flag">🚩</span>' : '';
+          var others   = (tx.participants||[]).filter(function(p){ return p; }).join(', ');
           html += '<div class="dtxn">' +
             '<div class="dtxn-ico">' + icon + '</div>' +
             '<div class="dtxn-info">' +
-              '<div class="dtxn-desc">' + escHtml(tx.description) + '</div>' +
+              '<div class="dtxn-desc">' + escHtml(tx.description) + flagBadge + '</div>' +
               '<div class="dtxn-meta">' +
                 '<span>' + tx.date + '</span>' +
                 (others ? '<span>👥 ' + escHtml(others) + '</span>' : '') +
@@ -1142,6 +1287,142 @@
             '<div class="dtxn-net ' + netCls + '">' + netLabel + '</div>' +
           '</div>';
         });
+
+        // Pagination controls
+        html += renderPager(page, pages, total);
+        body.innerHTML = html;
+      }
+
+      /* ── Render pager HTML ── */
+      function renderPager(page, pages, total) {
+        if (pages <= 1) {
+          return '<div class="dtxn-page-info" style="text-align:center;padding:10px 0">' + total + ' transactions</div>';
+        }
+        var out = '<div class="dtxn-pager">';
+        // Prev
+        out += '<button class="dtxn-page-btn" onclick="renderPage(' + (page-1) + ')" '
+             + (page === 0 ? 'disabled' : '') + '>‹</button>';
+
+        // Page numbers (show up to 5 around current)
+        var start = Math.max(0, page - 2);
+        var end   = Math.min(pages - 1, page + 2);
+        if (start > 0) out += '<button class="dtxn-page-btn" onclick="renderPage(0)">1</button>'
+                            + (start > 1 ? '<span class="dtxn-page-info">…</span>' : '');
+        for (var i = start; i <= end; i++) {
+          out += '<button class="dtxn-page-btn' + (i === page ? ' cur' : '') + '" onclick="renderPage(' + i + ')">' + (i+1) + '</button>';
+        }
+        if (end < pages - 1) out += (end < pages - 2 ? '<span class="dtxn-page-info">…</span>' : '')
+                                  + '<button class="dtxn-page-btn" onclick="renderPage(' + (pages-1) + ')">' + pages + '</button>';
+
+        // Next
+        out += '<button class="dtxn-page-btn" onclick="renderPage(' + (page+1) + ')" '
+             + (page >= pages-1 ? 'disabled' : '') + '>›</button>';
+        out += '</div>';
+        out += '<div class="dtxn-page-info" style="text-align:center;margin-top:-4px">Page ' + (page+1) + ' of ' + pages + ' · ' + total + ' total</div>';
+        return out;
+      }
+
+      /* ═══════════════════════════════════════════
+         SUSPECT DETECTION
+      ═══════════════════════════════════════════ */
+      function detectSuspects(txns) {
+        var suspects = [];
+        var expenses = txns.filter(function(t){ return !t.isPayment; });
+        if (expenses.length === 0) return suspects;
+
+        // Stats for amount outliers
+        var costs = expenses.map(function(t){ return Math.abs(t.cost); });
+        var mean  = costs.reduce(function(a,b){return a+b;},0) / costs.length;
+        var variance = costs.map(function(c){ return Math.pow(c - mean, 2); })
+                           .reduce(function(a,b){return a+b;},0) / costs.length;
+        var stddev = Math.sqrt(variance);
+
+        // Description frequency map
+        var descMap = {};
+        txns.forEach(function(t){
+          var k = (t.description||'').toLowerCase().trim();
+          descMap[k] = (descMap[k] || 0) + 1;
+        });
+
+        // Date range
+        var timestamps = txns.map(function(t){ return t.rawDate || 0; }).filter(Boolean);
+        var newest = timestamps.length ? Math.max.apply(null, timestamps) : 0;
+
+        // One-sided check: fraction of non-payment txns where you owe
+        var oweCount  = expenses.filter(function(t){ return t.myNet < 0; }).length;
+        var oweRatio  = expenses.length > 0 ? oweCount / expenses.length : 0;
+
+        txns.forEach(function(tx) {
+          var reasons = [];
+
+          // 1. Unusually large amount (> mean + 2.5 stddev, and stddev meaningful)
+          if (!tx.isPayment && stddev > 50 && Math.abs(tx.cost) > mean + 2.5 * stddev) {
+            reasons.push('Amount ' + tx.currency + ' ' + tx.cost.toFixed(0)
+              + ' is far above average (' + tx.currency + ' ' + mean.toFixed(0) + ')');
+          }
+
+          // 2. Exact duplicate description (3+ times)
+          var dk = (tx.description||'').toLowerCase().trim();
+          if (descMap[dk] >= 3) {
+            reasons.push('Description "' + tx.description + '" appears ' + descMap[dk] + ' times');
+          }
+
+          // 3. Large perfectly round amount (≥ 5000, multiple of 500)
+          if (!tx.isPayment && tx.cost >= 5000 && tx.cost % 500 === 0) {
+            reasons.push('Suspiciously round amount (' + tx.currency + ' ' + tx.cost.toFixed(0) + ')');
+          }
+
+          // 4. Old transaction (≥ 180 days older than the newest)
+          if (tx.rawDate && newest && (newest - tx.rawDate) > 180 * 86400000) {
+            reasons.push('Old transaction (may be a forgotten or backdated entry)');
+          }
+
+          // 5. You always owe this person (> 80% of non-payment txns, min 5 txns)
+          if (!tx.isPayment && expenses.length >= 5 && oweRatio > 0.80 && tx.myNet < 0) {
+            reasons.push('You owe on ' + Math.round(oweRatio*100) + '% of all shared expenses — imbalanced');
+          }
+
+          if (reasons.length > 0) {
+            suspects.push({ tx: tx, reasons: reasons });
+          }
+        });
+
+        return suspects;
+      }
+
+      /* ── Render suspect panel ── */
+      function renderSuspectPanel() {
+        var body = document.getElementById('drawerBody');
+        if (_suspects.length === 0) {
+          body.innerHTML = '<div class="suspect-clean">✅ No suspicious transactions detected</div>';
+          return;
+        }
+
+        // Summary
+        var html = '<div class="suspect-summary">'
+          + '<strong>' + _suspects.length + ' suspect transaction' + (_suspects.length > 1 ? 's' : '') + '</strong> detected '
+          + 'across ' + _allTxns.length + ' total. Review these carefully — they may be duplicates, '
+          + 'backdated, unusually large, or part of an imbalanced pattern.'
+          + '</div>';
+
+        html += '<div class="suspect-section-hd">⚠ Flagged Transactions</div>';
+
+        _suspects.forEach(function(s) {
+          var tx = s.tx;
+          var netCls   = tx.myNet < 0 ? 'owe' : 'owed';
+          var netLabel = tx.myNet < 0 ? tx.myNet.toFixed(2) : '+' + tx.myNet.toFixed(2);
+          html += '<div class="suspect-card">'
+            + '<span class="suspect-net ' + netCls + '">' + tx.currency + ' ' + netLabel + '</span>'
+            + '<div class="dtxn-desc">' + escHtml(tx.description) + '</div>'
+            + '<div class="dtxn-meta"><span>' + tx.date + '</span>'
+            + '<span>' + tx.currency + ' ' + tx.cost.toFixed(2) + '</span></div>'
+            + '<div class="suspect-reasons">';
+          s.reasons.forEach(function(r) {
+            html += '<div class="suspect-reason"><span class="suspect-reason-ico">⚠</span><span>' + escHtml(r) + '</span></div>';
+          });
+          html += '</div></div>';
+        });
+
         body.innerHTML = html;
       }
 
