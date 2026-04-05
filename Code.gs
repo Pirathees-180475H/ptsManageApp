@@ -648,37 +648,39 @@ function getSplitwiseData() {
       currentUserId = JSON.parse(meResp.getContentText()).user.id;
     } catch(e) {}
 
-    // ── 3. Recent 10 expenses ──
+    // ── 3. Recent expenses — fetch latest 15 ──
     var recentTransactions = [];
     try {
-      const expResp = UrlFetchApp.fetch(
-        'https://secure.splitwise.com/api/v3.0/get_expenses?limit=15&offset=0', opts);
-      const expenses = JSON.parse(expResp.getContentText()).expenses;
-      recentTransactions = expenses
-        .filter(function(e) { return !e.deleted_at; })
-        .slice(0, 10)
-        .map(function(e) {
-          var myNet = 0, paidByMe = false;
-          if (currentUserId) {
-            for (var i = 0; i < e.users.length; i++) {
-              if (e.users[i].user_id === currentUserId) {
-                myNet = parseFloat(e.users[i].net_balance || 0);
-                paidByMe = parseFloat(e.users[i].paid_share || 0) > 0;
-                break;
-              }
+      var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+      var expUrl  = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=15&offset=0';
+      var expResp = UrlFetchApp.fetch(expUrl, opts);
+      var allTxns = (JSON.parse(expResp.getContentText()).expenses || [])
+                      .filter(function(e) { return !e.deleted_at; })
+                      .slice(0, 15);
+      recentTransactions = allTxns.map(function(e) {
+        var myNet = 0, paidByMe = false;
+        if (currentUserId) {
+          for (var i = 0; i < e.users.length; i++) {
+            if (e.users[i].user_id === currentUserId) {
+              myNet    = parseFloat(e.users[i].net_balance || 0);
+              paidByMe = parseFloat(e.users[i].paid_share  || 0) > 0;
+              break;
             }
           }
-          return {
-            id: e.id,
-            description: e.description || '(no description)',
-            date: Utilities.formatDate(new Date(e.date), Session.getScriptTimeZone(), 'dd MMM yyyy'),
-            cost: parseFloat(e.cost),
-            currency: e.currency_code,
-            myNet: myNet,
-            paidByMe: paidByMe,
-            isPayment: e.payment === true
-          };
-        });
+        }
+        var rawDate = new Date(e.date);
+        return {
+          id:          e.id,
+          description: e.description || '(no description)',
+          date:        Utilities.formatDate(rawDate, tz, 'dd MMM yyyy'),
+          rawDate:     rawDate.getTime(),
+          cost:        parseFloat(e.cost),
+          currency:    e.currency_code,
+          myNet:       myNet,
+          paidByMe:    paidByMe,
+          isPayment:   e.payment === true
+        };
+      });
     } catch(e) {}
 
     // ── 4. Validate LKR balance ──
@@ -1067,6 +1069,95 @@ function getExpenseData() {
 
   } catch (error) {
     throw new Error('Failed to load expense data: ' + error.message);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   getCurrentMonthExpensesList
+   Returns every non-zero expense entry for the current month
+   from the daily rows in "Monthly Expences" sheet,
+   excluding Credit Card and Splitwise columns.
+───────────────────────────────────────────────────────────────── */
+function getCurrentMonthExpensesList() {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var tz       = ss.getSpreadsheetTimeZone();
+    var now      = new Date();
+    var curMonth = parseInt(Utilities.formatDate(now, tz, 'M'), 10); // 1-12
+    var curYear  = parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
+
+    // Column definitions (1-based), exclude CC (AE=31,AF=32,AG=33,AH=34,AI=35)
+    // and SW (T=20, U=21, W=23)
+    var CATS = [
+      { name: 'Food',               amtCol: 3,  refCol: 4  },  // C / D
+      { name: 'Supermarket',        amtCol: 5,  refCol: 6  },  // E / F
+      { name: 'Uber',               amtCol: 7,  refCol: 0  },  // G
+      { name: 'Uber Work',          amtCol: 8,  refCol: 0  },  // H
+      { name: 'Movies & Outing',    amtCol: 10, refCol: 9  },  // J / I
+      { name: 'Other',              amtCol: 12, refCol: 11 },  // L / K
+      { name: 'Bus Fair',           amtCol: 13, refCol: 0  },  // M
+      { name: 'Dress & Appearance', amtCol: 15, refCol: 14 },  // O / N
+      { name: 'Party',              amtCol: 17, refCol: 16 },  // Q / P
+      { name: 'Rent',               amtCol: 18, refCol: 0  }   // R
+    ];
+
+    var lastRow = sheet.getLastRow();
+    var numCols = 35; // A through AI
+    if (numCols > sheet.getLastColumn()) numCols = sheet.getLastColumn();
+    var allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+
+    var entries = [];
+
+    for (var r = 0; r < allData.length; r++) {
+      var row  = allData[r];
+      // Normalise col A to "M-d" using shared helper
+      var dateKey = _cellStr(row[0], true).trim();
+      if (!dateKey) continue;
+
+      // Match "M-d" pattern and check current month
+      var parts = dateKey.match(/^(\d{1,2})-(\d{1,2})$/);
+      if (!parts) continue;
+      var rowMonth = parseInt(parts[1], 10);
+      var rowDay   = parseInt(parts[2], 10);
+      if (rowMonth !== curMonth) continue;
+
+      // Extract non-zero values per category
+      CATS.forEach(function(cat) {
+        var rawAmt = row[cat.amtCol - 1]; // 0-indexed
+        var amt = 0;
+        if (typeof rawAmt === 'number') {
+          amt = rawAmt;
+        } else {
+          // Could be a formula string like "=800+350" – evaluate naively
+          amt = parseFloat(String(rawAmt).replace(/[^0-9.+-]/g, '')) || 0;
+        }
+        if (isNaN(amt) || amt <= 0) return;
+
+        var ref = '';
+        if (cat.refCol > 0) {
+          ref = String(row[cat.refCol - 1] || '').trim();
+        }
+
+        entries.push({
+          day:       rowDay,
+          category:  cat.name,
+          reference: ref,
+          amount:    amt
+        });
+      });
+    }
+
+    // Sort by day ascending, then category
+    entries.sort(function(a, b) {
+      return a.day !== b.day ? a.day - b.day : a.category.localeCompare(b.category);
+    });
+
+    return { success: true, month: curMonth, year: curYear, entries: entries };
+  } catch(err) {
+    return { success: false, error: err.message || String(err) };
   }
 }
 

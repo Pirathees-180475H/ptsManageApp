@@ -600,11 +600,68 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-exp .ic-val.info{color:#06b6d4;} #page-exp .ic-val.pur{color:#8b5cf6;} #page-exp .ic-val.nt{color:var(--muted);}
 #page-exp .ic-desc{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5;}
 #page-exp .exp-err{text-align:center;padding:48px;color:#ef4444;}
+#page-exp .kpi-detail-btn{
+  display:inline-flex;align-items:center;gap:5px;margin-top:8px;
+  padding:4px 11px;border-radius:20px;border:1px solid rgba(99,102,241,.3);
+  background:rgba(99,102,241,.12);color:#8b5cf6;
+  font-size:10px;font-weight:600;font-family:inherit;cursor:pointer;
+  transition:background .15s;
+}
+#page-exp .kpi-detail-btn:hover{background:rgba(99,102,241,.25);}
 @media(max-width:600px){
   #page-exp .kpi-strip{grid-template-columns:repeat(2,1fr);}
   #page-exp .r3,#page-exp .r2,#page-exp .r21{grid-template-columns:1fr;}
   #page-exp .ig{grid-template-columns:repeat(2,1fr);}
 }
+
+/* ── Expense Detail Popup (render.html) ── */
+#exp-detail-overlay{
+  display:none;position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(12px);
+  align-items:center;justify-content:center;padding:16px;
+}
+#exp-detail-overlay.open{display:flex;}
+#exp-detail-modal{
+  background:#0d1220;border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;width:100%;max-width:600px;
+  height:min(82vh,680px);display:flex;flex-direction:column;
+  box-shadow:0 24px 80px rgba(0,0,0,.7);animation:edmIn .25s ease;
+}
+@keyframes edmIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.edm-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px 13px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.edm-title{font-size:.9em;font-weight:700;color:#fff;}
+.edm-sub{font-size:.68em;color:var(--muted);margin-top:2px;}
+.edm-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.45);border-radius:50%;width:28px;height:28px;
+  cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.edm-close:hover{color:#fff;background:rgba(255,255,255,.12);}
+.edm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:12px 18px 20px;}
+.edm-loading{display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:40px;color:var(--muted);font-size:12px;}
+.edm-spin{width:24px;height:24px;border:2px solid rgba(99,102,241,.2);
+  border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+.edm-table{width:100%;border-collapse:collapse;}
+.edm-table th{font-size:.6em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--dim);padding:5px 9px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;}
+.edm-table th:last-child{text-align:right;}
+.edm-table td{padding:7px 9px;font-size:.78em;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.edm-table td:last-child{text-align:right;font-weight:700;color:#a855f7;}
+.edm-table tr:hover td{background:rgba(255,255,255,.025);}
+.edm-cat-row td{padding:9px 9px 5px;background:rgba(255,255,255,.03);
+  border-top:1px solid rgba(255,255,255,.07);border-bottom:none;}
+.edm-cat-row:first-child td{border-top:none;}
+.edm-cat-name{font-weight:700;font-size:.8em;color:#fff;}
+.edm-cat-sum{text-align:right!important;font-weight:700;color:#a855f7;font-size:.78em;}
+.edm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+.edm-day{font-size:.65em;color:var(--dim);font-weight:500;}
+.edm-ref{color:var(--muted);font-size:.75em;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.edm-total-row{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 9px 0;border-top:1px solid rgba(255,255,255,.07);margin-top:4px;
+  font-size:.78em;font-weight:700;color:var(--muted);}
+.edm-total-val{font-size:1.05em;color:#8b5cf6;}
+.edm-empty{text-align:center;padding:36px;color:var(--dim);}
+.edm-err-msg{text-align:center;padding:28px;color:var(--red);font-size:.82em;}
 
 /* ═══════════════════════════════════════════
    PORTFOLIO SUMMARY PAGE
@@ -1554,6 +1611,24 @@ input[type=date].swae-input{color-scheme:dark;}
 </div>
 
 <!-- ═══════════════════════════════════════════
+     EXPENSE DETAIL POPUP
+═══════════════════════════════════════════ -->
+<div id="exp-detail-overlay" onclick="if(event.target===this)expDetailClose()">
+  <div id="exp-detail-modal">
+    <div class="edm-hdr">
+      <div>
+        <div class="edm-title">📋 Current Month Expenses</div>
+        <div class="edm-sub" id="edm-sub">Loading…</div>
+      </div>
+      <button class="edm-close" onclick="expDetailClose()">✕</button>
+    </div>
+    <div class="edm-body" id="edm-body">
+      <div class="edm-loading"><div class="edm-spin"></div>Fetching entries…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
      BOTTOM NAV
 ═══════════════════════════════════════════ -->
 <nav class="bottom-nav">
@@ -1651,7 +1726,7 @@ function reloadPage(name){
   _spaLoaded[name]=false;
   if(name==='cse')  cseStartLoad();
   else if(name==='cc')   { document.getElementById('cc-root').innerHTML='<div class="loading"><div class="cc-spinner"></div><div class="loading-txt">Loading credit card data…</div></div>'; ccLoad(); _spaLoaded.cc=true; }
-  else if(name==='exp')  { document.getElementById('exp-root').innerHTML='<div class="exp-loader"><div class="exp-spinner"></div><p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p></div>'; expLoad(); _spaLoaded.exp=true; }
+  else if(name==='exp')  { document.getElementById('exp-root').innerHTML='<div class="exp-loader"><div class="exp-spinner"></div><p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p></div>'; _expDetailReset(); expLoad(); _spaLoaded.exp=true; }
   else if(name==='port') { document.getElementById('port-root').innerHTML='<div class="port-loading"><div class="port-spinner"></div><div class="port-loading-txt">FETCHING PORTFOLIO DATA…</div></div>'; portLoad(); _spaLoaded.port=true; }
   else if(name==='inv')  { document.getElementById('inv-root').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px"><div style="width:44px;height:44px;border:3px solid rgba(59,130,246,.15);border-top-color:#3b82f6;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Data…</div></div>'; invLoad(); _spaLoaded.inv=true; }
   else if(name==='mf')   { document.getElementById('mf-root').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px"><div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Flow…</div></div>'; mfLoad(); _spaLoaded.mf=true; }
@@ -2386,6 +2461,89 @@ function expLoad(){
     .getExpenseData();
 }
 
+/* ── Expense Detail Popup ── */
+var _edmLoaded = false;
+var EXP_DETAIL_CAT_COLORS = {
+  'Food':'#f59e0b','Supermarket':'#10b981','Uber':'#6366f1',
+  'Uber Work':'#8b5cf6','Movies & Outing':'#ec4899','Other':'#f97316',
+  'Bus Fair':'#06b6d4','Dress & Appearance':'#84cc16','Party':'#ef4444','Rent':'#64748b'
+};
+var EXP_DETAIL_CAT_ORDER = ['Food','Supermarket','Uber','Uber Work','Movies & Outing',
+                             'Other','Bus Fair','Dress & Appearance','Party','Rent'];
+
+function expDetailOpen() {
+  document.getElementById('exp-detail-overlay').classList.add('open');
+  if (_edmLoaded) return;
+  document.getElementById('edm-body').innerHTML =
+    '<div class="edm-loading"><div class="edm-spin"></div>Fetching entries…</div>';
+  document.getElementById('edm-sub').textContent = 'Loading…';
+  google.script.run
+    .withSuccessHandler(expDetailRender)
+    .withFailureHandler(function(e){
+      document.getElementById('edm-body').innerHTML =
+        '<div class="edm-err-msg">⚠ ' + (e.message||String(e)) + '</div>';
+    })
+    .getCurrentMonthExpensesList();
+}
+
+function expDetailClose() {
+  document.getElementById('exp-detail-overlay').classList.remove('open');
+}
+
+function expDetailRender(data) {
+  _edmLoaded = true;
+  var body = document.getElementById('edm-body');
+  var sub  = document.getElementById('edm-sub');
+  if (!data || !data.success) {
+    body.innerHTML = '<div class="edm-err-msg">⚠ ' + (data && data.error ? data.error : 'Failed to load') + '</div>';
+    return;
+  }
+  var entries = data.entries || [];
+  var months  = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mName   = months[data.month] || ('Month ' + data.month);
+  sub.textContent = mName + ' · ' + entries.length + ' entries';
+  if (!entries.length) {
+    body.innerHTML = '<div class="edm-empty">No entries found for ' + mName + '.</div>';
+    return;
+  }
+  // Sort by category order, then by day
+  entries.sort(function(a, b) {
+    var ai = EXP_DETAIL_CAT_ORDER.indexOf(a.category);
+    var bi = EXP_DETAIL_CAT_ORDER.indexOf(b.category);
+    if (ai < 0) ai = 99; if (bi < 0) bi = 99;
+    return ai !== bi ? ai - bi : a.day - b.day;
+  });
+  var total = entries.reduce(function(s, e) { return s + e.amount; }, 0);
+  var html = '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';
+  var lastCat = null;
+  entries.forEach(function(e) {
+    if (e.category !== lastCat) {
+      lastCat = e.category;
+      var catTotal = entries.filter(function(x) { return x.category === e.category; })
+                            .reduce(function(s, x) { return s + x.amount; }, 0);
+      var col = EXP_DETAIL_CAT_COLORS[e.category] || '#94a3b8';
+      html += '<tr class="edm-cat-row">'
+            + '<td colspan="2"><span class="edm-dot" style="background:' + col + '"></span>'
+            + '<span class="edm-cat-name">' + e.category + '</span></td>'
+            + '<td class="edm-cat-sum">₨ ' + Math.round(catTotal).toLocaleString('en-IN') + '</td>'
+            + '</tr>';
+    }
+    var ref = e.reference
+      ? '<span class="edm-ref" title="' + e.reference + '">' + e.reference + '</span>'
+      : '<span class="edm-ref" style="color:rgba(255,255,255,.18)">—</span>';
+    html += '<tr><td><span class="edm-day">' + e.day + '</span></td>'
+          + '<td>' + ref + '</td>'
+          + '<td>₨ ' + Math.round(e.amount).toLocaleString('en-IN') + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  html += '<div class="edm-total-row"><span>Month Total (' + entries.length + ' entries)</span>'
+        + '<span class="edm-total-val">₨ ' + Math.round(total).toLocaleString('en-IN') + '</span></div>';
+  body.innerHTML = html;
+}
+
+/* Reset detail cache when expense tab reloads */
+function _expDetailReset() { _edmLoaded = false; }
+
 function expShowErr(m){
   document.getElementById('exp-root').innerHTML='<div class="exp-err">⚠️ '+m+'</div>';
 }
@@ -2437,7 +2595,7 @@ function expBuild(D){
     '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div class="exp-badge" id="exp-badge">–</div></div>'+
     '<div class="sec-lbl">Overall</div>'+
     '<div class="kpi-strip">'+
-      '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div></div>'+
+      '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div><button class="kpi-detail-btn" onclick="expDetailOpen()">📋 View Details</button></div>'+
       '<div class="kpi c1"><div class="kpi-lbl">Avg Monthly</div><div class="kpi-val">'+expFr(avg)+'</div><div class="kpi-sub">Over '+n+' months</div></div>'+
       '<div class="kpi c2"><div class="kpi-lbl">Top Category</div><div class="kpi-val" style="font-size:13px">'+topCat.name+'</div><div class="kpi-sub">'+expFr(topCat.val)+' this month</div></div>'+
       '<div class="kpi c3"><div class="kpi-lbl">Best Month</div><div class="kpi-val" style="font-size:13px">'+expSl(months[bestI]||'–')+'</div><div class="kpi-sub">'+expFr(totals[bestI]||0)+'</div></div>'+

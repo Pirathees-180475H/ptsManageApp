@@ -117,6 +117,79 @@
   /* error */
   .err{text-align:center;padding:48px;color:var(--red)}
   .err-ico{font-size:40px;margin-bottom:12px}
+
+  /* ── Detail button inside KPI ── */
+  .kpi-detail-btn{
+    display:inline-flex;align-items:center;gap:5px;margin-top:10px;
+    padding:5px 12px;border-radius:20px;border:none;cursor:pointer;
+    background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);
+    color:var(--acc);font-size:11px;font-weight:600;font-family:inherit;
+    transition:background .15s;
+  }
+  .kpi-detail-btn:hover{background:rgba(99,102,241,.28);}
+
+  /* ── Expense Detail Popup ── */
+  #expDetailOverlay{
+    display:none;position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,.72);backdrop-filter:blur(12px);
+    align-items:center;justify-content:center;
+    padding:16px;
+  }
+  #expDetailOverlay.open{display:flex;}
+  #expDetailModal{
+    background:#0d1220;border:1px solid rgba(255,255,255,.1);
+    border-radius:20px;
+    width:100%;max-width:640px;
+    height:min(82vh, 700px);
+    display:flex;flex-direction:column;
+    box-shadow:0 24px 80px rgba(0,0,0,.7);
+    animation:edmIn .25s ease;
+  }
+  @keyframes edmIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+  .edm-hdr{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;
+  }
+  .edm-title{font-size:.95em;font-weight:700;color:#fff;}
+  .edm-sub{font-size:.72em;color:var(--t2);margin-top:2px;}
+  .edm-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+    color:rgba(255,255,255,.5);border-radius:50%;width:30px;height:30px;
+    cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+  .edm-close:hover{color:#fff;background:rgba(255,255,255,.12);}
+  .edm-body{overflow-y:auto;flex:1;padding:14px 20px 24px;}
+  .edm-loading{display:flex;align-items:center;justify-content:center;gap:12px;
+    padding:48px;color:var(--t2);font-size:13px;}
+  .edm-spinner{width:28px;height:28px;border:2px solid rgba(99,102,241,.2);
+    border-top-color:var(--acc);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
+  /* list table */
+  .edm-table{width:100%;border-collapse:collapse;}
+  .edm-table th{font-size:.65em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--t3);padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;}
+  .edm-table th:last-child{text-align:right;}
+  .edm-table td{padding:8px 10px;font-size:.82em;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+  .edm-table td:last-child{text-align:right;font-weight:700;color:var(--acc2);}
+  .edm-table tr:hover td{background:rgba(255,255,255,.025);}
+  .edm-day{font-size:.68em;color:var(--t3);font-weight:500;}
+  .edm-cat{font-weight:700;color:var(--t1);font-size:.84em;}
+  .edm-ref{color:var(--t2);font-size:.78em;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  /* category group header row */
+  .edm-cat-row td{
+    padding:10px 10px 6px;
+    background:rgba(255,255,255,.03);
+    border-top:1px solid rgba(255,255,255,.07);
+    border-bottom:none;
+  }
+  .edm-cat-row:first-child td{border-top:none;}
+  .edm-cat-sum{text-align:right!important;font-weight:700;color:var(--acc2);font-size:.82em;}
+  .edm-total{display:flex;justify-content:space-between;align-items:center;
+    padding:12px 10px 0;border-top:1px solid rgba(255,255,255,.07);margin-top:4px;
+    font-size:.82em;font-weight:700;color:var(--t2);}
+  .edm-total-val{font-size:1.1em;color:var(--acc);}
+  .edm-empty{text-align:center;padding:40px;color:var(--t3);}
+  .edm-err{text-align:center;padding:32px;color:var(--red);font-size:.85em;}
+
+  /* category colour dots */
+  .edm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle;}
 </style>
 </head>
 <body>
@@ -131,6 +204,22 @@
   </div>
   <div id="root">
     <div class="loader"><div class="spinner"></div><p style="color:var(--t2);font-size:13px">Fetching data…</p></div>
+  </div>
+</div>
+
+<!-- ── Expense Detail Popup ── -->
+<div id="expDetailOverlay" onclick="if(event.target===this)closeExpDetail()">
+  <div id="expDetailModal">
+    <div class="edm-hdr">
+      <div>
+        <div class="edm-title">📋 Current Month Expenses</div>
+        <div class="edm-sub" id="edmSub">Loading…</div>
+      </div>
+      <button class="edm-close" onclick="closeExpDetail()">✕</button>
+    </div>
+    <div class="edm-body" id="edmBody">
+      <div class="edm-loading"><div class="edm-spinner"></div>Fetching entries…</div>
+    </div>
   </div>
 </div>
 
@@ -248,6 +337,7 @@ function build(D) {
       <div class="kpi-lbl">Current Month</div>
       <div class="kpi-val">${fr(cur)}</div>
       <div class="delta ${mom>5?'up':mom<-5?'dn':'nt'}">${mom>=0?'▲':'▼'} ${Math.abs(mom).toFixed(1)}% MoM</div>
+      <button class="kpi-detail-btn" onclick="openExpDetail()">📋 View Details</button>
     </div>
     <div class="kpi c1">
       <div class="kpi-lbl">Avg Monthly</div>
@@ -561,6 +651,99 @@ function build(D) {
       <div class="ic-val ${x.cls}">${x.val}</div>
       <div class="ic-desc">${x.desc}</div>
     </div>`).join('');
+}
+
+// ── Category colour map (matching expenseDashboard) ──────────────
+const EDM_COLORS = {
+  'Food':'#f59e0b','Supermarket':'#10b981','Uber':'#6366f1',
+  'Uber Work':'#8b5cf6','Movies & Outing':'#ec4899','Other':'#f97316',
+  'Bus Fair':'#06b6d4','Party':'#ef4444','Dress & Appearance':'#84cc16','Rent':'#64748b'
+};
+const edmColor = n => EDM_COLORS[n] || '#94a3b8';
+
+var _edmLoaded = false;
+
+function openExpDetail() {
+  document.getElementById('expDetailOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  if (_edmLoaded) return; // already fetched
+  document.getElementById('edmBody').innerHTML =
+    '<div class="edm-loading"><div class="edm-spinner"></div>Fetching entries…</div>';
+  document.getElementById('edmSub').textContent = 'Loading…';
+  google.script.run
+    .withSuccessHandler(renderExpDetail)
+    .withFailureHandler(function(e){
+      document.getElementById('edmBody').innerHTML =
+        '<div class="edm-err">⚠ ' + (e.message||String(e)) + '</div>';
+    })
+    .getCurrentMonthExpensesList();
+}
+
+function closeExpDetail() {
+  document.getElementById('expDetailOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderExpDetail(data) {
+  _edmLoaded = true;
+  var body = document.getElementById('edmBody');
+  var sub  = document.getElementById('edmSub');
+
+  if (!data || !data.success) {
+    body.innerHTML = '<div class="edm-err">⚠ ' + (data && data.error ? data.error : 'Failed to load') + '</div>';
+    return;
+  }
+
+  var entries = data.entries || [];
+  var months  = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mName   = months[data.month] || ('Month ' + data.month);
+  sub.textContent = mName + ' · ' + entries.length + ' entries';
+
+  if (entries.length === 0) {
+    body.innerHTML = '<div class="edm-empty">No expense entries found for ' + mName + '.</div>';
+    return;
+  }
+
+  // Sort by category name, then by day within each category
+  var CAT_ORDER = ['Food','Supermarket','Uber','Uber Work','Movies & Outing','Other',
+                   'Bus Fair','Dress & Appearance','Party','Rent'];
+  entries.sort(function(a, b) {
+    var ai = CAT_ORDER.indexOf(a.category), bi = CAT_ORDER.indexOf(b.category);
+    if (ai < 0) ai = 99; if (bi < 0) bi = 99;
+    if (ai !== bi) return ai - bi;
+    return a.day - b.day;
+  });
+
+  var total = entries.reduce(function(s, e) { return s + e.amount; }, 0);
+
+  // Build grouped rows with category sub-headers
+  var html = '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';
+  var lastCat = null;
+  entries.forEach(function(e) {
+    if (e.category !== lastCat) {
+      lastCat = e.category;
+      var catTotal = entries.filter(function(x) { return x.category === e.category; })
+                            .reduce(function(s, x) { return s + x.amount; }, 0);
+      var dot = '<span class="edm-dot" style="background:' + edmColor(e.category) + '"></span>';
+      html += '<tr class="edm-cat-row">'
+            + '<td colspan="2"><span class="edm-cat">' + dot + e.category + '</span></td>'
+            + '<td class="edm-cat-sum">₨ ' + Math.round(catTotal).toLocaleString('en-IN') + '</td>'
+            + '</tr>';
+    }
+    var ref = e.reference
+      ? '<span class="edm-ref" title="' + e.reference + '">' + e.reference + '</span>'
+      : '<span class="edm-ref" style="color:rgba(255,255,255,.18)">—</span>';
+    html += '<tr>'
+          + '<td><span class="edm-day">' + e.day + '</span></td>'
+          + '<td>' + ref + '</td>'
+          + '<td>₨ ' + Math.round(e.amount).toLocaleString('en-IN') + '</td>'
+          + '</tr>';
+  });
+  html += '</tbody></table>';
+
+  body.innerHTML = html
+    + '<div class="edm-total"><span>Month Total (' + entries.length + ' entries)</span>'
+    + '<span class="edm-total-val">₨ ' + Math.round(total).toLocaleString('en-IN') + '</span></div>';
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────
