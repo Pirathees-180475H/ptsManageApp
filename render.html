@@ -1146,19 +1146,19 @@ input[type=date].swae-input{color-scheme:dark;}
 .up-text{color:var(--green);} .dn-text{color:var(--red);}
 
 /* ═══ ADD EXP FAB + OVERLAY ═══ */
-.ae-fab{
-  position:absolute;bottom:24px;right:20px;
+#ae-fab{
+  position:fixed;bottom:80px;right:20px;
   width:54px;height:54px;border-radius:50%;
   background:linear-gradient(135deg,var(--blue),var(--purple));
   border:none;color:#fff;font-size:30px;font-weight:300;line-height:1;
-  cursor:pointer;z-index:10;
+  cursor:pointer;z-index:200;
   box-shadow:0 8px 28px rgba(0,212,255,.35);
-  display:flex;align-items:center;justify-content:center;
+  display:none;align-items:center;justify-content:center;
   transition:transform .18s,box-shadow .18s;
   -webkit-tap-highlight-color:transparent;
 }
-.ae-fab:hover{transform:scale(1.1);box-shadow:0 12px 36px rgba(0,212,255,.5);}
-.ae-fab:active{transform:scale(.95);}
+#ae-fab:hover{transform:scale(1.1);box-shadow:0 12px 36px rgba(0,212,255,.5);}
+#ae-fab:active{transform:scale(.95);}
 
 #ae-overlay{
   position:fixed;inset:0;z-index:9500;
@@ -1304,9 +1304,10 @@ input[type=date].swae-input{color-scheme:dark;}
       <p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p>
     </div>
   </div>
-  <!-- ＋ Add Expense FAB -->
-  <button class="ae-fab" onclick="openAddExp()" title="Add Expense">+</button>
 </section>
+
+<!-- ═══ ADD EXPENSE FAB (fixed, shown only on Expenses tab) ═══ -->
+<button id="ae-fab" onclick="openAddExp()" title="Add Expense">+</button>
 
 <!-- ═══ ADD EXPENSE OVERLAY ═══ -->
 <div id="ae-overlay">
@@ -1530,6 +1531,10 @@ function _doShowPage(name){
   // Hide SW FAB when leaving SW page
   var fab=document.getElementById('sw-fab');
   if(fab && name!=='sw') fab.style.display='none';
+
+  // Show/hide Add Expense FAB — only on Expenses tab
+  var aeFab=document.getElementById('ae-fab');
+  if(aeFab) aeFab.style.display = name==='exp' ? 'flex' : 'none';
 
   document.querySelectorAll('.spa-page').forEach(function(p){
     p.classList.remove('active');
