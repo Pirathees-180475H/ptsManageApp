@@ -167,6 +167,23 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .refresh-btn:hover{opacity:.85;}
 .refresh-btn:disabled{opacity:.4;cursor:not-allowed;}
 
+/* ─── Page Header (shared reload bar for all tabs) ─── */
+.pg-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;border-bottom:1px solid var(--bdr);
+  flex-shrink:0;position:relative;z-index:2;background:rgba(6,11,24,.6);
+  backdrop-filter:blur(10px);
+}
+.pg-hdr-title{font-size:.88em;font-weight:700;letter-spacing:.3px;color:rgba(255,255,255,.75);}
+.pg-reload-btn{
+  background:linear-gradient(135deg,var(--blue),var(--blue2));color:#060b18;
+  border:none;padding:5px 12px;border-radius:8px;cursor:pointer;
+  font-size:12px;font-weight:800;font-family:inherit;
+  transition:opacity .2s,transform .15s;line-height:1;
+}
+.pg-reload-btn:hover{opacity:.85;}
+.pg-reload-btn:active{transform:rotate(180deg);opacity:.65;}
+
 /* Load bar */
 .load-bar{height:2px;background:var(--bdr);flex-shrink:0;position:relative;z-index:2;overflow:hidden;}
 .load-fill{position:absolute;top:0;left:-30%;width:30%;height:100%;
@@ -379,8 +396,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ═══════════════════════════════════════════
    CC PAGE
 ═══════════════════════════════════════════ */
-#page-cc{overflow-y:auto;-webkit-overflow-scrolling:touch;}
-#page-cc .page{position:relative;z-index:1;padding:16px;padding-bottom:24px;}
+#page-cc .page{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:1;padding:16px;padding-bottom:24px;}
 
 /* CC Header */
 #page-cc .header{text-align:center;padding:12px 0 16px;}
@@ -509,8 +525,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ═══════════════════════════════════════════
    EXPENSE PAGE
 ═══════════════════════════════════════════ */
-#page-exp{overflow-y:auto;-webkit-overflow-scrolling:touch;}
-#page-exp .exp-page{position:relative;z-index:1;padding:16px 16px 28px;}
+#page-exp .exp-page{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:1;padding:16px 16px 28px;}
 #page-exp .exp-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 #page-exp .exp-hdr h1{font-size:19px;font-weight:700;}
 #page-exp .exp-hdr p{font-size:12px;color:var(--muted);margin-top:3px;}
@@ -594,8 +609,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ═══════════════════════════════════════════
    PORTFOLIO SUMMARY PAGE
 ═══════════════════════════════════════════ */
-#page-port{overflow-y:auto;-webkit-overflow-scrolling:touch;}
-#page-port .page-wrap{position:relative;z-index:1;padding:16px;padding-bottom:24px;}
+#page-port .page-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:1;padding:16px;padding-bottom:24px;}
 #page-port .port-header{text-align:center;padding:18px 0 22px;}
 #page-port .header-tag{display:inline-block;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);
   color:var(--blue);font-size:.68em;font-weight:600;letter-spacing:3px;text-transform:uppercase;
@@ -692,8 +706,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ═══════════════════════════════════════════
    INVESTMENT DASHBOARD PAGE
 ═══════════════════════════════════════════ */
-#page-inv{overflow-y:auto;-webkit-overflow-scrolling:touch;}
-#page-inv .inv-scroll-wrap{position:relative;z-index:1;padding:18px;width:100%;padding-bottom:16px;}
+#page-inv .inv-scroll-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:1;padding:18px;width:100%;padding-bottom:16px;}
 #page-inv .glass{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:18px;backdrop-filter:blur(20px);box-shadow:0 4px 24px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.04);position:relative;overflow:hidden;margin-bottom:14px;}
 #page-inv .glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);}
 #page-inv .card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05);}
@@ -771,8 +784,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ═══════════════════════════════════════════
    MONEY FLOW PAGE
 ═══════════════════════════════════════════ */
-#page-mf{overflow-y:auto;-webkit-overflow-scrolling:touch;}
-#page-mf .mf-scroll-wrap{position:relative;z-index:1;padding:18px;width:100%;padding-bottom:16px;}
+#page-mf .mf-scroll-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:1;padding:18px;width:100%;padding-bottom:16px;}
 #page-mf .glass{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:18px;backdrop-filter:blur(20px);box-shadow:0 4px 24px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.04);position:relative;overflow:hidden;margin-bottom:14px;}
 #page-mf .glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);}
 #page-mf .card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.05);}
@@ -850,8 +862,8 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ═══════════════════════════════════════════
    SPLITWISE PAGE
 ═══════════════════════════════════════════ */
-#page-sw{overflow-y:auto;-webkit-overflow-scrolling:touch;}
 #page-sw .sw-page{position:relative;z-index:1;padding:18px;width:100%;padding-bottom:16px;}
+#sw-root{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 #page-sw .sw-header{text-align:center;padding:16px 0 22px;}
 #page-sw .sw-header-chip{display:inline-block;padding:5px 16px;border-radius:20px;background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.3);color:#ff4d6d;font-size:.68em;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:10px;}
 #page-sw .sw-header h1{font-size:1.8em;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,#fff 0%,#ff4d6d 45%,#00e676 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
@@ -1312,6 +1324,10 @@ input[type=date].swae-input{color-scheme:dark;}
      CREDIT CARD PAGE
 ═══════════════════════════════════════════ -->
 <section id="page-cc" class="spa-page">
+  <div class="pg-hdr">
+    <span class="pg-hdr-title">💳 Cards</span>
+    <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
+  </div>
   <div class="page" id="cc-root">
     <div class="loading">
       <div class="cc-spinner"></div>
@@ -1324,6 +1340,10 @@ input[type=date].swae-input{color-scheme:dark;}
      EXPENSE PAGE
 ═══════════════════════════════════════════ -->
 <section id="page-exp" class="spa-page">
+  <div class="pg-hdr">
+    <span class="pg-hdr-title">📊 Expenses</span>
+    <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
+  </div>
   <div class="exp-page" id="exp-root">
     <div class="exp-loader">
       <div class="exp-spinner"></div>
@@ -1349,6 +1369,10 @@ input[type=date].swae-input{color-scheme:dark;}
      PORTFOLIO SUMMARY PAGE
 ═══════════════════════════════════════════ -->
 <section id="page-port" class="spa-page">
+  <div class="pg-hdr">
+    <span class="pg-hdr-title">💼 Summary</span>
+    <button class="pg-reload-btn" onclick="reloadPage('port')">↺ Reload</button>
+  </div>
   <div class="port-toast" id="portToast"></div>
   <div class="page-wrap" id="port-root">
     <div class="port-loading">
@@ -1362,6 +1386,10 @@ input[type=date].swae-input{color-scheme:dark;}
      INVESTMENT DASHBOARD PAGE
 ═══════════════════════════════════════════ -->
 <section id="page-inv" class="spa-page">
+  <div class="pg-hdr">
+    <span class="pg-hdr-title">💹 Investments</span>
+    <button class="pg-reload-btn" onclick="reloadPage('inv')">↺ Reload</button>
+  </div>
   <div id="invToast" class="inv-toast"></div>
   <div id="inv-root" class="inv-scroll-wrap">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
@@ -1375,6 +1403,10 @@ input[type=date].swae-input{color-scheme:dark;}
      MONEY FLOW PAGE
 ═══════════════════════════════════════════ -->
 <section id="page-mf" class="spa-page">
+  <div class="pg-hdr">
+    <span class="pg-hdr-title">💸 Money Flow</span>
+    <button class="pg-reload-btn" onclick="reloadPage('mf')">↺ Reload</button>
+  </div>
   <div id="mf-root" class="mf-scroll-wrap">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
       <div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div>
@@ -1384,6 +1416,10 @@ input[type=date].swae-input{color-scheme:dark;}
 </section>
 
 <section id="page-sw" class="spa-page">
+  <div class="pg-hdr">
+    <span class="pg-hdr-title">🤝 Splitwise</span>
+    <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>
+  </div>
   <div id="sw-root" class="sw-scroll-wrap">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
       <div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div>
@@ -1592,6 +1628,34 @@ function showPage(name){
   } else {
     _doShowPage(name);
   }
+}
+
+/* ── Per-tab Reload ─────────────────────────────── */
+function reloadPage(name){
+  // Animate the button
+  var btn = document.querySelector('#page-'+name+' .pg-reload-btn');
+  if(btn){ btn.style.opacity='.4'; btn.style.transform='rotate(180deg)'; }
+  setTimeout(function(){ if(btn){ btn.style.transform=''; btn.style.opacity=''; } }, 500);
+
+  // Reset loaded flag so _doShowPage triggers the load function again
+  _spaLoaded[name] = false;
+
+  // For SW: also close any open drawer
+  if(name==='sw'){
+    var drw = document.getElementById('sw-friendDrawer');
+    if(drw) drw.classList.remove('open');
+    _swAllTxns=[]; _swSuspects=[]; _swTxnPage=0;
+  }
+
+  // Re-trigger load (port re-uses existing PIN session — no re-auth needed)
+  _spaLoaded[name]=false;
+  if(name==='cse')  cseStartLoad();
+  else if(name==='cc')   { document.getElementById('cc-root').innerHTML='<div class="loading"><div class="cc-spinner"></div><div class="loading-txt">Loading credit card data…</div></div>'; ccLoad(); _spaLoaded.cc=true; }
+  else if(name==='exp')  { document.getElementById('exp-root').innerHTML='<div class="exp-loader"><div class="exp-spinner"></div><p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p></div>'; expLoad(); _spaLoaded.exp=true; }
+  else if(name==='port') { document.getElementById('port-root').innerHTML='<div class="port-loading"><div class="port-spinner"></div><div class="port-loading-txt">FETCHING PORTFOLIO DATA…</div></div>'; portLoad(); _spaLoaded.port=true; }
+  else if(name==='inv')  { document.getElementById('inv-root').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px"><div style="width:44px;height:44px;border:3px solid rgba(59,130,246,.15);border-top-color:#3b82f6;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Data…</div></div>'; invLoad(); _spaLoaded.inv=true; }
+  else if(name==='mf')   { document.getElementById('mf-root').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px"><div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Flow…</div></div>'; mfLoad(); _spaLoaded.mf=true; }
+  else if(name==='sw')   { document.getElementById('sw-root').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px"><div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Splitwise…</div></div>'; swLoad(); _spaLoaded.sw=true; }
 }
 
 window.onload = function(){ showPage('exp'); };
