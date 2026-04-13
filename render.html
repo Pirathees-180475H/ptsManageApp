@@ -93,6 +93,14 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   opacity:0;transition:opacity .2s;
 }
 .pin-err-msg.show{ opacity:1; }
+.pin-cancel-btn{
+  margin-top:14px;width:100%;padding:11px;border-radius:12px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  color:rgba(255,255,255,.4);font-size:.78em;font-weight:600;
+  font-family:inherit;cursor:pointer;letter-spacing:.5px;
+  transition:background .15s,color .15s;
+}
+.pin-cancel-btn:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);}
 
 /* ═══════════════════════════════════════════
    SPA LAYOUT
@@ -212,8 +220,9 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .calc-topbar{
   display:flex;align-items:center;justify-content:space-between;
   padding:10px 13px 8px;border-bottom:1px solid rgba(255,255,255,.06);
-  flex-shrink:0;
+  flex-shrink:0;cursor:grab;user-select:none;
 }
+.calc-topbar:active{cursor:grabbing;}
 .calc-title{font-size:.63em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
             color:rgba(255,255,255,.35);}
 .calc-close{background:none;border:none;color:rgba(255,255,255,.25);
@@ -1405,6 +1414,7 @@ input[type=date].swae-input{color-scheme:dark;}
       <button class="pin-key pin-del" data-v="del">⌫</button>
     </div>
     <div class="pin-err-msg"></div>
+    <button class="pin-cancel-btn" onclick="window._pinCancel()">Cancel</button>
   </div>
 </div>
 
@@ -1816,7 +1826,9 @@ input[type=date].swae-input{color-scheme:dark;}
 ═══════════════════════════════════════════ */
 var _spaLoaded = {cse:false, cc:false, exp:false, port:false, inv:false, mf:false, sw:false};
 
+var _activePage = 'exp';
 function _doShowPage(name){
+  _activePage = name;
   // Show/hide SW FAB — only on Splitwise tab
   var fab=document.getElementById('sw-fab');
   if(fab) fab.style.display = name==='sw' ? 'flex' : 'none';
@@ -1846,8 +1858,8 @@ function _doShowPage(name){
 
 function showPage(name){
   if(name==='port'){
-    // Always require PIN for Summary tab
-    window._pinGuard(function(){ _doShowPage('port'); });
+    // Always require PIN for Summary tab — pass current page so cancel can return to it
+    window._pinGuard(_activePage, function(){ _doShowPage('port'); });
   } else {
     _doShowPage(name);
   }
@@ -4602,14 +4614,22 @@ function swaeSubmit(){
     if(!bg.classList.contains('open')) return;
     if(e.key>='0'&&e.key<='9') pinPress(e.key);
     else if(e.key==='Backspace') pinPress('del');
-    else if(e.key==='Escape'){ bg.classList.remove('open'); pinReset(); }
+    else if(e.key==='Escape'){ window._pinCancel(); }
   });
 
   // Expose global so showPage can call it
-  window._pinGuard = function(cb){
+  var _pinPrevPage = 'exp';
+  window._pinGuard = function(prevPage, cb){
     pinReset();
     _pinCb = cb;
+    _pinPrevPage = prevPage || 'exp';
     bg.classList.add('open');
+  };
+
+  window._pinCancel = function(){
+    bg.classList.remove('open');
+    pinReset();
+    _doShowPage(_pinPrevPage);
   };
 })();
 
@@ -4720,10 +4740,58 @@ function swaeSubmit(){
   var _history = [];
   var _hasResult = false;
   var _ops = ['+','-','*','/','+'];
+  var _positioned = false; // true after first open → uses top/left
+
+  /* ── Drag ── */
+  document.addEventListener('DOMContentLoaded', function(){
+    var panel   = document.getElementById('calc-panel');
+    var topbar  = panel.querySelector('.calc-topbar');
+    var _drag   = false, _ox = 0, _oy = 0;
+
+    function startDrag(cx, cy){
+      var r = panel.getBoundingClientRect();
+      _ox = cx - r.left;
+      _oy = cy - r.top;
+      _drag = true;
+      topbar.style.cursor = 'grabbing';
+    }
+    function moveDrag(cx, cy){
+      if(!_drag) return;
+      var pw = panel.offsetWidth, ph = panel.offsetHeight;
+      var maxX = window.innerWidth  - pw;
+      var maxY = window.innerHeight - ph;
+      var nx = Math.max(0, Math.min(cx - _ox, maxX));
+      var ny = Math.max(0, Math.min(cy - _oy, maxY));
+      panel.style.left   = nx + 'px';
+      panel.style.top    = ny + 'px';
+      panel.style.bottom = 'auto';
+    }
+    function endDrag(){
+      _drag = false;
+      topbar.style.cursor = 'grab';
+    }
+
+    topbar.addEventListener('mousedown',  function(e){ if(e.target.closest('button')) return; startDrag(e.clientX, e.clientY); });
+    document.addEventListener('mousemove', function(e){ moveDrag(e.clientX, e.clientY); });
+    document.addEventListener('mouseup',   endDrag);
+
+    topbar.addEventListener('touchstart', function(e){ if(e.target.closest('button')) return; var t=e.touches[0]; startDrag(t.clientX, t.clientY); },{passive:true});
+    document.addEventListener('touchmove', function(e){ if(!_drag) return; e.preventDefault(); var t=e.touches[0]; moveDrag(t.clientX, t.clientY); },{passive:false});
+    document.addEventListener('touchend',  endDrag);
+  });
 
   window.calcToggle = function(){
     var p = document.getElementById('calc-panel');
     var opening = !p.classList.contains('open');
+    // On first open: convert from bottom/left CSS to absolute top/left so dragging works
+    if(opening && !_positioned){
+      p.style.bottom = 'auto';
+      var navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 62;
+      var calcH = 420; // approximate panel height
+      p.style.top  = Math.max(8, window.innerHeight - navH - 10 - calcH) + 'px';
+      p.style.left = '12px';
+      _positioned = true;
+    }
     p.classList.toggle('open');
     document.querySelectorAll('.pg-calc-btn').forEach(function(b){
       b.classList.toggle('calc-active', opening);
