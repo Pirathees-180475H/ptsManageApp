@@ -184,6 +184,89 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pg-reload-btn:hover{opacity:.85;}
 .pg-reload-btn:active{transform:rotate(180deg);opacity:.65;}
 
+/* ═══════════════════════════════════════════
+   FLOATING CALCULATOR
+═══════════════════════════════════════════ */
+.pg-hdr-actions{display:flex;align-items:center;gap:6px;}
+.pg-calc-btn{
+  background:rgba(168,85,247,.13);border:1px solid rgba(168,85,247,.28);
+  color:#a855f7;border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-calc-btn:active{transform:scale(.9);}
+.pg-calc-btn.calc-active{background:rgba(168,85,247,.28);border-color:rgba(168,85,247,.6);color:#c084fc;}
+
+#calc-panel{
+  position:fixed;bottom:calc(var(--nav-h) + 10px);left:12px;
+  width:234px;z-index:8000;
+  background:rgba(6,11,24,.84);backdrop-filter:blur(28px);
+  -webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.11);border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+  display:none;flex-direction:column;overflow:hidden;
+}
+#calc-panel.open{display:flex;animation:calcIn .2s ease;}
+@keyframes calcIn{from{opacity:0;transform:translateY(10px) scale(.96);}to{opacity:1;transform:none;}}
+
+.calc-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 13px 8px;border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;
+}
+.calc-title{font-size:.63em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
+            color:rgba(255,255,255,.35);}
+.calc-close{background:none;border:none;color:rgba(255,255,255,.25);
+            font-size:.85em;cursor:pointer;padding:2px 5px;line-height:1;font-family:inherit;}
+.calc-close:hover{color:#fff;}
+
+.calc-history{
+  max-height:72px;overflow-y:auto;padding:5px 13px;
+  border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;
+}
+.calc-history::-webkit-scrollbar{width:2px;}
+.calc-history::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+.calc-hist-item{
+  font-size:.62em;color:rgba(255,255,255,.28);text-align:right;
+  padding:1px 0;line-height:1.6;font-family:'Inter',monospace;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+}
+.calc-hist-item .ch-res{color:rgba(168,85,247,.75);font-weight:700;}
+.calc-hist-empty{font-size:.6em;color:rgba(255,255,255,.16);text-align:center;padding:5px 0;}
+
+.calc-display{padding:9px 13px 5px;text-align:right;flex-shrink:0;}
+.calc-expr{font-size:.65em;color:rgba(255,255,255,.3);min-height:.9em;
+           word-break:break-all;line-height:1.4;font-family:'Inter',monospace;}
+.calc-result{
+  font-size:1.55em;font-weight:700;color:#fff;line-height:1.2;
+  word-break:break-all;font-family:'Inter',monospace;
+}
+.calc-result.calc-err{color:var(--red);font-size:1em;}
+
+.calc-keys{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:5px;padding:8px;flex-shrink:0;
+}
+.ck{
+  height:42px;border-radius:10px;border:none;
+  font-size:.8em;font-weight:700;font-family:inherit;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .1s,transform .08s;
+  -webkit-tap-highlight-color:transparent;user-select:none;
+}
+.ck:active{transform:scale(.86);}
+.ck-num{background:rgba(255,255,255,.06);color:rgba(255,255,255,.82);}
+.ck-num:hover{background:rgba(255,255,255,.1);}
+.ck-op{background:rgba(0,212,255,.09);color:#00d4ff;}
+.ck-op:hover{background:rgba(0,212,255,.16);}
+.ck-eq{background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;}
+.ck-eq:hover{opacity:.88;}
+.ck-clr{background:rgba(255,77,109,.11);color:#ff4d6d;}
+.ck-clr:hover{background:rgba(255,77,109,.2);}
+.ck-del{background:rgba(255,255,255,.05);color:rgba(255,255,255,.45);}
+.ck-del:hover{background:rgba(255,255,255,.1);}
+.ck-zero{grid-column:span 2;}
+
 /* Load bar */
 .load-bar{height:2px;background:var(--bdr);flex-shrink:0;position:relative;z-index:2;overflow:hidden;}
 .load-fill{position:absolute;top:0;left:-30%;width:30%;height:100%;
@@ -461,7 +544,12 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .cc-name{font-size:.95em;font-weight:700;color:#fff;}
 .cc-month{font-size:.62em;color:rgba(255,255,255,.33);margin-top:2px;}
 .cc-status-wrap{margin-left:auto;flex-shrink:0;}
-.cc-amounts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:12px;}
+.cc-amounts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px;}
+.cc-avail-row{display:flex;align-items:center;gap:7px;padding:8px 11px;margin-bottom:11px;
+              background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.16);border-radius:9px;}
+.cc-avail-lbl{font-size:.58em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+              color:rgba(0,230,118,.55);flex:1;}
+.cc-avail-val{font-size:.95em;font-weight:800;color:var(--green);letter-spacing:-.3px;}
 .amt-block{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:9px 11px;}
 .amt-lbl{font-size:.56em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:2px;}
 .amt-val{font-size:1.05em;font-weight:800;color:#fff;letter-spacing:-.5px;}
@@ -1383,7 +1471,10 @@ input[type=date].swae-input{color-scheme:dark;}
 <section id="page-cc" class="spa-page">
   <div class="pg-hdr">
     <span class="pg-hdr-title">💳 Cards</span>
-    <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
+    <div class="pg-hdr-actions">
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
+    </div>
   </div>
   <div class="page" id="cc-root">
     <div class="loading">
@@ -1399,7 +1490,10 @@ input[type=date].swae-input{color-scheme:dark;}
 <section id="page-exp" class="spa-page">
   <div class="pg-hdr">
     <span class="pg-hdr-title">📊 Expenses</span>
-    <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
+    <div class="pg-hdr-actions">
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
+    </div>
   </div>
   <div class="exp-page" id="exp-root">
     <div class="exp-loader">
@@ -1428,7 +1522,10 @@ input[type=date].swae-input{color-scheme:dark;}
 <section id="page-port" class="spa-page">
   <div class="pg-hdr">
     <span class="pg-hdr-title">💼 Summary</span>
-    <button class="pg-reload-btn" onclick="reloadPage('port')">↺ Reload</button>
+    <div class="pg-hdr-actions">
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('port')">↺ Reload</button>
+    </div>
   </div>
   <div class="port-toast" id="portToast"></div>
   <div class="page-wrap" id="port-root">
@@ -1445,7 +1542,10 @@ input[type=date].swae-input{color-scheme:dark;}
 <section id="page-inv" class="spa-page">
   <div class="pg-hdr">
     <span class="pg-hdr-title">💹 Investments</span>
-    <button class="pg-reload-btn" onclick="reloadPage('inv')">↺ Reload</button>
+    <div class="pg-hdr-actions">
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('inv')">↺ Reload</button>
+    </div>
   </div>
   <div id="invToast" class="inv-toast"></div>
   <div id="inv-root" class="inv-scroll-wrap">
@@ -1462,7 +1562,10 @@ input[type=date].swae-input{color-scheme:dark;}
 <section id="page-mf" class="spa-page">
   <div class="pg-hdr">
     <span class="pg-hdr-title">💸 Money Flow</span>
-    <button class="pg-reload-btn" onclick="reloadPage('mf')">↺ Reload</button>
+    <div class="pg-hdr-actions">
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('mf')">↺ Reload</button>
+    </div>
   </div>
   <div id="mf-root" class="mf-scroll-wrap">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
@@ -1475,7 +1578,10 @@ input[type=date].swae-input{color-scheme:dark;}
 <section id="page-sw" class="spa-page">
   <div class="pg-hdr">
     <span class="pg-hdr-title">🤝 Splitwise</span>
-    <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>
+    <div class="pg-hdr-actions">
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>
+    </div>
   </div>
   <div id="sw-root" class="sw-scroll-wrap">
     <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
@@ -1625,6 +1731,48 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="edm-body" id="edm-body">
       <div class="edm-loading"><div class="edm-spin"></div>Fetching entries…</div>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     FLOATING CALCULATOR
+═══════════════════════════════════════════ -->
+<div id="calc-panel">
+  <div class="calc-topbar">
+    <span class="calc-title">🧮 Calculator</span>
+    <button class="calc-close" onclick="calcClose()">✕</button>
+  </div>
+  <div class="calc-history" id="calc-history">
+    <div class="calc-hist-empty" id="calc-hist-empty">No history yet</div>
+  </div>
+  <div class="calc-display">
+    <div class="calc-expr" id="calc-expr"></div>
+    <div class="calc-result" id="calc-result">0</div>
+  </div>
+  <div class="calc-keys">
+    <button class="ck ck-clr" onclick="calcClear()">C</button>
+    <button class="ck ck-del" onclick="calcDel()">⌫</button>
+    <button class="ck ck-op"  onclick="calcInput('%')">%</button>
+    <button class="ck ck-op"  onclick="calcInput('/')">÷</button>
+
+    <button class="ck ck-num" onclick="calcInput('7')">7</button>
+    <button class="ck ck-num" onclick="calcInput('8')">8</button>
+    <button class="ck ck-num" onclick="calcInput('9')">9</button>
+    <button class="ck ck-op"  onclick="calcInput('*')">×</button>
+
+    <button class="ck ck-num" onclick="calcInput('4')">4</button>
+    <button class="ck ck-num" onclick="calcInput('5')">5</button>
+    <button class="ck ck-num" onclick="calcInput('6')">6</button>
+    <button class="ck ck-op"  onclick="calcInput('-')">−</button>
+
+    <button class="ck ck-num" onclick="calcInput('1')">1</button>
+    <button class="ck ck-num" onclick="calcInput('2')">2</button>
+    <button class="ck ck-num" onclick="calcInput('3')">3</button>
+    <button class="ck ck-op"  onclick="calcInput('+')">+</button>
+
+    <button class="ck ck-num ck-zero" onclick="calcInput('0')">0</button>
+    <button class="ck ck-num" onclick="calcInput('.')">.</button>
+    <button class="ck ck-eq"  onclick="calcEval()">=</button>
   </div>
 </div>
 
@@ -2362,6 +2510,11 @@ function ccDisplayData(data){
         '<div class="cc-amounts">'+
           '<div class="amt-block" style="border-color:rgba(255,77,109,.15)"><div class="amt-lbl">💳 Total Due</div><div class="amt-val '+amtClass+'">'+ccFmt(row[1])+'</div></div>'+
           '<div class="amt-block" style="border-color:rgba(0,212,255,.12)"><div class="amt-lbl">💸 Payment After Stmt</div><div class="amt-val">'+ccFmt(row[6])+'</div></div>'+
+        '</div>'+
+        '<div class="cc-avail-row">'+
+          '<span>💰</span>'+
+          '<span class="cc-avail-lbl">Available to Spend</span>'+
+          '<span class="cc-avail-val">'+ccFmt(row[8])+'</span>'+
         '</div>'+
         '<div class="pay-progress">'+
           '<div class="pay-prog-row"><span class="pay-prog-label">Payment coverage</span><span class="pay-prog-pct" style="color:'+progColor+'">'+progLabel+'</span></div>'+
@@ -4565,6 +4718,143 @@ function swaeSubmit(){
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAddExp();
   });
+})();
+
+/* ═══════════════════════════════════════════
+   CALCULATOR
+═══════════════════════════════════════════ */
+(function(){
+  var _expr = '';
+  var _history = [];
+  var _hasResult = false;
+  var _ops = ['+','-','*','/','+'];
+
+  window.calcToggle = function(){
+    var p = document.getElementById('calc-panel');
+    var opening = !p.classList.contains('open');
+    p.classList.toggle('open');
+    document.querySelectorAll('.pg-calc-btn').forEach(function(b){
+      b.classList.toggle('calc-active', opening);
+    });
+  };
+
+  window.calcClose = function(){
+    document.getElementById('calc-panel').classList.remove('open');
+    document.querySelectorAll('.pg-calc-btn').forEach(function(b){
+      b.classList.remove('calc-active');
+    });
+  };
+
+  window.calcInput = function(v){
+    var opChars = ['+','-','*','/','+','%'];
+    if(_hasResult){
+      // after a result: operator continues chain, digit starts fresh
+      _expr = (opChars.indexOf(v) >= 0)
+        ? document.getElementById('calc-result').textContent + v
+        : v;
+      _hasResult = false;
+    } else {
+      var last = _expr.slice(-1);
+      // replace trailing operator instead of stacking
+      if(opChars.indexOf(v) >= 0 && opChars.indexOf(last) >= 0){
+        _expr = _expr.slice(0,-1) + v;
+      } else {
+        // prevent double decimal in current number segment
+        if(v === '.'){
+          var segs = _expr.split(/[\+\-\*\/\%]/);
+          if(segs[segs.length-1].indexOf('.') >= 0) return;
+        }
+        _expr += v;
+      }
+    }
+    _refresh();
+  };
+
+  window.calcClear = function(){
+    _expr = '';
+    _hasResult = false;
+    document.getElementById('calc-result').textContent = '0';
+    document.getElementById('calc-result').className = 'calc-result';
+    document.getElementById('calc-expr').textContent = '';
+  };
+
+  window.calcDel = function(){
+    if(_hasResult){ calcClear(); return; }
+    _expr = _expr.slice(0,-1);
+    _refresh();
+  };
+
+  window.calcEval = function(){
+    if(!_expr) return;
+    var raw = _expr;
+    var disp = raw.replace(/\*/g,'×').replace(/\//g,'÷');
+    try {
+      if(!/^[\d\.\+\-\*\/\%\s]+$/.test(raw)) throw 0;
+      /* jshint ignore:start */
+      var res = Function('"use strict";return (' + raw + ')')();
+      /* jshint ignore:end */
+      if(!isFinite(res)) throw 0;
+      var resStr = parseFloat(res.toFixed(10)).toString();
+      _history.push({ expr: disp, result: resStr });
+      _renderHistory();
+      document.getElementById('calc-result').textContent = resStr;
+      document.getElementById('calc-result').className = 'calc-result';
+      document.getElementById('calc-expr').textContent = disp + ' =';
+      _expr = resStr;
+      _hasResult = true;
+    } catch(e){
+      document.getElementById('calc-result').textContent = 'Error';
+      document.getElementById('calc-result').className = 'calc-result calc-err';
+      _hasResult = false;
+    }
+  };
+
+  // keyboard support
+  document.addEventListener('keydown', function(e){
+    if(!document.getElementById('calc-panel').classList.contains('open')) return;
+    var k = e.key;
+    if(k>='0'&&k<='9'||k==='.') { calcInput(k); e.preventDefault(); return; }
+    if(k==='+'||k==='-'||k==='*'||k==='/'||k==='%') { calcInput(k); e.preventDefault(); return; }
+    if(k==='Enter'||k==='=') { calcEval(); e.preventDefault(); return; }
+    if(k==='Backspace') { calcDel(); e.preventDefault(); return; }
+    if(k==='Escape') { calcClose(); e.preventDefault(); return; }
+    if(k.toLowerCase()==='c') { calcClear(); e.preventDefault(); }
+  });
+
+  function _refresh(){
+    var disp = _expr.replace(/\*/g,'×').replace(/\//g,'÷');
+    document.getElementById('calc-expr').textContent = disp;
+    if(!_expr){
+      document.getElementById('calc-result').textContent = '0';
+      document.getElementById('calc-result').className = 'calc-result';
+      return;
+    }
+    // live preview while typing
+    try {
+      if(/^[\d\.\+\-\*\/\%\s]+$/.test(_expr)){
+        /* jshint ignore:start */
+        var preview = Function('"use strict";return (' + _expr + ')')();
+        /* jshint ignore:end */
+        if(isFinite(preview)){
+          document.getElementById('calc-result').textContent = parseFloat(preview.toFixed(10)).toString();
+          document.getElementById('calc-result').className = 'calc-result';
+        }
+      }
+    } catch(e){}
+  }
+
+  function _renderHistory(){
+    var box = document.getElementById('calc-history');
+    if(!_history.length) return;
+    var html = '<div class="calc-hist-empty" id="calc-hist-empty" style="display:none"></div>'
+      + _history.slice().reverse().map(function(h){
+          return '<div class="calc-hist-item">'
+            + h.expr + ' = <span class="ch-res">' + h.result + '</span>'
+            + '</div>';
+        }).join('');
+    box.innerHTML = html;
+    box.scrollTop = 0; // newest at top
+  }
 })();
 </script>
 </body>

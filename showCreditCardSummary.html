@@ -99,7 +99,13 @@
     .cc-month{font-size:.65em;color:rgba(255,255,255,.35);margin-top:2px;}
     .cc-status-wrap{margin-left:auto;flex-shrink:0;}
 
-    .cc-amounts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+    .cc-amounts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+    .avail-row{display:flex;align-items:center;gap:8px;padding:9px 12px;margin-bottom:12px;
+               background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.18);border-radius:10px;}
+    .avail-icon{font-size:1em;}
+    .avail-lbl{font-size:.62em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+               color:rgba(0,230,118,.6);flex:1;}
+    .avail-val{font-size:.98em;font-weight:800;color:var(--green);letter-spacing:-.4px;}
     .amt-block{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:10px 12px;}
     .amt-lbl{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:3px;}
     .amt-val{font-size:1.1em;font-weight:800;color:#fff;letter-spacing:-.5px;}
@@ -340,6 +346,11 @@ function displayData(data) {
             <div class="amt-lbl">💸 Payment After Statement</div>
             <div class="amt-val">${fmt(row[6])}</div>
           </div>
+        </div>
+        <div class="avail-row">
+          <span class="avail-icon">💰</span>
+          <span class="avail-lbl">Available to Spend</span>
+          <span class="avail-val">${fmt(row[8])}</span>
         </div>
 
         <div class="pay-progress">

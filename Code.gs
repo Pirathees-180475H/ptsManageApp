@@ -357,8 +357,8 @@ function getCardData() {
       throw new Error('Sheet "CC_SW_CL_INST" not found');
     }
     
-    // Get data from range A4:H6 (data starts at row 4)
-    var range = sheet.getRange('A4:H6');
+    // Get data from range A4:I6 (data starts at row 4, col I = Available to Spend)
+    var range = sheet.getRange('A4:I6');
     var values = range.getValues();
     
     return values;
