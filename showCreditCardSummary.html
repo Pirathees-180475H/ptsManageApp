@@ -311,11 +311,6 @@ function displayData(data) {
     const payNum      = parseFloat((row[6]+'').replace(/,/g,''))||0;
     const amtClass    = totalDueNum>50000?'danger':totalDueNum>20000?'warn':'ok';
 
-    // payment progress
-    const progPct    = totalDueNum>0 ? Math.min(payNum/totalDueNum*100,100) : 0;
-    const progColor  = progPct>=100?'var(--green)':progPct>=60?'var(--amber)':'var(--red)';
-    const progLabel  = progPct>=100?'Fully covered':progPct>0?progPct.toFixed(0)+'% covered':'No payment set';
-
     return `
     <div class="cc-card" style="border-color:${isSettled?'rgba(0,230,118,.18)':'rgba(255,255,255,.07)'}">
       <div class="cc-brand-strip" style="background:${b.bg};height:3px;position:absolute;top:0;left:0;right:0;"></div>
@@ -353,15 +348,6 @@ function displayData(data) {
           <span class="avail-val">${fmt(row[8])}</span>
         </div>
 
-        <div class="pay-progress">
-          <div class="pay-prog-row">
-            <span class="pay-prog-label">Payment coverage</span>
-            <span class="pay-prog-pct" style="color:${progColor}">${progLabel}</span>
-          </div>
-          <div class="pay-prog-bg">
-            <div class="pay-prog-fill" data-w="${progPct}" style="background:${progColor}"></div>
-          </div>
-        </div>
 
         <div class="cc-dates">
           <div class="date-chip stmt-chip">
@@ -453,12 +439,6 @@ function displayData(data) {
     </div>
   `;
 
-  /* animate progress bars */
-  setTimeout(()=>{
-    document.querySelectorAll('.pay-prog-fill').forEach(el=>{
-      el.style.width = (el.dataset.w||0) + '%';
-    });
-  }, 350);
 
   const TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:12};
   Chart.defaults.color='rgba(255,255,255,0.4)';

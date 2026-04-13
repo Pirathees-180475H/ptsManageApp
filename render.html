@@ -2495,9 +2495,6 @@ function ccDisplayData(data){
     var b=ccBrandCfg(row[0]),isSettled=row[3]===true||row[3]==='TRUE'||row[3]==='true';
     var totalDueNum=parseFloat((row[1]+'').replace(/,/g,''))||0,payNum=parseFloat((row[6]+'').replace(/,/g,''))||0;
     var amtClass=totalDueNum>50000?'danger':totalDueNum>20000?'warn':'ok';
-    var progPct=totalDueNum>0?Math.min(payNum/totalDueNum*100,100):0;
-    var progColor=progPct>=100?'var(--green)':progPct>=60?'var(--amber)':'var(--red)';
-    var progLabel=progPct>=100?'Fully covered':progPct>0?progPct.toFixed(0)+'% covered':'No payment set';
     return '<div class="cc-card" style="border-color:'+(isSettled?'rgba(0,230,118,.18)':'rgba(255,255,255,.07)')+'">'+
       '<div style="background:'+b.bg+';height:3px;position:absolute;top:0;left:0;right:0;"></div>'+
       '<div class="cc-top">'+
@@ -2515,10 +2512,6 @@ function ccDisplayData(data){
           '<span>💰</span>'+
           '<span class="cc-avail-lbl">Available to Spend</span>'+
           '<span class="cc-avail-val">'+ccFmt(row[8])+'</span>'+
-        '</div>'+
-        '<div class="pay-progress">'+
-          '<div class="pay-prog-row"><span class="pay-prog-label">Payment coverage</span><span class="pay-prog-pct" style="color:'+progColor+'">'+progLabel+'</span></div>'+
-          '<div class="pay-prog-bg"><div class="pay-prog-fill" data-w="'+progPct+'" style="background:'+progColor+'"></div></div>'+
         '</div>'+
         '<div class="cc-dates">'+
           '<div class="date-chip stmt-chip"><span class="dc-icon">📋</span><div class="dc-body"><span class="dc-label">Statement</span><span class="dc-value">'+ccFmtDate(row[4])+'</span></div></div>'+
@@ -2548,7 +2541,6 @@ function ccDisplayData(data){
     '</div>';
 
   setTimeout(function(){
-    document.querySelectorAll('.pay-prog-fill').forEach(function(el){el.style.width=(el.dataset.w||0)+'%';});
   },350);
 
   var TIP={backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:11};
