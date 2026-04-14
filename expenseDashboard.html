@@ -231,7 +231,7 @@
   .edm-pace-warn{background:rgba(255,77,109,.08);border-color:rgba(255,77,109,.28);color:var(--red);}
   .edm-pace-ok  {background:rgba(0,230,118,.07); border-color:rgba(0,230,118,.22); color:var(--green);}
   /* donut charts */
-  .edm-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+  .edm-charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
   .edm-chart-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:10px 10px 8px;}
   .edm-chart-title{font-size:.55em;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:6px;text-align:center;}
   .edm-chart-wrap{position:relative;height:130px;}
@@ -799,8 +799,17 @@ function renderExpDetail(data) {
   var lmt = data.lastMonthTotals || {};
 
   function fmtI(n){ return '₨ ' + Math.round(n).toLocaleString('en-IN'); }
+  function lmtLookup(cat) {
+    if (lmt[cat] !== undefined) return lmt[cat];
+    var low = cat.toLowerCase();
+    var keys = Object.keys(lmt);
+    for (var ki = 0; ki < keys.length; ki++) {
+      if (keys[ki].toLowerCase() === low) return lmt[keys[ki]];
+    }
+    return 0;
+  }
   function momBadge(cat) {
-    var cur=catSpent[cat]||0, prev=lmt[cat]||0;
+    var cur=catSpent[cat]||0, prev=lmtLookup(cat);
     if(prev===0&&cur===0)return '';
     if(prev===0)return '<span class="edm-mom edm-mom-up">New</span>';
     if(cur===0) return '<span class="edm-mom edm-mom-down">↓100%</span>';
@@ -868,6 +877,8 @@ function renderExpDetail(data) {
     var remK = totalRemaining>=1000?(Math.round(totalRemaining/100)/10)+'k':Math.round(totalRemaining)+'';
     var budK = totalBudget>=1000   ?(Math.round(totalBudget/100)/10)+'k'   :Math.round(totalBudget)+'';
     var remColor = totalRemaining>0?'#00e676':'#ff4d6d';
+    var prevTotal = 0; Object.keys(lmt).forEach(function(k){ prevTotal += lmt[k]||0; });
+    var prevK = prevTotal>=1000?(Math.round(prevTotal/100)/10)+'k':Math.round(prevTotal)+'';
     chartsHtml = '<div class="edm-charts-row">'
       +'<div class="edm-chart-box"><div class="edm-chart-title">💰 Budget Plan</div>'
       +'<div class="edm-chart-wrap"><canvas id="edm-alloc-chart"></canvas>'
@@ -876,6 +887,10 @@ function renderExpDetail(data) {
       +'<div class="edm-chart-box"><div class="edm-chart-title">🎯 Remaining</div>'
       +'<div class="edm-chart-wrap"><canvas id="edm-remain-chart"></canvas>'
       +'<div class="edm-chart-center"><div class="edm-chart-center-val" style="color:'+remColor+'">₨'+remK+'</div><div class="edm-chart-center-lbl">left</div></div>'
+      +'</div></div>'
+      +'<div class="edm-chart-box"><div class="edm-chart-title">📅 Last Month</div>'
+      +'<div class="edm-chart-wrap"><canvas id="edm-prev-chart"></canvas>'
+      +'<div class="edm-chart-center"><div class="edm-chart-center-val" style="color:#a78bfa">₨'+prevK+'</div><div class="edm-chart-center-lbl">spent</div></div>'
       +'</div></div>'
       +'</div>';
     chartsHtml += '<div class="edm-cat-legend">';
@@ -930,7 +945,7 @@ function renderExpDetail(data) {
   if (totalBudget > 0) {
     if (window._edmCharts){ window._edmCharts.forEach(function(c){try{c.destroy();}catch(e){}});}
     window._edmCharts = [];
-    var _cp=cp, _catSpent=catSpent;
+    var _cp=cp, _catSpent=catSpent, _lmt=lmt;
     setTimeout(function(){
       var TIP={backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:10};
       // Chart 1 — Budget Allocation
@@ -963,6 +978,20 @@ function renderExpDetail(data) {
               callbacks:{label:function(ctx){ var cat=ctx.label,b=_cp[cat]||0,s=_catSpent[cat]||0,rem=Math.max(0,b-s),isOver=s>b;
                 return isOver?' '+cat+': ⚠ Over ₨'+Math.round(s-b).toLocaleString('en-IN')
                              :' '+cat+': ₨'+Math.round(rem).toLocaleString('en-IN')+' left'; }}}}}
+        }));
+      }
+      // Chart 3 — Last Month Spending
+      var c3=document.getElementById('edm-prev-chart');
+      if(c3){
+        var pL=[],pD=[],pBg=[],pBd=[];
+        CAT_ORDER.forEach(function(cat){ var s=_lmt[cat]||0,col=EDM_COLORS[cat]||'#94a3b8'; if(s>0){pL.push(cat);pD.push(s);pBg.push(col+'44');pBd.push(col);} });
+        if(pD.length===0){pL=['No Data'];pD=[1];pBg=['rgba(255,255,255,.06)'];pBd=['rgba(255,255,255,.1)'];}
+        window._edmCharts.push(new Chart(c3,{
+          type:'doughnut',
+          data:{labels:pL,datasets:[{data:pD,backgroundColor:pBg,borderColor:pBd,borderWidth:2,hoverOffset:6}]},
+          options:{responsive:true,maintainAspectRatio:false,cutout:'64%',animation:{animateRotate:true,duration:950,delay:360},
+            plugins:{legend:{display:false},tooltip:{backgroundColor:TIP.backgroundColor,borderColor:TIP.borderColor,borderWidth:1,titleColor:TIP.titleColor,bodyColor:TIP.bodyColor,padding:TIP.padding,
+              callbacks:{label:function(ctx){ if(ctx.label==='No Data')return ' No data'; return ' '+ctx.label+': ₨'+Math.round(ctx.parsed).toLocaleString('en-IN'); }}}}}
         }));
       }
     },80);

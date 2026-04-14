@@ -1193,21 +1193,41 @@ function getCurrentMonthExpensesList() {
       }
     } catch(e2) { /* control plan unavailable — not critical */ }
 
-    // ── Last month totals for MoM delta ──
+    // ── Last month totals from summary rows ──
+    // Column order from right: Control Plan Amount | Total | Current Month | Prev Month | ...
     var lastMonthTotals = {};
     try {
-      var prevMonth = curMonth === 1 ? 12 : curMonth - 1;
-      for (var r2 = 0; r2 < allData.length; r2++) {
-        var row2  = allData[r2];
-        var dKey2 = _cellStr(row2[0], true).trim();
-        if (!dKey2) continue;
-        var pts2  = dKey2.match(/^(\d{1,2})-(\d{1,2})$/);
-        if (!pts2) continue;
-        if (parseInt(pts2[1], 10) !== prevMonth) continue;
-        CATS.forEach(function(cat) {
-          var raw = row2[cat.amtCol - 1];
-          var amt = typeof raw === 'number' ? raw : (parseFloat(String(raw).replace(/[^0-9.+-]/g,'')) || 0);
-          if (!isNaN(amt) && amt > 0) lastMonthTotals[cat.name] = (lastMonthTotals[cat.name] || 0) + amt;
+      var hdrFull = sheet.getRange(6, 1, 1, sheet.getLastColumn()).getValues()[0];
+      // Find Control Plan Amount column (0-based)
+      var cpColIdx2 = -1;
+      for (var ci2 = 0; ci2 < hdrFull.length; ci2++) {
+        if (String(hdrFull[ci2] || '').toLowerCase().indexOf('control') >= 0) {
+          cpColIdx2 = ci2; break;
+        }
+      }
+      // prevMonthCol = Control - 3
+      var prevColIdx = cpColIdx2 >= 3 ? cpColIdx2 - 3 : -1;
+      if (prevColIdx >= 1) {
+        var sumRows = sheet.getRange(7, 1, 10, prevColIdx + 1).getValues();
+        // Build raw map keyed by normalised sheet name
+        var lmtRaw = {};
+        sumRows.forEach(function(row) {
+          var nm = String(row[0] || '').trim();
+          if (!nm || nm.toLowerCase().indexOf('total') >= 0) return;
+          lmtRaw[nm.toLowerCase().replace(/\s+/g,' ')] = { raw: nm, val: parseFloat(row[prevColIdx]) || 0 };
+        });
+        // Map to CATS names: exact → first-word partial → row-order fallback (same as controlPlan)
+        CATS.forEach(function(cat, idx) {
+          var key = cat.name.toLowerCase().replace(/\s+/g,' ');
+          var entry = lmtRaw[key];
+          if (!entry) {
+            var fw = key.split(' ')[0];
+            Object.keys(lmtRaw).forEach(function(k) { if (k.indexOf(fw) >= 0) entry = lmtRaw[k]; });
+          }
+          var val = entry ? entry.val : 0;
+          // Row-order fallback
+          if (val === 0 && sumRows[idx]) val = parseFloat(sumRows[idx][prevColIdx]) || 0;
+          if (val > 0) lastMonthTotals[cat.name] = val;
         });
       }
     } catch(e3) {}
