@@ -759,6 +759,24 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .edm-total-val{font-size:1.05em;color:#8b5cf6;}
 .edm-empty{text-align:center;padding:36px;color:var(--dim);}
 .edm-err-msg{text-align:center;padding:28px;color:var(--red);font-size:.82em;}
+/* budget insights strip */
+.edm-insights{display:flex;gap:5px;flex-wrap:wrap;padding:0 0 12px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px;}
+.edm-ins-chip{flex:1;min-width:70px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:7px 9px;display:flex;flex-direction:column;gap:2px;}
+.edm-ins-lbl{font-size:.52em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.28);}
+.edm-ins-val{font-size:.82em;font-weight:800;color:#fff;}
+.edm-ins-val.ok{color:var(--green);}
+.edm-ins-val.warn{color:var(--red);}
+.edm-ins-val.amber{color:var(--amber);}
+/* budget bar inside category row */
+.edm-cat-row.edm-over td{background:rgba(255,77,109,.05)!important;border-left:2px solid rgba(255,77,109,.35);}
+.edm-cat-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
+.edm-cat-budget{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;}
+.edm-cat-budget-nums{font-size:.65em;color:rgba(255,255,255,.38);white-space:nowrap;}
+.edm-cat-budget-nums b{color:rgba(255,255,255,.7);}
+.edm-status-ok{display:inline-block;font-size:.58em;padding:2px 6px;border-radius:6px;background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.2);font-weight:700;white-space:nowrap;}
+.edm-status-warn{display:inline-block;font-size:.58em;padding:2px 6px;border-radius:6px;background:rgba(255,77,109,.12);color:var(--red);border:1px solid rgba(255,77,109,.2);font-weight:700;white-space:nowrap;}
+.edm-bar-wrap{height:3px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:5px;}
+.edm-bar-fill{height:100%;border-radius:3px;}
 
 /* ═══════════════════════════════════════════
    PORTFOLIO SUMMARY PAGE
@@ -2655,35 +2673,104 @@ function expDetailRender(data) {
     body.innerHTML = '<div class="edm-err-msg">⚠ ' + (data && data.error ? data.error : 'Failed to load') + '</div>';
     return;
   }
-  var entries = data.entries || [];
-  var months  = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var mName   = months[data.month] || ('Month ' + data.month);
+  var entries   = data.entries || [];
+  var cp        = data.controlPlan || {};
+  var months    = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mName     = months[data.month] || ('Month ' + data.month);
   sub.textContent = mName + ' · ' + entries.length + ' entries';
   if (!entries.length) {
     body.innerHTML = '<div class="edm-empty">No entries found for ' + mName + '.</div>';
     return;
   }
-  // Sort by category order, then by day
+
+  // Sort by category order then day
   entries.sort(function(a, b) {
     var ai = EXP_DETAIL_CAT_ORDER.indexOf(a.category);
     var bi = EXP_DETAIL_CAT_ORDER.indexOf(b.category);
     if (ai < 0) ai = 99; if (bi < 0) bi = 99;
     return ai !== bi ? ai - bi : a.day - b.day;
   });
-  var total = entries.reduce(function(s, e) { return s + e.amount; }, 0);
-  var html = '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';
+
+  // Per-category spent totals
+  var catSpent = {};
+  entries.forEach(function(e) {
+    catSpent[e.category] = (catSpent[e.category] || 0) + e.amount;
+  });
+
+  // Insights aggregates
+  var totalSpent  = entries.reduce(function(s, e) { return s + e.amount; }, 0);
+  var totalBudget = 0, exceededCount = 0, exceededAmt = 0, savedAmt = 0;
+  // Total budget = sum of ALL categories in control plan (not just ones with spending)
+  Object.keys(cp).forEach(function(cat) { if (cp[cat] > 0) totalBudget += cp[cat]; });
+  // Exceeded / saved computed only against categories that have spending
+  Object.keys(catSpent).forEach(function(cat) {
+    var budget = cp[cat] || 0;
+    if (budget > 0) {
+      var diff = catSpent[cat] - budget;
+      if (diff > 0) { exceededCount++; exceededAmt += diff; }
+      else          { savedAmt += Math.abs(diff); }
+    }
+  });
+  var budgetUsedPct = totalBudget > 0 ? Math.min(totalSpent / totalBudget * 100, 999) : 0;
+
+  function fmtI(n){ return '₨ ' + Math.round(n).toLocaleString('en-IN'); }
+
+  // ── Insights strip ──
+  var insHtml = '<div class="edm-insights">';
+  if (totalBudget > 0) {
+    var usedCls = budgetUsedPct >= 100 ? 'warn' : budgetUsedPct >= 80 ? 'amber' : 'ok';
+    insHtml += '<div class="edm-ins-chip"><div class="edm-ins-lbl">Total Budget</div><div class="edm-ins-val">' + fmtI(totalBudget) + '</div></div>';
+    insHtml += '<div class="edm-ins-chip"><div class="edm-ins-lbl">Total Spent</div><div class="edm-ins-val ' + usedCls + '">' + fmtI(totalSpent) + '</div></div>';
+    insHtml += '<div class="edm-ins-chip"><div class="edm-ins-lbl">Budget Used</div><div class="edm-ins-val ' + usedCls + '">' + budgetUsedPct.toFixed(0) + '%</div></div>';
+    if (exceededCount > 0) {
+      insHtml += '<div class="edm-ins-chip"><div class="edm-ins-lbl">Over Budget</div><div class="edm-ins-val warn">⚠ ' + exceededCount + ' cat' + (exceededCount > 1 ? 's' : '') + '</div></div>';
+    } else {
+      insHtml += '<div class="edm-ins-chip"><div class="edm-ins-lbl">Saved</div><div class="edm-ins-val ok">' + fmtI(savedAmt) + '</div></div>';
+    }
+  }
+  insHtml += '</div>';
+
+  // ── Table ──
+  var html = insHtml + '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';
   var lastCat = null;
   entries.forEach(function(e) {
     if (e.category !== lastCat) {
       lastCat = e.category;
-      var catTotal = entries.filter(function(x) { return x.category === e.category; })
-                            .reduce(function(s, x) { return s + x.amount; }, 0);
-      var col = EXP_DETAIL_CAT_COLORS[e.category] || '#94a3b8';
-      html += '<tr class="edm-cat-row">'
-            + '<td colspan="2"><span class="edm-dot" style="background:' + col + '"></span>'
-            + '<span class="edm-cat-name">' + e.category + '</span></td>'
-            + '<td class="edm-cat-sum">₨ ' + Math.round(catTotal).toLocaleString('en-IN') + '</td>'
-            + '</tr>';
+      var spent   = catSpent[e.category] || 0;
+      var budget  = cp[e.category] || 0;
+      var col     = EXP_DETAIL_CAT_COLORS[e.category] || '#94a3b8';
+      var isOver  = budget > 0 && spent > budget;
+      var rowCls  = 'edm-cat-row' + (isOver ? ' edm-over' : '');
+
+      var rightHtml = '';
+      if (budget > 0) {
+        var pct      = Math.min(spent / budget * 100, 100);
+        var barColor = isOver ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--green)';
+        var diff     = Math.abs(spent - budget);
+        var badge    = isOver
+          ? '<span class="edm-status-warn">⚠ Over ₨' + Math.round(diff).toLocaleString('en-IN') + '</span>'
+          : '<span class="edm-status-ok">✅ ₨' + Math.round(diff).toLocaleString('en-IN') + ' left</span>';
+        rightHtml =
+          '<div class="edm-cat-budget">'
+          + '<div class="edm-cat-budget-nums"><b>₨' + Math.round(spent).toLocaleString('en-IN') + '</b> / ₨' + Math.round(budget).toLocaleString('en-IN') + '</div>'
+          + badge
+          + '</div>';
+        var barHtml = '<div class="edm-bar-wrap"><div class="edm-bar-fill" style="width:' + pct.toFixed(1) + '%;background:' + barColor + '"></div></div>';
+        html += '<tr class="' + rowCls + '">'
+              + '<td colspan="3">'
+              + '<div class="edm-cat-hdr">'
+              + '<div><span class="edm-dot" style="background:' + col + '"></span><span class="edm-cat-name">' + e.category + '</span></div>'
+              + rightHtml
+              + '</div>'
+              + barHtml
+              + '</td></tr>';
+      } else {
+        // No budget — original layout
+        html += '<tr class="' + rowCls + '">'
+              + '<td colspan="2"><span class="edm-dot" style="background:' + col + '"></span><span class="edm-cat-name">' + e.category + '</span></td>'
+              + '<td class="edm-cat-sum">₨ ' + Math.round(spent).toLocaleString('en-IN') + '</td>'
+              + '</tr>';
+      }
     }
     var ref = e.reference
       ? '<span class="edm-ref" title="' + e.reference + '">' + e.reference + '</span>'
@@ -2693,8 +2780,8 @@ function expDetailRender(data) {
           + '<td>₨ ' + Math.round(e.amount).toLocaleString('en-IN') + '</td></tr>';
   });
   html += '</tbody></table>';
-  html += '<div class="edm-total-row"><span>Month Total (' + entries.length + ' entries)</span>'
-        + '<span class="edm-total-val">₨ ' + Math.round(total).toLocaleString('en-IN') + '</span></div>';
+  html += '<div class="edm-total-row"><span>Month Total · ' + entries.length + ' entries</span>'
+        + '<span class="edm-total-val">₨ ' + Math.round(totalSpent).toLocaleString('en-IN') + '</span></div>';
   body.innerHTML = html;
 }
 

@@ -1012,7 +1012,8 @@ function getExpenseData() {
     for (var c = 1; c < headerRow.length; c++) {
       var h = (headerRow[c] || '').toString().trim();
       if (!h) continue;                          // blank — past the data
-      if (h.toUpperCase() === 'TOTAL') continue; // skip grand-total column
+      if (h.toUpperCase() === 'TOTAL') continue;                    // skip grand-total column
+      if (h.toLowerCase().indexOf('control') >= 0) continue;       // skip Control Plan Amount column
       // Extract year: header contains "20XX" (e.g. "JUNE 2025", "JAN 2026")
       var yr = 'Unknown';
       var ym = h.match(/20\d{2}/);
@@ -1155,7 +1156,44 @@ function getCurrentMonthExpensesList() {
       return a.day !== b.day ? a.day - b.day : a.category.localeCompare(b.category);
     });
 
-    return { success: true, month: curMonth, year: curYear, entries: entries };
+    // ── Read Control Plan from summary rows 6-16 ──
+    var controlPlan = {};
+    try {
+      var cpHdr = sheet.getRange(6, 1, 1, sheet.getLastColumn()).getValues()[0];
+      var cpCol = -1;
+      for (var ci = 0; ci < cpHdr.length; ci++) {
+        if (String(cpHdr[ci]).toLowerCase().indexOf('control') >= 0) { cpCol = ci; break; }
+      }
+      if (cpCol >= 0) {
+        var cpRows = sheet.getRange(7, 1, 10, cpCol + 1).getValues(); // 10 category rows
+        // Build raw map keyed by normalized name
+        var cpRaw = {};
+        cpRows.forEach(function(r) {
+          var nm = String(r[0] || '').toLowerCase().replace(/\s+/g, ' ').trim();
+          if (nm) cpRaw[nm] = parseFloat(r[cpCol]) || 0;
+        });
+        // Map to CATS names: exact match first, then first-word partial, then row-order fallback
+        CATS.forEach(function(cat, idx) {
+          var nm  = cat.name.toLowerCase();
+          var val = 0;
+          if (cpRaw[nm] !== undefined) {
+            val = cpRaw[nm];
+          } else {
+            var fw = nm.split(' ')[0];
+            Object.keys(cpRaw).forEach(function(k) {
+              if (k.indexOf(fw) >= 0) val = cpRaw[k];
+            });
+          }
+          // Row-order fallback: if still 0 and sheet row exists
+          if (val === 0 && cpRows[idx]) {
+            val = parseFloat(cpRows[idx][cpCol]) || 0;
+          }
+          controlPlan[cat.name] = val;
+        });
+      }
+    } catch(e2) { /* control plan unavailable — not critical */ }
+
+    return { success: true, month: curMonth, year: curYear, entries: entries, controlPlan: controlPlan };
   } catch(err) {
     return { success: false, error: err.message || String(err) };
   }
@@ -1930,3 +1968,4 @@ function updateExpenseCells(payload) {
     return { success: false, error: err.message || String(err) };
   }
 }
+                                                                                                                                                
