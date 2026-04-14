@@ -594,6 +594,25 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .alert-ok  {background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.25);color:var(--green);}
 .alert-warn{background:rgba(255,152,0,.12); border:1px solid rgba(255,152,0,.25); color:var(--amber);}
 .alert-bad {background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.25);color:var(--red);}
+/* days-until-due pill */
+.days-pill{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:.6em;font-weight:800;letter-spacing:.2px;white-space:nowrap;margin-left:5px;vertical-align:middle;}
+.dp-red  {background:rgba(255,77,109,.15);border:1px solid rgba(255,77,109,.35);color:var(--red);}
+.dp-amber{background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.30);color:var(--amber);}
+.dp-green{background:rgba(0,230,118,.10); border:1px solid rgba(0,230,118,.25); color:var(--green);}
+/* payment timeline */
+.cc-timeline{margin-top:18px;background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:14px 16px 16px;}
+.cc-tl-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.cc-tl-hdrdot{width:7px;height:7px;border-radius:50%;background:var(--purple);box-shadow:0 0 7px rgba(168,85,247,.5);flex-shrink:0;}
+.cc-tl-title{font-size:.72em;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.45);}
+.cc-tl-list{display:flex;flex-direction:column;}
+.cc-tl-item{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.cc-tl-item:last-child{border-bottom:none;padding-bottom:3px;}
+.cc-tl-sidedot{width:9px;height:9px;border-radius:50%;flex-shrink:0;border:2px solid;}
+.cc-tl-info{flex:1;min-width:0;}
+.cc-tl-name{font-size:.8em;font-weight:700;color:#fff;}
+.cc-tl-date{font-size:.6em;color:rgba(255,255,255,.3);margin-top:2px;}
+.cc-tl-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.cc-tl-amt{font-size:.85em;font-weight:800;}
 .status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:9px;font-size:.68em;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;user-select:none;border:1px solid;}
 .status-badge.settled{background:rgba(0,230,118,.12);border-color:rgba(0,230,118,.3);color:var(--green);}
 .status-badge.pending{background:rgba(255,152,0,.12);border-color:rgba(255,152,0,.3);color:var(--amber);}
@@ -2471,6 +2490,48 @@ function ccFmt(v){
 
 function ccFmtDate(v){if(!v||v===''||v===0)return '—';return (v+'').trim();}
 
+function ccDaysUntilDue(v){
+  if(!v||v===''||v===0)return null;
+  var d=new Date(v);
+  if(isNaN(d.getTime()))return null;
+  var today=new Date();today.setHours(0,0,0,0);d.setHours(0,0,0,0);
+  return Math.round((d-today)/86400000);
+}
+function ccDaysPill(v){
+  var days=ccDaysUntilDue(v);
+  if(days===null)return '';
+  if(days<0)   return '<span class="days-pill dp-red">🔴 Overdue</span>';
+  if(days===0) return '<span class="days-pill dp-red">🔴 Today!</span>';
+  if(days<=3)  return '<span class="days-pill dp-red">⚡ '+days+'d left</span>';
+  if(days<=7)  return '<span class="days-pill dp-amber">⚠ '+days+'d left</span>';
+  return '<span class="days-pill dp-green">✅ '+days+'d left</span>';
+}
+function ccBuildTimeline(data){
+  var items=data.map(function(row){return{row:row,days:ccDaysUntilDue(row[5])};})
+    .sort(function(a,b){return (a.days===null?9999:a.days)-(b.days===null?9999:b.days);});
+  var html='<div class="cc-timeline"><div class="cc-tl-hdr"><div class="cc-tl-hdrdot"></div><span class="cc-tl-title">📅 Payment Timeline</span></div><div class="cc-tl-list">';
+  items.forEach(function(item){
+    var row=item.row,days=item.days,b=ccBrandCfg(row[0]);
+    var isSettled=row[3]===true||row[3]==='TRUE'||row[3]==='true';
+    var due=parseFloat((row[1]+'').replace(/,/g,''))||0;
+    var amtColor=due>50000?'var(--red)':due>20000?'var(--amber)':'var(--green)';
+    var urgency='';
+    if(isSettled)     urgency='<span style="color:var(--green);font-size:.62em;font-weight:700;">✓ Settled</span>';
+    else if(days===null) urgency='<span style="color:rgba(255,255,255,.22);font-size:.62em;">No date</span>';
+    else if(days<0)   urgency='<span class="days-pill dp-red">🔴 Overdue '+Math.abs(days)+'d</span>';
+    else if(days===0) urgency='<span class="days-pill dp-red">🔴 Due Today!</span>';
+    else if(days<=3)  urgency='<span class="days-pill dp-red">⚡ '+days+'d left</span>';
+    else if(days<=7)  urgency='<span class="days-pill dp-amber">⚠ '+days+'d left</span>';
+    else              urgency='<span class="days-pill dp-green">✅ '+days+'d left</span>';
+    html+='<div class="cc-tl-item">'
+      +'<div class="cc-tl-sidedot" style="background:'+b.color+'22;border-color:'+b.color+';box-shadow:0 0 5px '+b.color+'44;"></div>'
+      +'<div class="cc-tl-info"><div class="cc-tl-name">'+(row[0]||'Card')+'</div><div class="cc-tl-date">Due: '+ccFmtDate(row[5])+'</div></div>'
+      +'<div class="cc-tl-right"><div class="cc-tl-amt" style="color:'+amtColor+'">'+ccFmt(row[1])+'</div>'+urgency+'</div>'
+      +'</div>';
+  });
+  return html+'</div></div>';
+}
+
 function ccGetAlertHTML(paymentAfterStatement,lastStatementBalance,id){
   var pay=parseFloat((paymentAfterStatement+'').replace(/,/g,''))||0;
   var bal=parseFloat((lastStatementBalance+'').replace(/,/g,''))||0;
@@ -2553,7 +2614,6 @@ function ccDisplayData(data){
         '</div>'+
         '<div class="cc-amounts">'+
           '<div class="amt-block" style="border-color:rgba(255,77,109,.15)"><div class="amt-lbl">💳 Total Due</div><div class="amt-val '+amtClass+'">'+ccFmt(row[1])+'</div></div>'+
-          '<div class="amt-block" style="border-color:rgba(0,212,255,.12)"><div class="amt-lbl">💸 Payment After Stmt</div><div class="amt-val">'+ccFmt(row[6])+'</div></div>'+
         '</div>'+
         '<div class="cc-avail-row">'+
           '<span>💰</span>'+
@@ -2562,7 +2622,7 @@ function ccDisplayData(data){
         '</div>'+
         '<div class="cc-dates">'+
           '<div class="date-chip stmt-chip"><span class="dc-icon">📋</span><div class="dc-body"><span class="dc-label">Statement</span><span class="dc-value">'+ccFmtDate(row[4])+'</span></div></div>'+
-          '<div class="date-chip due-chip"><span class="dc-icon">⏰</span><div class="dc-body"><span class="dc-label">Due Date</span><span class="dc-value">'+ccFmtDate(row[5])+'</span></div></div>'+
+          '<div class="date-chip due-chip"><span class="dc-icon">⏰</span><div class="dc-body"><span class="dc-label">Due Date</span><span class="dc-value">'+ccFmtDate(row[5])+ccDaysPill(row[5])+'</span></div></div>'+
         '</div>'+
         '<div class="balance-row"><span class="balance-lbl">Stmt Bal</span>'+
           '<input class="balance-input" type="number" step="0.01" id="bal-input-'+i+'" placeholder="Enter amount" value="'+(row[7]||'')+'"/>'+
@@ -2584,8 +2644,9 @@ function ccDisplayData(data){
     '</div>'+
     '<div class="top-row">'+
       '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#ff4d6d"></div><div class="card-title">Total Due per Card</div></div><div class="chart-wrap"><canvas id="dueChart"></canvas></div></div>'+
-      '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#00d4ff"></div><div class="card-title">Due vs Payment</div></div><div class="chart-wrap"><canvas id="cmpChart"></canvas></div></div>'+
-    '</div>';
+      '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#00e676"></div><div class="card-title">Available to Spend per Card</div></div><div class="chart-wrap"><canvas id="availChart"></canvas></div></div>'+
+    '</div>'+
+    ccBuildTimeline(data);
 
   setTimeout(function(){
   },350);
@@ -2602,11 +2663,12 @@ function ccDisplayData(data){
                tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.label+': '+ccFmt(ctx.parsed);}}}}}
   });
 
-  new Chart(document.getElementById('cmpChart'),{
+  var chartAvail=data.map(function(r){return parseFloat((r[8]+'').replace(/,/g,''))||0;});
+  new Chart(document.getElementById('availChart'),{
     type:'bar',
     data:{labels:chartLabels,datasets:[
-      {label:'Total Due',data:chartDues,backgroundColor:brandColors.map(function(c){return c+'44';}),borderColor:brandColors,borderWidth:2,borderRadius:7,borderSkipped:false},
-      {label:'Payment',data:chartPays,backgroundColor:'rgba(0,230,118,0.2)',borderColor:'#00e676',borderWidth:2,borderRadius:7,borderSkipped:false}
+      {label:'Total Due',data:chartDues,backgroundColor:brandColors.map(function(c){return c+'33';}),borderColor:brandColors,borderWidth:1.5,borderRadius:6,borderSkipped:false},
+      {label:'Available to Spend',data:chartAvail,backgroundColor:'rgba(0,230,118,0.18)',borderColor:'#00e676',borderWidth:1.5,borderRadius:6,borderSkipped:false}
     ]},
     options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
       plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},
