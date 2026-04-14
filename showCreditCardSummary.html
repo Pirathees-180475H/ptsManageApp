@@ -172,15 +172,18 @@
     .cc-tl-hdrdot{width:8px;height:8px;border-radius:50%;background:#a855f7;box-shadow:0 0 8px #a855f744;flex-shrink:0;}
     .cc-tl-title{font-size:.75em;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.5);}
     .cc-tl-list{display:flex;flex-direction:column;}
-    .cc-tl-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+    .cc-tl-item{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.04);}
     .cc-tl-item:last-child{border-bottom:none;padding-bottom:4px;}
-    .cc-tl-sidedot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:2px solid;}
+    .cc-tl-sidedot{width:10px;height:10px;border-radius:50%;flex-shrink:0;border:2px solid;margin-top:4px;}
+    .cc-tl-content{flex:1;min-width:0;}
+    .cc-tl-row1{display:flex;align-items:flex-start;gap:6px;}
     .cc-tl-info{flex:1;min-width:0;}
     .cc-tl-name{font-size:.82em;font-weight:700;color:#fff;}
     .cc-tl-date{font-size:.62em;color:rgba(255,255,255,.32);margin-top:2px;}
-    .cc-tl-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+    .cc-tl-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
     .cc-tl-amt{font-size:.88em;font-weight:800;}
-    .cc-tl-status{font-size:.58em;font-weight:700;letter-spacing:.5px;text-transform:uppercase;}
+    .cc-tl-bar-track{height:4px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;margin-top:8px;}
+    .cc-tl-bar-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(.4,0,.2,1);}
 
     /* error */
     .error-box{text-align:center;padding:60px;color:var(--red);font-size:.9em;}
@@ -362,15 +365,28 @@ function buildTimelineHTML(data) {
       urgency = '<span class="days-pill dp-green">✅ ' + days + 'd left</span>';
     }
 
+    // Progress bar: 0-30d mapped to 0-100%, colour = urgency
+    var barPct, barColor;
+    if (isSettled)       { barPct = 100; barColor = 'var(--green)'; }
+    else if (days===null){ barPct = 0;   barColor = 'rgba(255,255,255,.15)'; }
+    else if (days < 0)   { barPct = 0;   barColor = 'var(--red)'; }
+    else if (days === 0) { barPct = 2;   barColor = 'var(--red)'; }
+    else { barPct = Math.min(days / 30 * 100, 100); barColor = days<=3?'var(--red)':days<=7?'var(--amber)':'var(--green)'; }
+
     html += '<div class="cc-tl-item">'
       + '<div class="cc-tl-sidedot" style="background:' + dotColor + '33;border-color:' + dotColor + ';box-shadow:0 0 6px ' + dotColor + '44;"></div>'
-      + '<div class="cc-tl-info">'
-      +   '<div class="cc-tl-name">' + (row[0]||'Card') + '</div>'
-      +   '<div class="cc-tl-date">Due: ' + fmtDate(row[5]) + '</div>'
-      + '</div>'
-      + '<div class="cc-tl-right">'
-      +   '<div class="cc-tl-amt" style="color:' + amtColor + '">' + fmt(row[1]) + '</div>'
-      +   urgency
+      + '<div class="cc-tl-content">'
+      +   '<div class="cc-tl-row1">'
+      +     '<div class="cc-tl-info">'
+      +       '<div class="cc-tl-name">' + (row[0]||'Card') + '</div>'
+      +       '<div class="cc-tl-date">Due: ' + fmtDate(row[5]) + '</div>'
+      +     '</div>'
+      +     '<div class="cc-tl-right">'
+      +       '<div class="cc-tl-amt" style="color:' + amtColor + '">' + fmt(row[1]) + '</div>'
+      +       urgency
+      +     '</div>'
+      +   '</div>'
+      +   '<div class="cc-tl-bar-track"><div class="cc-tl-bar-fill" style="width:' + barPct.toFixed(1) + '%;background:' + barColor + '"></div></div>'
       + '</div>'
       + '</div>';
   });

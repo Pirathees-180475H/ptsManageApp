@@ -605,14 +605,18 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .cc-tl-hdrdot{width:7px;height:7px;border-radius:50%;background:var(--purple);box-shadow:0 0 7px rgba(168,85,247,.5);flex-shrink:0;}
 .cc-tl-title{font-size:.72em;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.45);}
 .cc-tl-list{display:flex;flex-direction:column;}
-.cc-tl-item{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.cc-tl-item{display:flex;align-items:flex-start;gap:11px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04);}
 .cc-tl-item:last-child{border-bottom:none;padding-bottom:3px;}
-.cc-tl-sidedot{width:9px;height:9px;border-radius:50%;flex-shrink:0;border:2px solid;}
+.cc-tl-sidedot{width:9px;height:9px;border-radius:50%;flex-shrink:0;border:2px solid;margin-top:4px;}
+.cc-tl-content{flex:1;min-width:0;}
+.cc-tl-row1{display:flex;align-items:flex-start;gap:6px;}
 .cc-tl-info{flex:1;min-width:0;}
 .cc-tl-name{font-size:.8em;font-weight:700;color:#fff;}
 .cc-tl-date{font-size:.6em;color:rgba(255,255,255,.3);margin-top:2px;}
-.cc-tl-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+.cc-tl-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
 .cc-tl-amt{font-size:.85em;font-weight:800;}
+.cc-tl-bar-track{height:3px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:7px;}
+.cc-tl-bar-fill{height:100%;border-radius:3px;transition:width 1s cubic-bezier(.4,0,.2,1);}
 .status-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:9px;font-size:.68em;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;user-select:none;border:1px solid;}
 .status-badge.settled{background:rgba(0,230,118,.12);border-color:rgba(0,230,118,.3);color:var(--green);}
 .status-badge.pending{background:rgba(255,152,0,.12);border-color:rgba(255,152,0,.3);color:var(--amber);}
@@ -813,6 +817,19 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .edm-be-save:hover{background:rgba(168,85,247,.36);}
 .edm-be-save:disabled{opacity:.5;cursor:not-allowed;}
 .edm-be-msg{font-size:.65em;text-align:center;margin-top:6px;min-height:14px;}
+/* expense popup donut charts */
+.edm-charts-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.edm-chart-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:10px 10px 8px;}
+.edm-chart-title{font-size:.55em;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:6px;text-align:center;}
+.edm-chart-wrap{position:relative;height:130px;}
+.edm-chart-wrap canvas{position:absolute;inset:0;}
+.edm-chart-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:68px;}
+.edm-chart-center-val{font-size:.72em;font-weight:800;color:#fff;line-height:1.1;white-space:nowrap;}
+.edm-chart-center-lbl{font-size:.44em;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.6px;margin-top:1px;}
+.edm-cat-legend{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-bottom:12px;padding:8px 10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:9px;}
+.edm-leg-item{display:flex;align-items:center;gap:5px;}
+.edm-leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.edm-leg-lbl{font-size:.58em;color:rgba(255,255,255,.42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 /* ═══════════════════════════════════════════
    PORTFOLIO SUMMARY PAGE
@@ -2523,10 +2540,21 @@ function ccBuildTimeline(data){
     else if(days<=3)  urgency='<span class="days-pill dp-red">⚡ '+days+'d left</span>';
     else if(days<=7)  urgency='<span class="days-pill dp-amber">⚠ '+days+'d left</span>';
     else              urgency='<span class="days-pill dp-green">✅ '+days+'d left</span>';
+    var barPct, barColor;
+    if(isSettled)        {barPct=100; barColor='var(--green)';}
+    else if(days===null) {barPct=0;   barColor='rgba(255,255,255,.15)';}
+    else if(days<0)      {barPct=0;   barColor='var(--red)';}
+    else if(days===0)    {barPct=2;   barColor='var(--red)';}
+    else{barPct=Math.min(days/30*100,100); barColor=days<=3?'var(--red)':days<=7?'var(--amber)':'var(--green)';}
     html+='<div class="cc-tl-item">'
       +'<div class="cc-tl-sidedot" style="background:'+b.color+'22;border-color:'+b.color+';box-shadow:0 0 5px '+b.color+'44;"></div>'
-      +'<div class="cc-tl-info"><div class="cc-tl-name">'+(row[0]||'Card')+'</div><div class="cc-tl-date">Due: '+ccFmtDate(row[5])+'</div></div>'
-      +'<div class="cc-tl-right"><div class="cc-tl-amt" style="color:'+amtColor+'">'+ccFmt(row[1])+'</div>'+urgency+'</div>'
+      +'<div class="cc-tl-content">'
+      +  '<div class="cc-tl-row1">'
+      +    '<div class="cc-tl-info"><div class="cc-tl-name">'+(row[0]||'Card')+'</div><div class="cc-tl-date">Due: '+ccFmtDate(row[5])+'</div></div>'
+      +    '<div class="cc-tl-right"><div class="cc-tl-amt" style="color:'+amtColor+'">'+ccFmt(row[1])+'</div>'+urgency+'</div>'
+      +  '</div>'
+      +  '<div class="cc-tl-bar-track"><div class="cc-tl-bar-fill" style="width:'+barPct.toFixed(1)+'%;background:'+barColor+'"></div></div>'
+      +'</div>'
       +'</div>';
   });
   return html+'</div></div>';
@@ -2830,8 +2858,37 @@ function expDetailRender(data) {
   }
   insHtml += '</div>';
 
+  // ── Donut charts ──
+  var totalRemaining = 0;
+  EXP_DETAIL_CAT_ORDER.forEach(function(c){ totalRemaining += Math.max(0,(cp[c]||0)-(catSpent[c]||0)); });
+  var chartsHtml = '';
+  if (totalBudget > 0) {
+    var remK  = totalRemaining >= 1000 ? (Math.round(totalRemaining/100)/10)+'k' : Math.round(totalRemaining)+'';
+    var budK  = totalBudget >= 1000    ? (Math.round(totalBudget/100)/10)+'k'    : Math.round(totalBudget)+'';
+    var remValColor = totalRemaining > 0 ? 'var(--green)' : 'var(--red)';
+    chartsHtml  = '<div class="edm-charts-row">'
+      + '<div class="edm-chart-box">'
+      +   '<div class="edm-chart-title">💰 Budget Plan</div>'
+      +   '<div class="edm-chart-wrap"><canvas id="edm-alloc-chart"></canvas>'
+      +   '<div class="edm-chart-center"><div class="edm-chart-center-val">₨'+budK+'</div><div class="edm-chart-center-lbl">planned</div></div>'
+      +   '</div></div>'
+      + '<div class="edm-chart-box">'
+      +   '<div class="edm-chart-title">🎯 Remaining</div>'
+      +   '<div class="edm-chart-wrap"><canvas id="edm-remain-chart"></canvas>'
+      +   '<div class="edm-chart-center"><div class="edm-chart-center-val" style="color:'+remValColor+'">₨'+remK+'</div><div class="edm-chart-center-lbl">left</div></div>'
+      +   '</div></div>'
+      + '</div>';
+    // Shared legend
+    chartsHtml += '<div class="edm-cat-legend">';
+    EXP_DETAIL_CAT_ORDER.forEach(function(c){
+      var col = EXP_DETAIL_CAT_COLORS[c]||'#94a3b8';
+      chartsHtml += '<div class="edm-leg-item"><div class="edm-leg-dot" style="background:'+col+'"></div><span class="edm-leg-lbl">'+c+'</span></div>';
+    });
+    chartsHtml += '</div>';
+  }
+
   // ── Table ──
-  var html = beHtml + insHtml + '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';
+  var html = beHtml + chartsHtml + insHtml + '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';
   var lastCat = null;
   entries.forEach(function(e) {
     if (e.category !== lastCat) {
@@ -2883,10 +2940,58 @@ function expDetailRender(data) {
   html += '<div class="edm-total-row"><span>Month Total · ' + entries.length + ' entries</span>'
         + '<span class="edm-total-val">₨ ' + Math.round(totalSpent).toLocaleString('en-IN') + '</span></div>';
   body.innerHTML = html;
+
+  // ── Init donut charts after DOM is ready ──
+  if (totalBudget > 0) {
+    if (window._edmCharts) { window._edmCharts.forEach(function(c){try{c.destroy();}catch(e){}});}
+    window._edmCharts = [];
+    var _cp = cp, _catSpent = catSpent;
+    setTimeout(function(){
+      var cols  = EXP_DETAIL_CAT_ORDER.map(function(c){ return EXP_DETAIL_CAT_COLORS[c]||'#94a3b8'; });
+      var TIP   = {backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:10};
+
+      // Chart 1 — Budget Allocation (all cats with budget > 0)
+      var c1 = document.getElementById('edm-alloc-chart');
+      if (c1) {
+        var aL=[],aD=[],aC=[];
+        EXP_DETAIL_CAT_ORDER.forEach(function(cat,i){ var b=_cp[cat]||0; if(b>0){aL.push(cat);aD.push(b);aC.push(cols[i]);} });
+        window._edmCharts.push(new Chart(c1,{
+          type:'doughnut',
+          data:{labels:aL,datasets:[{data:aD,backgroundColor:aC.map(function(c){return c+'55';}),borderColor:aC,borderWidth:2,hoverOffset:6}]},
+          options:{responsive:true,maintainAspectRatio:false,cutout:'64%',animation:{animateRotate:true,duration:950},
+            plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.label+': ₨'+Math.round(ctx.parsed).toLocaleString('en-IN');}}}}}
+        }));
+      }
+
+      // Chart 2 — Remaining Budget (all cats with budget, even unspent ones show full slice)
+      var c2 = document.getElementById('edm-remain-chart');
+      if (c2) {
+        var rL=[],rD=[],rBg=[],rBd=[];
+        EXP_DETAIL_CAT_ORDER.forEach(function(cat,i){
+          var b=_cp[cat]||0; if(b<=0)return;
+          var s=_catSpent[cat]||0, rem=Math.max(0,b-s), isOver=s>b;
+          rL.push(cat);
+          rD.push(isOver ? Math.max(b*0.05,80) : (rem>0 ? rem : Math.max(b*0.02,40)));
+          rBg.push(isOver ? 'rgba(255,77,109,.28)' : cols[i]+'55');
+          rBd.push(isOver ? '#ff4d6d' : cols[i]);
+        });
+        window._edmCharts.push(new Chart(c2,{
+          type:'doughnut',
+          data:{labels:rL,datasets:[{data:rD,backgroundColor:rBg,borderColor:rBd,borderWidth:2,hoverOffset:6}]},
+          options:{responsive:true,maintainAspectRatio:false,cutout:'64%',animation:{animateRotate:true,duration:950,delay:180},
+            plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:function(ctx){
+              var cat=ctx.label,b=_cp[cat]||0,s=_catSpent[cat]||0,rem=Math.max(0,b-s),isOver=s>b;
+              return isOver?' '+cat+': ⚠ Over ₨'+Math.round(s-b).toLocaleString('en-IN')
+                           :' '+cat+': ₨'+Math.round(rem).toLocaleString('en-IN')+' left';
+            }}}}}
+        }));
+      }
+    },80);
+  }
 }
 
 /* Reset detail cache when expense tab reloads */
-function _expDetailReset() { _edmLoaded = false; }
+function _expDetailReset() { _edmLoaded = false; if(window._edmCharts){window._edmCharts.forEach(function(c){try{c.destroy();}catch(e){}});window._edmCharts=[];} }
 
 function edmBeToggle() {
   var body  = document.getElementById('edm-be-body');
