@@ -204,6 +204,23 @@
   .edm-status-warn{display:inline-block;font-size:.58em;padding:2px 6px;border-radius:6px;background:rgba(255,77,109,.12);color:var(--red);border:1px solid rgba(255,77,109,.2);font-weight:700;white-space:nowrap;}
   .edm-bar-wrap{height:3px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:5px;}
   .edm-bar-fill{height:100%;border-radius:3px;}
+  /* Budget editor collapsible */
+  .edm-budget-editor{background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.18);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+  .edm-be-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;cursor:pointer;user-select:none;}
+  .edm-be-title{font-size:.72em;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#c084fc;}
+  .edm-be-arrow{font-size:.82em;color:#c084fc;transition:transform .22s;}
+  .edm-be-arrow.open{transform:rotate(180deg);}
+  .edm-be-body{display:none;padding:10px 13px 13px;}
+  .edm-be-body.open{display:block;}
+  .edm-be-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;margin-bottom:11px;}
+  .edm-be-row{display:flex;flex-direction:column;gap:3px;}
+  .edm-be-lbl{font-size:.58em;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+  .edm-be-input{background:rgba(255,255,255,.06);border:1px solid rgba(168,85,247,.22);border-radius:7px;padding:5px 8px;font-size:.78em;font-weight:700;color:#fff;font-family:inherit;width:100%;box-sizing:border-box;outline:none;}
+  .edm-be-input:focus{border-color:rgba(168,85,247,.55);background:rgba(168,85,247,.1);}
+  .edm-be-save{width:100%;background:rgba(168,85,247,.22);border:1px solid rgba(168,85,247,.45);border-radius:9px;color:#c084fc;font-size:.78em;font-weight:800;font-family:inherit;padding:7px 0;cursor:pointer;transition:background .18s;}
+  .edm-be-save:hover{background:rgba(168,85,247,.36);}
+  .edm-be-save:disabled{opacity:.5;cursor:not-allowed;}
+  .edm-be-msg{font-size:.65em;text-align:center;margin-top:6px;min-height:14px;}
 
   /* category colour dots */
   .edm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:7px;flex-shrink:0;vertical-align:middle;}
@@ -750,6 +767,27 @@ function renderExpDetail(data) {
 
   function fmtI(n){ return '₨ ' + Math.round(n).toLocaleString('en-IN'); }
 
+  // ── Budget editor collapsible ──
+  window._edmCp = cp;
+  var beHtml = '<div class="edm-budget-editor" id="edm-be-wrap">'
+    + '<div class="edm-be-hdr" onclick="edmBeToggle()">'
+    +   '<span class="edm-be-title">✏️ Adjust Budgets</span>'
+    +   '<span class="edm-be-arrow" id="edm-be-arrow">▼</span>'
+    + '</div>'
+    + '<div class="edm-be-body" id="edm-be-body">'
+    +   '<div class="edm-be-grid">';
+  CAT_ORDER.forEach(function(cat) {
+    var val = cp[cat] || 0;
+    beHtml += '<div class="edm-be-row">'
+      + '<label class="edm-be-lbl">' + cat + '</label>'
+      + '<input class="edm-be-input" type="number" id="edm-be-' + cat.replace(/[^a-z0-9]/gi,'_') + '" value="' + val + '" min="0" step="100">'
+      + '</div>';
+  });
+  beHtml += '</div>'
+    + '<button class="edm-be-save" id="edm-be-save" onclick="expSaveBudgets()">💾 Save Budgets</button>'
+    + '<div class="edm-be-msg" id="edm-be-msg"></div>'
+    + '</div></div>';
+
   // Insights strip
   var insHtml = '<div class="edm-insights">';
   if (totalBudget > 0) {
@@ -764,7 +802,7 @@ function renderExpDetail(data) {
   insHtml += '</div>';
 
   // Table
-  var html = insHtml + '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';
+  var html = beHtml + insHtml + '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';
   var lastCat = null;
   entries.forEach(function(e) {
     if (e.category !== lastCat) {
@@ -805,6 +843,51 @@ function renderExpDetail(data) {
   body.innerHTML = html
     + '<div class="edm-total"><span>Month Total · ' + entries.length + ' entries</span>'
     + '<span class="edm-total-val">₨ ' + Math.round(totalSpent).toLocaleString('en-IN') + '</span></div>';
+}
+
+function edmBeToggle() {
+  var body  = document.getElementById('edm-be-body');
+  var arrow = document.getElementById('edm-be-arrow');
+  if (!body) return;
+  var open = body.classList.toggle('open');
+  if (arrow) arrow.classList.toggle('open', open);
+}
+
+function expSaveBudgets() {
+  var CAT_ORDER = ['Food','Supermarket','Uber','Uber Work','Movies & Outing','Other',
+                   'Bus Fair','Dress & Appearance','Party','Rent'];
+  var btn = document.getElementById('edm-be-save');
+  var msg = document.getElementById('edm-be-msg');
+  if (!btn || !msg) return;
+  var updates = {};
+  CAT_ORDER.forEach(function(cat) {
+    var inp = document.getElementById('edm-be-' + cat.replace(/[^a-z0-9]/gi,'_'));
+    if (inp) updates[cat] = parseFloat(inp.value) || 0;
+  });
+  btn.disabled = true;
+  btn.textContent = '⏳ Saving…';
+  msg.textContent = '';
+  msg.style.color = '';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.textContent = '💾 Save Budgets';
+      if (res && res.success) {
+        msg.textContent = '✅ Saved! Reload to see updated budgets.';
+        msg.style.color = '#00e676';
+        _edmLoaded = false; // force refresh next open
+      } else {
+        msg.textContent = '⚠ ' + ((res && res.error) || 'Save failed');
+        msg.style.color = '#ff4d6d';
+      }
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled = false;
+      btn.textContent = '💾 Save Budgets';
+      msg.textContent = '⚠ ' + (err.message || 'Error saving');
+      msg.style.color = '#ff4d6d';
+    })
+    .saveControlPlan(updates);
 }
 
 // ── Fetch ─────────────────────────────────────────────────────────

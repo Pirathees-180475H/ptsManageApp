@@ -1199,6 +1199,57 @@ function getCurrentMonthExpensesList() {
   }
 }
 
+function saveControlPlan(updates) {
+  // updates: { "Food": 1200, "Supermarket": 800, ... }
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet not found' };
+
+    // Find the Control Plan column in row 6 header
+    var hdrRow = sheet.getRange(6, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var cpCol  = -1;
+    for (var ci = 0; ci < hdrRow.length; ci++) {
+      if (String(hdrRow[ci]).toLowerCase().indexOf('control') >= 0) { cpCol = ci + 1; break; } // 1-based
+    }
+    if (cpCol < 0) return { success: false, error: 'Control Plan column not found in row 6' };
+
+    // Read category names from rows 7-16 (col A)
+    var catNames = sheet.getRange(7, 1, 10, 1).getValues(); // 10 rows
+    for (var ri = 0; ri < catNames.length; ri++) {
+      var sheetName = String(catNames[ri][0] || '').trim();
+      if (!sheetName) continue;
+      var sheetKey  = sheetName.toLowerCase().replace(/\s+/g, ' ');
+      // Try exact match first
+      var matched = false;
+      Object.keys(updates).forEach(function(catName) {
+        if (matched) return;
+        var updKey = catName.toLowerCase().replace(/\s+/g, ' ');
+        if (updKey === sheetKey) {
+          sheet.getRange(7 + ri, cpCol).setValue(updates[catName]);
+          matched = true;
+        }
+      });
+      // First-word partial if not matched
+      if (!matched) {
+        var fw = sheetKey.split(' ')[0];
+        Object.keys(updates).forEach(function(catName) {
+          if (matched) return;
+          var updKey = catName.toLowerCase();
+          if (updKey.indexOf(fw) >= 0 || fw.indexOf(updKey.split(' ')[0]) >= 0) {
+            sheet.getRange(7 + ri, cpCol).setValue(updates[catName]);
+            matched = true;
+          }
+        });
+      }
+    }
+    SpreadsheetApp.flush();
+    return { success: true };
+  } catch(err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
 function getExpensesForFriend(friendId) {
   var apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
   var headers = { 'Authorization': 'Bearer ' + apiKey };
