@@ -1193,7 +1193,26 @@ function getCurrentMonthExpensesList() {
       }
     } catch(e2) { /* control plan unavailable — not critical */ }
 
-    return { success: true, month: curMonth, year: curYear, entries: entries, controlPlan: controlPlan };
+    // ── Last month totals for MoM delta ──
+    var lastMonthTotals = {};
+    try {
+      var prevMonth = curMonth === 1 ? 12 : curMonth - 1;
+      for (var r2 = 0; r2 < allData.length; r2++) {
+        var row2  = allData[r2];
+        var dKey2 = _cellStr(row2[0], true).trim();
+        if (!dKey2) continue;
+        var pts2  = dKey2.match(/^(\d{1,2})-(\d{1,2})$/);
+        if (!pts2) continue;
+        if (parseInt(pts2[1], 10) !== prevMonth) continue;
+        CATS.forEach(function(cat) {
+          var raw = row2[cat.amtCol - 1];
+          var amt = typeof raw === 'number' ? raw : (parseFloat(String(raw).replace(/[^0-9.+-]/g,'')) || 0);
+          if (!isNaN(amt) && amt > 0) lastMonthTotals[cat.name] = (lastMonthTotals[cat.name] || 0) + amt;
+        });
+      }
+    } catch(e3) {}
+
+    return { success: true, month: curMonth, year: curYear, entries: entries, controlPlan: controlPlan, lastMonthTotals: lastMonthTotals };
   } catch(err) {
     return { success: false, error: err.message || String(err) };
   }

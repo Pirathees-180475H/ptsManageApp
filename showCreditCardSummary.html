@@ -242,8 +242,24 @@ function fmtDate(v) {
 
 function daysUntilDue(v) {
   if (!v || v === '' || v === 0) return null;
-  var d = new Date(v);
-  if (isNaN(d.getTime())) return null;
+  var s = (v + '').trim();
+  var MONTHS = {january:0,february:1,march:2,april:3,may:4,june:5,
+                july:6,august:7,september:8,october:9,november:10,december:11};
+  // Parse "26 th of April", "1 st of March", "3rd of May" etc.
+  var m = s.match(/^(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:of\s+)?([A-Za-z]+)/i);
+  var d;
+  if (m) {
+    var day = parseInt(m[1], 10);
+    var mon = MONTHS[(m[2]||'').toLowerCase()];
+    if (mon !== undefined && day >= 1 && day <= 31) {
+      var yr = new Date().getFullYear();
+      d = new Date(yr, mon, day);
+    }
+  }
+  if (!d || isNaN(d.getTime())) {
+    d = new Date(s); // fallback to native parse
+    if (isNaN(d.getTime())) return null;
+  }
   var today = new Date(); today.setHours(0,0,0,0); d.setHours(0,0,0,0);
   return Math.round((d - today) / 86400000);
 }
