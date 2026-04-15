@@ -1598,6 +1598,40 @@ function getCSEMarketData() {
 
 
 
+// ── LOLC Dividend Calendar CSV — future/today payments only ──────────
+function getDividendCalendarCSV() {
+  var url = 'https://www.lolcsecurities.lk/dividend-calendar/dividends_db.csv';
+  var res = UrlFetchApp.fetch(url, {
+    method: 'get',
+    muteHttpExceptions: true,
+    followRedirects: true,
+    headers: { 'User-Agent': 'Mozilla/5.0' }
+  });
+  if (res.getResponseCode() !== 200) {
+    throw new Error('LOLC dividend CSV returned HTTP ' + res.getResponseCode());
+  }
+  var raw = res.getContentText('UTF-8');
+  var lines = raw.split('\n');
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var header = lines[0];
+  var kept = [header];
+  for (var i = 1; i < lines.length; i++) {
+    var ln = lines[i].trim();
+    if (!ln) continue;
+    // D_PAY is the 3rd column (index 2); format dd/mm/yyyy
+    var cols = ln.split(',');
+    var payRaw = cols[2] ? cols[2].replace(/"/g, '').trim() : '';
+    var parts = payRaw.split('/');
+    if (parts.length === 3) {
+      var payDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+      if (payDate < today) continue; // skip past payments
+    }
+    kept.push(ln);
+  }
+  return kept.join('\n');
+}
+
 // ── Per-symbol dividend fetch (tries multiple endpoints per symbol) ──
 function getCSEDividendsForHoldings(symbols) {
   var base = "https://www.cse.lk/api/";

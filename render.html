@@ -419,16 +419,51 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* CSE Chart */
 #page-cse .chart-wrap{position:relative;height:160px;margin-bottom:14px;}
 
-/* Dividend cards */
-.div-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:9px;margin-bottom:12px;}
-.div-card{background:var(--card);border:1px solid var(--bdr);border-radius:11px;
-          padding:12px;backdrop-filter:blur(16px);transition:border-color .2s;}
-.div-card:hover{border-color:rgba(255,215,0,.25);}
-.div-co{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:2px;}
-.div-sym{font-size:10px;color:var(--muted);margin-bottom:5px;}
-.div-type{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px;}
-.div-amt{font-size:16px;font-weight:800;color:var(--gold);text-shadow:0 0 14px rgba(255,215,0,.3);margin-bottom:3px;}
-.div-dt{font-size:9px;color:var(--muted);}
+/* Dividend Calendar */
+.dv-wrap{padding:14px;overflow-y:auto;height:100%;padding-bottom:40px;}
+.dv-ctrl{background:rgba(255,255,255,.025);border:1px solid var(--bdr);border-radius:12px;padding:11px 13px;margin-bottom:11px;}
+.dv-ctrl-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:7px;}
+.dv-ctrl-row:last-child{margin-bottom:0;}
+.dv-search{flex:1;min-width:140px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:.7em;padding:6px 10px;outline:none;font-family:inherit;}
+.dv-search:focus{border-color:var(--blue);background:rgba(0,212,255,.06);}
+.dv-search::placeholder{color:var(--muted);}
+.dv-chips{display:flex;gap:5px;flex-wrap:wrap;}
+.dv-chip{padding:4px 10px;border-radius:20px;font-size:.6em;font-weight:700;cursor:pointer;border:1px solid var(--bdr);color:var(--muted);background:transparent;transition:all .15s;font-family:inherit;}
+.dv-chip:hover{background:rgba(255,255,255,.06);}
+.dv-chip.active{background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.45);color:var(--blue);}
+.dv-sel{background:rgba(255,255,255,.04);border:1px solid var(--bdr);border-radius:8px;color:#fff;font-size:.63em;font-weight:600;padding:5px 9px;outline:none;font-family:inherit;cursor:pointer;}
+.dv-sel option{background:#060b18;}
+.dv-count{font-size:.6em;color:var(--muted);margin-left:auto;white-space:nowrap;}
+.dv-tbl-wrap{overflow-x:auto;margin-bottom:11px;border-radius:10px;border:1px solid var(--bdr);}
+.dv-tbl{width:100%;border-collapse:collapse;font-size:.7em;}
+.dv-tbl thead th{padding:8px 11px;text-align:left;font-size:.76em;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--bdr);background:rgba(255,255,255,.025);white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s;}
+.dv-tbl thead th:hover{color:#fff;}
+.dv-tbl thead th.srt-asc::after{content:' ↑';color:var(--blue);}
+.dv-tbl thead th.srt-desc::after{content:' ↓';color:var(--blue);}
+.dv-tbl tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .12s;}
+.dv-tbl tbody tr:hover{background:rgba(255,255,255,.04);}
+.dv-tbl tbody tr.upcoming{background:rgba(0,255,136,.03);border-left:2px solid rgba(0,255,136,.3);}
+.dv-tbl tbody td{padding:7px 11px;white-space:nowrap;}
+.dv-code{font-weight:700;color:var(--blue);}
+.dv-dps{font-weight:800;color:var(--gold);}
+.dv-badge{padding:2px 7px;border-radius:10px;font-size:.76em;font-weight:700;display:inline-block;}
+.dv-badge.final{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.2);}
+.dv-badge.interim{background:rgba(0,212,255,.1);color:var(--blue);border:1px solid rgba(0,212,255,.2);}
+.dv-badge.other{background:rgba(168,85,247,.1);color:var(--purple);border:1px solid rgba(168,85,247,.2);}
+.dv-date{color:#fff;font-weight:600;}
+.dv-date-sub{color:var(--muted);font-size:.88em;}
+.dv-soon{display:inline-block;padding:1px 6px;background:rgba(0,255,136,.15);color:var(--green);border-radius:6px;font-size:.73em;font-weight:700;margin-left:4px;vertical-align:middle;}
+.dv-no-data{text-align:center;padding:38px;color:var(--muted);font-size:.8em;}
+.dv-pagination{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap;margin-bottom:12px;padding:5px 0;}
+.dv-pg-btn{padding:4px 10px;border-radius:7px;font-size:.63em;font-weight:700;cursor:pointer;border:1px solid var(--bdr);color:var(--muted);background:transparent;font-family:inherit;transition:all .15s;min-width:30px;text-align:center;}
+.dv-pg-btn:hover{background:rgba(255,255,255,.07);color:#fff;}
+.dv-pg-btn.active{background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.5);color:var(--blue);}
+.dv-pg-btn:disabled{opacity:.3;cursor:not-allowed;}
+.dv-pg-info{font-size:.6em;color:var(--muted);padding:0 5px;}
+.dv-charts-row{display:grid;grid-template-columns:1.6fr 1fr;gap:11px;margin-bottom:14px;}
+.dv-chart-box{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:13px;backdrop-filter:blur(16px);}
+.dv-chart-lbl{font-size:.57em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+@media(max-width:700px){.dv-charts-row{grid-template-columns:1fr;}.dv-pagination{gap:3px;}}
 
 /* Insights */
 .ins-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:16px;}
@@ -2095,7 +2130,7 @@ function switchTab(i){
   document.querySelectorAll('.tab').forEach(function(t,j){t.classList.toggle('active',j===i);});
   document.querySelectorAll('.panel').forEach(function(p,j){p.classList.toggle('active',j===i);});
   if(i===1&&!_goldLoaded) loadGoldData();
-  if(i===2&&!_divLoaded)  loadDividendsForHoldings();
+  if(i===2&&!_divLoaded)  loadDividendCalendar();
   if(i===3&&_liveDone>0)  renderInsights();
 }
 function tdot(i,s){var d=document.getElementById('td'+i);if(d)d.className='tdot'+(s?' '+s:'');}
@@ -2175,17 +2210,120 @@ function loadGoldData(){
     .getGoldData();
 }
 
-function loadDividendsForHoldings(){
+/* ── Dividend Calendar ── */
+var _divData=[], _dvRange='all', _dvType='all', _dvSort='pay_desc', _dvYear='', _dvPage=1;
+var _dvPageSize=20, _dvCharts=[];
+
+function loadDividendCalendar(){
   tdot(2,'loading');
   var l2=document.getElementById('l2'),c2=document.getElementById('c2');
-  l2.innerHTML='<div class="mini-line"></div><div>Fetching dividends…</div>';
-  l2.style.display='flex';c2.style.display='none';
-  var heldSymbols=_stocks.filter(function(s){return s.qty>0;}).map(function(s){return s.symbol;});
+  l2.innerHTML='<div class="mini-line"></div><div>Loading LOLC dividend calendar…</div>';
+  l2.style.display='flex'; c2.style.display='none';
   google.script.run
-    .withSuccessHandler(function(d){_divLoaded=true;renderDividends(d.dividends||[],d.month||'');tdot(2,'done');})
-    .withFailureHandler(function(e){c2.innerHTML='<div class="err-box">'+esc(e.message)+'</div>';c2.style.display='block';l2.style.display='none';tdot(2,'err');})
-    .getCSEDividendsForHoldings(heldSymbols);
+    .withSuccessHandler(function(csv){
+      _divLoaded=true;
+      _divData=parseDivCSV(csv);
+      _dvRange='all'; _dvType='all'; _dvSort='pay_desc'; _dvYear=''; _dvPage=1;
+      renderDividendCalendar();
+      tdot(2,'done');
+    })
+    .withFailureHandler(function(e){
+      c2.innerHTML='<div class="err-box">Dividend error: '+esc(e.message||e)+'</div>';
+      c2.style.display='block'; l2.style.display='none';
+      tdot(2,'err');
+    })
+    .getDividendCalendarCSV();
 }
+
+function parseDivCSV(csv){
+  var lines=csv.split('\n'), rows=[];
+  for(var i=1;i<lines.length;i++){
+    var ln=lines[i].trim(); if(!ln) continue;
+    var c=parseCsvLine(ln); if(c.length<5) continue;
+    rows.push({
+      ann:c[0].trim(), xd:c[1].trim(), pay:c[2].trim(),
+      code:c[3].trim(), dps:parseFloat(c[4])||0,
+      type:c[5]?c[5].trim():'', fy:c[6]?c[6].trim():'',
+      payDate:parseDMY(c[2].trim()), annDate:parseDMY(c[0].trim()), xdDate:parseDMY(c[1].trim())
+    });
+  }
+  rows.sort(function(a,b){return (b.payDate?b.payDate.getTime():0)-(a.payDate?a.payDate.getTime():0);});
+  return rows;
+}
+function parseCsvLine(ln){
+  var r=[],cur='',inQ=false;
+  for(var i=0;i<ln.length;i++){
+    var ch=ln[i];
+    if(ch==='"'){inQ=!inQ;continue;}
+    if(ch===','&&!inQ){r.push(cur);cur='';continue;}
+    cur+=ch;
+  }
+  r.push(cur); return r;
+}
+function parseDMY(s){
+  if(!s) return null;
+  var p=s.split('/'); if(p.length!==3) return null;
+  var d=parseInt(p[0]),m=parseInt(p[1])-1,y=parseInt(p[2]);
+  return (isNaN(d)||isNaN(m)||isNaN(y))?null:new Date(y,m,d);
+}
+function fmtDMY(dt){
+  if(!dt) return '—';
+  return dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
+function daysAway(dt){
+  if(!dt) return null;
+  var now=new Date(); now.setHours(0,0,0,0);
+  return Math.round((dt.getTime()-now.getTime())/86400000);
+}
+
+function dvGetFiltered(){
+  var now=new Date(); now.setHours(0,0,0,0);
+  var srch=((document.getElementById('dvSearch')||{}).value||'').trim().toUpperCase();
+  return _divData.filter(function(r){
+    if(srch&&r.code.toUpperCase().indexOf(srch)<0) return false;
+    if(_dvYear){
+      if(!r.payDate||r.payDate.getFullYear()!==parseInt(_dvYear)) return false;
+    } else {
+      var rng=_dvRange;
+      if(rng==='upcoming'){var d=daysAway(r.payDate);if(d===null||d<0)return false;}
+      else if(rng==='month'){if(!r.payDate||r.payDate.getMonth()!==now.getMonth()||r.payDate.getFullYear()!==now.getFullYear())return false;}
+      else if(rng==='3m'){var df=r.payDate?r.payDate.getTime()-now.getTime():null;if(df===null||df<-90*86400000||df>90*86400000)return false;}
+      else if(rng==='6m'){var df2=r.payDate?r.payDate.getTime()-now.getTime():null;if(df2===null||df2<-180*86400000||df2>180*86400000)return false;}
+      else if(rng==='year'){if(!r.payDate||r.payDate.getFullYear()!==now.getFullYear())return false;}
+    }
+    if(_dvType!=='all'){
+      var tl=r.type.toLowerCase();
+      if(_dvType==='final'){if(tl.indexOf('final')<0&&tl.indexOf('other')<0)return false;}
+      else if(_dvType==='interim'){if(!['first','second','third','fourth','interim'].some(function(w){return tl.indexOf(w)>-1;}))return false;}
+      else{if(r.type!==_dvType)return false;}
+    }
+    return true;
+  }).sort(function(a,b){
+    if(_dvSort==='pay_asc') return (a.payDate?a.payDate.getTime():0)-(b.payDate?b.payDate.getTime():0);
+    if(_dvSort==='pay_desc') return (b.payDate?b.payDate.getTime():0)-(a.payDate?a.payDate.getTime():0);
+    if(_dvSort==='dps_desc') return b.dps-a.dps;
+    if(_dvSort==='dps_asc')  return a.dps-b.dps;
+    if(_dvSort==='code_asc') return a.code.localeCompare(b.code);
+    return 0;
+  });
+}
+function dvSetRange(btn,r){
+  _dvRange=r; _dvYear=''; _dvPage=1;
+  document.getElementById('dvYearSel').value='';
+  document.querySelectorAll('#dvRangeChips .dv-chip').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active'); dvApply();
+}
+function dvSetYear(y){ _dvYear=y; _dvRange=''; _dvPage=1; document.querySelectorAll('#dvRangeChips .dv-chip').forEach(function(b){b.classList.remove('active');}); dvApply(); }
+function dvSetType(btn,t){ _dvType=t; _dvPage=1; document.querySelectorAll('#dvTypeChips .dv-chip').forEach(function(b){b.classList.remove('active');}); btn.classList.add('active'); dvApply(); }
+function dvSetSort(v){ _dvSort=v; _dvPage=1; dvApply(); }
+function dvColSort(col){
+  _dvSort=_dvSort.startsWith(col)?(_dvSort.endsWith('_desc')?col+'_asc':col+'_desc'):(col==='pay'?'pay_desc':col==='dps'?'dps_desc':'code_asc');
+  _dvPage=1;
+  var sel=document.getElementById('dvSortSel');
+  if(sel&&['pay_desc','pay_asc','dps_desc','dps_asc','code_asc'].indexOf(_dvSort)>-1) sel.value=_dvSort;
+  dvApply();
+}
+function dvGoPage(p){ _dvPage=p; dvApply(); }
 
 function renderShell(stocks){
   var l=document.getElementById('l0'),c=document.getElementById('c0');
@@ -2463,46 +2601,190 @@ function goldInsCard(ico,title,desc,type,action){
   return '<div style="background:'+bgs[type]+';border:1px solid '+borders[type]+';border-left:3px solid '+accents[type]+';border-radius:10px;padding:11px 13px;"><div style="display:flex;align-items:flex-start;gap:9px;"><div style="font-size:15px;flex-shrink:0;margin-top:1px;">'+ico+'</div><div><div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:3px;">'+title+'</div><div style="font-size:10px;color:var(--muted);line-height:1.5;margin-bottom:5px;">'+desc+'</div><div style="font-size:9.5px;background:rgba(255,255,255,.03);border:1px solid var(--bdr);border-radius:6px;padding:5px 8px;color:rgba(255,255,255,.7);">💬 <strong>What to do:</strong> '+action+'</div></div></div></div>';
 }
 
-function renderDividends(apiDivs, curMonth){
+function renderDividendCalendar(){
   var l=document.getElementById('l2'),c=document.getElementById('c2');
-  l.style.display='none';c.style.display='block';
-  var now=new Date(),thisYM=curMonth||(now.getFullYear()+'-'+(('0'+(now.getMonth()+1)).slice(-2)));
-  var thisLabel=(now.toLocaleString('default',{month:'long'}))+' '+now.getFullYear();
-  var holdings=_stocks.filter(function(s){return s.qty>0;});
-  var html=secHdr('💰 Dividends — '+thisLabel,'Your holdings only','var(--gold)');
-  var heldSymSet={};holdings.forEach(function(s){heldSymSet[s.symbol.toUpperCase()]=s;});
-  var thisMonthDivs=apiDivs.filter(function(d){
-    var sym=(d.symbol||d.stockSymbol||'').toUpperCase();
-    if(!heldSymSet[sym])return false;
-    var rawDate=d.exDate||d.paymentDate||d.announcementDate||d.date||'';
-    if(!rawDate)return true;
-    return String(rawDate).indexOf(thisYM)>-1||String(rawDate).indexOf(now.getFullYear())>-1;
+  l.style.display='none'; c.style.display='block';
+
+  var yrSet={};
+  _divData.forEach(function(r){if(r.payDate) yrSet[r.payDate.getFullYear()]=1;});
+  var years=Object.keys(yrSet).map(Number).sort(function(a,b){return b-a;});
+  var yrOpts=years.map(function(y){return '<option value="'+y+'">'+y+'</option>';}).join('');
+
+  var typeSet={};
+  _divData.forEach(function(r){if(r.type)typeSet[r.type]=1;});
+  var allTypes=Object.keys(typeSet).sort();
+  var extraChips='';
+  var skipWords=['final','other','first','second','third','fourth','interim'];
+  allTypes.forEach(function(t){
+    if(skipWords.some(function(w){return t.toLowerCase().indexOf(w)>-1;})) return;
+    extraChips+='<button class="dv-chip" onclick="dvSetType(this,\''+t.replace(/'/g,"\\'")+'\')" title="'+esc(t)+'">'+esc(t.length>14?t.substr(0,12)+'…':t)+'</button>';
   });
-  if(thisMonthDivs.length){
-    html+='<div class="div-grid">';
-    thisMonthDivs.forEach(function(d){
-      var sym=(d.symbol||d.stockSymbol||'—').toUpperCase(),s=heldSymSet[sym]||{},r=_live[sym]||{};
-      var co=d.companyName||d.company||r.companyName||s.name||sym;
-      var amt=d.dividendAmount||d.amount||d.dividendPerShare||d.value||'—';
-      var amtNum=Number(String(amt).replace(/[^0-9.]/g,''))||0,totalIncome=amtNum*((s.qty)||0);
-      var dt=d.exDate||d.paymentDate||d.announcementDate||d.date||'—';
-      html+='<div class="div-card fade-in"><div class="div-co">'+esc(co)+'</div><div class="div-sym">'+sym+'</div><div class="div-type">'+(d.dividendType||d.type||'Cash')+' Dividend</div><div class="div-amt">₨ '+esc(String(amt))+' / share</div>'+(totalIncome>0?'<div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:2px;">Income: ₨ '+fr(totalIncome,2)+'</div>':'')+' <div class="div-dt">'+((s.qty)||0)+' shares · 📅 '+esc(String(dt))+'</div></div>';
-    });
-    html+='</div>';
+
+  c.innerHTML=
+    '<div class="dv-wrap" id="dvWrap">'+
+    '<div class="dv-ctrl">'+
+      '<div class="dv-ctrl-row">'+
+        '<input class="dv-search" id="dvSearch" type="text" placeholder="🔍  Search stock code… e.g. COMB, LOLC, HNB" oninput="dvApply()">'+
+        '<select class="dv-sel" id="dvYearSel" onchange="dvSetYear(this.value)">'+
+          '<option value="">📆 Pick Year</option>'+yrOpts+
+        '</select>'+
+        '<select class="dv-sel" id="dvSortSel" onchange="dvSetSort(this.value)">'+
+          '<option value="pay_desc">↓ Pay Date (latest)</option>'+
+          '<option value="pay_asc">↑ Pay Date (oldest)</option>'+
+          '<option value="dps_desc">↓ DPS (highest)</option>'+
+          '<option value="dps_asc">↑ DPS (lowest)</option>'+
+          '<option value="code_asc">A–Z Code</option>'+
+        '</select>'+
+        '<span class="dv-count" id="dvCount">—</span>'+
+      '</div>'+
+      '<div class="dv-ctrl-row">'+
+        '<span style="font-size:.58em;color:var(--muted);flex-shrink:0;font-weight:700;">📅 Period:</span>'+
+        '<div class="dv-chips" id="dvRangeChips">'+
+          '<button class="dv-chip active" onclick="dvSetRange(this,\'all\')">All</button>'+
+          '<button class="dv-chip" onclick="dvSetRange(this,\'upcoming\')">⏳ Upcoming</button>'+
+          '<button class="dv-chip" onclick="dvSetRange(this,\'month\')">This Month</button>'+
+          '<button class="dv-chip" onclick="dvSetRange(this,\'3m\')">± 3M</button>'+
+          '<button class="dv-chip" onclick="dvSetRange(this,\'6m\')">± 6M</button>'+
+          '<button class="dv-chip" onclick="dvSetRange(this,\'year\')">This Year</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="dv-ctrl-row">'+
+        '<span style="font-size:.58em;color:var(--muted);flex-shrink:0;font-weight:700;">🏷 Type:</span>'+
+        '<div class="dv-chips" id="dvTypeChips">'+
+          '<button class="dv-chip active" onclick="dvSetType(this,\'all\')">All</button>'+
+          '<button class="dv-chip" onclick="dvSetType(this,\'final\')">Final / Other</button>'+
+          '<button class="dv-chip" onclick="dvSetType(this,\'interim\')">Interim</button>'+
+          extraChips+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div id="dvTableWrap"></div>'+
+    '<div class="dv-charts-row" id="dvChartsWrap"></div>'+
+    '</div>';
+
+  dvApply();
+  dvBuildCharts();
+}
+
+function dvApply(){
+  var filtered=dvGetFiltered();
+  var total=filtered.length;
+  var totalPages=Math.max(1,Math.ceil(total/_dvPageSize));
+  if(_dvPage>totalPages) _dvPage=totalPages;
+  var start=(_dvPage-1)*_dvPageSize;
+  var shown=filtered.slice(start, start+_dvPageSize);
+
+  var cntEl=document.getElementById('dvCount');
+  if(cntEl) cntEl.textContent=total.toLocaleString('en-IN')+' record'+(total!==1?'s':'');
+
+  var sortHdr=function(col,label){
+    var cls=_dvSort.startsWith(col)?(_dvSort.endsWith('_desc')?' srt-desc':' srt-asc'):'';
+    return '<th class="'+cls.trim()+'" onclick="dvColSort(\''+col+'\')">'+label+'</th>';
+  };
+
+  var html='<div class="dv-tbl-wrap"><table class="dv-tbl"><thead><tr>'+
+    sortHdr('pay','📅 Pay Date')+
+    sortHdr('code','📌 Code')+
+    sortHdr('dps','💰 DPS')+
+    '<th>🏷 Type</th><th>📆 FY</th><th>📣 Ann. Date</th><th>🔄 XD Date</th>'+
+    '</tr></thead><tbody>';
+
+  if(!shown.length){
+    html+='<tr><td colspan="7" class="dv-no-data">No records match your filters</td></tr>';
   } else {
-    if(!holdings.length){html+='<div class="empty"><div class="empty-ico">💰</div>No holdings found.<br>Add qty (col D) in UT_CRYPTO.</div>';c.innerHTML=html;return;}
-    var totalEstAnnual=0;
-    var hCards=holdings.map(function(s){
-      var r=_live[s.symbol]||{},price=r.currentPrice||s.sheetPrice||0,yld=r.dividendYield||0;
-      var estPerShare=price*yld/100,estTotal=estPerShare*s.qty;totalEstAnnual+=estTotal;
-      var co=r.companyName||s.name||s.symbol,color=yld>=6?'var(--green)':yld>=3?'var(--gold)':'var(--muted)';
-      return '<div class="div-card fade-in"><div class="div-co">'+esc(co)+'</div><div class="div-sym">'+esc(s.symbol)+'</div><div class="div-type">Est. Annual Yield</div><div class="div-amt" style="color:'+color+'">'+yld.toFixed(2)+'%</div><div class="div-dt"><span style="color:var(--muted);font-size:.7em">'+s.qty+' shares</span><br><span style="font-weight:700;color:var(--gold)">₨ '+fr(estTotal,0)+' / yr</span></div></div>';
-    }).join('');
-    html+='<div class="div-grid">'+hCards+'</div>';
-    html+='<div style="display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;">'+glassKpi('Total Est. Annual','₨ '+fr(totalEstAnnual,0),'var(--gold)')+glassKpi('Est. Monthly','₨ '+fr(totalEstAnnual/12,0),'var(--blue)')+glassKpi('Holdings',''+holdings.length,'var(--purple)')+'</div>';
-    html+='<div style="font-size:.6em;color:var(--dim);margin-bottom:6px;padding:8px 11px;border:1px solid var(--bdr);border-radius:8px;">📡 No CSE announcement data for this month. Estimates from yield %. <a href="https://www.cse.lk/pages/company-disclosures/company-disclosures.component.html" target="_blank" style="color:var(--blue)">Check official →</a></div>';
+    shown.forEach(function(r){
+      var days=daysAway(r.payDate);
+      var isUp=days!==null&&days>=0&&days<=7;
+      var soonTag=days!==null&&days>=0&&days<=60?'<span class="dv-soon">'+(days===0?'Today!':days===1?'Tomorrow':days+'d')+'</span>':'';
+      var tl=r.type.toLowerCase();
+      var bCls=tl.indexOf('final')>-1||tl.indexOf('other')>-1?'final':
+               ['first','second','third','fourth','interim'].some(function(w){return tl.indexOf(w)>-1;})?'interim':'other';
+      html+='<tr'+(isUp?' class="upcoming"':'')+'>'+
+        '<td class="dv-date">'+fmtDMY(r.payDate)+soonTag+'</td>'+
+        '<td class="dv-code">'+esc(r.code)+'</td>'+
+        '<td class="dv-dps">₨\u202f'+r.dps.toFixed(2)+'</td>'+
+        '<td><span class="dv-badge '+bCls+'">'+esc(r.type||'—')+'</span></td>'+
+        '<td style="color:var(--muted)">'+esc(r.fy)+'</td>'+
+        '<td class="dv-date-sub">'+fmtDMY(r.annDate)+'</td>'+
+        '<td class="dv-date-sub">'+fmtDMY(r.xdDate)+'</td>'+
+        '</tr>';
+    });
   }
-  c.innerHTML=html;
+  html+='</tbody></table></div>';
+
+  if(totalPages>1){
+    html+='<div class="dv-pagination">';
+    html+='<button class="dv-pg-btn" onclick="dvGoPage('+(_dvPage-1)+')" '+(_dvPage===1?'disabled':'')+'>‹ Prev</button>';
+    var winStart=Math.max(1,_dvPage-3), winEnd=Math.min(totalPages,winStart+6);
+    winStart=Math.max(1,winEnd-6);
+    if(winStart>1){html+='<button class="dv-pg-btn" onclick="dvGoPage(1)">1</button>';if(winStart>2)html+='<span class="dv-pg-info">…</span>';}
+    for(var p=winStart;p<=winEnd;p++) html+='<button class="dv-pg-btn'+(_dvPage===p?' active':'')+'" onclick="dvGoPage('+p+')">'+p+'</button>';
+    if(winEnd<totalPages){if(winEnd<totalPages-1)html+='<span class="dv-pg-info">…</span>';html+='<button class="dv-pg-btn" onclick="dvGoPage('+totalPages+')">'+totalPages+'</button>';}
+    html+='<button class="dv-pg-btn" onclick="dvGoPage('+(_dvPage+1)+')" '+(_dvPage===totalPages?'disabled':'')+'>Next ›</button>';
+    html+='<span class="dv-pg-info">Page '+_dvPage+' / '+totalPages+' &nbsp;('+total+' total)</span>';
+    html+='</div>';
+  }
+
+  var wrap=document.getElementById('dvTableWrap');
+  if(wrap) wrap.innerHTML=html;
+}
+
+function dvBuildCharts(){
+  _dvCharts.forEach(function(c){try{c.destroy();}catch(e){}});
+  _dvCharts=[];
+  var now=new Date(), yr=now.getFullYear();
+  var TIP={backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.7)',padding:10};
+  var MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mCnt=new Array(12).fill(0), mDps=new Array(12).fill(0);
+  _divData.forEach(function(r){
+    if(!r.payDate||r.payDate.getFullYear()!==yr) return;
+    mCnt[r.payDate.getMonth()]++; mDps[r.payDate.getMonth()]+=r.dps;
+  });
+  var codeMap={};
+  _divData.forEach(function(r){ codeMap[r.code]=(codeMap[r.code]||0)+r.dps; });
+  var top15=Object.keys(codeMap).map(function(k){return{code:k,tot:codeMap[k]};})
+    .sort(function(a,b){return b.tot-a.tot;}).slice(0,15);
+  var COLS=['#00d4ff','#a855f7','#00ff88','#ffd700','#ff6b35','#ff4d8d','#38bdf8','#34d399'];
+
+  document.getElementById('dvChartsWrap').innerHTML=
+    '<div class="dv-chart-box">'+
+      '<div class="dv-chart-lbl">📊 '+yr+' Dividends by Month (bars = count · line = Σ DPS)</div>'+
+      '<div style="position:relative;height:185px"><canvas id="dvMonthChart"></canvas></div>'+
+    '</div>'+
+    '<div class="dv-chart-box">'+
+      '<div class="dv-chart-lbl">🏆 Top 15 Stocks · Cumulative DPS (Upcoming)</div>'+
+      '<div style="position:relative;height:185px"><canvas id="dvTopChart"></canvas></div>'+
+    '</div>';
+
+  var mc=document.getElementById('dvMonthChart');
+  if(mc) _dvCharts.push(new Chart(mc,{type:'bar',
+    data:{labels:MN,datasets:[
+      {label:'# Dividends',data:mCnt,backgroundColor:'rgba(0,212,255,.22)',borderColor:'#00d4ff',borderWidth:1.5,borderRadius:4,yAxisID:'y'},
+      {label:'Σ DPS (₨)',data:mDps.map(function(v){return Math.round(v*100)/100;}),type:'line',
+       borderColor:'#ffd700',backgroundColor:'rgba(255,215,0,.08)',borderWidth:2,tension:0.4,
+       fill:true,pointRadius:4,pointBackgroundColor:'#ffd700',yAxisID:'y2'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{
+        y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},stepSize:1},grid:{color:'rgba(255,255,255,.04)'},position:'left'},
+        y2:{ticks:{color:'rgba(255,215,0,.5)',font:{size:9},callback:function(v){return '₨'+v.toFixed(0);}},grid:{display:false},position:'right'}
+      },
+      plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:9},boxWidth:10}},tooltip:{...TIP}}}}));
+
+  var tc=document.getElementById('dvTopChart');
+  if(tc) _dvCharts.push(new Chart(tc,{type:'bar',
+    data:{labels:top15.map(function(r){return r.code.split('.')[0];}),
+          datasets:[{label:'Σ DPS (₨)',data:top15.map(function(r){return Math.round(r.tot*100)/100;}),
+            backgroundColor:top15.map(function(_,i){return COLS[i%COLS.length]+'44';}),
+            borderColor:top15.map(function(_,i){return COLS[i%COLS.length];}),
+            borderWidth:1.5,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      scales:{
+        x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+v;}},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{ticks:{color:'rgba(255,255,255,.65)',font:{size:8,weight:'700'}},grid:{display:false}}
+      },
+      plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:function(ctx){return ' Σ DPS: ₨'+ctx.parsed.x.toFixed(2);}}}}}
+  }));
 }
 
 function renderInsights(){
