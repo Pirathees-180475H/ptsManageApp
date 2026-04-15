@@ -202,7 +202,11 @@
       .row-2,.row-3,.row-2b{grid-template-columns:1fr;}
       .plan-cards{grid-template-columns:repeat(2,1fr);}
     }
+    @media(max-width:520px){
+      .plan-cards{grid-template-columns:1fr 1fr;}
+    }
 
+    /* ── Current Month Plan ── */
     /* ── Current Month Plan ── */
     .plan-section { margin-bottom:18px; animation:fadeUp .4s ease both; }
     .plan-hdr {
@@ -218,13 +222,15 @@
     .plan-month-label {
       font-size:1.05em; font-weight:800; letter-spacing:-.5px; color:#fff; margin-top:3px;
     }
+    /* cards grid — wider cells so status dropdown fits */
     .plan-cards {
-      display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px;
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(185px,1fr)); gap:12px;
       margin-bottom:12px;
     }
     .plan-card {
       border-radius:14px; padding:14px 16px; border:1px solid;
-      backdrop-filter:blur(20px); position:relative; overflow:hidden;
+      backdrop-filter:blur(20px); position:relative;
+      /* no overflow:hidden — allows dropdown menu to overflow card boundary */
     }
     .plan-card.invested {
       background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(0,212,255,.03));
@@ -234,25 +240,125 @@
       background:linear-gradient(135deg,rgba(255,107,53,.07),rgba(255,107,53,.02));
       border-color:rgba(255,107,53,.25);
     }
-    .pc-emoji { font-size:1.3em; margin-bottom:6px; display:block; }
-    .pc-name  { font-size:.75em; font-weight:700; color:rgba(255,255,255,.6); letter-spacing:.5px; margin-bottom:4px; }
-    .pc-amount {
-      font-size:1.05em; font-weight:800; letter-spacing:-.5px;
+    .plan-card.failed-card {
+      background:linear-gradient(135deg,rgba(255,77,109,.1),rgba(255,77,109,.03));
+      border-color:rgba(255,77,109,.35);
     }
+    /* card inner layout */
+    .pc-header { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; margin-bottom:7px; }
+    .pc-emoji  { font-size:1.25em; display:block; line-height:1; }
+    .pc-name   { font-size:.72em; font-weight:700; color:rgba(255,255,255,.55); letter-spacing:.4px; margin-bottom:5px; }
+    .pc-amount { font-size:1.05em; font-weight:800; letter-spacing:-.5px; }
     .pc-amount.has-val { color:#00d4ff; text-shadow:0 0 16px rgba(0,212,255,.3); }
     .pc-amount.is-ntm  { color:rgba(255,107,53,.8); font-size:.75em; font-weight:700; letter-spacing:2px; }
+    .pc-amount.is-fail { color:#ff4d6d; font-size:.75em; font-weight:700; letter-spacing:1.5px; }
+    /* partial amount block inside card */
+    .pc-partial { margin-top:10px; padding-top:9px; border-top:1px solid rgba(255,255,255,.06); display:none; }
+    .pc-partial.show { display:block; }
+    .pc-partial-row { display:flex; align-items:center; gap:5px; }
+    .pc-partial-lbl { font-size:.55em; color:rgba(255,255,255,.3); white-space:nowrap; flex-shrink:0; }
+    .pc-partial-input { flex:1; min-width:0; background:rgba(255,255,255,.05); border:1px solid rgba(251,146,60,.35); border-radius:6px; color:#fb923c; font-size:.63em; font-weight:700; padding:3px 6px; outline:none; font-family:inherit; }
+    .pc-partial-input:focus { border-color:rgba(251,146,60,.7); background:rgba(251,146,60,.05); }
+    .pc-partial-save { padding:3px 8px; font-size:.6em; font-weight:800; border-radius:5px; border:1px solid rgba(251,146,60,.4); background:rgba(251,146,60,.12); color:#fb923c; cursor:pointer; flex-shrink:0; }
+    .pc-partial-save:hover { background:rgba(251,146,60,.25); }
+    .pc-partial-msg { font-size:.53em; min-height:10px; display:block; margin-top:3px; }
+    /* notes strip */
     .plan-notes-strip {
       display:flex; align-items:center; gap:10px;
       padding:10px 16px; border-radius:10px;
       background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.07);
     }
-    .pn-label {
-      font-size:.6em; font-weight:700; letter-spacing:2px; text-transform:uppercase;
-      color:rgba(255,255,255,.3); white-space:nowrap; flex-shrink:0;
+    .pn-label { font-size:.6em; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.3); white-space:nowrap; flex-shrink:0; }
+    .pn-text  { font-size:.78em; color:rgba(255,255,255,.55); font-style:italic; }
+
+    /* ── Collapsible toggle ── */
+    .toggle-hdr { cursor:pointer; user-select:none; }
+    .toggle-hdr:hover .card-title { color:rgba(255,255,255,.8); }
+    .toggle-chevron { font-size:.75em; color:rgba(255,255,255,.35); transition:transform .25s; margin-left:auto; padding-left:8px; }
+    .toggle-chevron.open { transform:rotate(180deg); }
+    .toggle-btn { padding:4px 12px; font-size:.6em; font-weight:700; border-radius:20px; border:1px solid rgba(167,139,250,.35); background:rgba(167,139,250,.1); color:#a78bfa; cursor:pointer; white-space:nowrap; transition:background .15s; }
+    .toggle-btn:hover { background:rgba(167,139,250,.22); }
+    .collapsible-body { overflow:hidden; transition:max-height .35s cubic-bezier(.4,0,.2,1), opacity .3s ease; }
+    .collapsible-body.collapsed { max-height:0 !important; opacity:0; pointer-events:none; }
+
+    /* ── Status Insights Charts ── */
+    .sic-section { margin-bottom:18px; animation:fadeUp .5s ease both; }
+    .sic-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:12px 0 14px; }
+    .sic-kpi  { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:11px; padding:12px 14px; text-align:center; }
+    .sic-kpi-val { font-size:1.45em; font-weight:800; letter-spacing:-1px; line-height:1; }
+    .sic-kpi-lbl { font-size:.58em; color:rgba(255,255,255,.35); text-transform:uppercase; letter-spacing:.6px; margin-top:4px; }
+    .sic-kpi.c-green .sic-kpi-val { color:#00e676; text-shadow:0 0 20px rgba(0,230,118,.3); }
+    .sic-kpi.c-purple .sic-kpi-val{ color:#a78bfa; text-shadow:0 0 20px rgba(167,139,250,.3); }
+    .sic-kpi.c-red  .sic-kpi-val  { color:#ff4d6d; text-shadow:0 0 20px rgba(255,77,109,.3); }
+    .sic-kpi.c-cyan .sic-kpi-val  { color:#38bdf8; text-shadow:0 0 20px rgba(56,189,248,.3); }
+    .sic-row2 { display:grid; grid-template-columns:1fr 260px; gap:12px; }
+    .sic-chart-box { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:11px; padding:12px 14px; }
+    .sic-chart-lbl { font-size:.6em; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:rgba(255,255,255,.28); margin-bottom:8px; }
+    /* Heatmap */
+    .sic-heatmap { overflow-x:auto; margin-top:6px; }
+    .sic-hm-table { border-collapse:separate; border-spacing:3px; font-size:.6em; white-space:nowrap; }
+    .sic-hm-th { color:rgba(255,255,255,.3); font-weight:700; padding:4px 6px; text-align:center; }
+    .sic-hm-th-inv { text-align:right; padding-right:8px; color:rgba(255,255,255,.4); font-weight:600; min-width:90px; }
+    .sic-hm-cell { width:48px; height:26px; border-radius:5px; text-align:center; line-height:26px; font-weight:700; font-size:.95em; cursor:default; transition:transform .1s; }
+    .sic-hm-cell:hover { transform:scale(1.15); z-index:2; position:relative; }
+    .sic-hm-done    { background:rgba(0,230,118,.2);  color:#00e676; border:1px solid rgba(0,230,118,.35); }
+    .sic-hm-partial { background:rgba(251,146,60,.2); color:#fb923c; border:1px solid rgba(251,146,60,.35); }
+    .sic-hm-pending { background:rgba(251,191,36,.12);color:#fbbf24; border:1px solid rgba(251,191,36,.25); }
+    .sic-hm-failed  { background:rgba(255,77,109,.2); color:#ff4d6d; border:1px solid rgba(255,77,109,.35); }
+    .sic-hm-ntm     { background:rgba(255,255,255,.04);color:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.07); }
+
+    /* ── Editable Notes ── */
+    .plan-notes-edit { margin-top:12px; padding:12px 14px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:11px; }
+    .pne-label { font-size:.58em; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,.3); margin-bottom:7px; }
+    .pne-ta { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.09); border-radius:8px; color:#e2e8f0; font-size:.72em; padding:8px 10px; resize:vertical; min-height:52px; font-family:inherit; line-height:1.5; }
+    .pne-ta:focus { outline:none; border-color:rgba(167,139,250,.5); background:rgba(167,139,250,.04); }
+    .pne-footer { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
+    .pne-msg { font-size:.6em; min-height:14px; }
+    .pne-msg.ok  { color:#00e676; }
+    .pne-msg.err { color:#ff4d6d; }
+    .pne-save { padding:5px 14px; font-size:.62em; font-weight:700; border-radius:7px; border:1px solid rgba(167,139,250,.4); background:rgba(167,139,240,.1); color:#a78bfa; cursor:pointer; transition:background .15s; }
+    .pne-save:hover { background:rgba(167,139,250,.22); }
+
+    /* ── Custom status dropdown (inline inside card) ── */
+    .pst-dd { position:relative; flex-shrink:0; }
+    .pst-dd-btn {
+      display:flex; align-items:center; gap:5px;
+      font-size:.6em; font-weight:700; padding:4px 8px; border-radius:6px; border:1px solid;
+      cursor:pointer; outline:none; font-family:inherit; transition:all .15s; white-space:nowrap;
     }
-    .pn-text {
-      font-size:.78em; color:rgba(255,255,255,.55); font-style:italic;
+    .pst-dd-btn.done    { color:#00e676; border-color:rgba(0,230,118,.45);  background:rgba(0,230,118,.1); }
+    .pst-dd-btn.pending { color:#fbbf24; border-color:rgba(251,191,36,.45); background:rgba(251,191,36,.1); }
+    .pst-dd-btn.failed  { color:#ff4d6d; border-color:rgba(255,77,109,.45); background:rgba(255,77,109,.1); }
+    .pst-dd-btn.partial { color:#fb923c; border-color:rgba(251,146,60,.45); background:rgba(251,146,60,.1); }
+    .pst-dd-arrow { font-size:.7em; opacity:.65; transition:transform .2s; }
+    .pst-dd.open .pst-dd-arrow { transform:rotate(180deg); }
+    .pst-dd-menu {
+      display:none; position:absolute; top:calc(100% + 5px); right:0; min-width:145px;
+      background:#0e1628; border:1px solid rgba(255,255,255,.14); border-radius:9px;
+      max-height:200px; overflow-y:auto; z-index:999; box-shadow:0 10px 30px rgba(0,0,0,.7);
     }
+    .pst-dd-menu::-webkit-scrollbar { width:3px; }
+    .pst-dd-menu::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:3px; }
+    .pst-dd.open .pst-dd-menu { display:block; }
+    .pst-dd-opt {
+      display:flex; align-items:center; gap:7px;
+      padding:8px 12px; font-size:.63em; font-weight:700; cursor:pointer; transition:background .1s;
+    }
+    .pst-dd-opt:hover   { background:rgba(255,255,255,.08); }
+    .pst-dd-opt.done    { color:#00e676; }
+    .pst-dd-opt.pending { color:#fbbf24; }
+    .pst-dd-opt.failed  { color:#ff4d6d; }
+    .pst-dd-opt.partial { color:#fb923c; }
+    .pst-saved { font-size:.55em; color:rgba(0,230,118,.8); width:12px; flex-shrink:0; line-height:1; }
+    /* month selector + overall badge */
+    .plan-month-sel { appearance:none; -webkit-appearance:none; background:rgba(99,102,241,.15) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23818cf8'/%3E%3C/svg%3E") no-repeat right 10px center; border:1px solid rgba(99,102,241,.38); border-radius:20px; color:#818cf8; font-size:.72em; font-weight:700; padding:5px 28px 5px 12px; cursor:pointer; outline:none; font-family:inherit; transition:border-color .15s; }
+    .plan-month-sel:hover { border-color:rgba(99,102,241,.65); }
+    .plan-month-sel option { background:#0f1629; color:#e2e8f0; }
+    .plan-overall-badge { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:.62em; font-weight:800; letter-spacing:.4px; vertical-align:middle; border:1px solid; transition:all .2s; }
+    .plan-overall-badge.done    { background:rgba(0,230,118,.12);  border-color:rgba(0,230,118,.4);  color:#00e676; }
+    .plan-overall-badge.partial { background:rgba(251,146,60,.1);  border-color:rgba(251,146,60,.4); color:#fb923c; }
+    .plan-overall-badge.failed  { background:rgba(255,77,109,.1);  border-color:rgba(255,77,109,.4); color:#ff4d6d; }
+    .plan-overall-badge.pending { background:rgba(251,191,36,.09); border-color:rgba(251,191,36,.4); color:#fbbf24; }
   </style>
 </head>
 <body>
@@ -338,9 +444,9 @@
     const best   = DATA.reduce((a,b)=>b.savingPct>a.savingPct?b:a);
     const worst  = DATA.reduce((a,b)=>b.savingPct<a.savingPct?b:a);
 
-    // ── totals per category ──
-    const catTotals = KEYS.map(k => DATA.reduce((s,d)=>s+d[k],0));
-    const maxCatVal = Math.max(...KEYS.map(k => Math.max(...DATA.map(d=>d[k]))));
+    // ── totals per category (treat FAILED=-1 as 0 for chart totals) ──
+    const catTotals = KEYS.map(k => DATA.reduce((s,d)=>s+Math.max(0,d[k]),0));
+    const maxCatVal = Math.max(...KEYS.map(k => Math.max(...DATA.map(d=>Math.max(0,d[k])))));
 
     const months = DATA.map(d=>d.month);
 
@@ -355,13 +461,59 @@
       <!-- Current Month Plan -->
       <div class="plan-section glass" id="planSection">
         <div class="plan-hdr">
-          <div>
-            <span class="plan-chip">📅 Current Month</span>
-            <div class="plan-month-label" id="planTitle">Investment Plan</div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <select class="plan-month-sel" id="planMonthSel" onchange="onPlanMonthChange()"></select>
+            <span class="plan-overall-badge" id="planOverallBadge"></span>
           </div>
+          <div class="plan-month-label" id="planTitle">Investment Plan</div>
         </div>
         <div class="plan-cards" id="planCards"></div>
-        <div class="plan-notes-strip" id="planNotes" style="display:none"></div>
+        <!-- Editable notes -->
+        <div class="plan-notes-edit" id="planNotesEdit">
+          <div class="pne-label">📝 Notes</div>
+          <textarea class="pne-ta" id="planNotesTa" placeholder="Add notes or reasons…"></textarea>
+          <div class="pne-footer">
+            <div class="pne-msg" id="planNotesMsg"></div>
+            <button class="pne-save" onclick="savePlanNotes()">💾 Save Notes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Insights (collapsible, hidden by default) -->
+      <div class="sic-section glass" id="statusInsights">
+        <div class="card-hdr toggle-hdr" onclick="toggleInsights()">
+          <div class="card-dot" style="background:#a78bfa;box-shadow:0 0 8px #a78bfa"></div>
+          <div class="card-title">📊 Investment Status Insights</div>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+            <span id="sicToggleBtn" class="toggle-btn">Click to view</span>
+            <span class="toggle-chevron" id="sicChevron">▼</span>
+          </div>
+        </div>
+        <div class="collapsible-body collapsed" id="sicBody" style="max-height:1200px;">
+          <!-- KPI chips -->
+          <div class="sic-kpis" id="sicKpis"></div>
+          <!-- Row 1: completion line + donut -->
+          <div class="sic-row2">
+            <div class="sic-chart-box">
+              <div class="sic-chart-lbl">📈 Completion % per Month</div>
+              <div style="position:relative;height:180px"><canvas id="sicLineChart"></canvas></div>
+            </div>
+            <div class="sic-chart-box sic-chart-box--sm">
+              <div class="sic-chart-lbl">🍩 Overall Distribution</div>
+              <div style="position:relative;height:180px"><canvas id="sicDonutChart"></canvas></div>
+            </div>
+          </div>
+          <!-- Row 2: stacked bar -->
+          <div class="sic-chart-box" style="margin-top:12px">
+            <div class="sic-chart-lbl">📊 Monthly Status Breakdown</div>
+            <div style="position:relative;height:180px"><canvas id="sicStackBar"></canvas></div>
+          </div>
+          <!-- Row 3: heatmap grid -->
+          <div style="margin-top:14px">
+            <div class="sic-chart-lbl">🗓 Investment × Month Heatmap</div>
+            <div class="sic-heatmap" id="sicHeatmap"></div>
+          </div>
+        </div>
       </div>
 
       <!-- KPI Row -->
@@ -480,6 +632,7 @@
           <div id="insights" style="display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       </div>
+
     `;
 
     /* ── animated KPI counters ── */
@@ -566,7 +719,7 @@
         labels:months,
         datasets:KEYS.map((k,i)=>({
           label:CATS[i],
-          data:DATA.map(d=>d[k]),
+          data:DATA.map(d=>Math.max(0,d[k])),
           backgroundColor:COLORS[i]+'55',
           borderColor:COLORS[i],
           borderWidth:1, borderRadius:i===KEYS.length-1?6:0,
@@ -717,33 +870,369 @@
 
     /* ── init plan section ── */
     initPlan(DATA);
+
+    /* ── status insights charts ── */
+    initStatusCharts(DATA);
+
   }
 
-  /* ── Plan Section (read-only) ── */
+  /* ── Plan Section ── */
   const EMOJIS = {'cal':'🏦','ndb':'🏛️','binance':'₿','stock':'📊','fd':'🔒','gold':'🥇','sentHome':'🏠'};
+  var _curMonth = '';
+  var _curStatus = {};
+  var _allPlanData = [];
 
   function initPlan(DATA) {
-    const cur = DATA[DATA.length - 1];
+    _allPlanData = DATA;
+    // Populate month selector newest → oldest
+    const sel = document.getElementById('planMonthSel');
+    sel.innerHTML = DATA.slice().reverse().map(d =>
+      `<option value="${d.month}">📅 ${d.month}</option>`
+    ).join('');
+    // Default to latest month
+    renderPlanForMonth(DATA[DATA.length - 1]);
+  }
+
+  function onPlanMonthChange() {
+    const month = document.getElementById('planMonthSel').value;
+    const found = _allPlanData.find(d => d.month === month);
+    if (found) renderPlanForMonth(found);
+  }
+
+  function renderPlanForMonth(cur) {
+    _curMonth  = cur.month;
+    _curStatus = Object.assign({}, cur.status || {});
+
     document.getElementById('planTitle').textContent = cur.month + ' · Investment Plan';
 
-    // Cards
+    // Pre-seed _curStatus for all active keys
+    KEYS.forEach(k => {
+      if ((cur[k] > 0 || cur[k] === -1) && !_curStatus[k]) {
+        _curStatus[k] = cur[k] === -1 ? 'Failed' : 'Pending';
+      }
+    });
+
+    // Build cards — status dropdown integrated inside each active card
     document.getElementById('planCards').innerHTML = KEYS.map((k, i) => {
-      const val = cur[k];
-      const isNTM = val <= 0;
-      return `<div class="plan-card ${isNTM ? 'ntm' : 'invested'}">
-        <span class="pc-emoji">${EMOJIS[k] || '💼'}</span>
+      const val      = cur[k];
+      const isActive = val > 0 || val === -1;
+      const isFailed = val === -1;   // FAILED in sheet amount cell
+      const isNTM    = val === 0;
+
+      if (isNTM) {
+        return `<div class="plan-card ntm">
+          <div class="pc-header"><span class="pc-emoji">${EMOJIS[k]||'💼'}</span></div>
+          <div class="pc-name">${CATS[i]}</div>
+          <div class="pc-amount is-ntm">NTM</div>
+        </div>`;
+      }
+
+      const cardCls  = isFailed ? 'failed-card' : 'invested';
+      const amtCls   = isFailed ? 'is-fail' : 'has-val';
+      const amtLbl   = isFailed ? 'FAILED' : '₨' + val.toLocaleString('en-IN');
+
+      const sv  = _curStatus[k] || 'Pending';
+      const pa  = _curStatus[k + '_partial'] || '';
+      const isP = sv === 'Partially Done';
+      const cls = sv==='DONE'?'done' : sv==='Failed'?'failed' : isP?'partial':'pending';
+      const SVL = sv==='DONE'?'✅ Done' : sv==='Failed'?'❌ Failed' : isP?'🔸 Partial':'⏳ Pending';
+
+      return `<div class="plan-card ${cardCls}" id="pc-${k}">
+        <div class="pc-header">
+          <span class="pc-emoji">${EMOJIS[k]||'💼'}</span>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <div class="pst-dd" id="pst-dd-${k}">
+              <button class="pst-dd-btn ${cls}" onclick="toggleDD(event,'${k}')">
+                <span>${SVL}</span><span class="pst-dd-arrow">▾</span>
+              </button>
+              <div class="pst-dd-menu">
+                <div class="pst-dd-opt pending" onclick="selectDD('${k}','Pending')">⏳ Pending</div>
+                <div class="pst-dd-opt done"    onclick="selectDD('${k}','DONE')">✅ DONE</div>
+                <div class="pst-dd-opt partial" onclick="selectDD('${k}','Partially Done')">🔸 Partially Done</div>
+                <div class="pst-dd-opt failed"  onclick="selectDD('${k}','Failed')">❌ Failed</div>
+              </div>
+            </div>
+            <span class="pst-saved" id="pst-saved-${k}"></span>
+          </div>
+        </div>
         <div class="pc-name">${CATS[i]}</div>
-        <div class="pc-amount ${isNTM ? 'is-ntm' : 'has-val'}">${isNTM ? 'NTM' : '₨' + val.toLocaleString('en-IN')}</div>
+        <div class="pc-amount ${amtCls}">${amtLbl}</div>
+        <div class="pc-partial ${isP?'show':''}" id="pst-partial-${k}">
+          <div class="pc-partial-row">
+            <span class="pc-partial-lbl">Partial ₨</span>
+            <input class="pc-partial-input" id="pst-pinp-${k}" type="number" min="0" placeholder="amount" value="${pa}">
+            <button class="pc-partial-save" onclick="pstPartialSave('${k}')">✓</button>
+          </div>
+          <span class="pc-partial-msg" id="pst-pmsg-${k}"></span>
+        </div>
       </div>`;
     }).join('');
 
-    // Notes strip (L column)
-    const notes = cur.notes || '';
-    const notesEl = document.getElementById('planNotes');
-    if (notes && notes.trim()) {
-      notesEl.style.display = 'flex';
-      notesEl.innerHTML = `<span class="pn-label">📝 Notes</span><span class="pn-text">${notes}</span>`;
+    // Notes
+    document.getElementById('planNotesTa').value = cur.notes || '';
+    updateOverallStatus();
+  }
+
+  function updateOverallStatus() {
+    const badge = document.getElementById('planOverallBadge');
+    if (!badge) return;
+    const activeKeys = Object.keys(_curStatus).filter(k => !k.endsWith('_partial'));
+    if (activeKeys.length === 0) { badge.textContent = ''; return; }
+    const vals = activeKeys.map(k => _curStatus[k] || 'Pending');
+    let cls, label;
+    if (vals.some(v => v === 'Failed')) {
+      cls = 'failed'; label = '❌ Failed';
+    } else if (vals.every(v => v === 'DONE')) {
+      cls = 'done'; label = '✅ All Done';
+    } else if (vals.some(v => v === 'Partially Done')) {
+      cls = 'partial'; label = '🔸 Partial';
+    } else {
+      cls = 'pending'; label = '⏳ Pending';
     }
+    badge.className = 'plan-overall-badge ' + cls;
+    badge.textContent = label;
+  }
+
+  /* ── custom dropdown helpers ── */
+  function toggleDD(e, key) {
+    e.stopPropagation();
+    const dd = document.getElementById('pst-dd-' + key);
+    const isOpen = dd.classList.contains('open');
+    // close all open dropdowns first
+    document.querySelectorAll('.pst-dd.open').forEach(d => d.classList.remove('open'));
+    if (!isOpen) dd.classList.add('open');
+  }
+
+  function selectDD(key, sv) {
+    // Close the dropdown
+    const dd = document.getElementById('pst-dd-' + key);
+    if (dd) dd.classList.remove('open');
+
+    const isP = sv === 'Partially Done';
+    const cls = sv==='DONE'?'done' : sv==='Failed'?'failed' : isP?'partial':'pending';
+    const SVL = sv==='DONE'?'✅ Done' : sv==='Failed'?'❌ Failed' : isP?'🔸 Partial':'⏳ Pending';
+
+    // Update button label + colour class
+    const btn = dd && dd.querySelector('.pst-dd-btn');
+    if (btn) {
+      btn.className = 'pst-dd-btn ' + cls;
+      const span = btn.querySelector('span');
+      if (span) span.textContent = SVL;
+    }
+
+    // Show / hide partial amount row (works for both .pc-partial and legacy .pst-partial-wrap)
+    const pw = document.getElementById('pst-partial-' + key);
+    if (pw) pw.classList.toggle('show', isP);
+
+    // If switching away from Partially Done, clear stored partial amount
+    if (!isP) delete _curStatus[key + '_partial'];
+    _curStatus[key] = sv;
+    updateOverallStatus();
+
+    const ind = document.getElementById('pst-saved-' + key);
+    if (ind) ind.textContent = '…';
+
+    // Save status JSON to col M
+    google.script.run
+      .withSuccessHandler(() => { if(ind){ind.textContent='✓';setTimeout(()=>{ind.textContent='';},1500);} })
+      .withFailureHandler(() => { if(ind) ind.textContent='⚠'; })
+      .saveInvestmentStatus(_curMonth, JSON.stringify(_curStatus));
+
+    // If marked Failed → also overwrite the amount cell in the sheet with "FAILED"
+    if (sv === 'Failed') {
+      google.script.run
+        .withSuccessHandler(() => {
+          // update amount display in card too
+          const amtEl = document.querySelector('#pc-' + key + ' .pc-amount');
+          if (amtEl) { amtEl.textContent = 'FAILED'; amtEl.className = 'pc-amount is-fail'; }
+          const card = document.getElementById('pc-' + key);
+          if (card) { card.className = 'plan-card failed-card'; }
+        })
+        .withFailureHandler(e => console.warn('writeInvestmentFailed:', e))
+        .writeInvestmentFailed(_curMonth, key);
+    }
+  }
+
+  /* ── close custom dropdowns when clicking outside ── */
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.pst-dd.open').forEach(d => d.classList.remove('open'));
+  });
+
+  /* ── Status Insights toggle ── */
+  var _insightsOpen = false;
+  var _insightsChartsReady = false;
+  function toggleInsights() {
+    _insightsOpen = !_insightsOpen;
+    const body    = document.getElementById('sicBody');
+    const chevron = document.getElementById('sicChevron');
+    const btn     = document.getElementById('sicToggleBtn');
+    if (!body) return;
+    if (_insightsOpen) {
+      body.classList.remove('collapsed');
+      body.style.maxHeight = '1200px';
+      if (chevron) chevron.classList.add('open');
+      if (btn) btn.textContent = 'Hide';
+      // Chart.js needs the canvas to be visible to render properly;
+      // force a resize tick after the CSS transition starts
+      setTimeout(() => {
+        _sicCharts.forEach(c => { try { c.resize(); } catch(e){} });
+      }, 50);
+    } else {
+      body.classList.add('collapsed');
+      if (chevron) chevron.classList.remove('open');
+      if (btn) btn.textContent = 'Click to view';
+    }
+  }
+
+  function pstPartialSave(key) {
+    const inp = document.getElementById('pst-pinp-' + key);
+    const msg = document.getElementById('pst-pmsg-' + key);
+    const ind = document.getElementById('pst-saved-' + key);
+    if (!inp) return;
+    const amt = parseFloat(inp.value) || 0;
+    _curStatus[key + '_partial'] = amt;
+    if (msg) msg.textContent = '…';
+    google.script.run
+      .withSuccessHandler(() => {
+        if (msg) { msg.style.color='#00e676'; msg.textContent='✓ Saved'; setTimeout(()=>{msg.textContent='';},2000); }
+        if (ind) { ind.textContent='✓'; setTimeout(()=>{ind.textContent='';},1500); }
+      })
+      .withFailureHandler(e => {
+        if (msg) { msg.style.color='#ff4d6d'; msg.textContent='⚠ '+(e.message||'Error'); }
+      })
+      .saveInvestmentStatus(_curMonth, JSON.stringify(_curStatus));
+  }
+
+  function savePlanNotes() {
+    const ta  = document.getElementById('planNotesTa');
+    const msg = document.getElementById('planNotesMsg');
+    msg.className = 'pne-msg'; msg.textContent = 'Saving…';
+    google.script.run
+      .withSuccessHandler(() => { msg.className='pne-msg ok'; msg.textContent='✓ Saved'; setTimeout(()=>{msg.textContent='';},2000); })
+      .withFailureHandler(e  => { msg.className='pne-msg err'; msg.textContent='⚠ '+(e.message||'Error'); })
+      .saveMoneyFlowNotes(_curMonth, ta.value);
+  }
+
+  /* ── Status Insights Charts ── */
+  var _sicCharts = [];
+  function initStatusCharts(DATA) {
+    // ── helpers ──
+    // -1 = FAILED cell in sheet (not NTM), 0 = NTM
+    function activeKeys(d)   { return KEYS.filter(k => d[k] > 0 || d[k] === -1); }
+    function getStatus(d, k) {
+      const stored = ((d.status||{})[k]);
+      if (stored) return stored;
+      return d[k] === -1 ? 'Failed' : 'Pending'; // auto-infer from amount if no status saved
+    }
+
+    const ST = { DONE:'DONE', PARTIAL:'Partially Done', PENDING:'Pending', FAILED:'Failed' };
+    const ST_COLOR = { DONE:'#00e676', 'Partially Done':'#fb923c', Pending:'#fbbf24', Failed:'#ff4d6d' };
+
+    // ── aggregate across all months ──
+    let totDone=0, totPartial=0, totPending=0, totFailed=0, totAll=0, allDoneMonths=0;
+    DATA.forEach(d => {
+      const ak = activeKeys(d);
+      let mDone=0;
+      ak.forEach(k => {
+        totAll++;
+        const s = getStatus(d,k);
+        if(s===ST.DONE)    { totDone++;    mDone++; }
+        else if(s===ST.PARTIAL) totPartial++;
+        else if(s===ST.FAILED)  totFailed++;
+        else totPending++;
+      });
+      if(ak.length>0 && mDone===ak.length) allDoneMonths++;
+    });
+    const overallPct = totAll>0 ? Math.round((totDone+totPartial*0.5)/totAll*100) : 0;
+
+    // ── KPI chips ──
+    document.getElementById('sicKpis').innerHTML =
+      `<div class="sic-kpi c-purple"><div class="sic-kpi-val">${totAll}</div><div class="sic-kpi-lbl">Total tracked</div></div>`
+     +`<div class="sic-kpi c-green"><div class="sic-kpi-val">${overallPct}%</div><div class="sic-kpi-lbl">Overall done</div></div>`
+     +`<div class="sic-kpi c-red"><div class="sic-kpi-val">${totFailed}</div><div class="sic-kpi-lbl">Failed items</div></div>`
+     +`<div class="sic-kpi c-cyan"><div class="sic-kpi-val">${allDoneMonths}</div><div class="sic-kpi-lbl">All-done months</div></div>`;
+
+    // ── destroy old charts ──
+    _sicCharts.forEach(c=>{try{c.destroy();}catch(e){}});
+    _sicCharts=[];
+
+    const months = DATA.map(d=>d.month.replace('/20','/')); // shorten labels
+    const TIP = {backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:10};
+
+    // ── 1. Completion % line ──
+    const compPct = DATA.map(d=>{
+      const ak=activeKeys(d); if(!ak.length) return 0;
+      const done=ak.filter(k=>getStatus(d,k)===ST.DONE).length;
+      const part=ak.filter(k=>getStatus(d,k)===ST.PARTIAL).length;
+      return Math.round((done+part*0.5)/ak.length*100);
+    });
+    _sicCharts.push(new Chart(document.getElementById('sicLineChart'),{
+      type:'line',
+      data:{labels:months,datasets:[
+        {label:'Completion %',data:compPct,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.12)',
+         borderWidth:2.5,fill:true,tension:0.4,
+         pointBackgroundColor:compPct.map(v=>v===100?'#00e676':v>=60?'#a78bfa':'#fb923c'),
+         pointRadius:5,pointHoverRadius:8},
+        {label:'100% target',data:DATA.map(()=>100),borderColor:'rgba(0,230,118,.25)',
+         borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{y:{min:0,max:100,ticks:{color:'rgba(255,255,255,.35)',font:{size:10},callback:v=>v+'%'},
+                    grid:{color:'rgba(255,255,255,.05)'}},
+                x:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9},maxRotation:45},
+                   grid:{color:'rgba(255,255,255,.04)'}}},
+        plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y}%`}}}}
+    }));
+
+    // ── 2. Overall distribution donut ──
+    const dVals=[totDone,totPartial,totPending,totFailed].filter(v=>v>0);
+    const dLbls=['DONE','Partially Done','Pending','Failed'].filter((_,i)=>[totDone,totPartial,totPending,totFailed][i]>0);
+    const dCols=dLbls.map(l=>ST_COLOR[l]);
+    _sicCharts.push(new Chart(document.getElementById('sicDonutChart'),{
+      type:'doughnut',
+      data:{labels:dLbls,datasets:[{data:dVals,backgroundColor:dCols.map(c=>c+'33'),
+        borderColor:dCols,borderWidth:2,hoverOffset:8}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+        plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.55)',font:{size:10},boxWidth:10,padding:8}},
+          tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed} (${Math.round(ctx.parsed/totAll*100)}%)`}}}}
+    }));
+
+    // ── 3. Stacked bar breakdown ──
+    const mkDataset=(label,data,color)=>({label,data,backgroundColor:color+'44',borderColor:color,borderWidth:1.5,borderRadius:3,stack:'s'});
+    _sicCharts.push(new Chart(document.getElementById('sicStackBar'),{
+      type:'bar',
+      data:{labels:months,datasets:[
+        mkDataset('DONE',          DATA.map(d=>activeKeys(d).filter(k=>getStatus(d,k)===ST.DONE).length),    '#00e676'),
+        mkDataset('Partially Done',DATA.map(d=>activeKeys(d).filter(k=>getStatus(d,k)===ST.PARTIAL).length),'#fb923c'),
+        mkDataset('Pending',       DATA.map(d=>activeKeys(d).filter(k=>getStatus(d,k)===ST.PENDING).length),'#fbbf24'),
+        mkDataset('Failed',        DATA.map(d=>activeKeys(d).filter(k=>getStatus(d,k)===ST.FAILED).length), '#ff4d6d'),
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        scales:{y:{ticks:{color:'rgba(255,255,255,.35)',font:{size:10},stepSize:1},grid:{color:'rgba(255,255,255,.05)'}},
+                x:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9},maxRotation:45},grid:{display:false}}},
+        plugins:{legend:{labels:{color:'rgba(255,255,255,.55)',font:{size:10},boxWidth:10}},
+          tooltip:{...TIP,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.y}`}}}}
+    }));
+
+    // ── 4. Heatmap grid ──
+    const SYM = {DONE:'✓','Partially Done':'½',Pending:'·',Failed:'✕'};
+    let hmHtml = '<table class="sic-hm-table"><thead><tr><th class="sic-hm-th-inv"></th>';
+    DATA.forEach(d=>{ hmHtml+=`<th class="sic-hm-th">${d.month.replace('/20','/')}</th>`; });
+    hmHtml += '</tr></thead><tbody>';
+    KEYS.forEach((k,i)=>{
+      hmHtml += `<tr><td class="sic-hm-th-inv">${EMOJIS[k]||''} ${CATS[i]}</td>`;
+      DATA.forEach(d=>{
+        if(d[k]===0){ hmHtml+='<td class="sic-hm-cell sic-hm-ntm" title="NTM">—</td>'; return; }
+        const s=getStatus(d,k);
+        const cls=s===ST.DONE?'sic-hm-done':s===ST.PARTIAL?'sic-hm-partial':s===ST.FAILED?'sic-hm-failed':'sic-hm-pending';
+        const amt=d[k]===-1?'FAILED':d[k].toLocaleString('en-IN');
+        const amtPfx=d[k]===-1?'':'₨';
+        hmHtml+=`<td class="sic-hm-cell ${cls}" title="${s} · ${amtPfx}${amt}">${SYM[s]||'?'}</td>`;
+      });
+      hmHtml+='</tr>';
+    });
+    hmHtml+='</tbody></table>';
+    document.getElementById('sicHeatmap').innerHTML = hmHtml;
   }
 
   /* ── fetch data ── */

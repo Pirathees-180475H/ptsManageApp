@@ -1075,22 +1075,104 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-mf .plan-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
 #page-mf .plan-chip{display:inline-block;padding:4px 14px;border-radius:20px;background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.3);color:#00e676;font-size:.63em;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;}
 #page-mf .plan-month-label{font-size:1.05em;font-weight:800;letter-spacing:-.5px;color:#fff;margin-top:3px;}
-#page-mf .plan-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px;}
-#page-mf .plan-card{border-radius:14px;padding:14px 16px;border:1px solid;backdrop-filter:blur(20px);position:relative;overflow:hidden;}
+#page-mf .plan-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;margin-bottom:12px;}
+#page-mf .plan-card{border-radius:14px;padding:14px 16px;border:1px solid;backdrop-filter:blur(20px);position:relative;}
 #page-mf .plan-card.invested{background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(0,212,255,.03));border-color:rgba(0,212,255,.3);}
 #page-mf .plan-card.ntm{background:linear-gradient(135deg,rgba(255,107,53,.07),rgba(255,107,53,.02));border-color:rgba(255,107,53,.25);}
-#page-mf .pc-emoji{font-size:1.3em;margin-bottom:6px;display:block;}
-#page-mf .pc-name{font-size:.75em;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.5px;margin-bottom:4px;}
+#page-mf .plan-card.failed-card{background:linear-gradient(135deg,rgba(255,77,109,.1),rgba(255,77,109,.03));border-color:rgba(255,77,109,.35);}
+#page-mf .pc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:7px;}
+#page-mf .pc-emoji{font-size:1.25em;display:block;line-height:1;}
+#page-mf .pc-name{font-size:.72em;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.4px;margin-bottom:5px;}
 #page-mf .pc-amount{font-size:1.05em;font-weight:800;letter-spacing:-.5px;}
 #page-mf .pc-amount.has-val{color:#00d4ff;text-shadow:0 0 16px rgba(0,212,255,.3);}
 #page-mf .pc-amount.is-ntm{color:rgba(255,107,53,.8);font-size:.75em;font-weight:700;letter-spacing:2px;}
+#page-mf .pc-amount.is-fail{color:#ff4d6d;font-size:.75em;font-weight:700;letter-spacing:1.5px;}
+#page-mf .pc-partial{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.06);display:none;}
+#page-mf .pc-partial.show{display:block;}
+#page-mf .pc-partial-row{display:flex;align-items:center;gap:5px;}
+#page-mf .pc-partial-lbl{font-size:.55em;color:rgba(255,255,255,.3);white-space:nowrap;flex-shrink:0;}
+#page-mf .pc-partial-input{flex:1;min-width:0;background:rgba(255,255,255,.05);border:1px solid rgba(251,146,60,.35);border-radius:6px;color:#fb923c;font-size:.63em;font-weight:700;padding:3px 6px;outline:none;font-family:inherit;}
+#page-mf .pc-partial-input:focus{border-color:rgba(251,146,60,.7);background:rgba(251,146,60,.05);}
+#page-mf .pc-partial-save{padding:3px 8px;font-size:.6em;font-weight:800;border-radius:5px;border:1px solid rgba(251,146,60,.4);background:rgba(251,146,60,.12);color:#fb923c;cursor:pointer;flex-shrink:0;}
+#page-mf .pc-partial-save:hover{background:rgba(251,146,60,.25);}
+#page-mf .pc-partial-msg{font-size:.53em;min-height:10px;display:block;margin-top:3px;}
 #page-mf .plan-notes-strip{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);}
 #page-mf .pn-label{font-size:.6em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);white-space:nowrap;flex-shrink:0;}
 #page-mf .pn-text{font-size:.78em;color:rgba(255,255,255,.55);font-style:italic;}
+#page-mf .plan-notes-edit{margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:11px;}
+#page-mf .pne-label{font-size:.58em;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:7px;}
+#page-mf .pne-ta{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:8px;color:#e2e8f0;font-size:.72em;padding:8px 10px;resize:vertical;min-height:52px;font-family:inherit;line-height:1.5;}
+#page-mf .pne-ta:focus{outline:none;border-color:rgba(167,139,250,.5);background:rgba(167,139,250,.04);}
+#page-mf .pne-footer{display:flex;align-items:center;justify-content:space-between;margin-top:6px;}
+#page-mf .pne-msg{font-size:.6em;min-height:14px;}
+#page-mf .pne-msg.ok{color:#00e676;}
+#page-mf .pne-msg.err{color:#ff4d6d;}
+#page-mf .pne-save{padding:5px 14px;font-size:.62em;font-weight:700;border-radius:7px;border:1px solid rgba(167,139,250,.4);background:rgba(167,139,240,.1);color:#a78bfa;cursor:pointer;transition:background .15s;}
+#page-mf .pne-save:hover{background:rgba(167,139,250,.22);}
+#page-mf .toggle-hdr{cursor:pointer;user-select:none;}
+#page-mf .toggle-hdr:hover .card-title{color:rgba(255,255,255,.8);}
+#page-mf .toggle-chevron{font-size:.75em;color:rgba(255,255,255,.35);transition:transform .25s;margin-left:auto;padding-left:8px;}
+#page-mf .toggle-chevron.open{transform:rotate(180deg);}
+#page-mf .toggle-btn{padding:4px 12px;font-size:.6em;font-weight:700;border-radius:20px;border:1px solid rgba(167,139,250,.35);background:rgba(167,139,250,.1);color:#a78bfa;cursor:pointer;white-space:nowrap;transition:background .15s;}
+#page-mf .toggle-btn:hover{background:rgba(167,139,250,.22);}
+#page-mf .collapsible-body{overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .3s ease;}
+#page-mf .collapsible-body.collapsed{max-height:0 !important;opacity:0;pointer-events:none;}
+#page-mf .sic-section{margin-bottom:18px;animation:fadeUp .5s ease both;}
+#page-mf .sic-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:12px 0 14px;}
+#page-mf .sic-kpi{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:11px;padding:12px 14px;text-align:center;}
+#page-mf .sic-kpi-val{font-size:1.45em;font-weight:800;letter-spacing:-1px;line-height:1;}
+#page-mf .sic-kpi-lbl{font-size:.58em;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.6px;margin-top:4px;}
+#page-mf .sic-kpi.c-green .sic-kpi-val{color:#00e676;text-shadow:0 0 20px rgba(0,230,118,.3);}
+#page-mf .sic-kpi.c-purple .sic-kpi-val{color:#a78bfa;text-shadow:0 0 20px rgba(167,139,250,.3);}
+#page-mf .sic-kpi.c-red .sic-kpi-val{color:#ff4d6d;text-shadow:0 0 20px rgba(255,77,109,.3);}
+#page-mf .sic-kpi.c-cyan .sic-kpi-val{color:#38bdf8;text-shadow:0 0 20px rgba(56,189,248,.3);}
+#page-mf .sic-row2{display:grid;grid-template-columns:1fr 260px;gap:12px;}
+#page-mf .sic-chart-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:12px 14px;}
+#page-mf .sic-chart-lbl{font-size:.6em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:8px;}
+#page-mf .sic-heatmap{overflow-x:auto;margin-top:6px;}
+#page-mf .sic-hm-table{border-collapse:separate;border-spacing:3px;font-size:.6em;white-space:nowrap;}
+#page-mf .sic-hm-th{color:rgba(255,255,255,.3);font-weight:700;padding:4px 6px;text-align:center;}
+#page-mf .sic-hm-th-inv{text-align:right;padding-right:8px;color:rgba(255,255,255,.4);font-weight:600;min-width:90px;}
+#page-mf .sic-hm-cell{width:48px;height:26px;border-radius:5px;text-align:center;line-height:26px;font-weight:700;font-size:.95em;cursor:default;transition:transform .1s;}
+#page-mf .sic-hm-cell:hover{transform:scale(1.15);z-index:2;position:relative;}
+#page-mf .sic-hm-done{background:rgba(0,230,118,.2);color:#00e676;border:1px solid rgba(0,230,118,.35);}
+#page-mf .sic-hm-partial{background:rgba(251,146,60,.2);color:#fb923c;border:1px solid rgba(251,146,60,.35);}
+#page-mf .sic-hm-pending{background:rgba(251,191,36,.12);color:#fbbf24;border:1px solid rgba(251,191,36,.25);}
+#page-mf .sic-hm-failed{background:rgba(255,77,109,.2);color:#ff4d6d;border:1px solid rgba(255,77,109,.35);}
+#page-mf .sic-hm-ntm{background:rgba(255,255,255,.04);color:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.07);}
+#page-mf .pst-dd{position:relative;flex-shrink:0;}
+#page-mf .pst-dd-btn{display:flex;align-items:center;gap:5px;font-size:.6em;font-weight:700;padding:4px 8px;border-radius:6px;border:1px solid;cursor:pointer;outline:none;font-family:inherit;transition:all .15s;white-space:nowrap;}
+#page-mf .pst-dd-btn.done{color:#00e676;border-color:rgba(0,230,118,.45);background:rgba(0,230,118,.1);}
+#page-mf .pst-dd-btn.pending{color:#fbbf24;border-color:rgba(251,191,36,.45);background:rgba(251,191,36,.1);}
+#page-mf .pst-dd-btn.failed{color:#ff4d6d;border-color:rgba(255,77,109,.45);background:rgba(255,77,109,.1);}
+#page-mf .pst-dd-btn.partial{color:#fb923c;border-color:rgba(251,146,60,.45);background:rgba(251,146,60,.1);}
+#page-mf .pst-dd-arrow{font-size:.7em;opacity:.65;transition:transform .2s;}
+#page-mf .pst-dd.open .pst-dd-arrow{transform:rotate(180deg);}
+#page-mf .pst-dd-menu{display:none;position:absolute;top:calc(100% + 5px);right:0;min-width:145px;background:#0e1628;border:1px solid rgba(255,255,255,.14);border-radius:9px;max-height:200px;overflow-y:auto;z-index:999;box-shadow:0 10px 30px rgba(0,0,0,.7);}
+#page-mf .pst-dd-menu::-webkit-scrollbar{width:3px;}
+#page-mf .pst-dd-menu::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px;}
+#page-mf .pst-dd.open .pst-dd-menu{display:block;}
+#page-mf .pst-dd-opt{display:flex;align-items:center;gap:7px;padding:8px 12px;font-size:.63em;font-weight:700;cursor:pointer;transition:background .1s;}
+#page-mf .pst-dd-opt:hover{background:rgba(255,255,255,.08);}
+#page-mf .pst-dd-opt.done{color:#00e676;}
+#page-mf .pst-dd-opt.pending{color:#fbbf24;}
+#page-mf .pst-dd-opt.failed{color:#ff4d6d;}
+#page-mf .pst-dd-opt.partial{color:#fb923c;}
+#page-mf .pst-saved{font-size:.55em;color:rgba(0,230,118,.8);width:12px;flex-shrink:0;line-height:1;}
+#page-mf .plan-month-sel{appearance:none;-webkit-appearance:none;background:rgba(99,102,241,.15) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23818cf8'/%3E%3C/svg%3E") no-repeat right 10px center;border:1px solid rgba(99,102,241,.38);border-radius:20px;color:#818cf8;font-size:.72em;font-weight:700;padding:5px 28px 5px 12px;cursor:pointer;outline:none;font-family:inherit;transition:border-color .15s;}
+#page-mf .plan-month-sel:hover{border-color:rgba(99,102,241,.65);}
+#page-mf .plan-month-sel option{background:#0f1629;color:#e2e8f0;}
+#page-mf .plan-overall-badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:.62em;font-weight:800;letter-spacing:.4px;vertical-align:middle;border:1px solid;transition:all .2s;}
+#page-mf .plan-overall-badge.done{background:rgba(0,230,118,.12);border-color:rgba(0,230,118,.4);color:#00e676;}
+#page-mf .plan-overall-badge.partial{background:rgba(251,146,60,.1);border-color:rgba(251,146,60,.4);color:#fb923c;}
+#page-mf .plan-overall-badge.failed{background:rgba(255,77,109,.1);border-color:rgba(255,77,109,.4);color:#ff4d6d;}
+#page-mf .plan-overall-badge.pending{background:rgba(251,191,36,.09);border-color:rgba(251,191,36,.4);color:#fbbf24;}
 @media(max-width:760px){
   #page-mf .mf-kpi-row{grid-template-columns:repeat(3,1fr);}
   #page-mf .row-2,#page-mf .row-3,#page-mf .row-2b{grid-template-columns:1fr;}
   #page-mf .plan-cards{grid-template-columns:repeat(2,1fr);}
+  #page-mf .sic-row2{grid-template-columns:1fr;}
+  #page-mf .sic-kpis{grid-template-columns:repeat(2,1fr);}
 }
 
 /* ═══════════════════════════════════════════
@@ -3883,16 +3965,61 @@ function mfRender(DATA) {
   var avgSaving=DATA.reduce(function(s,d){return s+d.savingPct;},0)/DATA.length;
   var best=DATA.reduce(function(a,b){return b.savingPct>a.savingPct?b:a;});
   var worst=DATA.reduce(function(a,b){return b.savingPct<a.savingPct?b:a;});
-  var catTotals=MF_KEYS.map(function(k){return DATA.reduce(function(s,d){return s+d[k];},0);});
+  var catTotals=MF_KEYS.map(function(k){return DATA.reduce(function(s,d){return s+Math.max(0,d[k]);},0);});
   var maxCatVal=Math.max.apply(null,MF_KEYS.map(function(k){return Math.max.apply(null,DATA.map(function(d){return d[k];}));}));
   var months=DATA.map(function(d){return d.month;});
 
   document.getElementById('mf-root').innerHTML=
     '<div class="mf-header"><div class="mf-header-chip">📊 Live · Money Flow</div><h1>Investment Flow Dashboard</h1><div class="mf-header-sub">Your complete investment history at a glance</div></div>'+
     '<div class="plan-section glass" id="mf-planSection">'+
-    '<div class="plan-hdr"><div><span class="plan-chip">📅 Current Month</span><div class="plan-month-label" id="mf-planTitle">Investment Plan</div></div></div>'+
+    '<div class="plan-hdr">'+
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'+
+        '<select class="plan-month-sel" id="mf-planMonthSel" onchange="mfOnPlanMonthChange()"></select>'+
+        '<span class="plan-overall-badge" id="mf-planOverallBadge"></span>'+
+      '</div>'+
+      '<div class="plan-month-label" id="mf-planTitle">Investment Plan</div>'+
+    '</div>'+
     '<div class="plan-cards" id="mf-planCards"></div>'+
-    '<div class="plan-notes-strip" id="mf-planNotes" style="display:none"></div></div>'+
+    '<div class="plan-notes-edit">'+
+      '<div class="pne-label">📝 Notes</div>'+
+      '<textarea class="pne-ta" id="mf-planNotesTa" placeholder="Add notes or reasons\u2026"></textarea>'+
+      '<div class="pne-footer">'+
+        '<div class="pne-msg" id="mf-planNotesMsg"></div>'+
+        '<button class="pne-save" onclick="mfSavePlanNotes()">💾 Save Notes</button>'+
+      '</div>'+
+    '</div>'+
+    '</div>'+
+    '<div class="sic-section glass" id="mf-statusInsights">'+
+    '<div class="card-hdr toggle-hdr" onclick="mfToggleInsights()">'+
+      '<div class="card-dot" style="background:#a78bfa;box-shadow:0 0 8px #a78bfa"></div>'+
+      '<div class="card-title">📊 Investment Status Insights</div>'+
+      '<div style="margin-left:auto;display:flex;align-items:center;gap:8px;">'+
+        '<span id="mf-sicToggleBtn" class="toggle-btn">Click to view</span>'+
+        '<span class="toggle-chevron" id="mf-sicChevron">▼</span>'+
+      '</div>'+
+    '</div>'+
+    '<div class="collapsible-body collapsed" id="mf-sicBody" style="max-height:1200px;">'+
+      '<div class="sic-kpis" id="mf-sicKpis"></div>'+
+      '<div class="sic-row2">'+
+        '<div class="sic-chart-box">'+
+          '<div class="sic-chart-lbl">📈 Completion % per Month</div>'+
+          '<div style="position:relative;height:180px"><canvas id="mf-sicLineChart"></canvas></div>'+
+        '</div>'+
+        '<div class="sic-chart-box">'+
+          '<div class="sic-chart-lbl">🍩 Overall Distribution</div>'+
+          '<div style="position:relative;height:180px"><canvas id="mf-sicDonutChart"></canvas></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="sic-chart-box" style="margin-top:12px">'+
+        '<div class="sic-chart-lbl">📊 Monthly Status Breakdown</div>'+
+        '<div style="position:relative;height:180px"><canvas id="mf-sicStackBar"></canvas></div>'+
+      '</div>'+
+      '<div style="margin-top:14px">'+
+        '<div class="sic-chart-lbl">🗓 Investment × Month Heatmap</div>'+
+        '<div class="sic-heatmap" id="mf-sicHeatmap"></div>'+
+      '</div>'+
+    '</div>'+
+    '</div>'+
     '<div class="mf-kpi-row">'+
     '<div class="kpi blue"><div class="kpi-glow"></div><span class="kpi-icon">💰</span><div class="kpi-label">Total Invested</div><div class="kpi-value" id="mf-kpi-ti">₨0</div><div class="kpi-sub">'+DATA.length+' months tracked</div></div>'+
     '<div class="kpi purple"><div class="kpi-glow"></div><span class="kpi-icon">📈</span><div class="kpi-label">Avg Saving Rate</div><div class="kpi-value" id="mf-kpi-avg">0%</div><div class="kpi-sub">across all months</div></div>'+
@@ -3943,7 +4070,7 @@ function mfRender(DATA) {
       tooltip:{...mT,callbacks:{label:function(ctx){return ' '+ctx.label+': '+mfFmt(ctx.parsed)+' ('+((ctx.parsed/donutVals.reduce(function(a,b){return a+b;},0))*100).toFixed(1)+'%)';}}}}}});
 
   new Chart(document.getElementById('mfStackedBar'),{type:'bar',data:{labels:months,datasets:MF_KEYS.map(function(k,i){return {
-    label:MF_CATS[i],data:DATA.map(function(d){return d[k];}),backgroundColor:MF_COLORS[i]+'55',borderColor:MF_COLORS[i],borderWidth:1,
+    label:MF_CATS[i],data:DATA.map(function(d){return Math.max(0,d[k]);}),backgroundColor:MF_COLORS[i]+'55',borderColor:MF_COLORS[i],borderWidth:1,
     borderRadius:i===MF_KEYS.length-1?6:0,borderSkipped:false};})},
     options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
     plugins:{legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:9},usePointStyle:true,pointStyleWidth:7}},
@@ -4010,27 +4137,336 @@ function mfRender(DATA) {
   }, 400);
 
   mfInitPlan(DATA);
+  mfInitStatusCharts(DATA);
 }
 
+var _mfCurMonth='';
+var _mfCurStatus={};
+var _mfAllPlanData=[];
+var _mfInsightsOpen=false;
+var _mfInsightsChartsReady=false;
+var _mfSicCharts=[];
+
 function mfInitPlan(DATA) {
-  var cur=DATA[DATA.length-1];
+  _mfAllPlanData=DATA;
+  var sel=document.getElementById('mf-planMonthSel');
+  if(sel){
+    sel.innerHTML=DATA.slice().reverse().map(function(d){
+      return '<option value="'+d.month+'">📅 '+d.month+'</option>';
+    }).join('');
+  }
+  mfRenderPlanForMonth(DATA[DATA.length-1]);
+}
+
+function mfOnPlanMonthChange(){
+  var sel=document.getElementById('mf-planMonthSel');
+  if(!sel) return;
+  var month=sel.value;
+  var found=_mfAllPlanData.find(function(d){return d.month===month;});
+  if(found) mfRenderPlanForMonth(found);
+}
+
+function mfRenderPlanForMonth(cur){
+  _mfCurMonth=cur.month;
+  _mfCurStatus=Object.assign({},cur.status||{});
   var titleEl=document.getElementById('mf-planTitle');
   if(titleEl) titleEl.textContent=cur.month+' · Investment Plan';
+
+  // Pre-seed status for active keys
+  MF_KEYS.forEach(function(k){
+    if((cur[k]>0||cur[k]===-1)&&!_mfCurStatus[k]){
+      _mfCurStatus[k]=cur[k]===-1?'Failed':'Pending';
+    }
+  });
+
   var cardsEl=document.getElementById('mf-planCards');
   if(cardsEl) cardsEl.innerHTML=MF_KEYS.map(function(k,i){
-    var val=cur[k], isNTM=val<=0;
-    return '<div class="plan-card '+(isNTM?'ntm':'invested')+'">'+
-      '<span class="pc-emoji">'+(MF_EMOJIS[k]||'💼')+'</span>'+
+    var val=cur[k];
+    var isActive=val>0||val===-1;
+    var isFailed=val===-1;
+    var isNTM=val===0;
+
+    if(isNTM){
+      return '<div class="plan-card ntm">'+
+        '<div class="pc-header"><span class="pc-emoji">'+(MF_EMOJIS[k]||'💼')+'</span></div>'+
+        '<div class="pc-name">'+MF_CATS[i]+'</div>'+
+        '<div class="pc-amount is-ntm">NTM</div>'+
+        '</div>';
+    }
+
+    var cardCls=isFailed?'failed-card':'invested';
+    var amtCls=isFailed?'is-fail':'has-val';
+    var amtLbl=isFailed?'FAILED':'₨'+val.toLocaleString('en-IN');
+    var sv=_mfCurStatus[k]||'Pending';
+    var pa=_mfCurStatus[k+'_partial']||'';
+    var isP=sv==='Partially Done';
+    var cls=sv==='DONE'?'done':sv==='Failed'?'failed':isP?'partial':'pending';
+    var SVL=sv==='DONE'?'✅ Done':sv==='Failed'?'❌ Failed':isP?'🔸 Partial':'⏳ Pending';
+
+    return '<div class="plan-card '+cardCls+'" id="mf-pc-'+k+'">'+
+      '<div class="pc-header">'+
+        '<span class="pc-emoji">'+(MF_EMOJIS[k]||'💼')+'</span>'+
+        '<div style="display:flex;align-items:center;gap:4px;">'+
+          '<div class="pst-dd" id="mf-pst-dd-'+k+'">'+
+            '<button class="pst-dd-btn '+cls+'" onclick="mfToggleDD(event,\''+k+'\')">'+
+              '<span>'+SVL+'</span><span class="pst-dd-arrow">▾</span>'+
+            '</button>'+
+            '<div class="pst-dd-menu">'+
+              '<div class="pst-dd-opt pending" onclick="mfSelectDD(\''+k+'\',\'Pending\')">⏳ Pending</div>'+
+              '<div class="pst-dd-opt done"    onclick="mfSelectDD(\''+k+'\',\'DONE\')">✅ DONE</div>'+
+              '<div class="pst-dd-opt partial" onclick="mfSelectDD(\''+k+'\',\'Partially Done\')">🔸 Partially Done</div>'+
+              '<div class="pst-dd-opt failed"  onclick="mfSelectDD(\''+k+'\',\'Failed\')">❌ Failed</div>'+
+            '</div>'+
+          '</div>'+
+          '<span class="pst-saved" id="mf-pst-saved-'+k+'"></span>'+
+        '</div>'+
+      '</div>'+
       '<div class="pc-name">'+MF_CATS[i]+'</div>'+
-      '<div class="pc-amount '+(isNTM?'is-ntm':'has-val')+'">'+(isNTM?'NTM':'₨'+val.toLocaleString('en-IN'))+'</div></div>';
+      '<div class="pc-amount '+amtCls+'">'+amtLbl+'</div>'+
+      '<div class="pc-partial '+(isP?'show':'')+'" id="mf-pst-partial-'+k+'">'+
+        '<div class="pc-partial-row">'+
+          '<span class="pc-partial-lbl">Partial ₨</span>'+
+          '<input class="pc-partial-input" id="mf-pst-pinp-'+k+'" type="number" min="0" placeholder="amount" value="'+pa+'">'+
+          '<button class="pc-partial-save" onclick="mfPstPartialSave(\''+k+'\')">✓</button>'+
+        '</div>'+
+        '<span class="pc-partial-msg" id="mf-pst-pmsg-'+k+'"></span>'+
+      '</div>'+
+      '</div>';
   }).join('');
-  var notes=cur.notes||'';
-  var notesEl=document.getElementById('mf-planNotes');
-  if(notesEl && notes && notes.trim()){
-    notesEl.style.display='flex';
-    notesEl.innerHTML='<span class="pn-label">📝 Notes</span><span class="pn-text">'+notes+'</span>';
+
+  var ta=document.getElementById('mf-planNotesTa');
+  if(ta) ta.value=cur.notes||'';
+  mfUpdateOverallStatus();
+}
+
+function mfUpdateOverallStatus(){
+  var badge=document.getElementById('mf-planOverallBadge');
+  if(!badge) return;
+  var activeKeys=Object.keys(_mfCurStatus).filter(function(k){return !k.endsWith('_partial');});
+  if(activeKeys.length===0){badge.textContent='';return;}
+  var vals=activeKeys.map(function(k){return _mfCurStatus[k]||'Pending';});
+  var cls,label;
+  if(vals.some(function(v){return v==='Failed';})){cls='failed';label='❌ Failed';}
+  else if(vals.every(function(v){return v==='DONE';})){cls='done';label='✅ All Done';}
+  else if(vals.some(function(v){return v==='Partially Done';})){cls='partial';label='🔸 Partial';}
+  else{cls='pending';label='⏳ Pending';}
+  badge.className='plan-overall-badge '+cls;
+  badge.textContent=label;
+}
+
+function mfToggleDD(e,key){
+  e.stopPropagation();
+  var dd=document.getElementById('mf-pst-dd-'+key);
+  var isOpen=dd.classList.contains('open');
+  document.querySelectorAll('#page-mf .pst-dd.open').forEach(function(d){d.classList.remove('open');});
+  if(!isOpen) dd.classList.add('open');
+}
+
+function mfSelectDD(key,sv){
+  var dd=document.getElementById('mf-pst-dd-'+key);
+  if(dd) dd.classList.remove('open');
+  var isP=sv==='Partially Done';
+  var cls=sv==='DONE'?'done':sv==='Failed'?'failed':isP?'partial':'pending';
+  var SVL=sv==='DONE'?'✅ Done':sv==='Failed'?'❌ Failed':isP?'🔸 Partial':'⏳ Pending';
+  var btn=dd&&dd.querySelector('.pst-dd-btn');
+  if(btn){
+    btn.className='pst-dd-btn '+cls;
+    var span=btn.querySelector('span');
+    if(span) span.textContent=SVL;
+  }
+  var pw=document.getElementById('mf-pst-partial-'+key);
+  if(pw) pw.classList.toggle('show',isP);
+  if(!isP) delete _mfCurStatus[key+'_partial'];
+  _mfCurStatus[key]=sv;
+  mfUpdateOverallStatus();
+  var ind=document.getElementById('mf-pst-saved-'+key);
+  if(ind) ind.textContent='…';
+  google.script.run
+    .withSuccessHandler(function(){if(ind){ind.textContent='✓';setTimeout(function(){ind.textContent='';},1500);} })
+    .withFailureHandler(function(){if(ind) ind.textContent='⚠';})
+    .saveInvestmentStatus(_mfCurMonth,JSON.stringify(_mfCurStatus));
+  if(sv==='Failed'){
+    google.script.run
+      .withSuccessHandler(function(){
+        var amtEl=document.querySelector('#mf-pc-'+key+' .pc-amount');
+        if(amtEl){amtEl.textContent='FAILED';amtEl.className='pc-amount is-fail';}
+        var card=document.getElementById('mf-pc-'+key);
+        if(card) card.className='plan-card failed-card';
+      })
+      .withFailureHandler(function(e){console.warn('writeInvestmentFailed:',e);})
+      .writeInvestmentFailed(_mfCurMonth,key);
   }
 }
+
+function mfPstPartialSave(key){
+  var inp=document.getElementById('mf-pst-pinp-'+key);
+  var msg=document.getElementById('mf-pst-pmsg-'+key);
+  var ind=document.getElementById('mf-pst-saved-'+key);
+  if(!inp) return;
+  var amt=parseFloat(inp.value)||0;
+  _mfCurStatus[key+'_partial']=amt;
+  if(msg) msg.textContent='…';
+  google.script.run
+    .withSuccessHandler(function(){
+      if(msg){msg.style.color='#00e676';msg.textContent='✓ Saved';setTimeout(function(){msg.textContent='';},2000);}
+      if(ind){ind.textContent='✓';setTimeout(function(){ind.textContent='';},1500);}
+    })
+    .withFailureHandler(function(e){
+      if(msg){msg.style.color='#ff4d6d';msg.textContent='⚠ '+(e.message||'Error');}
+    })
+    .saveInvestmentStatus(_mfCurMonth,JSON.stringify(_mfCurStatus));
+}
+
+function mfSavePlanNotes(){
+  var ta=document.getElementById('mf-planNotesTa');
+  var msg=document.getElementById('mf-planNotesMsg');
+  if(msg){msg.className='pne-msg';msg.textContent='Saving…';}
+  google.script.run
+    .withSuccessHandler(function(){if(msg){msg.className='pne-msg ok';msg.textContent='✓ Saved';setTimeout(function(){msg.textContent='';},2000);}})
+    .withFailureHandler(function(e){if(msg){msg.className='pne-msg err';msg.textContent='⚠ '+(e.message||'Error');}})
+    .saveMoneyFlowNotes(_mfCurMonth,ta?ta.value:'');
+}
+
+function mfToggleInsights(){
+  _mfInsightsOpen=!_mfInsightsOpen;
+  var body=document.getElementById('mf-sicBody');
+  var chevron=document.getElementById('mf-sicChevron');
+  var btn=document.getElementById('mf-sicToggleBtn');
+  if(!body) return;
+  if(_mfInsightsOpen){
+    body.classList.remove('collapsed');
+    body.style.maxHeight='1200px';
+    if(chevron) chevron.classList.add('open');
+    if(btn) btn.textContent='Hide';
+    setTimeout(function(){
+      _mfSicCharts.forEach(function(c){try{c.resize();}catch(e){}});
+    },50);
+  } else {
+    body.classList.add('collapsed');
+    if(chevron) chevron.classList.remove('open');
+    if(btn) btn.textContent='Click to view';
+  }
+}
+
+function mfInitStatusCharts(DATA){
+  function activeKeys(d){return MF_KEYS.filter(function(k){return d[k]>0||d[k]===-1;});}
+  function getStatus(d,k){
+    var stored=(d.status||{})[k];
+    if(stored) return stored;
+    return d[k]===-1?'Failed':'Pending';
+  }
+  var ST={DONE:'DONE',PARTIAL:'Partially Done',PENDING:'Pending',FAILED:'Failed'};
+  var ST_COLOR={DONE:'#00e676','Partially Done':'#fb923c',Pending:'#fbbf24',Failed:'#ff4d6d'};
+
+  var totDone=0,totPartial=0,totPending=0,totFailed=0,totAll=0,allDoneMonths=0;
+  DATA.forEach(function(d){
+    var ak=activeKeys(d);
+    var mDone=0;
+    ak.forEach(function(k){
+      totAll++;
+      var s=getStatus(d,k);
+      if(s===ST.DONE){totDone++;mDone++;}
+      else if(s===ST.PARTIAL) totPartial++;
+      else if(s===ST.FAILED)  totFailed++;
+      else totPending++;
+    });
+    if(ak.length>0&&mDone===ak.length) allDoneMonths++;
+  });
+  var overallPct=totAll>0?Math.round((totDone+totPartial*0.5)/totAll*100):0;
+
+  var kpisEl=document.getElementById('mf-sicKpis');
+  if(kpisEl) kpisEl.innerHTML=
+    '<div class="sic-kpi c-purple"><div class="sic-kpi-val">'+totAll+'</div><div class="sic-kpi-lbl">Total tracked</div></div>'+
+    '<div class="sic-kpi c-green"><div class="sic-kpi-val">'+overallPct+'%</div><div class="sic-kpi-lbl">Overall done</div></div>'+
+    '<div class="sic-kpi c-red"><div class="sic-kpi-val">'+totFailed+'</div><div class="sic-kpi-lbl">Failed items</div></div>'+
+    '<div class="sic-kpi c-cyan"><div class="sic-kpi-val">'+allDoneMonths+'</div><div class="sic-kpi-lbl">All-done months</div></div>';
+
+  _mfSicCharts.forEach(function(c){try{c.destroy();}catch(e){}});
+  _mfSicCharts=[];
+
+  var months=DATA.map(function(d){return d.month.replace('/20','/');});
+  var TIP={backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:10};
+
+  // 1. Completion % line
+  var compPct=DATA.map(function(d){
+    var ak=activeKeys(d);if(!ak.length) return 0;
+    var done=ak.filter(function(k){return getStatus(d,k)===ST.DONE;}).length;
+    var part=ak.filter(function(k){return getStatus(d,k)===ST.PARTIAL;}).length;
+    return Math.round((done+part*0.5)/ak.length*100);
+  });
+  var lcEl=document.getElementById('mf-sicLineChart');
+  if(lcEl) _mfSicCharts.push(new Chart(lcEl,{type:'line',
+    data:{labels:months,datasets:[
+      {label:'Completion %',data:compPct,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.12)',
+       borderWidth:2.5,fill:true,tension:0.4,
+       pointBackgroundColor:compPct.map(function(v){return v===100?'#00e676':v>=60?'#a78bfa':'#fb923c';}),
+       pointRadius:5,pointHoverRadius:8},
+      {label:'100% target',data:DATA.map(function(){return 100;}),borderColor:'rgba(0,230,118,.25)',
+       borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{min:0,max:100,ticks:{color:'rgba(255,255,255,.35)',font:{size:10},callback:function(v){return v+'%';}},
+                  grid:{color:'rgba(255,255,255,.05)'}},
+              x:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9},maxRotation:45},
+                 grid:{color:'rgba(255,255,255,.04)'}}},
+      plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+ctx.parsed.y+'%';}}}}}}));
+
+  // 2. Overall distribution donut
+  var dAll=[totDone,totPartial,totPending,totFailed];
+  var dLblsAll=['DONE','Partially Done','Pending','Failed'];
+  var dVals=dAll.filter(function(v){return v>0;});
+  var dLbls=dLblsAll.filter(function(_,i){return dAll[i]>0;});
+  var dCols=dLbls.map(function(l){return ST_COLOR[l];});
+  var dcEl=document.getElementById('mf-sicDonutChart');
+  if(dcEl) _mfSicCharts.push(new Chart(dcEl,{type:'doughnut',
+    data:{labels:dLbls,datasets:[{data:dVals,backgroundColor:dCols.map(function(c){return c+'33';}),
+      borderColor:dCols,borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.55)',font:{size:10},boxWidth:10,padding:8}},
+        tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.label+': '+ctx.parsed+' ('+Math.round(ctx.parsed/totAll*100)+'%)';}}}}}})  );
+
+  // 3. Stacked bar breakdown
+  function mkDs(label,data,color){return{label:label,data:data,backgroundColor:color+'44',borderColor:color,borderWidth:1.5,borderRadius:3,stack:'s'};}
+  var sbEl=document.getElementById('mf-sicStackBar');
+  if(sbEl) _mfSicCharts.push(new Chart(sbEl,{type:'bar',
+    data:{labels:months,datasets:[
+      mkDs('DONE',          DATA.map(function(d){return activeKeys(d).filter(function(k){return getStatus(d,k)===ST.DONE;}).length;}),    '#00e676'),
+      mkDs('Partially Done',DATA.map(function(d){return activeKeys(d).filter(function(k){return getStatus(d,k)===ST.PARTIAL;}).length;}), '#fb923c'),
+      mkDs('Pending',       DATA.map(function(d){return activeKeys(d).filter(function(k){return getStatus(d,k)===ST.PENDING;}).length;}), '#fbbf24'),
+      mkDs('Failed',        DATA.map(function(d){return activeKeys(d).filter(function(k){return getStatus(d,k)===ST.FAILED;}).length;}),  '#ff4d6d')
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{ticks:{color:'rgba(255,255,255,.35)',font:{size:10},stepSize:1},grid:{color:'rgba(255,255,255,.05)'}},
+              x:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9},maxRotation:45},grid:{display:false}}},
+      plugins:{legend:{labels:{color:'rgba(255,255,255,.55)',font:{size:10},boxWidth:10}},
+        tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+ctx.parsed.y;}}}}}}));
+
+  // 4. Heatmap grid
+  var SYM={DONE:'✓','Partially Done':'½',Pending:'·',Failed:'✕'};
+  var hmHtml='<table class="sic-hm-table"><thead><tr><th class="sic-hm-th-inv"></th>';
+  DATA.forEach(function(d){hmHtml+='<th class="sic-hm-th">'+d.month.replace('/20','/')+'</th>';});
+  hmHtml+='</tr></thead><tbody>';
+  MF_KEYS.forEach(function(k,i){
+    hmHtml+='<tr><td class="sic-hm-th-inv">'+(MF_EMOJIS[k]||'')+' '+MF_CATS[i]+'</td>';
+    DATA.forEach(function(d){
+      if(d[k]===0){hmHtml+='<td class="sic-hm-cell sic-hm-ntm" title="NTM">—</td>';return;}
+      var s=getStatus(d,k);
+      var cls=s===ST.DONE?'sic-hm-done':s===ST.PARTIAL?'sic-hm-partial':s===ST.FAILED?'sic-hm-failed':'sic-hm-pending';
+      var amt=d[k]===-1?'FAILED':d[k].toLocaleString('en-IN');
+      var amtPfx=d[k]===-1?'':'₨';
+      hmHtml+='<td class="sic-hm-cell '+cls+'" title="'+s+' · '+amtPfx+amt+'">'+(SYM[s]||'?')+'</td>';
+    });
+    hmHtml+='</tr>';
+  });
+  hmHtml+='</tbody></table>';
+  var hmEl=document.getElementById('mf-sicHeatmap');
+  if(hmEl) hmEl.innerHTML=hmHtml;
+}
+
+// Close mf dropdowns on outside click
+document.addEventListener('click',function(){
+  document.querySelectorAll('#page-mf .pst-dd.open').forEach(function(d){d.classList.remove('open');});
+});
 
 /* ═══════════════════════════════════════════
    SPLITWISE PAGE JS  (sw*)
@@ -5369,3 +5805,4 @@ function swaeSubmit(){
 </script>
 </body>
 </html>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           

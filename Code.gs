@@ -234,15 +234,17 @@ function getMoneyFlowData() {
     if (!sheet) throw new Error('Sheet "Money Flow and invest" not found');
 
     var lastRow = sheet.getLastRow();
-    // Data starts at row 2, columns A–L
-    var values = sheet.getRange(2, 1, lastRow - 1, 12).getValues();
+    // Data starts at row 2, columns A–M (M = status JSON)
+    var values = sheet.getRange(2, 1, lastRow - 1, 13).getValues();
 
     function parseAmt(val) {
       if (!val && val !== 0) return 0;
       var s = val.toString().trim();
-      if (s === '' || s === 'NTM' || s === 'N T M' || s.toUpperCase() === 'FAILED') return 0;
+      if (s === '' || s === 'NTM' || s === 'N T M') return 0;
       // Strip any NTM suffix mixed in (e.g. "NTM Stocks going down")
       if (s.toUpperCase().startsWith('NTM')) return 0;
+      // FAILED cell → -1 so frontend can distinguish from NTM (0)
+      if (s.toUpperCase().startsWith('FAILED') || s.toUpperCase() === 'FAILED') return -1;
       var n = parseFloat(s.replace(/,/g, ''));
       return isNaN(n) ? 0 : n;
     }
@@ -269,7 +271,8 @@ function getMoneyFlowData() {
         totalInvested: parseAmt(row[8]),
         income:        parseAmt(row[9]),
         savingPct:     parseAmt(row[10]),
-        notes:         (row[11] || '').toString().trim()
+        notes:         (row[11] || '').toString().trim(),
+      status:        (function(v){ try{ return JSON.parse((v||'').toString().trim()||'{}'); }catch(e){ return {}; } })(row[12])
       });
     });
 
@@ -306,6 +309,82 @@ function saveMoneyFlowItemStatus(monthStr, jsonString) {
   } catch (error) {
     throw new Error('Failed to save status: ' + error.message);
   }
+}
+
+function saveInvestmentStatus(monthStr, statusJson) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Money Flow and invest');
+    if (!sheet) throw new Error('Sheet "Money Flow and invest" not found');
+    var vals  = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      var raw = vals[i][0];
+      var m   = raw instanceof Date
+        ? Utilities.formatDate(raw, Session.getScriptTimeZone(), 'MMM/yyyy')
+        : (raw || '').toString().trim();
+      if (m === monthStr) {
+        sheet.getRange(i + 2, 13).setValue(statusJson);
+        SpreadsheetApp.flush();
+        return { success: true };
+      }
+    }
+    return { success: false, error: 'Month "' + monthStr + '" not found' };
+  } catch(e) { return { success: false, error: e.message }; }
+}
+
+/**
+ * Overwrites the investment amount cell with "FAILED" text.
+ * Called only when the user explicitly sets a status to "Failed" in the dashboard UI.
+ * Column mapping mirrors getMoneyFlowData() row[] indices (0-based → +1 for 1-based col).
+ */
+function writeInvestmentFailed(monthStr, key) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Money Flow and invest');
+    if (!sheet) throw new Error('Sheet "Money Flow and invest" not found');
+
+    // key → 1-based sheet column  (matches parseAmt row[] order in getMoneyFlowData)
+    var keyColMap = { sentHome:2, cal:3, ndb:4, binance:5, stock:6, fd:7, gold:8 };
+    var colIdx = keyColMap[key];
+    if (!colIdx) throw new Error('Unknown investment key: ' + key);
+
+    // Locate the row for this month
+    var lastRow = sheet.getLastRow();
+    var monthVals = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < monthVals.length; i++) {
+      var raw = monthVals[i][0];
+      var m   = raw instanceof Date
+        ? Utilities.formatDate(raw, Session.getScriptTimeZone(), 'MMM/yyyy')
+        : (raw || '').toString().trim();
+      if (m === monthStr) {
+        sheet.getRange(i + 2, colIdx).setValue('FAILED');
+        SpreadsheetApp.flush();
+        return { success: true };
+      }
+    }
+    return { success: false, error: 'Month "' + monthStr + '" not found' };
+  } catch(e) { return { success: false, error: e.message }; }
+}
+
+function saveMoneyFlowNotes(monthStr, notes) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Money Flow and invest');
+    if (!sheet) throw new Error('Sheet "Money Flow and invest" not found');
+    var vals  = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      var raw = vals[i][0];
+      var m   = raw instanceof Date
+        ? Utilities.formatDate(raw, Session.getScriptTimeZone(), 'MMM/yyyy')
+        : (raw || '').toString().trim();
+      if (m === monthStr) {
+        sheet.getRange(i + 2, 12).setValue(notes);
+        SpreadsheetApp.flush();
+        return { success: true };
+      }
+    }
+    return { success: false, error: 'Month "' + monthStr + '" not found' };
+  } catch(e) { return { success: false, error: e.message }; }
 }
 
 function showCreditCardSummary() {
