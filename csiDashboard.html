@@ -277,6 +277,11 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
 .dv-tbl tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .12s;}
 .dv-tbl tbody tr:hover{background:rgba(255,255,255,.04);}
 .dv-tbl tbody tr.upcoming{background:rgba(0,255,136,.03);border-left:2px solid rgba(0,255,136,.3);}
+.dv-tbl tbody tr.holding{background:rgba(255,215,0,.06);border-left:2px solid rgba(255,215,0,.4);}
+.dv-tbl tbody tr.holding:hover{background:rgba(255,215,0,.10);}
+.dv-tbl tbody tr.holding.upcoming{background:rgba(255,215,0,.08);border-left:2px solid rgba(0,255,136,.5);}
+.dv-holding-tag{display:inline-block;padding:1px 6px;background:rgba(255,215,0,.15);color:#ffd700;border:1px solid rgba(255,215,0,.3);border-radius:6px;font-size:.72em;font-weight:700;margin-left:5px;vertical-align:middle;}
+.dv-profit{color:#ffd700;font-weight:700;}
 .dv-tbl tbody td{padding:8px 12px;white-space:nowrap;}
 .dv-code{font-weight:700;color:var(--blue);}
 .dv-dps{font-weight:800;color:var(--gold);}
@@ -622,7 +627,7 @@ function loadGoldData(){
 
 // ── Stage 3: Dividend Calendar ────────────────────────────────────
 var _divData=[], _dvRange='all', _dvType='all', _dvSort='pay_desc', _dvYear='', _dvPage=1;
-var _dvPageSize=20, _dvCharts=[];
+var _dvPageSize=20, _dvCharts=[], _dvMyHoldings=false;
 
 function loadDividendCalendar(){
   tdot(2,'loading');
@@ -633,7 +638,7 @@ function loadDividendCalendar(){
     .withSuccessHandler(function(csv){
       _divLoaded=true;
       _divData=parseDivCSV(csv);
-      _dvRange='all'; _dvType='all'; _dvSort='pay_desc'; _dvYear=''; _dvPage=1;
+      _dvRange='all'; _dvType='all'; _dvSort='pay_desc'; _dvYear=''; _dvPage=1; _dvMyHoldings=false;
       renderDividendCalendar();
       tdot(2,'done');
     })
@@ -696,6 +701,13 @@ function dvGetFiltered(){
   var now=new Date(); now.setHours(0,0,0,0);
   var srch=((document.getElementById('dvSearch')||{}).value||'').trim().toUpperCase();
   return _divData.filter(function(r){
+    if(_dvMyHoldings){
+      var held=false;
+      for(var si=0;si<_stocks.length;si++){
+        if(_stocks[si].symbol.toUpperCase()===r.code.toUpperCase()&&_stocks[si].qty>0){held=true;break;}
+      }
+      if(!held) return false;
+    }
     if(srch&&r.code.toUpperCase().indexOf(srch)<0) return false;
     if(_dvYear){
       if(!r.payDate||r.payDate.getFullYear()!==parseInt(_dvYear)) return false;
@@ -752,6 +764,11 @@ function dvColSort(col){
   dvApply();
 }
 function dvGoPage(p){ _dvPage=p; dvApply(); }
+function dvSetHoldings(btn){
+  _dvMyHoldings=!_dvMyHoldings; _dvPage=1;
+  btn.classList.toggle('active',_dvMyHoldings);
+  dvApply();
+}
 
 // ── Portfolio shell ────────────────────────────────────────────────
 function renderShell(stocks){
@@ -1284,6 +1301,7 @@ function renderDividendCalendar(){
           '<button class="dv-chip" onclick="dvSetType(this,\'interim\')">Interim</button>'+
           extraChips+
         '</div>'+
+        '<button class="dv-chip" id="dvMyHoldingsChip" onclick="dvSetHoldings(this)" style="margin-left:auto;background:rgba(255,215,0,.08);border-color:rgba(255,215,0,.3);color:#ffd700;">🏦 My Holdings</button>'+
       '</div>'+
     '</div>'+
     // ── Table placeholder ──
@@ -1314,10 +1332,15 @@ function dvApply(){
     return '<th class="'+cls.trim()+'" onclick="dvColSort(\''+col+'\')">'+label+'</th>';
   };
 
+  // Build holdings map: symbol(upper) → qty
+  var heldMap={};
+  _stocks.forEach(function(s){if(s.qty>0) heldMap[s.symbol.toUpperCase()]=s.qty;});
+
   var html='<div class="dv-tbl-wrap"><table class="dv-tbl"><thead><tr>'+
     sortHdr('pay','📅 Pay Date')+
     sortHdr('code','📌 Code')+
     sortHdr('dps','💰 DPS')+
+    '<th>💎 Div. Profit</th>'+
     '<th>🏷 Type</th>'+
     '<th>📆 FY</th>'+
     '<th>📣 Ann. Date</th>'+
@@ -1325,7 +1348,7 @@ function dvApply(){
     '</tr></thead><tbody>';
 
   if(!shown.length){
-    html+='<tr><td colspan="7" class="dv-no-data">No records match your filters</td></tr>';
+    html+='<tr><td colspan="8" class="dv-no-data">No records match your filters</td></tr>';
   } else {
     shown.forEach(function(r){
       var days=daysAway(r.payDate);
@@ -1335,10 +1358,20 @@ function dvApply(){
       var tl=r.type.toLowerCase();
       var bCls=tl.indexOf('final')>-1||tl.indexOf('other')>-1?'final':
                ['first','second','third','fourth','interim'].some(function(w){return tl.indexOf(w)>-1;})?'interim':'other';
-      html+='<tr'+(isUp?' class="upcoming"':'')+'>'+
+      var codeUp=r.code.toUpperCase();
+      var qty=heldMap[codeUp]||0;
+      var isHeld=qty>0;
+      var rowCls='';
+      if(isHeld&&isUp) rowCls='holding upcoming';
+      else if(isHeld) rowCls='holding';
+      else if(isUp) rowCls='upcoming';
+      var holdingTag=isHeld?'<span class="dv-holding-tag">🏦 '+qty+'</span>':'';
+      var profitCell=isHeld?'<td class="dv-profit">₨\u202f'+(qty*r.dps).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+'</td>':'<td style="color:var(--muted)">—</td>';
+      html+='<tr'+(rowCls?' class="'+rowCls+'"':'')+'>'+
         '<td class="dv-date">'+fmtDMY(r.payDate)+soonTag+'</td>'+
-        '<td class="dv-code">'+esc(r.code)+'</td>'+
+        '<td class="dv-code">'+esc(r.code)+holdingTag+'</td>'+
         '<td class="dv-dps">₨\u202f'+r.dps.toFixed(2)+'</td>'+
+        profitCell+
         '<td><span class="dv-badge '+bCls+'">'+esc(r.type||'—')+'</span></td>'+
         '<td style="color:var(--muted)">'+esc(r.fy)+'</td>'+
         '<td class="dv-date-sub">'+fmtDMY(r.annDate)+'</td>'+
