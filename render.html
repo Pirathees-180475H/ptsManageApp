@@ -1521,28 +1521,16 @@ input[type=date].swae-input{color-scheme:dark;}
   #page-sw .friends-grid{grid-template-columns:1fr;}
   #page-sw .hero-row{grid-template-columns:1fr;}
 }
-/* ── Gold purity switcher ── */
-.gpurity-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
-.gpurity-tab{flex:1;min-width:76px;text-align:center;padding:7px 4px;border-radius:10px;
-  cursor:pointer;font-size:.68em;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
-  border:1px solid rgba(255,215,0,.18);color:rgba(255,215,0,.5);background:rgba(255,215,0,.04);
-  transition:all .2s;user-select:none;}
-.gpurity-tab:hover{background:rgba(255,215,0,.1);color:rgba(255,215,0,.85);}
-.gpurity-tab.active{background:rgba(255,215,0,.14);border-color:rgba(255,215,0,.55);
-  color:var(--gold);box-shadow:0 0 12px rgba(255,215,0,.15);}
-.gpurity-price{text-align:center;padding:10px 0 4px;}
-.gpurity-price .gp-val{font-size:2.2em;font-weight:800;color:var(--gold);
-  letter-spacing:-1px;text-shadow:0 0 22px rgba(255,215,0,.3);}
-.gpurity-price .gp-label{font-size:.56em;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--muted);margin-bottom:5px;}
-.gpurity-price .gp-delta{font-size:.76em;font-weight:600;margin-top:3px;}
-.gprice-sub-row{display:flex;gap:8px;margin:8px 0 12px;}
-.gprice-sub-cell{flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
-  border-radius:10px;padding:7px 8px;text-align:center;cursor:pointer;transition:border-color .18s;}
-.gprice-sub-cell:hover{border-color:rgba(255,215,0,.3);}
-.gprice-sub-cell .gsc-label{font-size:.58em;color:var(--muted);margin-bottom:2px;
-  text-transform:uppercase;letter-spacing:.5px;}
-.gprice-sub-cell .gsc-val{font-size:.88em;font-weight:700;color:rgba(255,215,0,.85);}
+/* ── Gold section ── */
+.gold-top-row{display:flex;gap:10px;margin-bottom:14px;align-items:stretch;}
+.gold-price-card{flex:1;min-width:0;}
+.gold-chart-card{flex:1;min-width:0;}
+.gprice-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:4px;}
+.gprice-cell{background:rgba(255,215,0,.05);border:1px solid rgba(255,215,0,.14);
+             border-radius:10px;padding:9px 7px;text-align:center;}
+.gprice-cell-lbl{font-size:.56em;color:var(--muted);letter-spacing:.8px;
+                 text-transform:uppercase;margin-bottom:4px;}
+.gprice-cell-val{font-size:.9em;font-weight:800;color:var(--gold);}
 .up-text{color:var(--green);} .dn-text{color:var(--red);}
 
 /* ═══ ADD EXP FAB + OVERLAY ═══ */
@@ -2128,8 +2116,7 @@ window.onload = function(){ showPage('exp'); };
 var _stocks=[], _live={}, _liveQ=[], _liveTotal=0, _liveDone=0;
 var _goldLoaded=false, _goldLoading=false, _divLoaded=false, _portChart=null, _goldChart=null;
 var _screenerAll=[];
-var _goldPh=[], _goldPrice24K=0, _goldPurity='24K';
-var GOLD_PURITY={'24K':{factor:1,label:'24K / gram',unit:'per gram'},'22K':{factor:22/24,label:'22K / gram',unit:'per gram'},'8g':{factor:(22/24)*8,label:'8g Pawn (22K)',unit:'per pawn'}};
+var _goldPh=[], _gold8gPrice=0;
 
 function fr(n,d){return n===null||n===undefined||n===''?'—':Number(n).toLocaleString('en-IN',{minimumFractionDigits:d===undefined?2:d,maximumFractionDigits:d===undefined?2:d});}
 function fs(n){var v=Number(n);if(!v&&v!==0)return '—';if(Math.abs(v)>=1e9)return '₨\u202f'+(v/1e9).toFixed(2)+'B';if(Math.abs(v)>=1e6)return '₨\u202f'+(v/1e6).toFixed(2)+'M';if(Math.abs(v)>=1e3)return '₨\u202f'+(v/1e3).toFixed(1)+'K';return '₨\u202f'+v.toFixed(2);}
@@ -2677,59 +2664,51 @@ function buildTicker(){
 function renderGold(d){
   var l=document.getElementById('l1'),c=document.getElementById('c1');
   l.style.display='none';c.style.display='block';
-  _goldPrice24K=d.currentPrice||0;
-  _goldPh=d.priceHistory||[];
-  var price=_goldPrice24K,updated=d.updated||'',ph=_goldPh,lkrRate=d.lkrRate||0;
+  _gold8gPrice=d.currentPrice||0; // 22K 8g price from ravijewellers
+  _goldPh=d.priceHistory||[];     // 22K per gram weekly history
+  var p8g=_gold8gPrice,updated=d.updated||'',ph=_goldPh,lkrRate=d.lkrRate||0;
   var lastEntry=(d.history&&d.history.length)?d.history[d.history.length-1]:{};
   var lastInvested=lastEntry.goldInvested||d.currentInvested||0,lastEarnings=lastEntry.goldEarnings||0;
   var html='';
 
-  // ── Purity switcher + price card ──────────────────────────────────
-  if(price>0||ph.length>0){
-    var selInfo=GOLD_PURITY[_goldPurity];
-    var selPrice=price*selInfo.factor;
-    var wkDelta='',wkUp=true;
+  if(p8g>0||ph.length>0){
+    var p1g=p8g/8,p2g=p8g/4,p4g=p8g/2;
+    var wkDiff=0,wkDelta='';
     if(ph.length>=2){
-      var prevLkr=ph[ph.length-2].lkr*selInfo.factor;
-      var diff=selPrice-prevLkr;
-      var pct=prevLkr>0?(diff/prevLkr*100):0;
-      var sign=diff>=0?'+':'';
-      wkDelta=sign+'₨\u202f'+fr(Math.abs(diff),0)+' ('+sign+fr(pct,2)+'%)';
-      wkUp=diff>=0;
+      var prevGram=ph[ph.length-2].lkr;
+      wkDiff=p1g-prevGram;
+      var pct=prevGram>0?(wkDiff/prevGram*100):0,sign=wkDiff>=0?'+':'';
+      wkDelta=sign+'₨\u202f'+fr(Math.abs(wkDiff),0)+' ('+sign+fr(pct,2)+'%) vs last week';
     }
-    html+='<div class="glass fade-in" style="margin-bottom:14px">';
-    // tabs
-    html+='<div class="gpurity-tabs">';
-    ['24K','22K','8g'].forEach(function(k){
-      html+='<div class="gpurity-tab'+(k===_goldPurity?' active':'')+'" onclick="switchGoldPurity(\''+k+'\')">'+(k==='8g'?'8g Pawn':k)+'</div>';
-    });
-    html+='</div>';
-    // big price
-    html+='<div class="gpurity-price">'+
-      '<div class="gp-label" id="gold-purity-label">'+selInfo.label+'</div>'+
-      '<div class="gp-val" id="gold-purity-val">'+(selPrice>0?'₨\u202f'+fr(selPrice,0):'—')+'</div>'+
-      '<div class="gp-delta '+(wkDelta?(wkUp?'up-text':'dn-text'):'')+'" id="gold-purity-delta">'+(wkDelta||'')+'</div>'+
+
+    html+='<div class="gold-top-row">';
+
+    // Left — price card
+    html+='<div class="glass gold-price-card fade-in">';
+    html+='<div class="g-hdr"><div class="g-dot" style="background:var(--gold)"></div>'+
+      '<span class="g-title">22K Gold · Today</span>'+(updated?'<span class="g-sub">'+updated+'</span>':'')+
     '</div>';
-    // sub-row: all three at a glance
-    html+='<div class="gprice-sub-row">';
-    ['24K','22K','8g'].forEach(function(k){
-      var info=GOLD_PURITY[k],p=price*info.factor;
-      var act=k===_goldPurity?'border-color:rgba(255,215,0,.45);':'';
-      html+='<div class="gprice-sub-cell" style="'+act+'" onclick="switchGoldPurity(\''+k+'\')">'+
-        '<div class="gsc-label">'+(k==='8g'?'8g Pawn':k)+'</div>'+
-        '<div class="gsc-val">'+(p>0?'₨\u202f'+fr(p,0):'—')+'</div>'+
-      '</div>';
+    html+='<div class="gprice-grid">';
+    [['1 gram',p1g],['2 grams',p2g],['4 grams',p4g],['8 grams (1 pawn)',p8g]].forEach(function(row){
+      html+='<div class="gprice-cell"><div class="gprice-cell-lbl">'+row[0]+'</div>'+
+        '<div class="gprice-cell-val">'+(row[1]>0?'₨\u202f'+fr(row[1],0):'—')+'</div></div>';
     });
     html+='</div>';
-    // chart
-    html+='<div class="g-hdr">'+
-      '<div class="g-dot" style="background:var(--gold)"></div>'+
-      '<span class="g-title" id="gold-chart-title">Gold Price — LKR/'+selInfo.unit+' (6 months)</span>'+
-      '<span class="g-sub">'+(lkrRate>0?'USD/LKR: '+fr(lkrRate,2):'XAU → LKR')+'</span>'+
-    '</div>'+
-    '<div class="chart-wrap" style="height:200px"><canvas id="goldChart"></canvas></div>';
-    if(updated) html+='<div style="font-size:.56em;color:var(--dim);text-align:right;margin-top:3px">Source: ravijewellers.lk · '+updated+'</div>';
+    if(wkDelta) html+='<div style="font-size:.63em;margin-top:9px;text-align:center;color:'+(wkDiff>=0?'var(--green)':'var(--red)')+'">'+wkDelta+'</div>';
+    if(lkrRate>0) html+='<div style="font-size:.58em;color:var(--muted);margin-top:5px;text-align:center;">USD/LKR: '+fr(lkrRate,2)+'</div>';
+    html+='<div style="font-size:.53em;color:var(--dim);margin-top:5px;text-align:right;">Source: ravijewellers.lk</div>';
     html+='</div>';
+
+    // Right — chart
+    html+='<div class="glass gold-chart-card fade-in">';
+    html+='<div class="g-hdr"><div class="g-dot" style="background:var(--gold)"></div>'+
+      '<span class="g-title">22K / gram — 6 months</span>'+
+      (lkrRate>0?'<span class="g-sub">USD/LKR: '+fr(lkrRate,2)+'</span>':'')+
+    '</div>';
+    html+='<div class="chart-wrap" style="height:190px"><canvas id="goldChart"></canvas></div>';
+    html+='</div>';
+
+    html+='</div>'; // /gold-top-row
   } else {
     html+='<div class="err-box">⚠ Live gold price unavailable — <a href="https://ravijewellers.lk" target="_blank" style="color:var(--blue)">ravijewellers.lk →</a></div>';
   }
@@ -2750,64 +2729,33 @@ function renderGold(d){
     if(chg6mG>0&&roi>=chg6mG) insHtml+=goldInsCard('🎯','Beating the Market','Gold up <strong>'+chg6mG.toFixed(1)+'%</strong> — your ROI is <strong>'+roi.toFixed(1)+'%</strong>.','hold','Good entry timing. Hold and let it compound.');
     else if(chg6mG>0&&roi<chg6mG) insHtml+=goldInsCard('📊','Gold Trending Up','Price +<strong>'+chg6mG.toFixed(1)+'%</strong> over 6 months. Uptrend favours holding.','hold','Monitor cost average if adding more.');
     else if(chg6mG<-5) insHtml+=goldInsCard('💡','Correction — Accumulate?','Price down <strong>'+Math.abs(chg6mG).toFixed(1)+'%</strong>. Corrections are normal.','buy','Historically good long-term entry. Only add if you have spare capital.');
-    if(price>0&&lastInvested>0){var estGrams=lastInvested/price;if(estGrams>0) insHtml+=goldInsCard('🔢','Estimated Holdings','At ₨ '+fr(price,0)+'/g, your investment ≈ <strong>'+estGrams.toFixed(2)+' grams</strong>.','info','Estimate based on current price vs investment value.');}
+    var p1gEst=_gold8gPrice>0?_gold8gPrice/8:0;
+    if(p1gEst>0&&lastInvested>0){var eg=lastInvested/p1gEst;if(eg>0) insHtml+=goldInsCard('🔢','Estimated Holdings','At 22K ₨ '+fr(p1gEst,0)+'/g, your investment ≈ <strong>'+eg.toFixed(2)+' grams</strong>.','info','Estimate based on current 22K price vs investment value.');}
     if(insHtml) html+='<div style="display:flex;flex-direction:column;gap:8px;">'+insHtml+'</div>';
     html+='</div>';
   }
 
   c.innerHTML=html;
-  if(ph.length>0) setTimeout(function(){ _drawGoldChart(_goldPurity); },80);
+  if(ph.length>0) setTimeout(_drawGoldChart,80);
 }
 
-function switchGoldPurity(k){
-  if(!GOLD_PURITY[k]) return;
-  _goldPurity=k;
-  var info=GOLD_PURITY[k],price=_goldPrice24K,ph=_goldPh;
-  // tabs
-  document.querySelectorAll('.gpurity-tab').forEach(function(el,i){
-    el.classList.toggle('active',['24K','22K','8g'][i]===k);
-  });
-  // sub-row border
-  document.querySelectorAll('.gprice-sub-cell').forEach(function(el,i){
-    el.style.borderColor=['24K','22K','8g'][i]===k?'rgba(255,215,0,.45)':'';
-  });
-  // big price
-  var selPrice=price*info.factor;
-  var valEl=document.getElementById('gold-purity-val');
-  var lblEl=document.getElementById('gold-purity-label');
-  var dltEl=document.getElementById('gold-purity-delta');
-  var ttlEl=document.getElementById('gold-chart-title');
-  if(valEl) valEl.textContent=selPrice>0?'₨\u202f'+fr(selPrice,0):'—';
-  if(lblEl) lblEl.textContent=info.label;
-  if(ttlEl) ttlEl.textContent='Gold Price — LKR/'+info.unit+' (6 months)';
-  if(dltEl){
-    if(ph.length>=2){
-      var prevLkr=ph[ph.length-2].lkr*info.factor,diff=selPrice-prevLkr;
-      var pct=prevLkr>0?(diff/prevLkr*100):0,sign=diff>=0?'+':'';
-      dltEl.textContent=sign+'₨\u202f'+fr(Math.abs(diff),0)+' ('+sign+fr(pct,2)+'%)';
-      dltEl.className='gp-delta '+(diff>=0?'up-text':'dn-text');
-    } else { dltEl.textContent=''; }
-  }
-  _drawGoldChart(k);
-}
-
-function _drawGoldChart(k){
-  var info=GOLD_PURITY[k]||GOLD_PURITY['24K'],ph=_goldPh;
+function _drawGoldChart(){
+  var ph=_goldPh;
   if(!ph||!ph.length) return;
   var ctx=document.getElementById('goldChart');
   if(!ctx) return;
   if(_goldChart) _goldChart.destroy();
   var labels=ph.map(function(p){return p.label;});
-  var data=ph.map(function(p){return Math.round(p.lkr*info.factor);});
-  var canvas=ctx.getContext('2d'),grad=canvas.createLinearGradient(0,0,0,200);
+  var data=ph.map(function(p){return p.lkr;}); // already 22K per gram
+  var canvas=ctx.getContext('2d'),grad=canvas.createLinearGradient(0,0,0,190);
   grad.addColorStop(0,'rgba(255,215,0,.25)');grad.addColorStop(1,'rgba(255,215,0,0)');
   _goldChart=new Chart(ctx,{type:'line',
-    data:{labels:labels,datasets:[{label:'LKR / '+info.unit,data:data,
+    data:{labels:labels,datasets:[{label:'22K LKR/gram',data:data,
       borderColor:'rgba(255,215,0,.9)',backgroundColor:grad,borderWidth:2,
       pointRadius:3,pointBackgroundColor:'rgba(255,215,0,.9)',fill:true,tension:.35}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{
-        label:function(c){return '₨\u202f'+Number(c.raw).toLocaleString('en-IN')+' / '+info.unit;}}}},
+        label:function(c){return '₨\u202f'+Number(c.raw).toLocaleString('en-IN')+'/g';}}}},
       scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},maxRotation:45},grid:{color:'rgba(255,255,255,.04)'}},
         y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return v>=1000?(v/1000).toFixed(0)+'K':v;}},grid:{color:'rgba(255,255,255,.04)'}}}
     }});

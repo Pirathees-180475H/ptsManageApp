@@ -1820,7 +1820,7 @@ function getGoldData() {
           result.priceHistory.push({
             label: Utilities.formatDate(d, Session.getScriptTimeZone(), 'dd MMM'),
             usd:   Math.round(closes[i] * 100) / 100,
-            lkr:   Math.round(closes[i] * lkrRate / 31.1035)
+            lkr:   Math.round(closes[i] * lkrRate / 31.1035 * (22/24)) // 22K per gram
           });
         }
       }
