@@ -1499,6 +1499,39 @@ function getCSESheetData() {
   }
 }
 
+// ── Fixed Deposits: reads Portfolio sheet rows 21+ columns A–I ──────
+function getFDData() {
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName('Portfolio');
+    if (!sheet) throw new Error('Portfolio sheet not found');
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 21) return { fds: [] };
+    var rows = sheet.getRange(21, 1, lastRow - 20, 9).getValues();
+    var fds  = [];
+    var tz   = Session.getScriptTimeZone();
+    rows.forEach(function(row) {
+      var id = row[0];
+      if (!id || isNaN(Number(id))) return; // skip header / Total row / blank
+      var opened = row[3] ? new Date(row[3]) : null;
+      var end    = row[4] ? new Date(row[4]) : null;
+      fds.push({
+        id:       Number(id),
+        bank:     (row[1] || '').toString().trim().toUpperCase(),
+        amount:   Number((row[2] || '').toString().replace(/,/g, '')) || 0,
+        opened:   opened ? Utilities.formatDate(opened, tz, 'yyyy-MM-dd') : '',
+        end:      end    ? Utilities.formatDate(end,    tz, 'yyyy-MM-dd') : '',
+        type:     (row[5] || '').toString().trim(),
+        interest: Number((row[6] || '').toString().replace(/,/g, '')) || 0,
+        status:   (row[7] || '').toString().trim(),
+        remarks:  (row[8] || '').toString().trim()
+      });
+    });
+    return { fds: fds };
+  } catch(e) {
+    return { fds: [], error: e.message };
+  }
+}
+
 // ── Stage 2 (NEW): Batch fetch all stocks from LOLC Stock Screener ──
 function getLOLCScreenerAll() {
   var epoch = new Date().getTime();

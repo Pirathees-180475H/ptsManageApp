@@ -1533,6 +1533,57 @@ input[type=date].swae-input{color-scheme:dark;}
 .gprice-cell-val{font-size:.9em;font-weight:800;color:var(--gold);}
 .up-text{color:var(--green);} .dn-text{color:var(--red);}
 
+/* ── Fixed Deposits ── */
+.fd-filter-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px;align-items:center;}
+.fd-chip{padding:3px 8px;border-radius:16px;font-size:.65em;font-weight:700;cursor:pointer;
+         border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+         color:rgba(255,255,255,.5);transition:all .18s;white-space:nowrap;letter-spacing:.2px;}
+.fd-chip.active{background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.4);color:var(--blue);}
+.fd-chip.bank-com.active{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.4);color:#c084fc;}
+.fd-chip.bank-hnb.active{background:rgba(0,255,136,.1);border-color:rgba(0,255,136,.35);color:var(--green);}
+.fd-chip.fd-type-mat.active{background:rgba(255,107,53,.12);border-color:rgba(255,107,53,.4);color:var(--orange);}
+.fd-filter-sep{width:1px;height:16px;background:rgba(255,255,255,.1);margin:0 2px;flex-shrink:0;align-self:center;}
+.fd-bank-flag{display:inline-block;width:16px;height:12px;border-radius:2px;flex-shrink:0;}
+.fd-bank-flag-com{background:linear-gradient(135deg,#a855f7,#7c3aed);}
+.fd-bank-flag-hnb{background:linear-gradient(135deg,#00ff88,#22c55e);}
+.fd-mini-timeline{margin:4px 0 10px;overflow:hidden;}
+.fd-tl-row{cursor:pointer;transition:background .15s,border-radius .15s;}
+.fd-tl-row:hover{background:rgba(255,255,255,.04);border-radius:6px;}
+.fd-cards{display:flex;flex-direction:column;gap:10px;margin-top:4px;}
+.fd-card{background:var(--card);border:1px solid var(--bdr);border-radius:14px;
+         padding:13px;position:relative;overflow:hidden;transition:border-color .2s;}
+.fd-card.fd-active {border-left:3px solid var(--green);}
+.fd-card.fd-matured{border-left:3px solid rgba(255,255,255,.15);}
+.fd-card.fd-broken {border-left:3px solid var(--red);}
+.fd-card-top{display:flex;align-items:center;gap:9px;margin-bottom:9px;flex-wrap:wrap;}
+.fd-bank-badge{font-size:.58em;font-weight:800;padding:3px 8px;border-radius:6px;
+               letter-spacing:.5px;text-transform:uppercase;flex-shrink:0;}
+.fd-bank-com{background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.3);}
+.fd-bank-hnb{background:rgba(0,255,136,.1);color:var(--green);border:1px solid rgba(0,255,136,.25);}
+.fd-amount{font-size:.95em;font-weight:800;color:#fff;flex:1;}
+.fd-status-pill{font-size:.58em;font-weight:700;padding:3px 9px;border-radius:10px;
+                letter-spacing:.3px;flex-shrink:0;}
+.fd-status-active {background:rgba(0,255,136,.12);color:var(--green);border:1px solid rgba(0,255,136,.25);}
+.fd-status-matured{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--bdr);}
+.fd-status-broken {background:rgba(255,77,141,.1);color:var(--red);border:1px solid rgba(255,77,141,.25);}
+.fd-meta{display:flex;flex-wrap:wrap;gap:5px 12px;font-size:.65em;color:var(--muted);margin-bottom:9px;}
+.fd-meta span b{color:rgba(255,255,255,.7);font-weight:600;}
+.fd-progress-wrap{margin-bottom:6px;}
+.fd-progress-lbl{display:flex;justify-content:space-between;font-size:.58em;color:var(--muted);margin-bottom:3px;}
+.fd-progress-bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;}
+.fd-progress-fill{height:100%;border-radius:2px;transition:width .4s ease;}
+.fd-fill-active {background:linear-gradient(90deg,var(--blue),var(--green));}
+.fd-fill-matured{background:rgba(255,255,255,.2);}
+.fd-fill-broken {background:var(--red);}
+.fd-interest-row{display:flex;justify-content:space-between;align-items:center;
+                 padding-top:7px;border-top:1px solid var(--bdr);margin-top:4px;}
+.fd-int-lbl{font-size:.6em;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.fd-int-val{font-size:.85em;font-weight:800;color:var(--gold);}
+.fd-remark{font-size:.6em;color:var(--orange);margin-top:5px;font-style:italic;}
+.fd-days-badge{font-size:.58em;font-weight:700;padding:2px 7px;border-radius:6px;
+               background:rgba(0,212,255,.1);color:var(--blue);border:1px solid rgba(0,212,255,.2);}
+.fd-analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+
 /* ═══ ADD EXP FAB + OVERLAY ═══ */
 #ae-fab{
   position:fixed;bottom:80px;right:20px;
@@ -1651,7 +1702,7 @@ input[type=date].swae-input{color-scheme:dark;}
   </div>
   <div class="cse-header">
     <div style="display:flex;align-items:center;gap:10px;">
-      <span class="h-title">📈 CSE Portfolio</span>
+      <span class="h-title">📈 CSE·Gold·FD Portfolio</span>
       <span class="mkt-pill" id="mktPill">—</span>
     </div>
     <div class="h-right">
@@ -1664,6 +1715,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="tab"        onclick="switchTab(1)">🏅 Gold</div>
     <div class="tab"        onclick="switchTab(2)">💰 Dividends</div>
     <div class="tab"        onclick="switchTab(3)">💡 Insights</div>
+    <div class="tab"        onclick="switchTab(4)">🏦 Fixed Deposits</div>
   </div>
   <div class="panels">
     <div class="panel active" id="p0">
@@ -1686,6 +1738,10 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="panel" id="p3">
       <div class="loading" id="l3"><div class="mini-line"></div><div>Waiting for portfolio data…</div></div>
       <div id="c3" style="display:none"></div>
+    </div>
+    <div class="panel" id="p4">
+      <div class="loading" id="l4"><div class="mini-line"></div><div>Click tab to load Fixed Deposits…</div></div>
+      <div id="c4" style="display:none"></div>
     </div>
   </div>
 </section>
@@ -2015,7 +2071,7 @@ input[type=date].swae-input{color-scheme:dark;}
   </button>
   <button class="bnav-btn" data-page="inv" onclick="showPage('inv')">
     <span class="bnav-ico">💹</span>
-    <span class="bnav-lbl">Invest</span>
+    <span class="bnav-lbl">Invest Performance</span>
   </button>
   <button class="bnav-btn" data-page="mf" onclick="showPage('mf')">
     <span class="bnav-ico">💸</span>
@@ -2023,7 +2079,7 @@ input[type=date].swae-input{color-scheme:dark;}
   </button>
   <button class="bnav-btn" data-page="cse" onclick="showPage('cse')">
     <span class="bnav-ico">📈</span>
-    <span class="bnav-lbl">CSE·Gold</span>
+    <span class="bnav-lbl">CSE·Gold·FD</span>
   </button>
   <button class="bnav-btn" data-page="sw" onclick="showPage('sw')">
     <span class="bnav-ico">🤝</span>
@@ -2114,7 +2170,7 @@ window.onload = function(){ showPage('exp'); };
    CSE / PORTFOLIO PAGE JS
 ═══════════════════════════════════════════ */
 var _stocks=[], _live={}, _liveQ=[], _liveTotal=0, _liveDone=0;
-var _goldLoaded=false, _goldLoading=false, _divLoaded=false, _portChart=null, _goldChart=null;
+var _goldLoaded=false, _goldLoading=false, _divLoaded=false, _fdLoaded=false, _portChart=null, _goldChart=null;
 var _screenerAll=[];
 var _goldPh=[], _gold8gPrice=0;
 
@@ -2150,11 +2206,12 @@ function switchTab(i){
   if(i===1&&!_goldLoaded&&!_goldLoading) loadGoldData();
   if(i===2&&!_divLoaded)  loadDividendCalendar();
   if(i===3&&_liveDone>0)  renderInsights();
+  if(i===4&&!_fdLoaded)   loadFDData();
 }
 function tdot(i,s){var d=document.getElementById('td'+i);if(d)d.className='tdot'+(s?' '+s:'');}
 
 function cseStartLoad(){
-  _stocks=[];_live={};_liveQ=[];_liveTotal=0;_liveDone=0;_goldLoaded=false;_divLoaded=false;
+  _stocks=[];_live={};_liveQ=[];_liveTotal=0;_liveDone=0;_goldLoaded=false;_divLoaded=false;_fdLoaded=false;
   var btn=document.getElementById('refreshBtn');
   btn.disabled=true;
   document.getElementById('l0').style.display='flex';
@@ -2607,6 +2664,313 @@ function azShowCard(symbol){
 
 function toggleRaw(el){var b=el.nextElementSibling;var v=b.style.display==='block';b.style.display=v?'none':'block';el.textContent=(v?'▶':'▼')+' raw data';}
 function getStock(sym){for(var i=0;i<_stocks.length;i++){if(_stocks[i].symbol===sym)return _stocks[i];}return null;}
+
+// ── Fixed Deposits ────────────────────────────────────────────────
+var _fdData=[], _fdStatus='all', _fdBank='all', _fdType='all';
+
+function loadFDData(){
+  var l4=document.getElementById('l4'),c4=document.getElementById('c4');
+  l4.innerHTML='<div class="mini-line"></div><div>Loading Fixed Deposits…</div>';
+  l4.style.display='flex'; c4.style.display='none';
+  google.script.run
+    .withSuccessHandler(function(res){
+      _fdLoaded=true;
+      _fdData=res.fds||[];
+      renderFD();
+    })
+    .withFailureHandler(function(e){
+      c4.innerHTML='<div class="err-box">FD error: '+esc(e.message||e)+'</div>';
+      c4.style.display='block'; l4.style.display='none';
+    })
+    .getFDData();
+}
+
+function fdDaysLabel(endStr,status){
+  if(!endStr) return '';
+  var today=new Date(); today.setHours(0,0,0,0);
+  var end=new Date(endStr); end.setHours(0,0,0,0);
+  var diff=Math.round((end-today)/(1000*60*60*24));
+  if(status==='In Progress'){
+    if(diff<0)  return Math.abs(diff)+' days overdue';
+    if(diff===0)return 'Matures today!';
+    return diff+' days left';
+  }
+  return Math.abs(diff)+' days ago';
+}
+
+function fdProgress(openStr,endStr){
+  if(!openStr||!endStr) return 0;
+  var today=new Date().getTime();
+  var start=new Date(openStr).getTime();
+  var end=new Date(endStr).getTime();
+  if(end<=start) return 100;
+  return Math.min(100,Math.max(0,Math.round((today-start)/(end-start)*100)));
+}
+
+function fdGetFiltered(){
+  return _fdData.filter(function(fd){
+    if(_fdStatus!=='all'&&fd.status.toLowerCase()!==_fdStatus.toLowerCase()) return false;
+    if(_fdBank!=='all'&&fd.bank!==_fdBank) return false;
+    if(_fdType!=='all'){
+      var isM=fd.type.toLowerCase().indexOf('monthly')>-1;
+      if(_fdType==='monthly'  &&!isM) return false;
+      if(_fdType==='maturity' && isM) return false;
+    }
+    return true;
+  });
+}
+
+function fdSetStatus(el,val){
+  _fdStatus=val;
+  document.querySelectorAll('.fd-status-chip').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');
+  fdRenderCards();
+}
+
+function fdSetBank(el,val){
+  _fdBank=val;
+  document.querySelectorAll('.fd-bank-chip').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');
+  fdRenderCards();
+}
+
+function fdSetType(el,val){
+  _fdType=val;
+  document.querySelectorAll('.fd-type-chip').forEach(function(c){c.classList.remove('active');});
+  el.classList.add('active');
+  fdRenderCards();
+}
+
+function fdHighlight(id){
+  document.querySelectorAll('.fd-tl-dot').forEach(function(d){
+    d.setAttribute('r',d.getAttribute('data-r')||'10');
+    d.setAttribute('fill-opacity','0.18');
+    d.setAttribute('stroke-width','1.5');
+  });
+  document.querySelectorAll('.fd-tl-row').forEach(function(r){r.style.background='';});
+  var dot=document.getElementById('fd-dot-'+id);
+  if(dot){dot.setAttribute('r','15');dot.setAttribute('fill-opacity','0.5');dot.setAttribute('stroke-width','3');}
+  document.querySelectorAll('.fd-tl-row').forEach(function(r){
+    if(r.getAttribute('data-fdid')===String(id)) r.style.background='rgba(255,255,255,.055)';
+  });
+}
+
+function fdUnhighlight(){
+  document.querySelectorAll('.fd-tl-dot').forEach(function(d){
+    d.setAttribute('r',d.getAttribute('data-r')||'10');
+    d.setAttribute('fill-opacity','0.18');
+    d.setAttribute('stroke-width','1.5');
+  });
+  document.querySelectorAll('.fd-tl-row').forEach(function(r){r.style.background='';});
+}
+
+function fdRenderCards(){
+  var list=fdGetFiltered();
+  var wrap=document.getElementById('fdCardWrap');
+  if(!wrap) return;
+  if(!list.length){
+    wrap.innerHTML='<div class="empty"><div class="empty-ico">🏦</div>No FDs match filter.</div>';
+    return;
+  }
+  var html='';
+  list.forEach(function(fd){
+    var stLower=fd.status.toLowerCase();
+    var stClass=stLower==='in progress'?'fd-active':stLower==='matured'?'fd-matured':'fd-broken';
+    var pillClass=stLower==='in progress'?'fd-status-active':stLower==='matured'?'fd-status-matured':'fd-status-broken';
+    var bankClass=fd.bank==='HNB'?'fd-bank-hnb':'fd-bank-com';
+    var fillClass=stLower==='in progress'?'fd-fill-active':stLower==='matured'?'fd-fill-matured':'fd-fill-broken';
+    var pct=fdProgress(fd.opened,fd.end);
+    var daysLbl=fdDaysLabel(fd.end,fd.status);
+    var isMonthly=fd.type.toLowerCase().indexOf('monthly')>-1;
+    html+='<div class="fd-card '+stClass+'">';
+    html+='<div class="fd-card-top">';
+    html+='<span class="fd-bank-badge '+bankClass+'">'+fd.bank+'</span>';
+    html+='<span class="fd-amount">₨ '+fr(fd.amount,0)+'</span>';
+    if(daysLbl) html+='<span class="fd-days-badge">'+daysLbl+'</span>';
+    html+='<span class="fd-status-pill '+pillClass+'">'+fd.status+'</span>';
+    html+='</div>';
+    html+='<div class="fd-meta">';
+    html+='<span><b>Type:</b> '+esc(fd.type)+'</span>';
+    html+='<span><b>Opened:</b> '+esc(fd.opened)+'</span>';
+    html+='<span><b>Ends:</b> '+esc(fd.end)+'</span>';
+    html+='</div>';
+    html+='<div class="fd-progress-wrap">';
+    html+='<div class="fd-progress-lbl"><span>Duration progress</span><span>'+pct+'%</span></div>';
+    html+='<div class="fd-progress-bar"><div class="fd-progress-fill '+fillClass+'" style="width:'+pct+'%"></div></div>';
+    html+='</div>';
+    html+='<div class="fd-interest-row">';
+    html+='<span class="fd-int-lbl">'+(isMonthly?'Monthly interest':'Maturity interest')+'</span>';
+    html+='<span class="fd-int-val">₨ '+fr(fd.interest,0)+'</span>';
+    html+='</div>';
+    if(fd.remarks) html+='<div class="fd-remark">📝 '+esc(fd.remarks)+'</div>';
+    html+='</div>';
+  });
+  wrap.innerHTML=html;
+}
+
+function renderFD(){
+  var l4=document.getElementById('l4'),c4=document.getElementById('c4');
+  l4.style.display='none'; c4.style.display='block';
+  var fds=_fdData;
+  var today=new Date(); today.setHours(0,0,0,0);
+  var active=fds.filter(function(f){return f.status==='In Progress';});
+  var matured=fds.filter(function(f){return f.status==='Matured';});
+  var broken=fds.filter(function(f){return f.status==='Broken';});
+  var activePrincipal=active.reduce(function(s,f){return s+f.amount;},0);
+  var monthlyIncome=active.filter(function(f){return f.type.toLowerCase().indexOf('monthly')>-1;})
+                          .reduce(function(s,f){return s+f.interest;},0);
+  var maturingSoon=active.filter(function(f){
+    if(!f.end) return false;
+    var end=new Date(f.end); end.setHours(0,0,0,0);
+    var diff=Math.round((end-today)/(1000*60*60*24));
+    return diff>=0&&diff<=60;
+  }).length;
+  var monthlyFDInt=active.filter(function(f){return f.type.toLowerCase().indexOf('monthly')>-1;})
+                         .reduce(function(s,f){return s+f.interest;},0);
+  var maturityFDInt=active.filter(function(f){return f.type.toLowerCase().indexOf('monthly')===-1;})
+                          .reduce(function(s,f){return s+f.interest;},0);
+  var comPrincipal=active.filter(function(f){return f.bank==='COMERCIAL';}).reduce(function(s,f){return s+f.amount;},0);
+  var hnbPrincipal=active.filter(function(f){return f.bank==='HNB';}).reduce(function(s,f){return s+f.amount;},0);
+  var timeline=active.slice().sort(function(a,b){return new Date(a.end)-new Date(b.end);});
+
+  var html='';
+
+  // KPI row — 5 cards
+  html+='<div class="kpi-row" style="margin-bottom:14px;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));">';
+  html+=cseKpi('🏦','Active Principal',fs(activePrincipal),active.length+' active FDs','','blue');
+  html+=cseKpi('💵','Monthly Income',fs(monthlyIncome),'Monthly-type FDs','','green');
+  html+=cseKpi('⏳','Maturing Soon',maturingSoon+'','Within 60 days','','orange');
+  html+=cseKpi('📅','Monthly Int.',fs(monthlyFDInt),'Total monthly FD interest','','purple');
+  html+=cseKpi('📊','Maturity Int.',fs(maturityFDInt),'At-maturity payout total','','gold');
+  html+='</div>';
+
+  // Bank distribution
+  html+='<div class="glass fade-in" style="margin-bottom:12px;">';
+  html+='<div class="g-hdr"><div class="g-dot" style="background:var(--blue)"></div><span class="g-title">Bank Distribution (Active)</span></div>';
+  html+='<div class="fd-analysis-grid">';
+  html+='<div style="background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.2);border-radius:12px;padding:13px;text-align:center;">';
+  html+='<div style="font-size:.56em;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">COMERCIAL</div>';
+  html+='<div style="font-size:1em;font-weight:800;color:#c084fc;">'+fs(comPrincipal)+'</div>';
+  html+='<div style="font-size:.6em;color:var(--muted);margin-top:3px;">'+active.filter(function(f){return f.bank==='COMERCIAL';}).length+' FDs</div>';
+  html+='</div>';
+  html+='<div style="background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);border-radius:12px;padding:13px;text-align:center;">';
+  html+='<div style="font-size:.56em;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;">HNB</div>';
+  html+='<div style="font-size:1em;font-weight:800;color:var(--green);">'+fs(hnbPrincipal)+'</div>';
+  html+='<div style="font-size:.6em;color:var(--muted);margin-top:3px;">'+active.filter(function(f){return f.bank==='HNB';}).length+' FDs</div>';
+  html+='</div>';
+  html+='</div>';
+  html+='<div style="display:flex;gap:10px;margin-top:8px;">';
+  html+='<div style="flex:1;text-align:center;padding:7px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--bdr);">';
+  html+='<div style="font-size:.56em;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Matured</div>';
+  html+='<div style="font-size:.9em;font-weight:800;color:rgba(255,255,255,.5);">'+matured.length+'</div>';
+  html+='</div>';
+  html+='<div style="flex:1;text-align:center;padding:7px;background:rgba(255,77,141,.05);border-radius:8px;border:1px solid rgba(255,77,141,.2);">';
+  html+='<div style="font-size:.56em;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;">Broken</div>';
+  html+='<div style="font-size:.9em;font-weight:800;color:var(--red);">'+broken.length+'</div>';
+  html+='</div>';
+  html+='</div>';
+  html+='</div>';
+
+  // Maturity timeline — full-width SVG with X-axis + interactive dots
+  if(timeline.length){
+    html+='<div class="glass fade-in" style="margin-bottom:12px;">';
+    html+='<div class="g-hdr"><div class="g-dot" style="background:var(--orange)"></div><span class="g-title">Maturity Timeline (Active)</span></div>';
+
+    // ── SVG setup: range always starts from today so NOW is always visible ──
+    var todayMs=today.getTime();
+    var fd0T=new Date(timeline[0].end).setHours(0,0,0,0);
+    var fdMaxT=new Date(timeline[timeline.length-1].end).setHours(0,0,0,0);
+    var minT=Math.min(todayMs,fd0T);
+    var maxT=fdMaxT;
+    var tRange=maxT-minT||86400000;
+    var svgW=400, svgH=76, barY=32, dotR=10, padL=6, padR=6, usableW=svgW-padL-padR;
+    var getX=function(ms){return Math.round(padL+(ms-minT)/tRange*usableW);};
+
+    // ── Generate X-axis month ticks ──
+    var moNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var rangeDays=Math.round(tRange/86400000);
+    var mStep=rangeDays<=90?1:rangeDays<=270?2:3;
+    var tDate=new Date(minT); tDate.setDate(1);
+    var xTicks=[];
+    for(var ti=0;ti<36;ti++){
+      var tms=tDate.getTime();
+      if(tms>maxT) break;
+      if(tms>=minT) xTicks.push({ms:tms,lbl:moNames[tDate.getMonth()]+"'"+String(tDate.getFullYear()).slice(2)});
+      tDate.setMonth(tDate.getMonth()+mStep);
+    }
+    while(xTicks.length>6){xTicks=xTicks.filter(function(_,i){return i%2===0;});}
+
+    html+='<div class="fd-mini-timeline">';
+    html+='<svg viewBox="0 0 '+svgW+' '+svgH+'" style="width:100%;height:'+svgH+'px;display:block;" xmlns="http://www.w3.org/2000/svg">';
+
+    // X-axis tick marks + date labels
+    xTicks.forEach(function(t){
+      var tx=Math.round(getX(t.ms));
+      html+='<line x1="'+tx+'" y1="'+(barY+4)+'" x2="'+tx+'" y2="'+(barY+10)+'" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>';
+      html+='<text x="'+tx+'" y="'+(barY+22)+'" font-size="7" fill="rgba(255,255,255,0.28)" text-anchor="middle" font-family="Inter,sans-serif">'+t.lbl+'</text>';
+    });
+
+    // Base axis line — full SVG width
+    html+='<line x1="'+padL+'" y1="'+barY+'" x2="'+(svgW-padR)+'" y2="'+barY+'" stroke="rgba(255,255,255,0.16)" stroke-width="1.5" stroke-linecap="round"/>';
+
+    // TODAY marker — always shown for active FDs
+    var nowX=Math.round(getX(todayMs));
+    html+='<line x1="'+nowX+'" y1="'+(barY-18)+'" x2="'+nowX+'" y2="'+(barY+10)+'" stroke="rgba(0,212,255,0.6)" stroke-width="1.2" stroke-dasharray="3,2"/>';
+    html+='<text x="'+nowX+'" y="'+(barY-21)+'" font-size="7" font-weight="bold" fill="rgba(0,212,255,0.75)" text-anchor="middle" font-family="Inter,sans-serif">NOW</text>';
+
+    // FD dots — circle + PK number + M/L type label
+    timeline.forEach(function(fd){
+      var endMs=new Date(fd.end).setHours(0,0,0,0);
+      var x=Math.round(getX(endMs));
+      var diff=Math.round((endMs-todayMs)/86400000);
+      var c=diff<=30?'#ff4d8d':diff<=60?'#ff6b35':diff<=90?'#ffd700':'rgba(180,180,180,0.65)';
+      var isM=fd.type.toLowerCase().indexOf('monthly')>-1;
+      html+='<circle id="fd-dot-'+fd.id+'" class="fd-tl-dot" data-r="'+dotR+'" cx="'+x+'" cy="'+barY+'" r="'+dotR+'" fill="'+c+'" fill-opacity="0.18" stroke="'+c+'" stroke-width="1.5"/>';
+      html+='<text id="fd-dtxt-'+fd.id+'" x="'+x+'" y="'+barY+'" font-size="8.5" font-weight="bold" fill="'+c+'" text-anchor="middle" dominant-baseline="middle" pointer-events="none" font-family="Inter,sans-serif">'+fd.id+'</text>';
+      html+='<text x="'+x+'" y="'+(barY-14)+'" font-size="6.5" fill="'+c+'" fill-opacity="0.72" text-anchor="middle" pointer-events="none" font-family="Inter,sans-serif">'+(isM?'M':'L')+'</text>';
+    });
+
+    html+='</svg></div>';
+
+    // ── Timeline rows — hover/click highlights corresponding dot ──
+    timeline.forEach(function(fd){
+      var end=new Date(fd.end); end.setHours(0,0,0,0);
+      var diff=Math.round((end-today)/(1000*60*60*24));
+      var urgency=diff<=30?'var(--red)':diff<=60?'var(--orange)':diff<=90?'var(--gold)':'rgba(255,255,255,.5)';
+      var bankFlagClass=fd.bank==='HNB'?'fd-bank-flag-hnb':'fd-bank-flag-com';
+      html+='<div class="fd-tl-row" data-fdid="'+fd.id+'" onmouseenter="fdHighlight('+fd.id+')" onmouseleave="fdUnhighlight()" onclick="fdHighlight('+fd.id+')" style="display:flex;align-items:center;gap:10px;padding:7px 4px;border-bottom:1px solid var(--bdr);">';
+      html+='<div style="font-size:.65em;font-weight:700;color:'+urgency+';min-width:62px;">'+(diff<0?'Overdue':(diff===0?'Today':diff+' days'))+'</div>';
+      html+='<span class="fd-bank-flag '+bankFlagClass+'" title="'+esc(fd.bank)+'"></span>';
+      html+='<div style="flex:1;">';
+      html+='<div style="font-size:.72em;font-weight:700;color:#fff;"><span style="color:rgba(255,255,255,.35);font-size:.88em;margin-right:3px;">#'+fd.id+'</span>₨ '+fr(fd.amount,0)+'</div>';
+      html+='<div style="font-size:.58em;color:var(--muted);">'+esc(fd.type)+' · Ends '+esc(fd.end)+'</div>';
+      html+='</div>';
+      html+='<div style="font-size:.7em;font-weight:800;color:var(--gold);">₨ '+fr(fd.interest,0)+'</div>';
+      html+='</div>';
+    });
+    html+='</div>'; // close glass card
+  }
+
+  // Filter row — compact chips, 3 groups: Status | Bank | Type
+  html+='<div class="fd-filter-row">';
+  html+='<button class="fd-chip fd-status-chip active" onclick="fdSetStatus(this,\'all\')">All</button>';
+  html+='<button class="fd-chip fd-status-chip" onclick="fdSetStatus(this,\'In Progress\')">🟢 Active</button>';
+  html+='<button class="fd-chip fd-status-chip" onclick="fdSetStatus(this,\'Matured\')">Matured</button>';
+  html+='<button class="fd-chip fd-status-chip" onclick="fdSetStatus(this,\'Broken\')">🔴 Broken</button>';
+  html+='<span class="fd-filter-sep"></span>';
+  html+='<button class="fd-chip fd-bank-chip bank-com active" onclick="fdSetBank(this,\'all\')">All</button>';
+  html+='<button class="fd-chip fd-bank-chip bank-com" onclick="fdSetBank(this,\'COMERCIAL\')">COM</button>';
+  html+='<button class="fd-chip fd-bank-chip bank-hnb" onclick="fdSetBank(this,\'HNB\')">HNB</button>';
+  html+='<span class="fd-filter-sep"></span>';
+  html+='<button class="fd-chip fd-type-chip active" onclick="fdSetType(this,\'all\')">All Types</button>';
+  html+='<button class="fd-chip fd-type-chip" onclick="fdSetType(this,\'monthly\')">Monthly</button>';
+  html+='<button class="fd-chip fd-type-chip fd-type-mat" onclick="fdSetType(this,\'maturity\')">Maturity</button>';
+  html+='</div>';
+  html+='<div id="fdCardWrap" class="fd-cards"></div>';
+
+  c4.innerHTML=html;
+  fdRenderCards();
+}
 
 function updateKPIs(){
   var totInv=0,totCur=0,dayGain=0,hasPnl=false,chartStocks=[];
@@ -6284,4 +6648,4 @@ function swaeSubmit(){
 </div>
 </body>
 </html>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
