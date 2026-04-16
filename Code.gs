@@ -1499,7 +1499,61 @@ function getCSESheetData() {
   }
 }
 
-// ── Stage 2: One live price per symbol (called per-card from HTML) ──
+// ── Stage 2 (NEW): Batch fetch all stocks from LOLC Stock Screener ──
+function getLOLCScreenerAll() {
+  var epoch = new Date().getTime();
+  var url   = 'https://www.lolcsecurities.lk/api/stock-screener/?s=' + epoch;
+  var res   = UrlFetchApp.fetch(url, {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: {
+      'Accept':           'application/json, text/javascript, */*; q=0.01',
+      'User-Agent':       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'X-Requested-With': 'XMLHttpRequest',
+      'Referer':          'https://www.lolcsecurities.lk/stock-screener/'
+    }
+  });
+  if (res.getResponseCode() !== 200) {
+    throw new Error('LOLC screener HTTP ' + res.getResponseCode());
+  }
+  var json = JSON.parse(res.getContentText());
+  var data = json.data || [];
+
+  function pNum(v) {
+    if (!v || v === '-') return 0;
+    return parseFloat(String(v).replace(/,/g, '')) || 0;
+  }
+  function pPct(v) {
+    if (!v || v === '-') return 0;
+    return parseFloat(String(v).replace(/%/g, '')) || 0;
+  }
+
+  return data.map(function(row) {
+    var price = pNum(row['Market Price (LKR)']);
+    return {
+      success:        price > 0,
+      symbol:         (row['Company Tiker'] || '').trim(),
+      companyName:    (row['Company Name']  || '').trim(),
+      sector:         (row['Sector']        || '').trim(),
+      currentPrice:   price,
+      marketCap:      pNum(row['Market Capitalization (LKR Mn)']),
+      foreignHolding: pPct(row['Foreign Holding%']),
+      earnings:       pNum(row['4QT Earnings (LKR Mn)']),
+      pe:             pNum(row['PE (x)']),
+      sectorPe:       pNum(row['Sector PE (x)']),
+      pbv:            pNum(row['PBV (x)']),
+      sectorPbv:      pNum(row['Sector PBV (x)']),
+      dy:             pPct(row['DY (%)']),
+      dps:            pNum(row['DPS (LKR)']),
+      eps:            pNum(row['EPS 4QT (LKR)']),
+      nav:            pNum(row['NAV (LKR)']),
+      roe:            pPct(row['ROE (%)']),
+      allFields:      row
+    };
+  });
+}
+
+// ── Stage 2 (LEGACY): One live price per symbol (fallback only) ──
 function getCSELivePrice(symbol) {
   try {
     var res  = UrlFetchApp.fetch("https://www.cse.lk/api/companyInfoSummery", {

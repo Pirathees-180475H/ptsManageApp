@@ -577,20 +577,55 @@ function onSheetData(res){
     return;
   }
   _liveTotal=_stocks.length;
-  _liveQ=_stocks.map(function(s){return s.symbol;});
-  fetchNext();
+  _liveDone=0;
+  setRing(0,'Fetching all prices…');
+  document.getElementById('updLbl').textContent='Fetching prices…';
+  google.script.run
+    .withSuccessHandler(onLOLCBatch)
+    .withFailureHandler(function(e){
+      // Fallback: sequential CSE per-card calls
+      document.getElementById('updLbl').textContent='LOLC unavailable, trying CSE…';
+      _liveQ=_stocks.map(function(s){return s.symbol;});
+      fetchNext();
+    })
+    .getLOLCScreenerAll();
 }
 
-// ── Stage 2 ────────────────────────────────────────────────────────
+// ── Stage 2: Batch handler (LOLC screener) ─────────────────────────
+function onLOLCBatch(screenerRows){
+  // Build ticker → row map
+  var map={};
+  screenerRows.forEach(function(row){ if(row.symbol) map[row.symbol.toUpperCase()]=row; });
+
+  _stocks.forEach(function(s){
+    var row=map[s.symbol.toUpperCase()];
+    var r=row ? row : {success:false,symbol:s.symbol};
+    r.symbol=s.symbol; // keep exact sheet symbol
+    _live[s.symbol]=r;
+    _liveDone++;
+    updateCard(r);
+  });
+
+  setRing(100,'All prices loaded');
+  document.getElementById('updLbl').textContent='All prices loaded';
+  allLiveDone();
+}
+
+// ── Stage 2: Fallback sequential (CSE per-card) ────────────────────
 function fetchNext(){
-  if(!_liveQ.length){
-    allLiveDone();return;
-  }
+  if(!_liveQ.length){allLiveDone();return;}
   var sym=_liveQ.shift();
   google.script.run
     .withSuccessHandler(function(r){_live[r.symbol]=r;_liveDone++;onLive(r);fetchNext();})
     .withFailureHandler(function(){_liveDone++;fetchNext();})
     .getCSELivePrice(sym);
+}
+
+function onLive(r){
+  updateCard(r);
+  var pct=Math.round(_liveDone/_liveTotal*100);
+  setRing(pct,'Live prices: '+_liveDone+' / '+_liveTotal);
+  document.getElementById('updLbl').textContent='Live: '+_liveDone+'/'+_liveTotal;
 }
 
 function setRing(pct,lbl){
@@ -600,13 +635,6 @@ function setRing(pct,lbl){
   if(p) p.textContent=pct+'%';
   var l=document.getElementById('ringLbl');
   if(l&&lbl) l.textContent=lbl;
-}
-
-function onLive(r){
-  updateCard(r);
-  var pct=Math.round(_liveDone/_liveTotal*100);
-  setRing(pct,'Live prices: '+_liveDone+' / '+_liveTotal);
-  document.getElementById('updLbl').textContent='Live: '+_liveDone+'/'+_liveTotal;
 }
 
 function allLiveDone(){
@@ -887,32 +915,34 @@ function updateCard(r){
   if(!r.success){
     card.className='scard fl fade-in';
     card.querySelector('.scard-sym').innerHTML=esc(r.symbol)+'<span class="live-tag off">offline</span>';
-    document.getElementById('meta_'+r.symbol).innerHTML='<div class="s-meta-row" style="color:var(--muted);grid-column:span 2">Live price unavailable</div>';
+    document.getElementById('meta_'+r.symbol).innerHTML='<div class="s-meta-row" style="color:var(--muted);grid-column:span 2">Price unavailable</div>';
     return;
   }
 
   var price=r.currentPrice||s.sheetPrice;
-  var cc=fc(r.changePct);
+  // Colour card by P&L vs bought price (more useful than day change)
+  var cc=s.boughtPrice>0?(price>=s.boughtPrice?'up':'dn'):'fl';
   card.className='scard '+cc+' fade-in';
   card.querySelector('.scard-sym').innerHTML=esc(r.symbol)+'<span class="live-tag live">live</span>';
   card.querySelector('.scard-name').textContent=r.companyName||s.name||'—';
 
-  // Price row
+  // Price row — show sector tag if available
   var pr=card.querySelector('.price-row');
-  pr.innerHTML='<span class="s-price">₨ '+price.toFixed(2)+'</span>'+
-    (r.changePct!==undefined?'<span class="chg-pill '+cc+'">'+fp(r.changePct)+'</span>':'');
+  var sectorTag=r.sector?'<span style="font-size:.65em;color:var(--muted);margin-left:8px;font-weight:400;">'+esc(r.sector)+'</span>':'';
+  pr.innerHTML='<span class="s-price">₨ '+price.toFixed(2)+'</span>'+sectorTag;
 
-  // Meta
+  // Meta grid — LOLC fields
   var mh='';
-  if(r.change!==undefined) mh+=mr('Chg','₨ '+Number(r.change).toFixed(2));
-  if(r.dayHigh)  mh+=mr('H','₨ '+r.dayHigh.toFixed(2));
-  if(r.dayLow)   mh+=mr('L','₨ '+r.dayLow.toFixed(2));
-  if(r.volume)   mh+=mr('Vol',r.volume>1000?(r.volume/1000).toFixed(0)+'K':''+r.volume);
-  if(r.yearHigh) mh+=mr('52W↑','₨ '+r.yearHigh.toFixed(2));
-  if(r.yearLow)  mh+=mr('52W↓','₨ '+r.yearLow.toFixed(2));
-  if(r.pe>0)     mh+=mr('P/E',r.pe.toFixed(1));
-  if(r.dividendYield>0) mh+=mr('Div%',r.dividendYield.toFixed(2)+'%');
-  if(!mh) mh='<div class="s-meta-row" style="color:var(--muted);grid-column:span 2">Limited API data</div>';
+  if(r.pe>0)     mh+=mr('P/E',r.pe.toFixed(1)+(r.sectorPe>0?' <span style="color:var(--muted);font-size:.85em">(Sec '+r.sectorPe.toFixed(1)+')</span>':''));
+  if(r.pbv>0)    mh+=mr('PBV',r.pbv.toFixed(2)+(r.sectorPbv>0?' <span style="color:var(--muted);font-size:.85em">('+r.sectorPbv.toFixed(2)+')</span>':''));
+  if(r.eps>0)    mh+=mr('EPS','₨ '+r.eps.toFixed(2));
+  if(r.nav>0)    mh+=mr('NAV','₨ '+r.nav.toFixed(2));
+  if(r.roe>0)    mh+=mr('ROE',r.roe.toFixed(1)+'%');
+  if(r.dps>0)    mh+=mr('DPS','₨ '+r.dps.toFixed(2));
+  if(r.dy>0)     mh+=mr('DY',r.dy.toFixed(2)+'%');
+  if(r.marketCap>0) mh+=mr('MCap','₨'+r.marketCap.toLocaleString('en-IN')+'Mn');
+  if(r.foreignHolding>0) mh+=mr('Foreign',r.foreignHolding.toFixed(1)+'%');
+  if(!mh) mh='<div class="s-meta-row" style="color:var(--muted);grid-column:span 2">No data from screener</div>';
   document.getElementById('meta_'+r.symbol).innerHTML=mh;
 
   // P&L
@@ -929,9 +959,7 @@ function updateCard(r){
 
   // Raw toggle
   if(r.allFields&&!card.querySelector('.raw-tog')){
-    var noPnl=card.querySelector('.no-pnl');
-    var pnlSec=card.querySelector('.pnl-section');
-    var anchor=noPnl||pnlSec;
+    var anchor=card.querySelector('.no-pnl')||card.querySelector('.pnl-section');
     if(anchor){
       var t=document.createElement('span');t.className='raw-tog';
       t.textContent='▶ raw API data';t.onclick=function(){toggleRaw(this);};
