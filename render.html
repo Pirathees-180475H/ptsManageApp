@@ -1702,7 +1702,7 @@ input[type=date].swae-input{color-scheme:dark;}
   </div>
   <div class="cse-header">
     <div style="display:flex;align-items:center;gap:10px;">
-      <span class="h-title">📈 CSE·Gold·FD Portfolio</span>
+      <span class="h-title">📈 Investment Analysis</span>
       <span class="mkt-pill" id="mktPill">—</span>
     </div>
     <div class="h-right">
@@ -1711,11 +1711,11 @@ input[type=date].swae-input{color-scheme:dark;}
     </div>
   </div>
   <div class="tabs">
-    <div class="tab active" onclick="switchTab(0)">💼 Portfolio</div>
-    <div class="tab"        onclick="switchTab(1)">🏅 Gold</div>
-    <div class="tab"        onclick="switchTab(2)">💰 Dividends</div>
-    <div class="tab"        onclick="switchTab(3)">💡 Insights</div>
-    <div class="tab"        onclick="switchTab(4)">🏦 Fixed Deposits</div>
+    <div class="tab active" data-tab="0" onclick="switchTab(0)">📊 Stocks</div>
+    <div class="tab"        data-tab="1" onclick="switchTab(1)">🏅 Gold</div>
+    <div class="tab"        data-tab="2" onclick="switchTab(2)">💰 Dividends</div>
+    <div class="tab"        data-tab="4" onclick="switchTab(4)">🏦 Fixed Deposits</div>
+    <div class="tab"        data-tab="3" onclick="switchTab(3)">💡 Insights</div>
   </div>
   <div class="panels">
     <div class="panel active" id="p0">
@@ -2079,7 +2079,7 @@ input[type=date].swae-input{color-scheme:dark;}
   </button>
   <button class="bnav-btn" data-page="cse" onclick="showPage('cse')">
     <span class="bnav-ico">📈</span>
-    <span class="bnav-lbl">CSE·Gold·FD</span>
+    <span class="bnav-lbl">Investments</span>
   </button>
   <button class="bnav-btn" data-page="sw" onclick="showPage('sw')">
     <span class="bnav-ico">🤝</span>
@@ -2201,7 +2201,7 @@ function mr(l,v){return '<div class="s-meta-row"><span class="ml">'+l+'</span> '
 function insMetric(l,v){return '<span class="ins-metric"><span class="iml">'+l+'</span><span class="imv">'+v+'</span></span>';}
 
 function switchTab(i){
-  document.querySelectorAll('.tab').forEach(function(t,j){t.classList.toggle('active',j===i);});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',Number(t.getAttribute('data-tab'))===i);});
   document.querySelectorAll('.panel').forEach(function(p,j){p.classList.toggle('active',j===i);});
   if(i===1&&!_goldLoaded&&!_goldLoading) loadGoldData();
   if(i===2&&!_divLoaded)  loadDividendCalendar();

@@ -30,7 +30,7 @@ function onEdit(e) {
     getFriendBalances();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'E1') {
-    showInvestmentDashboard();
+    showInvestmentPerformanceDashboard();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'F1') {
     showInvestFlow();
@@ -39,7 +39,7 @@ function onEdit(e) {
     showExpenseDashboard();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'H1') {
-    showCSEDashboard();
+    showInvestmentDashboard();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'J1') {
     showAddExpDialog();
@@ -1430,8 +1430,8 @@ function getExpensesForFriend(friendId) {
   }
 }
 
-function showInvestmentDashboard() {
-  const html = HtmlService.createHtmlOutputFromFile("investmentDashboard")
+function showInvestmentPerformanceDashboard() {
+  const html = HtmlService.createHtmlOutputFromFile("investmentPerformanceDashboard")
     .setWidth(2000)
     .setHeight(2000);
   SpreadsheetApp.getUi().showModalDialog(html, "📊 Investment Performance Dashboard");
@@ -1459,15 +1459,15 @@ function getInvestmentData() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CSE STOCK DASHBOARD
+// Investment DASHBOARD
 // ═══════════════════════════════════════════════════════════════
 
-function showCSEDashboard() {
+function showInvestmentDashboard() {
   try {
-    var html = HtmlService.createHtmlOutputFromFile('csiDashboard')
+    var html = HtmlService.createHtmlOutputFromFile('investmentDashboard')
       .setWidth(2000)
       .setHeight(2000);
-    SpreadsheetApp.getUi().showModalDialog(html, '📈 CSE Stock Dashboard');
+    SpreadsheetApp.getUi().showModalDialog(html, '📈 Investment Dashboard');
   } catch(e) {}
 }
 
@@ -2115,4 +2115,3 @@ function updateExpenseCells(payload) {
     return { success: false, error: err.message || String(err) };
   }
 }
-                                                                                                                                                
