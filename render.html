@@ -3616,7 +3616,6 @@ function ccDisplayData(data){
   }).join('');
 
   document.getElementById('cc-root').innerHTML=
-    '<div class="header"><div class="header-chip">💳 Live · CC Dashboard</div><h1>Credit Cards</h1><div class="header-sub">Balance · Statements · Payment status</div></div>'+
     '<div class="cc-grid">'+cardsHTML+'</div>'+
     '<div class="kpi-row">'+
       '<div class="kpi red"><div class="kpi-glow"></div><span class="kpi-icon">💳</span><div class="kpi-label">Total Due</div><div class="kpi-value">'+ccFmt(totalDue)+'</div><div class="kpi-sub-cc">across all cards</div></div>'+
@@ -4379,10 +4378,7 @@ function portDisplayPortfolio(data){
   }).join('');
 
   document.getElementById('port-root').innerHTML=
-    '<div class="port-header">'+
-      '<div class="header-tag">Live Dashboard</div>'+
-      '<h1>Portfolio Summary</h1>'+
-      '<div class="header-sub">Updated just now</div>'+
+    '<div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:14px;">'+
       '<button class="log-btn" id="portLogBtn" onclick="portStartLog()"><span class="btn-ico">💾</span><div class="btn-spin"></div> Log Portfolio Value</button>'+
       '<div class="log-note-wrap" id="portLogNoteWrap">'+
         '<input class="log-note-input" id="portLogNoteInput" type="text" placeholder="Optional note (e.g. Saudi money, bonus…)" maxlength="60">'+
@@ -5117,7 +5113,6 @@ function mfRender(DATA) {
   var months=DATA.map(function(d){return d.month;});
 
   document.getElementById('mf-root').innerHTML=
-    '<div class="mf-header"><div class="mf-header-chip">📊 Live · Money Flow</div><h1>Investment Flow Dashboard</h1><div class="mf-header-sub">Your complete investment history at a glance</div></div>'+
     '<div class="plan-section glass" id="mf-planSection">'+
     '<div class="plan-hdr">'+
       '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'+
@@ -5814,11 +5809,6 @@ function swRender(data){
   /* ── Assemble full inner HTML ── */
   document.getElementById('sw-root').innerHTML =
     '<div class="sw-page">'
-      +'<div class="sw-header">'
-        +'<div class="sw-header-chip">Live · Splitwise</div>'
-        +'<h1>💸 Balance Dashboard</h1>'
-        +'<div class="sw-header-sub">Your money — who owes who</div>'
-      +'</div>'
       +bannerHtml
       +txnHtml
       +heroHtml
