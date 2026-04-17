@@ -30,19 +30,13 @@ function onEdit(e) {
     getFriendBalances();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'E1') {
-    showInvestmentPerformanceDashboard();
+    showInvestmentDashboard();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'F1') {
     showInvestFlow();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'G1') {
     showExpenseDashboard();
-  }
-  if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'H1') {
-    showInvestmentDashboard();
-  }
-  if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'J1') {
-    showAddExpDialog();
   }
 }
 
@@ -1428,13 +1422,6 @@ function getExpensesForFriend(friendId) {
   } catch(err) {
     return { success: false, error: err.message };
   }
-}
-
-function showInvestmentPerformanceDashboard() {
-  const html = HtmlService.createHtmlOutputFromFile("investmentPerformanceDashboard")
-    .setWidth(2000)
-    .setHeight(2000);
-  SpreadsheetApp.getUi().showModalDialog(html, "📊 Investment Performance Dashboard");
 }
 
 function getInvestmentData() {
