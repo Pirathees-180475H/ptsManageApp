@@ -533,6 +533,52 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
   #p5 .row-2,#p5 .row-3{grid-template-columns:1fr;}
   .insight-grid{grid-template-columns:1fr;}
 }
+
+/* ── Unit Trust Tab (p6) ── */
+#p6 .ut-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+#p6 .ut-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+#p6 .ut-row-3{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+#p6 .ut-row-full{margin-bottom:14px;}
+#p6 .chart-wrap.ut-tall{height:260px;}
+#p6 .chart-wrap.ut-short{height:200px;}
+/* company badges */
+.ut-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:.58em;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;vertical-align:middle;margin-left:5px;}
+.ut-badge.cal{background:rgba(0,212,255,.15);color:var(--blue);border:1px solid rgba(0,212,255,.3);}
+.ut-badge.ndb{background:rgba(168,85,247,.15);color:var(--purple);border:1px solid rgba(168,85,247,.3);}
+.ut-badge.other{background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.12);}
+/* fund table */
+.ut-table{width:100%;border-collapse:collapse;font-size:.75em;}
+.ut-table th{padding:8px 10px;text-align:left;font-size:.62em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.06);}
+.ut-table td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.ut-table tr:last-child td{border-bottom:none;}
+.ut-table tr:hover td{background:rgba(255,255,255,.02);}
+.ut-pos{color:var(--green);}
+.ut-neg{color:var(--red);}
+/* inline edit */
+.ut-edit-inp{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#fff;font-family:'Inter',sans-serif;font-size:.85em;padding:4px 7px;outline:none;}
+.ut-edit-inp:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,212,255,.15);}
+.ut-edit-row{display:none;background:rgba(0,212,255,.03);border-top:1px solid rgba(0,212,255,.1);}
+.ut-edit-row.open{display:table-row;}
+.ut-edit-cell{padding:10px 10px !important;}
+.ut-edit-form{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.ut-edit-field{display:flex;flex-direction:column;gap:3px;min-width:140px;}
+.ut-edit-lbl{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.ut-save-btn{padding:6px 16px;border-radius:8px;border:1px solid rgba(0,255,136,.35);background:rgba(0,255,136,.1);color:var(--green);font-family:'Inter',sans-serif;font-size:.72em;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.ut-save-btn:hover{background:rgba(0,255,136,.2);box-shadow:0 0 12px rgba(0,255,136,.15);}
+.ut-save-btn:disabled{opacity:.4;cursor:not-allowed;}
+.ut-cancel-btn{padding:6px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:transparent;color:rgba(255,255,255,.4);font-family:'Inter',sans-serif;font-size:.72em;font-weight:600;cursor:pointer;transition:all .2s;}
+.ut-cancel-btn:hover{background:rgba(255,255,255,.05);}
+.ut-edit-btn{background:none;border:none;cursor:pointer;font-size:.85em;opacity:.45;padding:2px 5px;transition:opacity .15s;color:#fff;}
+.ut-edit-btn:hover{opacity:1;}
+/* return pill */
+.ut-ret{display:inline-block;padding:2px 7px;border-radius:5px;font-size:.7em;font-weight:700;}
+.ut-ret.pos{background:rgba(0,255,136,.12);color:var(--green);}
+.ut-ret.neg{background:rgba(255,77,141,.12);color:var(--red);}
+.ut-ret.flat{background:rgba(255,255,255,.05);color:rgba(255,255,255,.4);}
+@media(max-width:760px){
+  #p6 .ut-kpi-row{grid-template-columns:repeat(2,1fr);}
+  #p6 .ut-row-2,#p6 .ut-row-3{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
@@ -570,6 +616,7 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
   <div class="tab"        data-tab="1" onclick="switchTab(1)">🏅 Gold</div>
   <div class="tab"        data-tab="2" onclick="switchTab(2)">💰 Dividends</div>
   <div class="tab"        data-tab="4" onclick="switchTab(4)">🏦 Fixed Deposits</div>
+  <div class="tab"        data-tab="6" onclick="switchTab(6)">💎 Unit Trust</div>
   <div class="tab"        data-tab="5" onclick="switchTab(5)">📊 Performance</div>
   <div class="tab"        data-tab="3" onclick="switchTab(3)">💡 Insights</div>
 </div>
@@ -605,12 +652,16 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
     <div class="loading" id="l5"><div class="mini-line"></div><div>Click tab to load performance data…</div></div>
     <div id="c5" style="display:none"></div>
   </div>
+  <div class="panel" id="p6">
+    <div class="loading" id="l6"><div class="mini-line"></div><div>Click tab to load Unit Trust data…</div></div>
+    <div id="c6" style="display:none"></div>
+  </div>
 </div>
 
 <script>
 // ── State ──────────────────────────────────────────────────────────
 var _stocks=[], _live={}, _liveQ=[], _liveTotal=0, _liveDone=0;
-var _goldLoaded=false, _goldLoading=false, _divLoaded=false, _fdLoaded=false, _perfLoaded=false, _portChart=null, _goldChart=null;
+var _goldLoaded=false, _goldLoading=false, _divLoaded=false, _fdLoaded=false, _perfLoaded=false, _utLoaded=false, _portChart=null, _goldChart=null;
 var _screenerAll=[];
 var _goldPh=[], _gold8gPrice=0;
 
@@ -650,6 +701,7 @@ function switchTab(i){
   if(i===3&&_liveDone>0)  renderInsights();
   if(i===4&&!_fdLoaded)   loadFDData();
   if(i===5&&!_perfLoaded) loadPerfData();
+  if(i===6&&!_utLoaded)   loadUTData();
 }
 function tdot(i,s){var d=document.getElementById('td'+i);if(d)d.className='tdot'+(s?' '+s:'');}
 
@@ -2515,6 +2567,348 @@ function renderPerfTab(rows){
            '<div class="insight-value" style="color:'+col+'">'+i.value+'</div>'+
            '<div class="insight-sub">'+i.sub+'</div></div></div>';
   }).join('');
+}
+
+// ════════════════════════════════════════════════
+// UNIT TRUST TAB (p6)
+// ════════════════════════════════════════════════
+var _utFunds = [];
+var _utChartAlloc = null, _utChartEarn = null, _utChartCostVal = null;
+
+var UT_COLORS = {
+  CAL: {bg:'rgba(0,212,255,.55)', border:'#00d4ff', light:'rgba(0,212,255,.15)'},
+  NDB: {bg:'rgba(168,85,247,.55)', border:'#a855f7', light:'rgba(168,85,247,.15)'}
+};
+function utColor(company, alpha){
+  var c=UT_COLORS[company];
+  return c ? (alpha ? c.light : c.bg) : 'rgba(255,255,255,.3)';
+}
+function utBorder(company){ var c=UT_COLORS[company]; return c?c.border:'rgba(255,255,255,.4)'; }
+
+function utFmt(n){ return '₨\u202f'+Math.abs(Number(n)).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function utFmtSigned(n){ var v=Number(n); return (v<0?'−':'')+'₨\u202f'+Math.abs(v).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+function utPct(earn,inv){ return inv>0?((earn/inv)*100).toFixed(2):0; }
+function utBadge(company){
+  var cls=company==='CAL'?'cal':company==='NDB'?'ndb':'other';
+  return '<span class="ut-badge '+cls+'">'+company+'</span>';
+}
+function utShortName(name){
+  // strip company prefix word
+  var parts=name.split(' ');
+  return parts.length>2?parts.slice(1).join(' '):name;
+}
+
+function loadUTData(){
+  document.getElementById('l6').style.display='flex';
+  document.getElementById('c6').style.display='none';
+  google.script.run
+    .withSuccessHandler(function(res){
+      _utLoaded=true;
+      _utFunds=res.funds||[];
+      document.getElementById('l6').style.display='none';
+      document.getElementById('c6').style.display='block';
+      renderUTTab();
+    })
+    .withFailureHandler(function(e){
+      document.getElementById('l6').innerHTML='<div class="err-box">'+e.message+'</div>';
+    })
+    .getUTData();
+}
+
+function renderUTTab(){
+  var funds=_utFunds;
+  if(!funds.length){
+    document.getElementById('c6').innerHTML='<div class="glass" style="text-align:center;padding:40px;color:var(--muted)">No unit trust data found in UT_CRYPTO rows 8–15.</div>';
+    return;
+  }
+
+  // ── Aggregates ──
+  var totInv=0, totCurVal=0, totEarn=0;
+  funds.forEach(function(f){
+    totInv   +=f.invested;
+    totCurVal+=f.units*f.unitPrice;
+    totEarn  +=f.earnings;
+  });
+  var overallROI = totInv>0?((totEarn/totInv)*100):0;
+
+  // ── Company rollup ──
+  var compMap={};
+  funds.forEach(function(f){
+    if(!compMap[f.company]) compMap[f.company]={invested:0,curVal:0,earn:0};
+    compMap[f.company].invested+=f.invested;
+    compMap[f.company].curVal  +=f.units*f.unitPrice;
+    compMap[f.company].earn    +=f.earnings;
+  });
+  var companies=Object.keys(compMap);
+
+  // ── KPI cards ──
+  var h='<div class="ut-kpi-row">';
+  h+=utKpi('💰','Total Invested',   utFmt(totInv),   '','blue');
+  h+=utKpi('📈','Current Value',    utFmt(totCurVal), totCurVal>=totInv?fp(totCurVal-totInv)+'':fp(totCurVal-totInv)+'', totCurVal>=totInv?'green':'red');
+  h+=utKpi('💹','Total Earnings',   utFmtSigned(totEarn),  totEarn>=0?'Positive':'Negative',totEarn>=0?'green':'red');
+  h+=utKpi('🎯','Overall ROI',       overallROI+'%',  'all funds',overallROI>=0?'gold':'red');
+  h+='</div>';
+
+  // ── Row: Charts ──
+  // Left: company allocation donut  |  Right: earnings bar per fund
+  h+='<div class="ut-row-2">';
+
+  // Alloc donut
+  h+='<div class="glass">';
+  h+='<div class="card-hdr"><div class="card-dot" style="background:var(--blue)"></div><span class="card-title">Company Allocation</span></div>';
+  h+='<div class="chart-wrap ut-short"><canvas id="utAllocChart"></canvas></div>';
+  h+='</div>';
+
+  // Earnings per fund (horizontal bar)
+  h+='<div class="glass">';
+  h+='<div class="card-hdr"><div class="card-dot" style="background:var(--green)"></div><span class="card-title">Earnings per Fund</span></div>';
+  h+='<div class="chart-wrap ut-tall"><canvas id="utEarnChart"></canvas></div>';
+  h+='</div>';
+
+  h+='</div>'; // end row-2
+
+  // Cost vs Current Value grouped bar (full width)
+  h+='<div class="ut-row-full glass">';
+  h+='<div class="card-hdr"><div class="card-dot" style="background:var(--purple)"></div><span class="card-title">Cost vs Current Value per Fund</span></div>';
+  h+='<div class="chart-wrap ut-tall"><canvas id="utCostValChart"></canvas></div>';
+  h+='</div>';
+
+  // ── Fund table ──
+  h+='<div class="ut-row-full glass">';
+  h+='<div class="card-hdr"><div class="card-dot" style="background:var(--gold)"></div><span class="card-title">Fund Details</span><span style="font-size:.58em;color:var(--dim);margin-left:auto">✏️ click row to edit invested / units</span></div>';
+  h+='<table class="ut-table"><thead><tr>'+
+     '<th>Fund</th><th>Invested</th><th>Units</th><th>Unit Price</th><th>Current Value</th><th>Earnings</th><th>Return</th><th></th>'+
+     '</tr></thead><tbody>';
+
+  funds.forEach(function(f,idx){
+    var curVal=f.units*f.unitPrice;
+    var retPct=Number(utPct(f.earnings,f.invested));
+    var retCls=retPct>0?'pos':retPct<0?'neg':'flat';
+    var earnCls=f.earnings>=0?'ut-pos':'ut-neg';
+    h+='<tr id="ut-row-'+idx+'">';
+    h+='<td>'+utBadge(f.company)+' '+utShortName(f.name)+'</td>';
+    h+='<td>'+utFmt(f.invested)+'</td>';
+    h+='<td>'+f.units.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:4})+'</td>';
+    h+='<td>₨\u202f'+f.unitPrice.toFixed(4)+'</td>';
+    h+='<td>'+utFmt(curVal)+'</td>';
+    h+='<td class="'+earnCls+'">'+(f.earnings>=0?'+':'')+utFmt(f.earnings)+'</td>';
+    h+='<td><span class="ut-ret '+retCls+'">'+(retPct>=0?'+':'')+retPct+'%</span></td>';
+    h+='<td><button class="ut-edit-btn" title="Edit" onclick="utToggleEdit('+idx+')">✏️</button></td>';
+    h+='</tr>';
+    // inline edit row
+    h+='<tr class="ut-edit-row" id="ut-edit-'+idx+'">';
+    h+='<td colspan="8" class="ut-edit-cell">';
+    h+='<div class="ut-edit-form">';
+    h+='<div class="ut-edit-field"><span class="ut-edit-lbl">Invested (₨)</span>'+
+       '<input class="ut-edit-inp" id="ut-inp-inv-'+idx+'" type="number" step="1" value="'+f.invested+'"></div>';
+    h+='<div class="ut-edit-field"><span class="ut-edit-lbl">Hold Units</span>'+
+       '<input class="ut-edit-inp" id="ut-inp-uni-'+idx+'" type="number" step="0.0001" value="'+f.units+'"></div>';
+    h+='<button class="ut-save-btn" id="ut-save-'+idx+'" onclick="utSave('+idx+','+f.rowIndex+')">💾 Save</button>';
+    h+='<button class="ut-cancel-btn" onclick="utToggleEdit('+idx+')">Cancel</button>';
+    h+='<span id="ut-save-msg-'+idx+'" style="font-size:.72em;margin-left:6px"></span>';
+    h+='</div></td></tr>';
+  });
+
+  h+='</tbody></table></div>';
+
+  document.getElementById('c6').innerHTML=h;
+
+  // render charts after DOM is ready
+  setTimeout(function(){ utRenderCharts(funds, companies, compMap); }, 80);
+}
+
+function utKpi(icon,label,val,sub,color){
+  return '<div class="kpi '+color+'"><div class="kpi-glow"></div>'+
+         '<span class="kpi-icon">'+icon+'</span>'+
+         '<div class="kpi-label">'+label+'</div>'+
+         '<div class="kpi-value">'+val+'</div>'+
+         (sub?'<div class="kpi-sub">'+sub+'</div>':'')+
+         '</div>';
+}
+
+function utToggleEdit(idx){
+  var row=document.getElementById('ut-edit-'+idx);
+  if(!row) return;
+  var isOpen=row.classList.contains('open');
+  // close all first
+  document.querySelectorAll('.ut-edit-row').forEach(function(r){ r.classList.remove('open'); });
+  if(!isOpen) row.classList.add('open');
+}
+
+function utSave(idx, rowIndex){
+  var invEl=document.getElementById('ut-inp-inv-'+idx);
+  var uniEl=document.getElementById('ut-inp-uni-'+idx);
+  var msgEl=document.getElementById('ut-save-msg-'+idx);
+  var btn  =document.getElementById('ut-save-'+idx);
+  if(!invEl||!uniEl) return;
+  var inv=parseFloat(invEl.value);
+  var uni=parseFloat(uniEl.value);
+  if(isNaN(inv)||inv<0||isNaN(uni)||uni<0){
+    if(msgEl){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠ Invalid values'; }
+    return;
+  }
+  btn.disabled=true;
+  if(msgEl){ msgEl.style.color='rgba(255,255,255,.4)'; msgEl.textContent='Saving…'; }
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.disabled=false;
+      if(res&&res.ok){
+        // update local cache
+        _utFunds[idx].invested=inv;
+        _utFunds[idx].units=uni;
+        if(msgEl){ msgEl.style.color='var(--green)'; msgEl.textContent='✓ Saved'; }
+        // close edit row after brief delay then refresh tab
+        setTimeout(function(){
+          utToggleEdit(idx);
+          _utLoaded=false;
+          loadUTData();
+        }, 900);
+      } else {
+        if(msgEl){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠ '+(res&&res.error?res.error:'Save failed'); }
+      }
+    })
+    .withFailureHandler(function(e){
+      btn.disabled=false;
+      if(msgEl){ msgEl.style.color='var(--red)'; msgEl.textContent='⚠ '+e.message; }
+    })
+    .saveUTEntry(rowIndex, inv, uni);
+}
+
+function utRenderCharts(funds, companies, compMap){
+
+  // ── 1. Alloc Donut ──────────────────────────────────────────────
+  var allocCtx=document.getElementById('utAllocChart');
+  if(allocCtx){
+    if(_utChartAlloc){ _utChartAlloc.destroy(); _utChartAlloc=null; }
+    _utChartAlloc=new Chart(allocCtx,{
+      type:'doughnut',
+      data:{
+        labels: companies,
+        datasets:[{
+          data: companies.map(function(c){ return compMap[c].invested; }),
+          backgroundColor: companies.map(function(c){ return utColor(c,false); }),
+          borderColor:     companies.map(function(c){ return utBorder(c); }),
+          borderWidth:2, hoverOffset:6
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        cutout:'68%',
+        plugins:{
+          legend:{position:'bottom',labels:{color:'rgba(255,255,255,.5)',font:{size:10,family:'Inter'},padding:12,boxWidth:10}},
+          tooltip:{
+            backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+            titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:10,
+            callbacks:{
+              label:function(ctx){
+                var tot=companies.reduce(function(s,c){ return s+compMap[c].invested; },0);
+                var pct=tot>0?(ctx.parsed/tot*100).toFixed(1):0;
+                return ' '+ctx.label+': '+utFmt(ctx.parsed)+' ('+pct+'%)';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ── 2. Earnings Horizontal Bar ──────────────────────────────────
+  var earnCtx=document.getElementById('utEarnChart');
+  if(earnCtx){
+    if(_utChartEarn){ _utChartEarn.destroy(); _utChartEarn=null; }
+    var earnLabels=funds.map(function(f){ return utShortName(f.name); });
+    var earnData  =funds.map(function(f){ return f.earnings; });
+    var earnColors=funds.map(function(f){ return f.earnings>=0?'rgba(0,255,136,.55)':'rgba(255,77,141,.55)'; });
+    var earnBorders=funds.map(function(f){ return f.earnings>=0?'#00ff88':'#ff4d8d'; });
+    _utChartEarn=new Chart(earnCtx,{
+      type:'bar',
+      data:{
+        labels:earnLabels,
+        datasets:[{
+          label:'Earnings',
+          data:earnData,
+          backgroundColor:earnColors,
+          borderColor:earnBorders,
+          borderWidth:1,
+          borderRadius:4
+        }]
+      },
+      options:{
+        indexAxis:'y',
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+            titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:10,
+            callbacks:{
+              label:function(ctx){ return ' Earnings: '+(ctx.parsed.x>=0?'+':'')+utFmt(ctx.parsed.x); }
+            }
+          }
+        },
+        scales:{
+          x:{
+            ticks:{color:'rgba(255,255,255,.35)',font:{size:9},callback:function(v){ return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v; }},
+            grid:{color:'rgba(255,255,255,.04)'},
+            border:{color:'rgba(255,255,255,.06)'}
+          },
+          y:{
+            ticks:{color:'rgba(255,255,255,.5)',font:{size:9,family:'Inter'}},
+            grid:{display:false}
+          }
+        }
+      }
+    });
+  }
+
+  // ── 3. Cost vs Current Value Grouped Bar ────────────────────────
+  var cvCtx=document.getElementById('utCostValChart');
+  if(cvCtx){
+    if(_utChartCostVal){ _utChartCostVal.destroy(); _utChartCostVal=null; }
+    var cvLabels=funds.map(function(f){ return utShortName(f.name); });
+    _utChartCostVal=new Chart(cvCtx,{
+      type:'bar',
+      data:{
+        labels:cvLabels,
+        datasets:[
+          {
+            label:'Invested',
+            data:funds.map(function(f){ return f.invested; }),
+            backgroundColor:'rgba(255,255,255,.1)',
+            borderColor:'rgba(255,255,255,.25)',
+            borderWidth:1, borderRadius:4
+          },
+          {
+            label:'Current Value',
+            data:funds.map(function(f){ return f.units*f.unitPrice; }),
+            backgroundColor:funds.map(function(f){ return (f.units*f.unitPrice)>=f.invested?'rgba(0,255,136,.45)':'rgba(255,77,141,.45)'; }),
+            borderColor:    funds.map(function(f){ return (f.units*f.unitPrice)>=f.invested?'#00ff88':'#ff4d8d'; }),
+            borderWidth:1, borderRadius:4
+          }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{labels:{color:'rgba(255,255,255,.4)',font:{size:10,family:'Inter'}}},
+          tooltip:{
+            backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+            titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:10,
+            callbacks:{
+              label:function(ctx){ return ' '+ctx.dataset.label+': '+utFmt(ctx.parsed.y); }
+            }
+          }
+        },
+        scales:{
+          x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
+          y:{
+            ticks:{color:'rgba(255,255,255,.35)',font:{size:9},callback:function(v){ return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v; }},
+            grid:{color:'rgba(255,255,255,.04)'}
+          }
+        }
+      }
+    });
+  }
 }
 </script>
 

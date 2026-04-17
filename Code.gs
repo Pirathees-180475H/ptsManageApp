@@ -1446,6 +1446,59 @@ function getInvestmentData() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// UNIT TRUST DATA
+// ═══════════════════════════════════════════════════════════════
+
+function getUTData() {
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName('UT_CRYPTO');
+    if (!sheet) throw new Error('UT_CRYPTO sheet not found');
+    // Rows 8–15, cols A–E: Fund Name, Invested, Units, Unit Price, Earnings
+    var lastRow = Math.min(sheet.getLastRow(), 15);
+    if (lastRow < 8) return { funds: [] };
+    var rows = sheet.getRange(8, 1, lastRow - 7, 5).getValues();
+    var funds = [];
+    rows.forEach(function(row, i) {
+      var name = (row[0] || '').toString().trim();
+      if (!name || name.toLowerCase() === 'total') return;
+      // derive company from first word (CAL, NDB, etc.)
+      var company = name.split(' ')[0].toUpperCase();
+      funds.push({
+        rowIndex: i,           // 0-based offset from row 8
+        name:      name,
+        company:   company,
+        invested:  Number((row[1] || '').toString().replace(/,/g,'')) || 0,
+        units:     Number((row[2] || '').toString().replace(/,/g,'')) || 0,
+        unitPrice: Number((row[3] || '').toString().replace(/,/g,'')) || 0,
+        earnings:  Number((row[4] || '').toString().replace(/,/g,'')) || 0
+      });
+    });
+    return { funds: funds };
+  } catch(e) {
+    return { funds: [], error: e.message };
+  }
+}
+
+// Saves updated invested amount and units for a single fund row back to the sheet.
+// rowIndex is 0-based (row 8 = index 0).
+function saveUTEntry(rowIndex, invested, units) {
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName('UT_CRYPTO');
+    if (!sheet) throw new Error('UT_CRYPTO sheet not found');
+    var sheetRow = 8 + Number(rowIndex);
+    if (sheetRow < 8 || sheetRow > 15) throw new Error('Invalid row index: ' + rowIndex);
+    var inv = Number(invested);
+    var uni = Number(units);
+    if (isNaN(inv) || isNaN(uni)) throw new Error('Invalid numbers supplied');
+    sheet.getRange(sheetRow, 2).setValue(inv);  // col B = Invested
+    sheet.getRange(sheetRow, 3).setValue(uni);  // col C = Units
+    return { ok: true };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // Investment DASHBOARD
 // ═══════════════════════════════════════════════════════════════
 
