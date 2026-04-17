@@ -579,6 +579,23 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
   #p6 .ut-kpi-row{grid-template-columns:repeat(2,1fr);}
   #p6 .ut-row-2,#p6 .ut-row-3{grid-template-columns:1fr;}
 }
+/* ── Performance tab redesign ── */
+.pf-chart-sel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;font-family:'Inter',sans-serif;font-size:.68em;font-weight:600;padding:4px 28px 4px 10px;cursor:pointer;margin-left:auto;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.35)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+.pf-chart-sel:focus{border-color:var(--blue);}
+.pf-chart-sel option{background:#0d1117;color:#fff;}
+.pf-ak-roi-line{display:flex;align-items:baseline;gap:6px;margin-bottom:4px;}
+.pf-ak-roi-amt{font-size:1.1em;font-weight:800;letter-spacing:-.5px;line-height:1;color:var(--purple);text-shadow:0 0 18px rgba(168,85,247,.3);}
+.pf-ak-roi-sep{font-size:.65em;color:rgba(255,255,255,.2);font-weight:400;}
+.pf-ak-roi-pct{font-size:.78em;font-weight:800;letter-spacing:-.3px;color:var(--orange);}
+.pf-ak-top{display:flex;align-items:center;gap:7px;margin-bottom:6px;}
+.pf-ak-icon{font-size:1.05em;line-height:1;}
+.pf-ak-label{font-size:.58em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.32);}
+.pf-ak-earn{font-size:1.1em;font-weight:800;letter-spacing:-.5px;line-height:1;margin-bottom:5px;}
+.kpi.blue.pf-asset-kpi  .pf-ak-earn{color:var(--blue);text-shadow:0 0 18px rgba(0,212,255,.3);}
+.kpi.green.pf-asset-kpi .pf-ak-earn{color:var(--green);text-shadow:0 0 18px rgba(0,255,136,.3);}
+.kpi.gold.pf-asset-kpi  .pf-ak-earn{color:var(--gold);text-shadow:0 0 18px rgba(255,215,0,.3);}
+.kpi.purple.pf-asset-kpi .pf-ak-earn{color:var(--purple);text-shadow:0 0 18px rgba(168,85,247,.3);}
+.pf-ak-inv{font-size:.62em;color:rgba(255,255,255,.3);margin-bottom:4px;}
 </style>
 </head>
 <body>
@@ -2393,63 +2410,71 @@ function renderPerfTab(rows){
   var allTotInv=allUtInv+allStkInv+allGldInv;
   var overallROI=pfPct(allTotEarn,allTotInv);
   var bestEarnIdx=totEarn.indexOf(Math.max.apply(null,totEarn));
-  var dUT=latest[1]-prev[1],dStk=latest[2]-prev[2],dGld=latest[3]-prev[3],dTot=dUT+dStk+dGld;
+  var dUT=+latest[1]-+prev[1],dStk=+latest[2]-+prev[2],dGld=+latest[3]-+prev[3],dTot=dUT+dStk+dGld;
   function dCls(v){return v>0?'delta-up':v<0?'delta-down':'delta-flat';}
   function dStr(v){return v>0?'▲ '+pfFmt(v):v<0?'▼ '+pfFmt(Math.abs(v)):'— no change';}
 
+  var chartMeta=[
+    {id:'pfEarnLine',  label:'Monthly Earnings Trend',      dot:'#3b82f6'},
+    {id:'pfInvStacked',label:'Monthly Investment Amounts',  dot:'#ffd700'},
+    {id:'pfRoiLine',   label:'ROI % Over Time',             dot:'#ff6b35'},
+    {id:'pfEarnVsInv', label:'Earnings vs Invested',        dot:'#38bdf8'},
+    {id:'pfDeltaBar',  label:'Month-over-Month Earnings \u0394',dot:'#f472b6'}
+  ];
+
   var h='';
-  h+='<div class="pf-header">'+
-     '<div style="display:inline-block;padding:5px 16px;border-radius:20px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);color:var(--blue2);font-size:.65em;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">📊 Live · UT_CRYPTO</div>'+
-     '<div style="font-size:1.3em;font-weight:800;letter-spacing:-.4px;background:linear-gradient(135deg,#fff 0%,var(--blue) 40%,var(--purple) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Investment Performance</div>'+
-     '<div class="pf-header-sub">Unit Trusts · Stocks · Gold — earnings &amp; ROI overview</div>'+
+
+  // Log button top-right
+  h+='<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">'+
      '<button class="pf-log-btn" id="pfLogBtn" onclick="pfLogData()">'+
      '<span class="btn-ico">📝</span><div class="btn-spin"></div>Log This Month</button>'+
      '</div>';
 
+  // Asset KPI cards (3 paired + 1 totals)
+  function assetKpi(icon,lbl,earnId,invAmt,dClass,dTxt,color){
+    return '<div class="kpi pf-asset-kpi '+color+'"><div class="kpi-glow"></div>'+
+      '<div class="pf-ak-top"><span class="pf-ak-icon">'+icon+'</span><span class="pf-ak-label">'+lbl+'</span></div>'+
+      '<div class="pf-ak-earn" id="'+earnId+'">₨0</div>'+
+      '<div class="pf-ak-inv">Invested · '+pfFmt(invAmt)+'</div>'+
+      '<span class="kpi-delta '+dClass+'">'+dTxt+'</span>'+
+      '</div>';
+  }
   h+='<div class="pf-kpi-row">'+
-     '<div class="kpi blue"><div class="kpi-glow"></div><span class="kpi-icon">🔵</span><div class="kpi-label">UT Earnings</div><div class="kpi-value" id="pf-kpi-ut">₨0</div><span class="kpi-delta '+dCls(dUT)+'">'+dStr(dUT)+'</span></div>'+
-     '<div class="kpi green"><div class="kpi-glow"></div><span class="kpi-icon">📈</span><div class="kpi-label">Stock Earnings</div><div class="kpi-value" id="pf-kpi-stk">₨0</div><span class="kpi-delta '+dCls(dStk)+'">'+dStr(dStk)+'</span></div>'+
-     '<div class="kpi gold"><div class="kpi-glow"></div><span class="kpi-icon">🥇</span><div class="kpi-label">Gold Earnings</div><div class="kpi-value" id="pf-kpi-gld">₨0</div><span class="kpi-delta '+dCls(dGld)+'">'+dStr(dGld)+'</span></div>'+
-     '<div class="kpi purple"><div class="kpi-glow"></div><span class="kpi-icon">💰</span><div class="kpi-label">Total Earnings</div><div class="kpi-value" id="pf-kpi-tot">₨0</div><span class="kpi-delta '+dCls(dTot)+'">'+dStr(dTot)+'</span></div>'+
-     '<div class="kpi blue"><div class="kpi-glow"></div><span class="kpi-icon">🏦</span><div class="kpi-label">UT Invested</div><div class="kpi-value">'+pfFmt(latest[4])+'</div><div class="kpi-sub">current month</div></div>'+
-     '<div class="kpi green"><div class="kpi-glow"></div><span class="kpi-icon">📉</span><div class="kpi-label">Stock Invested</div><div class="kpi-value">'+pfFmt(latest[5])+'</div><div class="kpi-sub">current month</div></div>'+
-     '<div class="kpi gold"><div class="kpi-glow"></div><span class="kpi-icon">🪙</span><div class="kpi-label">Gold Invested</div><div class="kpi-value">'+pfFmt(latest[6])+'</div><div class="kpi-sub">current month</div></div>'+
-     '<div class="kpi orange"><div class="kpi-glow"></div><span class="kpi-icon">🎯</span><div class="kpi-label">Overall ROI</div><div class="kpi-value" id="pf-kpi-roi">0%</div><div class="kpi-sub">all-time</div></div>'+
+     assetKpi('🔵','Unit Trust','pf-kpi-ut', +latest[4],dCls(dUT), dStr(dUT), 'blue')+
+     assetKpi('📈','Stocks',    'pf-kpi-stk',+latest[5],dCls(dStk),dStr(dStk),'green')+
+     assetKpi('🥇','Gold',      'pf-kpi-gld',+latest[6],dCls(dGld),dStr(dGld),'gold')+
+     '<div class="kpi pf-asset-kpi purple"><div class="kpi-glow"></div>'+
+     '<div class="pf-ak-top"><span class="pf-ak-icon">💰</span><span class="pf-ak-label">Total Earnings</span></div>'+
+     '<div class="pf-ak-roi-line"><span class="pf-ak-roi-amt" id="pf-kpi-tot">₨0</span><span class="pf-ak-roi-sep">·</span><span class="pf-ak-roi-pct" id="pf-kpi-roi">0%</span></div>'+
+     '<span class="kpi-delta '+dCls(dTot)+'">'+dStr(dTot)+'</span>'+
+     '</div>'+
      '</div>';
 
-  // Earnings trend (full width)
-  h+='<div class="row-full glass">'+
-     '<div class="card-hdr"><div class="card-dot" style="background:#3b82f6;box-shadow:0 0 6px #3b82f6"></div>'+
-     '<div class="card-title">Monthly Earnings Trend</div><div class="card-sub-pf">UT · Stock · Gold</div></div>'+
-     '<div class="chart-wrap tall"><canvas id="pfEarnLine"></canvas></div></div>';
+  // Charts: Analytical (2fr) + Allocation donut (1fr) side-by-side
+  var ddOpts=chartMeta.map(function(m,i){
+    return '<option value="'+i+'"'+(i===4?' selected':'')+'>'+m.label+'</option>';
+  }).join('');
 
-  // Investment stacked bar (full width)
-  h+='<div class="row-full glass">'+
-     '<div class="card-hdr"><div class="card-dot" style="background:#ffd700;box-shadow:0 0 6px #ffd700"></div>'+
-     '<div class="card-title">Monthly Investment Amounts</div><div class="card-sub-pf">stacked by asset</div></div>'+
-     '<div class="chart-wrap tall"><canvas id="pfInvStacked"></canvas></div></div>';
-
-  // ROI % + Allocation (2:1 layout)
-  h+='<div class="row-3">'+
-     '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#ff6b35;box-shadow:0 0 6px #ff6b35"></div>'+
-     '<div class="card-title">ROI % Over Time</div><div class="card-sub-pf">per asset</div></div>'+
-     '<div class="chart-wrap tall"><canvas id="pfRoiLine"></canvas></div></div>'+
-     '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#00e676;box-shadow:0 0 6px #00e676"></div>'+
-     '<div class="card-title">Current Allocation</div><div class="card-sub-pf">latest month</div></div>'+
-     '<div class="chart-wrap tall"><canvas id="pfAllocDonut"></canvas></div></div>'+
+  h+='<div class="row-3">';
+  h+='<div class="glass">'+
+     '<div class="card-hdr">'+
+     '<div class="card-dot" id="pfChartDot" style="background:'+chartMeta[4].dot+';box-shadow:0 0 6px '+chartMeta[4].dot+'"></div>'+
+     '<div class="card-title" id="pfChartTitle">'+chartMeta[4].label+'</div>'+
+     '<select class="pf-chart-sel" id="pfChartSel" onchange="pfSwitchChart(this.value)">'+ddOpts+'</select>'+
      '</div>';
+  chartMeta.forEach(function(m,i){
+    h+='<div class="chart-wrap tall pf-chart-panel" id="pfPanel-'+i+'" style="'+(i!==4?'display:none':'')+'"><canvas id="'+m.id+'"></canvas></div>';
+  });
+  h+='</div>';
 
-  // Earnings vs Invested + MoM delta (1:1)
-  h+='<div class="row-2">'+
-     '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#38bdf8;box-shadow:0 0 6px #38bdf8"></div>'+
-     '<div class="card-title">Earnings vs Invested</div><div class="card-sub-pf">total per month</div></div>'+
-     '<div class="chart-wrap"><canvas id="pfEarnVsInv"></canvas></div></div>'+
-     '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#f472b6;box-shadow:0 0 6px #f472b6"></div>'+
-     '<div class="card-title">Month-over-Month Earnings Δ</div><div class="card-sub-pf">positive = improvement</div></div>'+
-     '<div class="chart-wrap"><canvas id="pfDeltaBar"></canvas></div></div>'+
+  h+='<div class="glass">'+
+     '<div class="card-hdr"><div class="card-dot" style="background:#00e676;box-shadow:0 0 6px #00e676"></div>'+
+     '<div class="card-title">Current Invested Allocation</div><div class="card-sub-pf">latest month</div></div>'+
+     '<div class="chart-wrap tall"><canvas id="pfAllocDonut"></canvas></div>'+
      '</div>';
+  h+='</div>';
 
-  // Insights (full width)
+  // Insights
   h+='<div class="row-full glass">'+
      '<div class="card-hdr"><div class="card-dot" style="background:#c084fc;box-shadow:0 0 6px #c084fc"></div>'+
      '<div class="card-title">Insights</div></div>'+
@@ -2457,14 +2482,28 @@ function renderPerfTab(rows){
 
   c5.innerHTML=h;
 
+  // Dropdown switch function (global so onchange can reach it)
+  window.pfSwitchChart=function(val){
+    var i=parseInt(val);
+    document.querySelectorAll('#p5 .pf-chart-panel').forEach(function(p,j){
+      p.style.display=j===i?'':'none';
+    });
+    var dot=document.getElementById('pfChartDot');
+    var ttl=document.getElementById('pfChartTitle');
+    if(dot){dot.style.background=chartMeta[i].dot;dot.style.boxShadow='0 0 6px '+chartMeta[i].dot;}
+    if(ttl) ttl.textContent=chartMeta[i].label;
+  };
+
+  // Animate counters
   setTimeout(function(){
     pfAnimCounter(document.getElementById('pf-kpi-ut'),  +latest[1]);
     pfAnimCounter(document.getElementById('pf-kpi-stk'), +latest[2]);
     pfAnimCounter(document.getElementById('pf-kpi-gld'), +latest[3]);
-    pfAnimCounter(document.getElementById('pf-kpi-tot'), +latest[1]+ +latest[2]+ +latest[3]);
+    pfAnimCounter(document.getElementById('pf-kpi-tot'), allTotEarn);
     pfAnimCounter(document.getElementById('pf-kpi-roi'), parseFloat(overallROI), false);
   },150);
 
+  // Build all 5 analytical charts + allocation donut
   new Chart(document.getElementById('pfEarnLine'),{type:'line',data:{labels:months,datasets:[
     {label:'UT',data:utEarn,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.12)',tension:.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#3b82f6',pointRadius:4,pointHoverRadius:7},
     {label:'Stock',data:stkEarn,borderColor:'#00e676',backgroundColor:'rgba(0,230,118,0.1)',tension:.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#00e676',pointRadius:4,pointHoverRadius:7},
@@ -2474,8 +2513,7 @@ function renderPerfTab(rows){
     plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},
       tooltip:pfTip({label:function(ctx){return ' '+ctx.dataset.label+': '+pfFmt(ctx.parsed.y);}})},
     scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
-            y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+pfK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}}
-  );
+            y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+pfK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}});
 
   new Chart(document.getElementById('pfInvStacked'),{type:'bar',data:{labels:months,datasets:[
     {label:'UT',data:utInv,backgroundColor:'rgba(59,130,246,.35)',borderColor:'#3b82f6',borderWidth:1,borderRadius:0,borderSkipped:false},
@@ -2493,8 +2531,7 @@ function renderPerfTab(rows){
         footer:function(items){return ' Total: '+pfFmt(items.reduce(function(s,i){return s+i.parsed.y;},0));}
       }),mode:'index',intersect:false},
     scales:{x:{stacked:true,ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'}},
-            y:{stacked:true,ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+pfK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}}
-  );
+            y:{stacked:true,ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+pfK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}});
 
   new Chart(document.getElementById('pfRoiLine'),{type:'line',data:{labels:months,datasets:[
     {label:'UT ROI %',data:roiUT,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.1)',tension:.4,fill:true,borderWidth:2,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:'#3b82f6'},
@@ -2504,17 +2541,7 @@ function renderPerfTab(rows){
     plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},
       tooltip:pfTip({label:function(ctx){return ' '+ctx.dataset.label+': '+ctx.parsed.y+'%';}})},
     scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},
-            y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,.04)'}}}}}
-  );
-
-  new Chart(document.getElementById('pfAllocDonut'),{type:'doughnut',data:{labels:['UT','Stock','Gold'],datasets:[{
-    data:[latest[4],latest[5],latest[6]],
-    backgroundColor:['rgba(59,130,246,.3)','rgba(0,230,118,.28)','rgba(255,215,0,.28)'],
-    borderColor:['#3b82f6','#00e676','#ffd700'],borderWidth:2,hoverOffset:10}]},
-    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',animation:{animateRotate:true,duration:1300},
-    plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.5)',font:{size:10},padding:12,usePointStyle:true,pointStyleWidth:7}},
-      tooltip:pfTip({label:function(ctx){return ' '+ctx.label+': '+pfFmt(ctx.parsed)+' ('+((ctx.parsed/(+latest[4]+ +latest[5]+ +latest[6]))*100).toFixed(1)+'%)';}})}}
-  });
+            y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,.04)'}}}}});
 
   new Chart(document.getElementById('pfEarnVsInv'),{type:'bar',data:{labels:months,datasets:[
     {label:'Total Invested',data:totInv,backgroundColor:'rgba(56,189,248,.2)',borderColor:'#38bdf8',borderWidth:2,borderRadius:6,borderSkipped:false},
@@ -2523,8 +2550,7 @@ function renderPerfTab(rows){
     plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},
       tooltip:pfTip({label:function(ctx){return ' '+ctx.dataset.label+': '+pfFmt(ctx.parsed.y);}})},
     scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'}},
-            y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+pfK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}}
-  );
+            y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+pfK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}});
 
   var dColors=deltaEarn.map(function(v){return v>0?'rgba(0,230,118,.35)':'rgba(255,77,141,.3)';});
   var dBorders=deltaEarn.map(function(v){return v>0?'#00e676':'#ff4d8d';});
@@ -2534,8 +2560,16 @@ function renderPerfTab(rows){
     plugins:{legend:{display:false},
       tooltip:pfTip({label:function(ctx){return ' '+(ctx.parsed.y>=0?'▲ +':'▼ ')+pfFmt(ctx.parsed.y);}})},
     scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'}},
-            y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return (v>=0?'+':'')+pfK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}}
-  );
+            y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return (v>=0?'+':'')+pfK(v);}},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  new Chart(document.getElementById('pfAllocDonut'),{type:'doughnut',data:{labels:['UT','Stock','Gold'],datasets:[{
+    data:[+latest[4],+latest[5],+latest[6]],
+    backgroundColor:['rgba(59,130,246,.3)','rgba(0,230,118,.28)','rgba(255,215,0,.28)'],
+    borderColor:['#3b82f6','#00e676','#ffd700'],borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',animation:{animateRotate:true,duration:1300},
+    plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.5)',font:{size:10},padding:12,usePointStyle:true,pointStyleWidth:7}},
+      tooltip:pfTip({label:function(ctx){return ' '+ctx.label+': '+pfFmt(ctx.parsed)+' ('+(((ctx.parsed/(+latest[4]+ +latest[5]+ +latest[6]))*100).toFixed(1))+'%)';}})}
+  }});
 
   // Insights
   var uniqueMonths=new Set(months.map(function(m){return m.substring(0,7);})).size||1;
