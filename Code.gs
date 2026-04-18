@@ -544,7 +544,25 @@ function getPortfolioData() {
       Logger.log('Growth data read failed: ' + eg.message);
     }
 
-    return { assets: assets, growth: growth };
+    // ── EPF + ETF total: find "TOTAL" row in col A, read col F ──────
+    var epfEtf = 0;
+    try {
+      var epfSheet = ss.getSheetByName('EPF ETF');
+      if (epfSheet) {
+        var epfLastRow = epfSheet.getLastRow();
+        var epfColA = epfSheet.getRange(1, 1, epfLastRow, 1).getValues();
+        for (var ei = 0; ei < epfColA.length; ei++) {
+          if ((epfColA[ei][0] + '').trim().toLowerCase() === 'total') {
+            epfEtf = parseFloat(epfSheet.getRange(ei + 1, 6).getValue()) || 0;
+            break;
+          }
+        }
+      }
+    } catch(ee) {
+      Logger.log('EPF ETF read failed: ' + ee.message);
+    }
+
+    return { assets: assets, growth: growth, epfEtf: epfEtf };
   } catch (error) {
     throw new Error('Failed to load data: ' + error.message);
   }

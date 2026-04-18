@@ -902,22 +902,35 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   letter-spacing:-1px;line-height:1.1;}
 #page-port .header-sub{color:rgba(255,255,255,.38);font-size:.78em;margin-top:5px;}
-#page-port .hero-cards{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:18px;}
-#page-port .hero-card{position:relative;border-radius:20px;padding:20px;overflow:hidden;border:1px solid;backdrop-filter:blur(20px);}
-#page-port .hero-card.lkr{background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,150,0,.04));
-  border-color:rgba(255,215,0,.25);box-shadow:0 0 40px rgba(255,215,0,.08),inset 0 1px 0 rgba(255,255,255,.06);}
-#page-port .hero-card.usd{background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,212,255,.04));
-  border-color:rgba(0,255,136,.25);box-shadow:0 0 40px rgba(0,255,136,.08),inset 0 1px 0 rgba(255,255,255,.06);}
-#page-port .hero-card-icon{font-size:1.7em;margin-bottom:7px;display:block;}
-#page-port .hero-card-label{font-size:.66em;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:4px;}
-#page-port .hero-card-amount{font-size:1.5em;font-weight:800;letter-spacing:-1px;line-height:1;}
-#page-port .hero-card.lkr .hero-card-amount{color:var(--gold);text-shadow:0 0 30px rgba(255,215,0,.4);}
-#page-port .hero-card.usd .hero-card-amount{color:#00ff88;text-shadow:0 0 30px rgba(0,255,136,.4);}
-#page-port .hero-card-glow{position:absolute;right:-20px;bottom:-20px;width:110px;height:110px;border-radius:50%;filter:blur(40px);opacity:.22;}
-#page-port .hero-card.lkr .hero-card-glow{background:#ffd700;}
-#page-port .hero-card.usd .hero-card-glow{background:#00ff88;}
-#page-port .charts-row{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px;}
-#page-port .gauge-row{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px;}
+/* ── Port top row: KPI col (left 1/2) + chart col (right 1/2) ── */
+#page-port .port-top-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px;align-items:stretch;}
+#page-port .port-kpi-col{display:flex;flex-direction:column;gap:10px;}
+#page-port .port-kpi-card{position:relative;border-radius:16px;padding:16px 16px 14px;overflow:hidden;border:1px solid;backdrop-filter:blur(20px);display:flex;flex-direction:column;align-items:flex-start;gap:2px;}
+#page-port .port-kpi-card.lkr{background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,150,0,.04));border-color:rgba(255,215,0,.25);box-shadow:0 0 30px rgba(255,215,0,.07),inset 0 1px 0 rgba(255,255,255,.05);}
+#page-port .port-kpi-card.usd{background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,212,255,.04));border-color:rgba(0,255,136,.25);box-shadow:0 0 30px rgba(0,255,136,.07),inset 0 1px 0 rgba(255,255,255,.05);}
+#page-port .port-kpi-card.epf{background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(56,189,248,.04));border-color:rgba(168,85,247,.25);box-shadow:0 0 30px rgba(168,85,247,.07),inset 0 1px 0 rgba(255,255,255,.05);}
+#page-port .port-kpi-icon{font-size:1.7em;line-height:1;margin-bottom:6px;}
+#page-port .port-kpi-body{width:100%;}
+#page-port .port-kpi-label{font-size:.6em;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:3px;}
+#page-port .port-kpi-amount{font-size:1.15em;font-weight:800;letter-spacing:-.8px;line-height:1;}
+#page-port .port-kpi-card.lkr .port-kpi-amount{color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,.35);}
+#page-port .port-kpi-card.usd .port-kpi-amount{color:#00ff88;text-shadow:0 0 20px rgba(0,255,136,.35);}
+#page-port .port-kpi-card.epf .port-kpi-amount{color:#c084fc;text-shadow:0 0 20px rgba(168,85,247,.35);}
+#page-port .port-kpi-glow{position:absolute;right:-15px;bottom:-15px;width:70px;height:70px;border-radius:50%;filter:blur(30px);opacity:.18;}
+#page-port .port-kpi-card.lkr .port-kpi-glow{background:#ffd700;}
+#page-port .port-kpi-card.usd .port-kpi-glow{background:#00ff88;}
+#page-port .port-kpi-card.epf .port-kpi-glow{background:#a855f7;}
+/* chart switcher dropdown */
+#page-port .port-chart-sel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;
+  color:rgba(255,255,255,.75);font-family:'Inter',sans-serif;font-size:.68em;font-weight:600;
+  padding:4px 26px 4px 9px;cursor:pointer;outline:none;-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.4)'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center;transition:border-color .2s;margin-left:auto;}
+#page-port .port-chart-sel:hover{border-color:rgba(255,255,255,.25);}
+#page-port .port-chart-sel option{background:#0d1424;color:rgba(255,255,255,.82);}
+#page-port .port-chart-panel{display:none;}
+#page-port .port-chart-panel.active{display:block;}
+#page-port canvas{max-height:210px;}
 #page-port .glass-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
   border-radius:18px;padding:16px;backdrop-filter:blur(20px);
   box-shadow:0 4px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);position:relative;overflow:hidden;}
@@ -981,7 +994,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .port-toast.info   {border-color:rgba(0,212,255,.35);color:var(--blue);}
 .port-toast.error  {border-color:rgba(255,77,141,.35);color:var(--red2);}
 @media(max-width:600px){
-  #page-port .hero-cards,#page-port .charts-row,#page-port .gauge-row{grid-template-columns:1fr;}
+  #page-port .port-top-row{grid-template-columns:1fr;}
   #page-port .assets-grid{grid-template-columns:1fr 1fr;}
   #page-port .port-header h1{font-size:1.45em;}
 }
@@ -4361,6 +4374,7 @@ function portShowError(err){
 function portDisplayPortfolio(data){
   var rawAssets=(data&&data.assets)?data.assets:(Array.isArray(data)?data:[]);
   var growthData=(data&&data.growth)?data.growth:[];
+  var epfEtf=(data&&data.epfEtf)?+data.epfEtf:0;
   if(!rawAssets||!rawAssets.length){document.getElementById('port-root').innerHTML='<div class="error-box">No portfolio data found.</div>';return;}
   var totalLKR=0,totalUSD=0,assets=[],portTotals=[];
   rawAssets.forEach(function(row){
@@ -4388,7 +4402,22 @@ function portDisplayPortfolio(data){
     '</div>';
   }).join('');
 
+  /* ── chart meta ── */
+  var portChartMeta=[
+    {id:'portDonutChart', label:'Asset Allocation',  dot:'#a855f7'},
+    {id:'portBarChart',   label:'Value Comparison',  dot:'#00d4ff'},
+    {id:'portHbarChart',  label:'Horizontal Bars',   dot:'#ffd700'},
+    {id:'portPolarChart', label:'Polar Distribution',dot:'#00ff88'}
+  ];
+  var ddOpts=portChartMeta.map(function(m,i){
+    return '<option value="'+i+'"'+(i===0?' selected':'')+'>'+m.label+'</option>';
+  }).join('');
+  var panelsHtml=portChartMeta.map(function(m,i){
+    return '<div class="port-chart-panel'+(i===0?' active':'')+'" id="portChPanel-'+i+'"><canvas id="'+m.id+'"></canvas></div>';
+  }).join('');
+
   document.getElementById('port-root').innerHTML=
+    /* ── top bar ── */
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'+
       '<div class="pg-corner-title" style="margin-bottom:0;"><span class="pg-ct-icon">💵</span><span class="pg-ct-text">Analyze Portfolio</span></div>'+
       '<button class="log-btn" id="portLogBtn" onclick="portStartLog()"><span class="btn-ico">💾</span><div class="btn-spin"></div> Log Portfolio Value</button>'+
@@ -4397,18 +4426,25 @@ function portDisplayPortfolio(data){
         '<button class="log-confirm-btn" onclick="portConfirmLog()">✓ Confirm</button>'+
       '</div>'+
     '</div>'+
-    '<div class="hero-cards">'+
-      '<div class="hero-card lkr"><div class="hero-card-glow"></div><span class="hero-card-icon">🏦</span><div class="hero-card-label">Total Portfolio · LKR</div><div class="hero-card-amount" id="portLkrCounter">'+portFmt(totalLKR)+'</div></div>'+
-      '<div class="hero-card usd"><div class="hero-card-glow"></div><span class="hero-card-icon">💵</span><div class="hero-card-label">Total Portfolio · USD</div><div class="hero-card-amount" id="portUsdCounter">'+portFmt(totalUSD,'USD')+'</div></div>'+
+    /* ── main top row: KPI cards left | charts right ── */
+    '<div class="port-top-row">'+
+      /* LEFT: 3 KPI cards */
+      '<div class="port-kpi-col">'+
+        '<div class="port-kpi-card lkr"><div class="port-kpi-glow"></div><span class="port-kpi-icon">🏦</span><div class="port-kpi-body"><div class="port-kpi-label">Total Portfolio · LKR</div><div class="port-kpi-amount" id="portLkrCounter">'+portFmt(totalLKR)+'</div></div></div>'+
+        '<div class="port-kpi-card usd"><div class="port-kpi-glow"></div><span class="port-kpi-icon">💵</span><div class="port-kpi-body"><div class="port-kpi-label">Total Portfolio · USD</div><div class="port-kpi-amount" id="portUsdCounter">'+portFmt(totalUSD,'USD')+'</div></div></div>'+
+        '<div class="port-kpi-card epf"><div class="port-kpi-glow"></div><span class="port-kpi-icon">📊</span><div class="port-kpi-body"><div class="port-kpi-label">EPF + ETF</div><div class="port-kpi-amount">'+portFmt(epfEtf)+'</div></div></div>'+
+      '</div>'+
+      /* RIGHT: switchable charts */
+      '<div class="glass-card" style="display:flex;flex-direction:column;">'+
+        '<div class="card-header">'+
+          '<div class="card-dot" id="portChDot" style="background:'+portChartMeta[0].dot+';box-shadow:0 0 6px '+portChartMeta[0].dot+'"></div>'+
+          '<div class="card-title" id="portChTitle">'+portChartMeta[0].label+'</div>'+
+          '<select class="port-chart-sel" onchange="portSwitchChart(this.value)">'+ddOpts+'</select>'+
+        '</div>'+
+        panelsHtml+
+      '</div>'+
     '</div>'+
-    '<div class="charts-row">'+
-      '<div class="glass-card"><div class="card-header"><div class="card-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div><div class="card-title">Asset Allocation</div></div><canvas id="portDonutChart"></canvas></div>'+
-      '<div class="glass-card"><div class="card-header"><div class="card-dot" style="background:#00d4ff;box-shadow:0 0 6px #00d4ff"></div><div class="card-title">Value Comparison</div></div><canvas id="portBarChart"></canvas></div>'+
-    '</div>'+
-    '<div class="gauge-row">'+
-      '<div class="glass-card"><div class="card-header"><div class="card-dot" style="background:#00ff88;box-shadow:0 0 6px #00ff88"></div><div class="card-title">Polar Distribution</div></div><canvas id="portPolarChart"></canvas></div>'+
-      '<div class="glass-card"><div class="card-header"><div class="card-dot" style="background:#ffd700;box-shadow:0 0 6px #ffd700"></div><div class="card-title">Horizontal Bars</div></div><canvas id="portHbarChart"></canvas></div>'+
-    '</div>'+
+    /* ── growth chart ── */
     (growthData.length>0?
       '<div class="assets-section">'+
         '<div class="section-heading">📈 Growth Trajectory</div>'+
@@ -4433,9 +4469,26 @@ function portDisplayPortfolio(data){
     });
   },400);
 
-  portBuildCharts(posAssets);
+  portBuildCharts(posAssets, portChartMeta);
   if(growthData.length>0)setTimeout(function(){portBuildGrowthChart(growthData);},300);
   buildPortTicker(assets, totalLKR);
+}
+
+function portSwitchChart(val){
+  var i=parseInt(val,10);
+  var meta=[
+    {id:'portDonutChart',label:'Asset Allocation',dot:'#a855f7'},
+    {id:'portBarChart',  label:'Value Comparison',dot:'#00d4ff'},
+    {id:'portHbarChart', label:'Horizontal Bars', dot:'#ffd700'},
+    {id:'portPolarChart',label:'Polar Distribution',dot:'#00ff88'}
+  ];
+  for(var pi=0;pi<meta.length;pi++){
+    var p=document.getElementById('portChPanel-'+pi);
+    if(p){p.className='port-chart-panel'+(pi===i?' active':'');}
+  }
+  var dot=document.getElementById('portChDot'), ttl=document.getElementById('portChTitle');
+  if(dot){dot.style.background=meta[i].dot;dot.style.boxShadow='0 0 6px '+meta[i].dot;}
+  if(ttl) ttl.textContent=meta[i].label;
 }
 
 function portBuildCharts(posAssets){

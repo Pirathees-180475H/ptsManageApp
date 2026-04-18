@@ -534,6 +534,45 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
   .insight-grid{grid-template-columns:1fr;}
 }
 
+/* ── Portfolio Tab (p0) redesign ── */
+#p0 .port-top-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+#p0 .port-kpi-col{display:flex;flex-direction:column;gap:10px;}
+#p0 .port-kpi-card{border-radius:14px;padding:16px 14px 14px;border:1px solid;backdrop-filter:blur(20px);
+     position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;gap:2px;flex:1;}
+#p0 .port-kpi-card.inv{background:linear-gradient(135deg,rgba(0,212,255,.08),rgba(0,212,255,.03));border-color:rgba(0,212,255,.2);}
+#p0 .port-kpi-card.cur{background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,255,136,.03));border-color:rgba(0,255,136,.2);}
+#p0 .port-kpi-card.pnl-up{background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,255,136,.03));border-color:rgba(0,255,136,.2);}
+#p0 .port-kpi-card.pnl-dn{background:linear-gradient(135deg,rgba(255,77,141,.08),rgba(255,77,141,.03));border-color:rgba(255,77,141,.2);}
+#p0 .port-kpi-card.day{background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,215,0,.03));border-color:rgba(255,215,0,.2);}
+#p0 .port-kpi-card.epf{background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(168,85,247,.03));border-color:rgba(168,85,247,.2);}
+#p0 .port-kpi-icon{font-size:1.7em;line-height:1;margin-bottom:6px;}
+#p0 .port-kpi-body{width:100%;}
+#p0 .port-kpi-label{font-size:.55em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+#p0 .port-kpi-amount.inv{color:var(--blue);font-size:.9em;font-weight:800;letter-spacing:-.3px;}
+#p0 .port-kpi-amount.cur{color:var(--green);font-size:.9em;font-weight:800;letter-spacing:-.3px;}
+#p0 .port-kpi-amount.up{color:var(--green);font-size:.9em;font-weight:800;letter-spacing:-.3px;}
+#p0 .port-kpi-amount.dn{color:var(--red);font-size:.9em;font-weight:800;letter-spacing:-.3px;}
+#p0 .port-kpi-amount.day-up{color:var(--gold);font-size:.9em;font-weight:800;letter-spacing:-.3px;}
+#p0 .port-kpi-amount.day-dn{color:var(--red);font-size:.9em;font-weight:800;letter-spacing:-.3px;}
+#p0 .port-kpi-amount.epf{color:var(--purple);font-size:.9em;font-weight:800;letter-spacing:-.3px;}
+#p0 .port-kpi-sub{font-size:.58em;color:var(--dim);margin-top:2px;}
+#p0 .port-kpi-glow{position:absolute;right:-20px;bottom:-20px;width:70px;height:70px;border-radius:50%;filter:blur(30px);opacity:.15;}
+#p0 .port-chart-col{display:flex;flex-direction:column;}
+#p0 .port-chart-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;flex:1;}
+#p0 .port-chart-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+#p0 .port-chart-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+#p0 .port-chart-title{font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.port-id-sel{margin-left:auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+             color:rgba(255,255,255,.7);font-size:.62em;font-family:'Inter',sans-serif;
+             border-radius:8px;padding:4px 24px 4px 10px;cursor:pointer;outline:none;
+             -webkit-appearance:none;appearance:none;
+             background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,.4)'/%3E%3C/svg%3E");
+             background-repeat:no-repeat;background-position:right 8px center;}
+.port-id-sel option{background:#0d1424;color:#fff;}
+#p0 .port-ch-panel{display:none;}
+#p0 .port-ch-panel.active{display:block;}
+@media(max-width:760px){#p0 .port-top-row{grid-template-columns:1fr;}}
+
 /* ── Unit Trust Tab (p6) ── */
 #p6 .ut-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
 #p6 .ut-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
@@ -678,7 +717,8 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
 <script>
 // ── State ──────────────────────────────────────────────────────────
 var _stocks=[], _live={}, _liveQ=[], _liveTotal=0, _liveDone=0;
-var _goldLoaded=false, _goldLoading=false, _divLoaded=false, _fdLoaded=false, _perfLoaded=false, _utLoaded=false, _portChart=null, _goldChart=null;
+var _goldLoaded=false, _goldLoading=false, _divLoaded=false, _fdLoaded=false, _perfLoaded=false, _utLoaded=false, _portChart=null, _portPnlChart=null, _portDonutChart=null, _goldChart=null;
+var _epfEtf=0;
 var _screenerAll=[];
 var _goldPh=[], _gold8gPrice=0;
 
@@ -1244,6 +1284,18 @@ function toggleRaw(el){
 function getStock(sym){for(var i=0;i<_stocks.length;i++){if(_stocks[i].symbol===sym)return _stocks[i];}return null;}
 
 // ── Portfolio KPIs + chart ─────────────────────────────────────────
+function _pkCard(icon,label,amount,sub,glowClr,cardCls,amtCls){
+  return '<div class="port-kpi-card '+cardCls+'">'+
+    '<div class="port-kpi-icon">'+icon+'</div>'+
+    '<div class="port-kpi-body">'+
+      '<div class="port-kpi-label">'+label+'</div>'+
+      '<div class="port-kpi-amount '+amtCls+'" id="pkAmt_'+cardCls.split(' ')[0]+'">'+amount+'</div>'+
+      (sub?'<div class="port-kpi-sub">'+sub+'</div>':'')+
+    '</div>'+
+    '<div class="port-kpi-glow" style="background:'+glowClr+';"></div>'+
+  '</div>';
+}
+
 function updateKPIs(){
   var totInv=0,totCur=0,dayGain=0,hasPnl=false;
   var chartStocks=[];
@@ -1260,54 +1312,192 @@ function updateKPIs(){
   var totPct=totInv>0?(totPnl/totInv*100):0;
   var kz=document.getElementById('kpiZone');
   if(!kz)return;
-  if(hasPnl){
-    kz.innerHTML='<div class="kpi-row">'+
-      kpi('💰','Total Invested',fs(totInv),'Cost basis','','blue')+
-      kpi('📈','Current Value', fs(totCur),'Live prices','','green')+
-      kpi(totPnl>=0?'🚀':'📉','Total P&L',fs(totPnl),totPct.toFixed(2)+'% overall',fp(totPct),totPnl>=0?'green':'red')+
-      kpi('📅','Today\'s Move',fs(dayGain),'From all holdings',dayGain>=0?fp(0):'','gold')+
-      '</div>';
-  }
-  // Chart
+
+  var pnlCardCls=totPnl>=0?'pnl-up':'pnl-dn';
+  var pnlAmtCls=totPnl>=0?'up':'dn';
+  var pnlGlow=totPnl>=0?'var(--green)':'var(--red)';
+  var dayAmtCls=dayGain>=0?'day-up':'day-dn';
+
+  var chartMeta=[
+    {dot:'var(--blue)',  label:'COST VS CURRENT VALUE'},
+    {dot:'var(--green)', label:'P&L BY STOCK'},
+    {dot:'var(--purple)',label:'PORTFOLIO ALLOCATION'}
+  ];
+  var selOpts='';
+  chartMeta.forEach(function(m,i){
+    selOpts+='<option value="'+i+'"'+(i===0?' selected':'')+'>'+m.label+'</option>';
+  });
+
+  var panels='';
   if(chartStocks.length>0){
-    var cz=document.getElementById('chartZone');
-    if(cz){
-      cz.innerHTML='<div class="glass fade-in" style="margin-bottom:16px"><div class="g-hdr"><div class="g-dot" style="background:var(--blue)"></div><span class="g-title">Cost vs Current Value</span></div><div class="chart-wrap"><canvas id="portChart"></canvas></div></div>';
-      setTimeout(function(){
-        var ctx=document.getElementById('portChart');if(!ctx)return;
-        if(_portChart)_portChart.destroy();
-        _portChart=new Chart(ctx,{
-          type:'bar',
-          data:{
-            labels:chartStocks.map(function(s){return s.symbol;}),
-            datasets:[
-              {label:'Cost',data:chartStocks.map(function(s){return s.boughtPrice*s.qty;}),
-               backgroundColor:'rgba(255,255,255,.08)',borderColor:'rgba(255,255,255,.2)',borderWidth:1,borderRadius:5},
-              {label:'Value',data:chartStocks.map(function(s){
-                var r=_live[s.symbol];return ((r&&r.currentPrice)?r.currentPrice:s.sheetPrice)*s.qty;
-               }),backgroundColor:chartStocks.map(function(s){
-                var r=_live[s.symbol];var p=(r&&r.currentPrice)||s.sheetPrice;
-                return p>=s.boughtPrice?'rgba(0,255,136,.35)':'rgba(255,77,141,.35)';
-               }),borderColor:chartStocks.map(function(s){
-                var r=_live[s.symbol];var p=(r&&r.currentPrice)||s.sheetPrice;
-                return p>=s.boughtPrice?'#00ff88':'#ff4d8d';
-               }),borderWidth:1,borderRadius:5}
-            ]
-          },
-          options:{
-            responsive:true,maintainAspectRatio:false,
-            plugins:{
-              legend:{labels:{color:'rgba(255,255,255,.4)',font:{size:10,family:'Inter'}}},
-              tooltip:{callbacks:{label:function(c){return c.dataset.label+': ₨ '+Number(c.raw).toLocaleString('en-IN');}}}
-            },
-            scales:{
-              x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
-              y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10},callback:function(v){return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v;}},grid:{color:'rgba(255,255,255,.04)'}}
-            }
-          }
-        });
-      },80);
-    }
+    panels+='<div class="port-ch-panel active" id="portIdPanel-0"><div class="chart-wrap" style="height:220px"><canvas id="portIdChart0"></canvas></div></div>';
+    panels+='<div class="port-ch-panel" id="portIdPanel-1"><div class="chart-wrap" style="height:220px"><canvas id="portIdChart1"></canvas></div></div>';
+    panels+='<div class="port-ch-panel" id="portIdPanel-2"><div class="chart-wrap" style="height:220px"><canvas id="portIdChart2"></canvas></div></div>';
+  } else {
+    panels='<div style="color:var(--dim);font-size:.72em;padding:40px 0;text-align:center;">Add bought price &amp; quantity to see charts</div>';
+  }
+
+  kz.innerHTML='<div class="port-top-row">'+
+    '<div class="port-kpi-col">'+
+      _pkCard('💰','TOTAL INVESTED',  fs(totInv),  'Cost basis','var(--blue)','inv','inv')+
+      _pkCard('📈','CURRENT VALUE',   fs(totCur),  'Live prices','var(--green)','cur','cur')+
+      _pkCard(totPnl>=0?'🚀':'📉','TOTAL P&L', fs(totPnl), totPct.toFixed(2)+'% overall', pnlGlow, pnlCardCls, pnlAmtCls)+
+      _pkCard('📅',"TODAY'S MOVE",   fs(dayGain), 'From all holdings', dayGain>=0?'var(--gold)':'var(--red)', 'day', dayAmtCls)+
+      '<div class="port-kpi-card epf" id="epfKpiCard">'+
+        '<div class="port-kpi-icon">📊</div>'+
+        '<div class="port-kpi-body">'+
+          '<div class="port-kpi-label">EPF + ETF</div>'+
+          '<div class="port-kpi-amount epf" id="pkAmt_epf">₨ —</div>'+
+          '<div class="port-kpi-sub">Long-term savings</div>'+
+        '</div>'+
+        '<div class="port-kpi-glow" style="background:var(--purple);"></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="port-chart-col">'+
+      '<div class="port-chart-card">'+
+        '<div class="port-chart-hdr">'+
+          '<div class="port-chart-dot" id="portIdDot" style="background:var(--blue)"></div>'+
+          '<span class="port-chart-title" id="portIdTitle">COST VS CURRENT VALUE</span>'+
+          '<select class="port-id-sel" onchange="portIDSwitchChart(this.value)">'+selOpts+'</select>'+
+        '</div>'+
+        panels+
+      '</div>'+
+    '</div>'+
+  '</div>';
+
+  // Fetch EPF+ETF asynchronously
+  google.script.run
+    .withSuccessHandler(function(d){
+      _epfEtf=(d&&d.epfEtf)?d.epfEtf:0;
+      var el=document.getElementById('pkAmt_epf');
+      if(el) el.textContent=_epfEtf>0?'₨ '+Number(_epfEtf).toLocaleString('en-IN'):'₨ 0';
+    })
+    .withFailureHandler(function(){})
+    .getPortfolioData();
+
+  if(chartStocks.length>0){
+    setTimeout(function(){ buildPortIDCharts(chartStocks); },80);
+  }
+}
+
+function portIDSwitchChart(val){
+  var i=parseInt(val,10);
+  var meta=[
+    {dot:'var(--blue)',  label:'COST VS CURRENT VALUE'},
+    {dot:'var(--green)', label:'P&L BY STOCK'},
+    {dot:'var(--purple)',label:'PORTFOLIO ALLOCATION'}
+  ];
+  document.querySelectorAll('#p0 .port-ch-panel').forEach(function(p,idx){
+    p.classList.toggle('active',idx===i);
+  });
+  var dot=document.getElementById('portIdDot');
+  var tit=document.getElementById('portIdTitle');
+  if(dot&&meta[i]) dot.style.background=meta[i].dot;
+  if(tit&&meta[i]) tit.textContent=meta[i].label;
+}
+
+function buildPortIDCharts(chartStocks){
+  if(!chartStocks||!chartStocks.length)return;
+  var COLORS=['#00d4ff','#00ff88','#ffd700','#a855f7','#ff6b35','#ff4d8d','#67e8f9','#86efac'];
+
+  // Panel 0 — Cost vs Current Value
+  var ctx0=document.getElementById('portIdChart0');
+  if(ctx0){
+    if(_portChart){try{_portChart.destroy();}catch(e){}}
+    _portChart=new Chart(ctx0,{
+      type:'bar',
+      data:{
+        labels:chartStocks.map(function(s){return s.symbol;}),
+        datasets:[
+          {label:'Cost',data:chartStocks.map(function(s){return s.boughtPrice*s.qty;}),
+           backgroundColor:'rgba(255,255,255,.08)',borderColor:'rgba(255,255,255,.2)',borderWidth:1,borderRadius:5},
+          {label:'Value',data:chartStocks.map(function(s){
+            var r=_live[s.symbol];return ((r&&r.currentPrice)?r.currentPrice:s.sheetPrice)*s.qty;
+           }),backgroundColor:chartStocks.map(function(s){
+            var r=_live[s.symbol];var p=(r&&r.currentPrice)||s.sheetPrice;
+            return p>=s.boughtPrice?'rgba(0,255,136,.35)':'rgba(255,77,141,.35)';
+           }),borderColor:chartStocks.map(function(s){
+            var r=_live[s.symbol];var p=(r&&r.currentPrice)||s.sheetPrice;
+            return p>=s.boughtPrice?'#00ff88':'#ff4d8d';
+           }),borderWidth:1,borderRadius:5}
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{labels:{color:'rgba(255,255,255,.4)',font:{size:10,family:'Inter'}}},
+          tooltip:{callbacks:{label:function(c){return c.dataset.label+': ₨ '+Number(c.raw).toLocaleString('en-IN');}}}
+        },
+        scales:{
+          x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+          y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10},callback:function(v){return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v;}},grid:{color:'rgba(255,255,255,.04)'}}
+        }
+      }
+    });
+  }
+
+  // Panel 1 — P&L by Stock
+  var ctx1=document.getElementById('portIdChart1');
+  if(ctx1){
+    if(_portPnlChart){try{_portPnlChart.destroy();}catch(e){}}
+    var pnlData=chartStocks.map(function(s){
+      var r=_live[s.symbol];
+      return (((r&&r.currentPrice)||s.sheetPrice)-s.boughtPrice)*s.qty;
+    });
+    _portPnlChart=new Chart(ctx1,{
+      type:'bar',
+      data:{
+        labels:chartStocks.map(function(s){return s.symbol;}),
+        datasets:[{
+          label:'P&L',data:pnlData,
+          backgroundColor:pnlData.map(function(v){return v>=0?'rgba(0,255,136,.35)':'rgba(255,77,141,.35)';}),
+          borderColor:pnlData.map(function(v){return v>=0?'#00ff88':'#ff4d8d';}),
+          borderWidth:1,borderRadius:5
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(c){return 'P&L: ₨ '+Number(c.raw).toLocaleString('en-IN');}}}
+        },
+        scales:{
+          x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+          y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10},callback:function(v){return v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v;}},grid:{color:'rgba(255,255,255,.04)'}}
+        }
+      }
+    });
+  }
+
+  // Panel 2 — Portfolio Allocation (donut)
+  var ctx2=document.getElementById('portIdChart2');
+  if(ctx2){
+    if(_portDonutChart){try{_portDonutChart.destroy();}catch(e){}}
+    _portDonutChart=new Chart(ctx2,{
+      type:'doughnut',
+      data:{
+        labels:chartStocks.map(function(s){return s.symbol;}),
+        datasets:[{
+          data:chartStocks.map(function(s){
+            var r=_live[s.symbol];return ((r&&r.currentPrice)||s.sheetPrice)*s.qty;
+          }),
+          backgroundColor:COLORS.slice(0,chartStocks.length).map(function(c){return c+'55';}),
+          borderColor:COLORS.slice(0,chartStocks.length),
+          borderWidth:1
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{position:'right',labels:{color:'rgba(255,255,255,.6)',font:{size:9,family:'Inter'},boxWidth:10}},
+          tooltip:{callbacks:{label:function(c){
+            var tot=c.dataset.data.reduce(function(a,b){return a+b;},0);
+            var pct=tot>0?(c.raw/tot*100).toFixed(1):'0';
+            return c.label+': ₨ '+Number(c.raw).toLocaleString('en-IN')+' ('+pct+'%)';
+          }}}
+        }
+      }
+    });
   }
 }
 
