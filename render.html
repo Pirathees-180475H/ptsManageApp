@@ -1794,6 +1794,7 @@ input[type=date].swae-input{color-scheme:dark;}
      CREDIT CARD PAGE
 ═══════════════════════════════════════════ -->
 <section id="page-cc" class="spa-page">
+  <div class="ticker-wrap" id="ccTickerWrap" style="display:none;"><div class="ticker-track" id="ccTickerTrack"></div></div>
   <div class="pg-hdr">
     <span class="pg-hdr-title">💳 Cards</span>
     <div class="pg-hdr-actions">
@@ -1813,6 +1814,7 @@ input[type=date].swae-input{color-scheme:dark;}
      EXPENSE PAGE
 ═══════════════════════════════════════════ -->
 <section id="page-exp" class="spa-page">
+  <div class="ticker-wrap" id="expTickerWrap" style="display:none;"><div class="ticker-track" id="expTickerTrack"></div></div>
   <div class="pg-hdr">
     <span class="pg-hdr-title">📊 Expenses</span>
     <div class="pg-hdr-actions">
@@ -1845,6 +1847,7 @@ input[type=date].swae-input{color-scheme:dark;}
      PORTFOLIO SUMMARY PAGE
 ═══════════════════════════════════════════ -->
 <section id="page-port" class="spa-page">
+  <div class="ticker-wrap" id="portTickerWrap" style="display:none;"><div class="ticker-track" id="portTickerTrack"></div></div>
   <div class="pg-hdr">
     <span class="pg-hdr-title">💼 Summary</span>
     <div class="pg-hdr-actions">
@@ -1869,6 +1872,7 @@ input[type=date].swae-input{color-scheme:dark;}
      MONEY FLOW PAGE
 ═══════════════════════════════════════════ -->
 <section id="page-mf" class="spa-page">
+  <div class="ticker-wrap" id="mfTickerWrap" style="display:none;"><div class="ticker-track" id="mfTickerTrack"></div></div>
   <div class="pg-hdr">
     <span class="pg-hdr-title">💸 Money Flow</span>
     <div class="pg-hdr-actions">
@@ -1885,6 +1889,7 @@ input[type=date].swae-input{color-scheme:dark;}
 </section>
 
 <section id="page-sw" class="spa-page">
+  <div class="ticker-wrap" id="swTickerWrap" style="display:none;"><div class="ticker-track" id="swTickerTrack"></div></div>
   <div class="pg-hdr">
     <span class="pg-hdr-title">🤝 Splitwise</span>
     <div class="pg-hdr-actions">
@@ -3632,6 +3637,7 @@ function ccDisplayData(data){
       '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#00e676"></div><div class="card-title">Available to Spend per Card</div></div><div class="chart-wrap"><canvas id="availChart"></canvas></div></div>'+
     '</div>'+
     ccBuildTimeline(data);
+  buildCCTicker(data);
 
   setTimeout(function(){
   },350);
@@ -4160,6 +4166,7 @@ function expBuild(D){
     '<div class="ig" id="exp-ig"></div>';
 
   document.getElementById('exp-sub').textContent=n+' months tracked · Latest: '+latest;
+  buildExpTicker(cur, avg, 0, 0);  /* budget/remaining fed from edm if loaded */
   document.getElementById('exp-badge').textContent=latest;
 
   // Build YoY month key list
@@ -4428,6 +4435,7 @@ function portDisplayPortfolio(data){
 
   portBuildCharts(posAssets);
   if(growthData.length>0)setTimeout(function(){portBuildGrowthChart(growthData);},300);
+  buildPortTicker(assets, totalLKR);
 }
 
 function portBuildCharts(posAssets){
@@ -5385,6 +5393,7 @@ function mfRenderPlanForMonth(cur){
   var ta=document.getElementById('mf-planNotesTa');
   if(ta) ta.value=cur.notes||'';
   mfUpdateOverallStatus();
+  buildMFTicker(cur);
 }
 
 function mfUpdateOverallStatus(){
@@ -5823,6 +5832,7 @@ function swRender(data){
       +chartsHtml
       +friendsHtml
     +'</div>';
+  buildSWTicker(RAW);
 
   /* ── Post-render: charts, analysis, bars, click handlers ── */
   swBuildCharts(RAW, totalOwe, totalOwed);
@@ -6946,6 +6956,117 @@ function swaeSubmit(){
     box.scrollTop = 0; // newest at top
   }
 })();
+
+
+/* ── Portfolio / Summary ticker ── */
+function buildPortTicker(assets, totalLKR){
+  var fmt = function(n){ return '₨'+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); };
+  var items = assets.map(function(a){
+    var pct = totalLKR > 0 ? (a.amt / totalLKR * 100).toFixed(1) : '0.0';
+    var valCls = a.amt < 0 ? 'fl' : 'fr';
+    return '<span class="tick-item">'
+      + '<span class="tick-sym">' + a.cat.toUpperCase() + '</span>'
+      + ' <span style="color:rgba(255,255,255,.75)">' + fmt(a.amt) + '</span>'
+      + (totalLKR > 0 && a.amt > 0
+          ? ' <span class="tick-chg ' + valCls + '">' + pct + '%</span>'
+          : '')
+      + '</span>';
+  });
+  _buildTick('portTickerWrap', 'portTickerTrack', items, 40);
+}
+
+/* ═══════════════════════════════════════════
+   PAGE TICKER BUILDERS
+═══════════════════════════════════════════ */
+
+/* helper: inject content into a ticker wrap */
+function _buildTick(wrapId, trackId, items, speed){
+  var wrap = document.getElementById(wrapId);
+  var track = document.getElementById(trackId);
+  if(!wrap || !track || !items.length) return;
+  var html = items.join('');
+  track.innerHTML = html + html;          // duplicate for seamless loop
+  track.style.animationDuration = (speed||45)+'s';
+  wrap.style.display = 'block';
+}
+
+/* ── Expenses ticker ── */
+function buildExpTicker(cur, avg, budget, remaining){
+  var fmt = function(n){ return '₨'+Math.round(Math.abs(n)).toLocaleString('en-IN'); };
+  var remCls = remaining < 0 ? 'fl' : 'fr';
+  var items = [
+    '<span class="tick-item"><span class="tick-sym">THIS MONTH</span> <span style="color:rgba(255,255,255,.75)">' + fmt(cur) + '</span></span>',
+    budget > 0
+      ? '<span class="tick-item"><span class="tick-sym">BUDGET</span> <span style="color:rgba(255,255,255,.75)">' + fmt(budget) + '</span></span>'
+      : '',
+    budget > 0
+      ? '<span class="tick-item"><span class="tick-sym">REMAINING</span> <span class="tick-chg ' + remCls + '">' + (remaining < 0 ? '−' : '+') + fmt(remaining) + '</span></span>'
+      : '',
+    '<span class="tick-item"><span class="tick-sym">MONTHLY AVG</span> <span style="color:rgba(255,255,255,.75)">' + fmt(avg) + '</span></span>',
+  ].filter(Boolean);
+  _buildTick('expTickerWrap', 'expTickerTrack', items, 30);
+}
+
+/* ── CC ticker ── */
+function buildCCTicker(data){
+  var fmt = function(v){ return '₨'+Math.abs(parseFloat((v+'').replace(/,/g,''))||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); };
+  var items = data.map(function(row){
+    var name   = (row[0]||'Card').split(' ')[0].toUpperCase();
+    var due    = fmt(row[1]);
+    var avail  = fmt(row[8]);
+    var dueDate= (row[5]||'').toString().trim() || '—';
+    var settled= row[3]===true||row[3]==='TRUE'||row[3]==='true';
+    var stIco  = settled ? '<span class="tick-chg fr">✓</span>' : '<span class="tick-chg fl">DUE</span>';
+    return '<span class="tick-item">'
+      + '<span class="tick-sym">' + name + '</span>'
+      + ' DUE ' + due
+      + ' · AVAIL ' + avail
+      + ' · ' + dueDate
+      + ' ' + stIco
+      + '</span>';
+  });
+  _buildTick('ccTickerWrap', 'ccTickerTrack', items, 40);
+}
+
+/* ── Money Flow ticker ── */
+function buildMFTicker(cur){
+  var fmt = function(v){ return '₨'+Math.abs(v).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); };
+  var stIco = {'DONE':'<span class="tick-chg fr">✅</span>', 'Partially Done':'<span class="tick-chg" style="color:#fb923c">🔸</span>', 'Failed':'<span class="tick-chg fl">❌</span>', 'Pending':'<span class="tick-chg" style="color:#fbbf24">⏳</span>'};
+  var items = MF_KEYS.map(function(k, i){
+    var val = cur[k];
+    if(!val || val === 0) return null;
+    var isFailed = val === -1;
+    var amtStr = isFailed ? 'FAILED' : fmt(val);
+    var sv = (cur.status && cur.status[k]) || 'Pending';
+    var ico = stIco[sv] || stIco['Pending'];
+    return '<span class="tick-item">'
+      + '<span class="tick-sym">' + MF_CATS[i] + '</span>'
+      + ' ' + amtStr
+      + ' ' + ico
+      + '</span>';
+  }).filter(Boolean);
+  if(!items.length) return;
+  _buildTick('mfTickerWrap', 'mfTickerTrack', items, 35);
+}
+
+/* ── Splitwise ticker: top 3 owe + top 3 owed ── */
+function buildSWTicker(RAW){
+  var fmt = function(n){ return '₨'+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); };
+  var sorted = RAW.slice().sort(function(a,b){ return Math.abs(b.amount)-Math.abs(a.amount); });
+  var top = sorted.slice(0,6);
+  var items = top.map(function(d){
+    var name = (d.name||d.person||'Friend').split(' ')[0];
+    var owesYou = d.amount > 0;
+    return '<span class="tick-item">'
+      + '<span class="tick-sym">' + name + '</span>'
+      + (owesYou
+          ? ' owes you <span class="tick-chg fr">' + fmt(d.amount) + '</span>'
+          : ' you owe <span class="tick-chg fl">' + fmt(d.amount) + '</span>')
+      + '</span>';
+  });
+  _buildTick('swTickerWrap', 'swTickerTrack', items, 32);
+}
+
 </script>
 
 <!-- TradingView Stock Chart Modal -->

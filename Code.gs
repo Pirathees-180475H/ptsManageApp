@@ -1170,8 +1170,8 @@ function getCurrentMonthExpensesList() {
       { name: 'Movies & Outing',    amtCol: 10, refCol: 9  },  // J / I
       { name: 'Other',              amtCol: 12, refCol: 11 },  // L / K
       { name: 'Bus Fair',           amtCol: 13, refCol: 0  },  // M
-      { name: 'Dress & Appearance', amtCol: 15, refCol: 14 },  // O / N
-      { name: 'Party',              amtCol: 17, refCol: 16 },  // Q / P
+      { name: 'Party', amtCol: 15, refCol: 14 },  // O / N
+      { name: 'Dress & Appearance',              amtCol: 17, refCol: 16 },  // Q / P
       { name: 'Rent',               amtCol: 18, refCol: 0  }   // R
     ];
 
