@@ -847,7 +847,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .edm-cat-budget-nums b{color:rgba(255,255,255,.7);}
 .edm-status-ok{display:inline-block;font-size:.58em;padding:2px 6px;border-radius:6px;background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.2);font-weight:700;white-space:nowrap;}
 .edm-status-warn{display:inline-block;font-size:.58em;padding:2px 6px;border-radius:6px;background:rgba(255,77,109,.12);color:var(--red);border:1px solid rgba(255,77,109,.2);font-weight:700;white-space:nowrap;}
-.edm-bar-wrap{height:3px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:5px;}
+.edm-bar-wrap{height:3px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:5px;position:relative;}
 .edm-bar-fill{height:100%;border-radius:3px;}
 /* Budget editor collapsible */
 .edm-budget-editor{background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.18);border-radius:12px;margin-bottom:12px;overflow:hidden;}
@@ -3780,6 +3780,33 @@ function expDetailRender(data) {
     catSpent[e.category] = (catSpent[e.category] || 0) + e.amount;
   });
 
+  // ── Proportional budget redistribution ──────────────────────────────
+  // When a category exceeds its budget, the overflow is absorbed by the
+  // remaining categories proportionally (by their surplus size).
+  var adjustedCp = {};
+  EXP_DETAIL_CAT_ORDER.forEach(function(cat){ adjustedCp[cat] = cp[cat] || 0; });
+
+  var totalOverflow = 0, totalSurplus = 0;
+  EXP_DETAIL_CAT_ORDER.forEach(function(cat){
+    var b = adjustedCp[cat]; if (b <= 0) return;
+    var diff = b - (catSpent[cat] || 0);
+    if (diff < 0) totalOverflow += Math.abs(diff);
+    else          totalSurplus  += diff;
+  });
+  if (totalOverflow > 0 && totalSurplus > 0) {
+    var absorb = Math.min(totalOverflow, totalSurplus); // can't absorb more than available
+    EXP_DETAIL_CAT_ORDER.forEach(function(cat){
+      var b = adjustedCp[cat]; if (b <= 0) return;
+      var surplus = b - (catSpent[cat] || 0);
+      if (surplus > 0) {
+        // Proportional share of the overflow to absorb
+        var share = absorb * (surplus / totalSurplus);
+        adjustedCp[cat] = Math.max(catSpent[cat] || 0, b - share);
+      }
+    });
+  }
+  // ────────────────────────────────────────────────────────────────────
+
   // Insights aggregates
   var totalSpent  = entries.reduce(function(s, e) { return s + e.amount; }, 0);
   var totalBudget = 0, exceededCount = 0, exceededAmt = 0, savedAmt = 0;
@@ -3883,7 +3910,7 @@ function expDetailRender(data) {
 
   // ── Donut charts ──
   var totalRemaining = 0;
-  EXP_DETAIL_CAT_ORDER.forEach(function(c){ totalRemaining += Math.max(0,(cp[c]||0)-(catSpent[c]||0)); });
+  EXP_DETAIL_CAT_ORDER.forEach(function(c){ totalRemaining += Math.max(0,(adjustedCp[c]||0)-(catSpent[c]||0)); });
   var chartsHtml = '';
   if (totalBudget > 0) {
     var remK  = totalRemaining >= 1000 ? (Math.round(totalRemaining/100)/10)+'k' : Math.round(totalRemaining)+'';
@@ -3924,25 +3951,35 @@ function expDetailRender(data) {
     if (e.category !== lastCat) {
       lastCat = e.category;
       var spent   = catSpent[e.category] || 0;
-      var budget  = cp[e.category] || 0;
+      var budget  = cp[e.category] || 0;              // original budget
+      var adjBudget = adjustedCp[e.category] || 0;   // effective after redistribution
       var col     = EXP_DETAIL_CAT_COLORS[e.category] || '#94a3b8';
       var isOver  = budget > 0 && spent > budget;
       var rowCls  = 'edm-cat-row' + (isOver ? ' edm-over' : '');
 
       var rightHtml = '';
       if (budget > 0) {
-        var pct      = Math.min(spent / budget * 100, 100);
+        var effBudget = isOver ? budget : adjBudget;  // exceeded cats keep original for bar
+        var pct      = Math.min(spent / effBudget * 100, 100);
         var barColor = isOver ? 'var(--red)' : pct >= 80 ? 'var(--amber)' : 'var(--green)';
-        var diff     = Math.abs(spent - budget);
+        var diff     = isOver ? Math.abs(spent - budget) : Math.max(0, adjBudget - spent);
+        var wasReduced = !isOver && Math.round(adjBudget) < Math.round(budget);
+        var budgetDisplay = wasReduced
+          ? '₨' + Math.round(adjBudget).toLocaleString('en-IN')
+            + ' <span style="font-size:.75em;color:var(--dim);text-decoration:line-through">₨' + Math.round(budget).toLocaleString('en-IN') + '</span>'
+          : '₨' + Math.round(budget).toLocaleString('en-IN');
         var badge    = isOver
           ? '<span class="edm-status-warn">⚠ Over ₨' + Math.round(diff).toLocaleString('en-IN') + '</span>'
           : '<span class="edm-status-ok">✅ ₨' + Math.round(diff).toLocaleString('en-IN') + ' left</span>';
         rightHtml =
           '<div class="edm-cat-budget">'
-          + '<div class="edm-cat-budget-nums"><b>₨' + Math.round(spent).toLocaleString('en-IN') + '</b> / ₨' + Math.round(budget).toLocaleString('en-IN') + '</div>'
+          + '<div class="edm-cat-budget-nums"><b>₨' + Math.round(spent).toLocaleString('en-IN') + '</b> / ' + budgetDisplay + '</div>'
           + badge
           + '</div>';
-        var barHtml = '<div class="edm-bar-wrap"><div class="edm-bar-fill" style="width:' + pct.toFixed(1) + '%;background:' + barColor + '"></div></div>';
+        var barHtml = '<div class="edm-bar-wrap">'
+          + '<div class="edm-bar-fill" style="width:' + pct.toFixed(1) + '%;background:' + barColor + '"></div>'
+          + (wasReduced && !isOver ? '<div class="edm-bar-absorbed" style="width:' + Math.min(((budget-adjBudget)/budget*100),100-pct).toFixed(1) + '%;left:' + pct.toFixed(1) + '%;background:rgba(255,77,109,.3);position:absolute;top:0;height:100%;border-radius:0 4px 4px 0"></div>' : '')
+          + '</div>';
         html += '<tr class="' + rowCls + '">'
               + '<td colspan="3">'
               + '<div class="edm-cat-hdr">'
@@ -3975,7 +4012,7 @@ function expDetailRender(data) {
   if (totalBudget > 0) {
     if (window._edmCharts) { window._edmCharts.forEach(function(c){try{c.destroy();}catch(e){}});}
     window._edmCharts = [];
-    var _cp = cp, _catSpent = catSpent, _lmt = lmt;
+    var _cp = cp, _adjCp = adjustedCp, _catSpent = catSpent, _lmt = lmt;
     setTimeout(function(){
       var cols  = EXP_DETAIL_CAT_ORDER.map(function(c){ return EXP_DETAIL_CAT_COLORS[c]||'#94a3b8'; });
       var TIP   = {backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:10};
@@ -3998,10 +4035,11 @@ function expDetailRender(data) {
       if (c2) {
         var rL=[],rD=[],rBg=[],rBd=[];
         EXP_DETAIL_CAT_ORDER.forEach(function(cat,i){
-          var b=_cp[cat]||0; if(b<=0)return;
-          var s=_catSpent[cat]||0, rem=Math.max(0,b-s), isOver=s>b;
+          var origB=_cp[cat]||0; if(origB<=0)return;
+          var adjB=_adjCp[cat]||0, s=_catSpent[cat]||0;
+          var rem=Math.max(0,adjB-s), isOver=s>origB;
           rL.push(cat);
-          rD.push(isOver ? Math.max(b*0.05,80) : (rem>0 ? rem : Math.max(b*0.02,40)));
+          rD.push(isOver ? Math.max(origB*0.05,80) : (rem>0 ? rem : Math.max(origB*0.02,40)));
           rBg.push(isOver ? 'rgba(255,77,109,.28)' : cols[i]+'55');
           rBd.push(isOver ? '#ff4d6d' : cols[i]);
         });
@@ -4010,9 +4048,10 @@ function expDetailRender(data) {
           data:{labels:rL,datasets:[{data:rD,backgroundColor:rBg,borderColor:rBd,borderWidth:2,hoverOffset:6}]},
           options:{responsive:true,maintainAspectRatio:false,cutout:'64%',animation:{animateRotate:true,duration:950,delay:180},
             plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:function(ctx){
-              var cat=ctx.label,b=_cp[cat]||0,s=_catSpent[cat]||0,rem=Math.max(0,b-s),isOver=s>b;
-              return isOver?' '+cat+': ⚠ Over ₨'+Math.round(s-b).toLocaleString('en-IN')
-                           :' '+cat+': ₨'+Math.round(rem).toLocaleString('en-IN')+' left';
+              var cat=ctx.label,origB=_cp[cat]||0,adjB=_adjCp[cat]||0,s=_catSpent[cat]||0;
+              var isOver=s>origB, rem=Math.max(0,adjB-s);
+              return isOver?' '+cat+': ⚠ Over ₨'+Math.round(s-origB).toLocaleString('en-IN')
+                           :' '+cat+': ₨'+Math.round(rem).toLocaleString('en-IN')+' left (eff. ₨'+Math.round(adjB).toLocaleString('en-IN')+')';
             }}}}}
         }));
       }
