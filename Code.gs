@@ -23,9 +23,8 @@ function onEdit(e) {
     showCreditCardSummary();
   }
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'C1') {
-    showPortfolioSummary();
+    showExpenseDashboard();
   }
-
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'D1') {
     getFriendBalances();
   }
@@ -35,9 +34,7 @@ function onEdit(e) {
   if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'F1') {
     showInvestFlow();
   }
-  if (sheet.getName() === 'Monthly Expences' && e.range.getA1Notation() === 'G1') {
-    showExpenseDashboard();
-  }
+
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -389,32 +386,6 @@ function showCreditCardSummary() {
   }
 }
 
-function showPortfolioSummary() {
-  try {
-    // Show password modal first
-    var passwordHtml = HtmlService.createHtmlOutputFromFile('passwordPrompt')
-      .setWidth(600)
-      .setHeight(650);
-    SpreadsheetApp.getUi().showModalDialog(passwordHtml, '🔒 Enter Password');
-  } catch (error) {
-    // Silent fail on mobile
-  }
-}
-
-function verifyPasswordAndShowPortfolio(enteredPassword) {
-  const correctPassword = "9965"; // Change this to your desired password
-  
-  if (enteredPassword === correctPassword) {
-    var html = HtmlService.createHtmlOutputFromFile('showPortfolioSummary')
-      .setWidth(2000)
-      .setHeight(2000);
-    SpreadsheetApp.getUi().showModalDialog(html, '💳 Portfolio Dashboard');
-    return true;
-  } else {
-    return false;
-  }
-}
-
 
 // Function to get card data from sheet
 // Function to get card data from the sheet
@@ -562,7 +533,34 @@ function getPortfolioData() {
       Logger.log('EPF ETF read failed: ' + ee.message);
     }
 
-    return { assets: assets, growth: growth, epfEtf: epfEtf };
+    // ── Aims / Remaining: A1:D15 (row1=headers, row15=total, rows2-14=data) ──
+    var aims = [];
+    try {
+      var aimVals = sheet.getRange('A1:D15').getValues();
+      // row 0 = headers, rows 1-13 = data, row 14 = total
+      for (var ai = 1; ai <= 13; ai++) {
+        var row = aimVals[ai];
+        var cat  = (row[0] + '').trim();
+        var amt  = parseFloat(row[1]) || 0;
+        var aim  = parseFloat(row[2]) || 0;
+        var rem  = parseFloat(row[3]) || 0;
+        if (!cat || cat === '') continue;
+        if (aim <= 0 && rem <= 0) continue; // skip rows with no aim and no remaining
+        aims.push({ category: cat, amount: amt, aim: aim, remaining: rem });
+      }
+      // Total row (A15:D15)
+      var totRow = aimVals[14];
+      var aimsTotal = {
+        amount:    parseFloat(totRow[1]) || 0,
+        aim:       parseFloat(totRow[2]) || 0,
+        remaining: parseFloat(totRow[3]) || 0
+      };
+    } catch(ea) {
+      Logger.log('Aims data read failed: ' + ea.message);
+      var aimsTotal = { amount: 0, aim: 0, remaining: 0 };
+    }
+
+    return { assets: assets, growth: growth, epfEtf: epfEtf, aims: aims, aimsTotal: aimsTotal };
   } catch (error) {
     throw new Error('Failed to load data: ' + error.message);
   }
