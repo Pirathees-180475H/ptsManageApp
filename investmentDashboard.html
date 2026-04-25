@@ -457,6 +457,76 @@ table.dt tr:hover td{background:rgba(255,255,255,.02);}
                background:rgba(0,212,255,.1);color:var(--blue);border:1px solid rgba(0,212,255,.2);}
 .fd-analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
 
+/* ── FD inline-edit controls ── */
+.fd-edit-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.fd-status-sel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:8px;
+               color:#fff;font-family:'Inter',sans-serif;font-size:.7em;font-weight:600;
+               padding:5px 8px;cursor:pointer;outline:none;-webkit-appearance:none;flex-shrink:0;}
+.fd-status-sel option{background:#0d1424;color:#fff;}
+.fd-remarks-inp{flex:1;min-width:100px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+                border-radius:8px;color:#fff;font-family:'Inter',sans-serif;font-size:.7em;
+                padding:5px 9px;outline:none;transition:border-color .18s;}
+.fd-remarks-inp:focus{border-color:var(--blue);background:rgba(0,212,255,.07);}
+.fd-remarks-inp::placeholder{color:rgba(255,255,255,.28);}
+.fd-save-btn{padding:5px 13px;border-radius:8px;border:none;cursor:pointer;
+             font-family:'Inter',sans-serif;font-size:.68em;font-weight:700;
+             background:linear-gradient(135deg,var(--blue),var(--blue2));color:#060b18;
+             transition:opacity .18s,transform .1s;flex-shrink:0;}
+.fd-save-btn:hover{opacity:.85;}
+.fd-save-btn:active{transform:scale(.93);}
+.fd-save-btn:disabled{opacity:.4;cursor:not-allowed;}
+.fd-save-ok{font-size:.62em;color:var(--green);font-weight:700;display:none;}
+
+/* ── FAB add button ── */
+#fdAddFab{position:fixed;bottom:calc(70px + 14px);right:18px;z-index:900;
+          width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
+          background:linear-gradient(135deg,var(--blue),#7c3aed);
+          color:#fff;font-size:1.6em;line-height:1;
+          box-shadow:0 6px 22px rgba(0,212,255,.38);
+          display:none;align-items:center;justify-content:center;
+          transition:transform .18s,box-shadow .18s;}
+#fdAddFab:hover{transform:scale(1.11);box-shadow:0 8px 28px rgba(0,212,255,.55);}
+#fdAddFab:active{transform:scale(.95);}
+
+/* ── Add FD modal ── */
+#fdAddModal{display:none;position:fixed;inset:0;z-index:9500;
+            background:rgba(0,0,0,.72);backdrop-filter:blur(10px);
+            align-items:center;justify-content:center;padding:16px;}
+#fdAddModal.open{display:flex;}
+#fdAddBox{background:#0d1220;border:1px solid rgba(255,255,255,.1);border-radius:20px;
+          width:100%;max-width:480px;box-shadow:0 24px 70px rgba(0,0,0,.7);
+          animation:fdModalIn .22s ease;}
+@keyframes fdModalIn{from{opacity:0;transform:scale(.93) translateY(10px);}to{opacity:1;transform:none;}}
+.fd-modal-hdr{display:flex;align-items:center;justify-content:space-between;
+              padding:16px 18px 12px;border-bottom:1px solid rgba(255,255,255,.07);}
+.fd-modal-title{font-size:.88em;font-weight:800;color:#fff;letter-spacing:.3px;}
+.fd-modal-close{background:none;border:none;color:rgba(255,255,255,.35);font-size:1.1em;
+                cursor:pointer;padding:3px 7px;border-radius:6px;transition:color .15s;}
+.fd-modal-close:hover{color:#fff;}
+.fd-modal-body{padding:16px 18px;}
+.fd-field{margin-bottom:13px;}
+.fd-field-lbl{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+              color:rgba(255,255,255,.35);margin-bottom:5px;display:block;}
+.fd-field-inp,.fd-field-sel{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+                border-radius:9px;color:#fff;font-family:'Inter',sans-serif;font-size:.8em;
+                padding:8px 11px;outline:none;transition:border-color .18s,box-shadow .18s;box-sizing:border-box;}
+.fd-field-inp:focus,.fd-field-sel:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,212,255,.12);}
+.fd-field-inp::placeholder{color:rgba(255,255,255,.2);}
+.fd-field-sel option{background:#0d1220;}
+.fd-fields-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.fd-modal-footer{display:flex;gap:8px;padding:0 18px 18px;justify-content:flex-end;}
+.fd-modal-submit{padding:9px 22px;border:none;border-radius:10px;cursor:pointer;
+                 font-family:'Inter',sans-serif;font-size:.78em;font-weight:700;
+                 background:linear-gradient(135deg,var(--blue),#7c3aed);color:#fff;
+                 transition:opacity .18s;}
+.fd-modal-submit:hover{opacity:.87;}
+.fd-modal-submit:disabled{opacity:.4;cursor:not-allowed;}
+.fd-modal-cancel{padding:9px 16px;border:1px solid rgba(255,255,255,.1);border-radius:10px;
+                 cursor:pointer;font-family:'Inter',sans-serif;font-size:.78em;font-weight:600;
+                 background:transparent;color:rgba(255,255,255,.4);transition:all .15s;}
+.fd-modal-cancel:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);}
+.fd-modal-err{font-size:.68em;color:var(--red);padding:0 18px 10px;display:none;}
+
 /* ── Analyze section ──────────────────────────────────────────────── */
 .az-wrap{margin-top:6px;}
 .az-search{width:100%;box-sizing:border-box;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 14px;color:#fff;font-size:.85em;outline:none;transition:border-color .2s,box-shadow .2s;}
@@ -759,6 +829,9 @@ function switchTab(i){
   if(i===4&&!_fdLoaded)   loadFDData();
   if(i===5&&!_perfLoaded) loadPerfData();
   if(i===6&&!_utLoaded)   loadUTData();
+  // Show FAB only on FD tab (4)
+  var fab=document.getElementById('fdAddFab');
+  if(fab) fab.style.display=(i===4&&_fdLoaded)?'flex':'none';
 }
 function tdot(i,s){var d=document.getElementById('td'+i);if(d)d.className='tdot'+(s?' '+s:'');}
 
@@ -2295,16 +2368,17 @@ function fdRenderCards(){
     var daysLbl=fdDaysLabel(fd.end,fd.status);
     var isMonthly=fd.type.toLowerCase().indexOf('monthly')>-1;
 
-    html+='<div class="fd-card '+stClass+'">';
+    html+='<div class="fd-card '+stClass+'" id="fdcard-'+fd.id+'">';
     // top row
     html+='<div class="fd-card-top">';
     html+='<span class="fd-bank-badge '+bankClass+'">'+fd.bank+'</span>';
     html+='<span class="fd-amount">₨ '+fr(fd.amount,0)+'</span>';
     if(daysLbl) html+='<span class="fd-days-badge">'+daysLbl+'</span>';
-    html+='<span class="fd-status-pill '+pillClass+'">'+fd.status+'</span>';
+    html+='<span class="fd-status-pill '+pillClass+'" id="fdpill-'+fd.id+'">'+fd.status+'</span>';
     html+='</div>';
     // meta
     html+='<div class="fd-meta">';
+    html+='<span><b>ID:</b> #'+fd.id+'</span>';
     html+='<span><b>Type:</b> '+esc(fd.type)+'</span>';
     html+='<span><b>Opened:</b> '+esc(fd.opened)+'</span>';
     html+='<span><b>Ends:</b> '+esc(fd.end)+'</span>';
@@ -2319,11 +2393,64 @@ function fdRenderCards(){
     html+='<span class="fd-int-lbl">'+(isMonthly?'Monthly interest':'Maturity interest')+'</span>';
     html+='<span class="fd-int-val">₨ '+fr(fd.interest,0)+'</span>';
     html+='</div>';
-    if(fd.remarks) html+='<div class="fd-remark">📝 '+esc(fd.remarks)+'</div>';
+    // ── Inline edit row ──
+    html+='<div class="fd-edit-row">';
+    html+='<select class="fd-status-sel" id="fdsel-'+fd.id+'">';
+    ['In Progress','Matured','Broken'].forEach(function(s){
+      html+='<option value="'+s+'"'+(fd.status===s?' selected':'')+'>'+s+'</option>';
+    });
+    html+='</select>';
+    html+='<input class="fd-remarks-inp" id="fdrmk-'+fd.id+'" type="text" placeholder="Remark…" value="'+esc(fd.remarks||'')+'">';
+    html+='<button class="fd-save-btn" id="fdbtn-'+fd.id+'" onclick="saveFDCard('+fd.id+')">💾 Save</button>';
+    html+='<span class="fd-save-ok" id="fdok-'+fd.id+'">✓ Saved</span>';
+    html+='</div>';
     html+='</div>';
   });
   wrap.innerHTML=html;
 }
+
+function saveFDCard(id){
+  var sel=document.getElementById('fdsel-'+id);
+  var rmk=document.getElementById('fdrmk-'+id);
+  var btn=document.getElementById('fdbtn-'+id);
+  var ok =document.getElementById('fdok-'+id);
+  if(!sel||!rmk||!btn) return;
+  var newStatus=sel.value;
+  var newRemarks=rmk.value.trim();
+  btn.disabled=true; btn.textContent='Saving…';
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.disabled=false; btn.textContent='💾 Save';
+      if(res&&res.ok){
+        // Update pill colour
+        var pill=document.getElementById('fdpill-'+id);
+        if(pill){
+          pill.textContent=newStatus;
+          var pc=newStatus==='In Progress'?'fd-status-active':newStatus==='Matured'?'fd-status-matured':'fd-status-broken';
+          pill.className='fd-status-pill '+pc;
+        }
+        // Update card border
+        var card=document.getElementById('fdcard-'+id);
+        if(card){
+          card.classList.remove('fd-active','fd-matured','fd-broken');
+          card.classList.add(newStatus==='In Progress'?'fd-active':newStatus==='Matured'?'fd-matured':'fd-broken');
+        }
+        // Update _fdData in memory
+        for(var i=0;i<_fdData.length;i++){
+          if(_fdData[i].id===id){_fdData[i].status=newStatus;_fdData[i].remarks=newRemarks;break;}
+        }
+        if(ok){ok.style.display='inline';setTimeout(function(){ok.style.display='none';},2500);}
+      } else {
+        btn.textContent='⚠ Error'; setTimeout(function(){btn.textContent='💾 Save';},2000);
+      }
+    })
+    .withFailureHandler(function(){
+      btn.disabled=false; btn.textContent='⚠ Error';
+      setTimeout(function(){btn.textContent='💾 Save';},2000);
+    })
+    .updateFDItem(id, newStatus, newRemarks);
+}
+
 
 function renderFD(){
   var l4=document.getElementById('l4'),c4=document.getElementById('c4');
@@ -2490,9 +2617,12 @@ function renderFD(){
   html+='<button class="fd-chip fd-type-chip fd-type-mat" onclick="fdSetType(this,\'maturity\')">Maturity</button>';
   html+='</div>';
 
-  html+='<div id="fdCardWrap" class="fd-cards"></div>';
+  html+='<div id="fdCardWrap" class="fd-cards" style="padding-bottom:72px;"></div>';
   c4.innerHTML=html;
   fdRenderCards();
+  // Show the FAB
+  var fab=document.getElementById('fdAddFab');
+  if(fab) fab.style.display='flex';
 }
 
 /* ══════════════════════════════════════════
@@ -3150,5 +3280,134 @@ function utRenderCharts(funds, companies, compMap){
     <div id="dvChartBody"></div>
   </div>
 </div>
+<!-- FAB: Add new FD -->
+<button id="fdAddFab" title="Add New Fixed Deposit" onclick="openAddFDModal()">+</button>
+
+<!-- Add FD Modal -->
+<div id="fdAddModal" onclick="if(event.target===this)closeAddFDModal()">
+  <div id="fdAddBox">
+    <div class="fd-modal-hdr">
+      <span class="fd-modal-title">🏦 New Fixed Deposit</span>
+      <button class="fd-modal-close" onclick="closeAddFDModal()">✕</button>
+    </div>
+    <div class="fd-modal-body">
+      <div class="fd-fields-row">
+        <div class="fd-field">
+          <label class="fd-field-lbl" for="fdnew-bank">Bank</label>
+          <select class="fd-field-sel" id="fdnew-bank">
+            <option value="COMERCIAL">COMERCIAL</option>
+            <option value="HNB">HNB</option>
+            <option value="OTHER">OTHER</option>
+          </select>
+        </div>
+        <div class="fd-field">
+          <label class="fd-field-lbl" for="fdnew-amount">Principal Amount (₨)</label>
+          <input class="fd-field-inp" id="fdnew-amount" type="number" placeholder="e.g. 500000" min="0">
+        </div>
+      </div>
+      <div class="fd-fields-row">
+        <div class="fd-field">
+          <label class="fd-field-lbl" for="fdnew-opened">Opened Date</label>
+          <input class="fd-field-inp" id="fdnew-opened" type="date">
+        </div>
+        <div class="fd-field">
+          <label class="fd-field-lbl" for="fdnew-end">Maturity Date</label>
+          <input class="fd-field-inp" id="fdnew-end" type="date">
+        </div>
+      </div>
+      <div class="fd-fields-row">
+        <div class="fd-field">
+          <label class="fd-field-lbl" for="fdnew-type">Interest Type</label>
+          <select class="fd-field-sel" id="fdnew-type">
+            <option value="Monthly interest">Monthly Interest</option>
+            <option value="Maturity interest">Maturity Interest</option>
+          </select>
+        </div>
+        <div class="fd-field">
+          <label class="fd-field-lbl" for="fdnew-interest">Interest Amount (₨)</label>
+          <input class="fd-field-inp" id="fdnew-interest" type="number" placeholder="e.g. 4200" min="0">
+        </div>
+      </div>
+      <div class="fd-fields-row">
+        <div class="fd-field">
+          <label class="fd-field-lbl" for="fdnew-status">Status</label>
+          <select class="fd-field-sel" id="fdnew-status">
+            <option value="In Progress">In Progress</option>
+            <option value="Matured">Matured</option>
+            <option value="Broken">Broken</option>
+          </select>
+        </div>
+        <div class="fd-field">
+          <label class="fd-field-lbl" for="fdnew-remarks">Remarks</label>
+          <input class="fd-field-inp" id="fdnew-remarks" type="text" placeholder="Optional note…">
+        </div>
+      </div>
+    </div>
+    <div class="fd-modal-err" id="fdnew-err"></div>
+    <div class="fd-modal-footer">
+      <button class="fd-modal-cancel" onclick="closeAddFDModal()">Cancel</button>
+      <button class="fd-modal-submit" id="fdnew-submit" onclick="submitAddFD()">✚ Add FD</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openAddFDModal(){
+  var m=document.getElementById('fdAddModal');
+  if(m) m.classList.add('open');
+  // reset form
+  ['fdnew-bank','fdnew-amount','fdnew-opened','fdnew-end','fdnew-type','fdnew-interest','fdnew-status','fdnew-remarks'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(!el) return;
+    if(el.tagName==='SELECT') el.selectedIndex=0;
+    else el.value='';
+  });
+  var err=document.getElementById('fdnew-err');
+  if(err){err.style.display='none';err.textContent='';}
+  var btn=document.getElementById('fdnew-submit');
+  if(btn){btn.disabled=false;btn.textContent='✚ Add FD';}
+}
+function closeAddFDModal(){
+  var m=document.getElementById('fdAddModal');
+  if(m) m.classList.remove('open');
+}
+function submitAddFD(){
+  var bank    =(document.getElementById('fdnew-bank')    ||{}).value||'';
+  var amount  =(document.getElementById('fdnew-amount')  ||{}).value||'';
+  var opened  =(document.getElementById('fdnew-opened')  ||{}).value||'';
+  var end     =(document.getElementById('fdnew-end')     ||{}).value||'';
+  var type    =(document.getElementById('fdnew-type')    ||{}).value||'';
+  var interest=(document.getElementById('fdnew-interest')||{}).value||'';
+  var status  =(document.getElementById('fdnew-status')  ||{}).value||'In Progress';
+  var remarks =(document.getElementById('fdnew-remarks') ||{}).value||'';
+  var errEl   =document.getElementById('fdnew-err');
+  var btn     =document.getElementById('fdnew-submit');
+  // basic validation
+  if(!bank||!amount||!opened||!end||!type||!interest){
+    if(errEl){errEl.textContent='⚠ Please fill in all required fields.';errEl.style.display='block';}
+    return;
+  }
+  if(errEl){errEl.style.display='none';}
+  btn.disabled=true; btn.textContent='Saving…';
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.disabled=false; btn.textContent='✚ Add FD';
+      if(res&&res.ok){
+        closeAddFDModal();
+        // Reload FD data
+        _fdLoaded=false;
+        loadFDData();
+      } else {
+        if(errEl){errEl.textContent='⚠ '+(res&&res.error?res.error:'Failed to save.');errEl.style.display='block';}
+      }
+    })
+    .withFailureHandler(function(e){
+      btn.disabled=false; btn.textContent='✚ Add FD';
+      if(errEl){errEl.textContent='⚠ '+(e&&e.message?e.message:'Server error.');errEl.style.display='block';}
+    })
+    .addFDItem(bank, Number(amount), opened, end, type, Number(interest), status, remarks);
+}
+</script>
+
 </body>
 </html>

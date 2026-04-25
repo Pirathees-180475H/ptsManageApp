@@ -1585,6 +1585,72 @@ function getFDData() {
   }
 }
 
+// ── Update FD status and/or remarks for a given FD id ─────────────
+function updateFDItem(fdId, newStatus, newRemarks) {
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName('Portfolio');
+    if (!sheet) throw new Error('Portfolio sheet not found');
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 21) throw new Error('No FD rows found');
+    var rows = sheet.getRange(21, 1, lastRow - 20, 9).getValues();
+    for (var i = 0; i < rows.length; i++) {
+      var id = rows[i][0];
+      if (!id || isNaN(Number(id))) continue;
+      if (Number(id) === Number(fdId)) {
+        var sheetRow = 21 + i;
+        // col H (8) = status, col I (9) = remarks
+        if (newStatus !== undefined && newStatus !== null) {
+          sheet.getRange(sheetRow, 8).setValue(newStatus);
+        }
+        if (newRemarks !== undefined && newRemarks !== null) {
+          sheet.getRange(sheetRow, 9).setValue(newRemarks);
+        }
+        SpreadsheetApp.flush();
+        return { ok: true };
+      }
+    }
+    return { ok: false, error: 'FD id ' + fdId + ' not found' };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
+// ── Add a new FD row to Portfolio sheet, auto-incrementing ID ────────
+function addFDItem(bank, amount, opened, end, type, interest, status, remarks) {
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName('Portfolio');
+    if (!sheet) throw new Error('Portfolio sheet not found');
+    var lastRow = sheet.getLastRow();
+    // Find highest existing FD id to auto-increment
+    var nextId = 1;
+    if (lastRow >= 21) {
+      var rows = sheet.getRange(21, 1, lastRow - 20, 1).getValues();
+      rows.forEach(function(r) {
+        var n = Number(r[0]);
+        if (!isNaN(n) && n >= nextId) nextId = n + 1;
+      });
+    }
+    // Append new row after last row
+    var newRow = lastRow + 1;
+    var tz = Session.getScriptTimeZone();
+    var openedDate = opened ? new Date(opened) : '';
+    var endDate    = end    ? new Date(end)    : '';
+    sheet.getRange(newRow, 1).setValue(nextId);
+    sheet.getRange(newRow, 2).setValue((bank    || '').toUpperCase());
+    sheet.getRange(newRow, 3).setValue(Number(amount)   || 0);
+    if (openedDate) sheet.getRange(newRow, 4).setValue(openedDate);
+    if (endDate)    sheet.getRange(newRow, 5).setValue(endDate);
+    sheet.getRange(newRow, 6).setValue(type    || '');
+    sheet.getRange(newRow, 7).setValue(Number(interest) || 0);
+    sheet.getRange(newRow, 8).setValue(status  || 'In Progress');
+    sheet.getRange(newRow, 9).setValue(remarks || '');
+    SpreadsheetApp.flush();
+    return { ok: true, id: nextId };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  }
+}
+
 // ── Stage 2 (NEW): Batch fetch all stocks from LOLC Stock Screener ──
 function getLOLCScreenerAll() {
   var epoch = new Date().getTime();
