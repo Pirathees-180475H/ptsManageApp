@@ -1754,18 +1754,20 @@ function getDividendCalendarCSV() {
   var lines = raw.split('\n');
   var today = new Date();
   today.setHours(0, 0, 0, 0);
+  // Keep records from up to 60 days in the past (≈ 2 months back)
+  var cutoff = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
   var header = lines[0];
   var kept = [header];
   for (var i = 1; i < lines.length; i++) {
     var ln = lines[i].trim();
     if (!ln) continue;
-    // D_PAY is the 3rd column (index 2); format dd/mm/yyyy
+    // D_PAY is the 3rd column (index 2); format yyyy-MM-dd (ISO)
     var cols = ln.split(',');
     var payRaw = cols[2] ? cols[2].replace(/"/g, '').trim() : '';
-    var parts = payRaw.split('/');
+    var parts = payRaw.split('-');
     if (parts.length === 3) {
-      var payDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-      if (payDate < today) continue; // skip past payments
+      var payDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      if (payDate < cutoff) continue; // skip records older than 2 months
     }
     kept.push(ln);
   }

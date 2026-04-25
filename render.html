@@ -2448,9 +2448,17 @@ function parseCsvLine(ln){
 }
 function parseDMY(s){
   if(!s) return null;
-  var p=s.split('/'); if(p.length!==3) return null;
-  var d=parseInt(p[0]),m=parseInt(p[1])-1,y=parseInt(p[2]);
-  return (isNaN(d)||isNaN(m)||isNaN(y))?null:new Date(y,m,d);
+  // Support both ISO yyyy-MM-dd and legacy dd/MM/yyyy
+  var p;
+  if(s.indexOf('-')>-1){
+    p=s.split('-');
+    if(p.length!==3) return null;
+    var y=parseInt(p[0]),m=parseInt(p[1])-1,d=parseInt(p[2]);
+    return (isNaN(d)||isNaN(m)||isNaN(y))?null:new Date(y,m,d);
+  }
+  p=s.split('/'); if(p.length!==3) return null;
+  var d2=parseInt(p[0]),m2=parseInt(p[1])-1,y2=parseInt(p[2]);
+  return (isNaN(d2)||isNaN(m2)||isNaN(y2))?null:new Date(y2,m2,d2);
 }
 function fmtDMY(dt){
   if(!dt) return '—';
