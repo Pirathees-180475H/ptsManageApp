@@ -1620,30 +1620,48 @@ function addFDItem(bank, amount, opened, end, type, interest, status, remarks) {
   try {
     var sheet = SpreadsheetApp.getActive().getSheetByName('Portfolio');
     if (!sheet) throw new Error('Portfolio sheet not found');
+    
     var lastRow = sheet.getLastRow();
-    // Find highest existing FD id to auto-increment
     var nextId = 1;
+    var insertRow = lastRow + 1; // Default to end
+
     if (lastRow >= 21) {
-      var rows = sheet.getRange(21, 1, lastRow - 20, 1).getValues();
-      rows.forEach(function(r) {
-        var n = Number(r[0]);
+      var range = sheet.getRange(21, 1, lastRow - 20 + 1, 1); // Include potential last row
+      var values = range.getValues();
+      
+      for (var i = 0; i < values.length; i++) {
+        var val = values[i][0];
+        // Check for Total row
+        if (val === 'Total' || (typeof val === 'string' && val.toLowerCase().indexOf('total') > -1)) {
+          insertRow = 21 + i;
+          break;
+        }
+        // Auto-increment ID logic
+        var n = Number(val);
         if (!isNaN(n) && n >= nextId) nextId = n + 1;
-      });
+      }
     }
-    // Append new row after last row
-    var newRow = lastRow + 1;
-    var tz = Session.getScriptTimeZone();
+
+    // Insert new row if we found a Total row or similar
+    if (insertRow <= lastRow) {
+      sheet.insertRowBefore(insertRow);
+    } else {
+      insertRow = lastRow + 1;
+    }
+
     var openedDate = opened ? new Date(opened) : '';
     var endDate    = end    ? new Date(end)    : '';
-    sheet.getRange(newRow, 1).setValue(nextId);
-    sheet.getRange(newRow, 2).setValue((bank    || '').toUpperCase());
-    sheet.getRange(newRow, 3).setValue(Number(amount)   || 0);
-    if (openedDate) sheet.getRange(newRow, 4).setValue(openedDate);
-    if (endDate)    sheet.getRange(newRow, 5).setValue(endDate);
-    sheet.getRange(newRow, 6).setValue(type    || '');
-    sheet.getRange(newRow, 7).setValue(Number(interest) || 0);
-    sheet.getRange(newRow, 8).setValue(status  || 'In Progress');
-    sheet.getRange(newRow, 9).setValue(remarks || '');
+    
+    sheet.getRange(insertRow, 1).setValue(nextId);
+    sheet.getRange(insertRow, 2).setValue((bank    || '').toUpperCase());
+    sheet.getRange(insertRow, 3).setValue(Number(amount)   || 0);
+    if (openedDate) sheet.getRange(insertRow, 4).setValue(openedDate);
+    if (endDate)    sheet.getRange(insertRow, 5).setValue(endDate);
+    sheet.getRange(insertRow, 6).setValue(type    || '');
+    sheet.getRange(insertRow, 7).setValue(Number(interest) || 0);
+    sheet.getRange(insertRow, 8).setValue(status  || 'In Progress');
+    sheet.getRange(insertRow, 9).setValue(remarks || '');
+    
     SpreadsheetApp.flush();
     return { ok: true, id: nextId };
   } catch(e) {

@@ -1662,14 +1662,37 @@ input[type=date].swae-input{color-scheme:dark;}
 .fd-analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
 
 /* Inline Edit Styles */
-.fd-edit-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); }
-.fd-status-sel { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-size: 0.65em; padding: 4px 6px; outline: none; flex-shrink: 0; font-family: inherit; }
+.fd-card-top { position: relative; }
+.fd-edit-toggle { position: absolute; top: 0; right: 0; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: rgba(255,255,255,0.5); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 12px; }
+.fd-edit-toggle:hover { background: rgba(0,212,255,0.15); color: var(--blue); border-color: rgba(0,212,255,0.3); }
+.fd-edit-row { display: none; gap: 8px; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); }
+.fd-card.editing .fd-edit-row { display: flex; }
+.fd-card.editing .fd-status-pill { display: none; }
+.fd-card.editing .fd-remark { display: none; }
+
+.fd-status-sel, .fd-field-sel { 
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-size: 0.65em; padding: 4px 6px; outline: none; flex-shrink: 0; font-family: inherit;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.5)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px !important;
+}
+.fd-status-sel:focus, .fd-field-sel:focus { border-color: var(--blue); background-color: rgba(0,212,255,0.05); }
+
 .fd-remarks-inp { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-size: 0.65em; padding: 4px 8px; outline: none; font-family: inherit; }
 .fd-remarks-inp:focus { border-color: var(--blue); }
 .fd-save-btn { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; color: var(--blue); font-size: 0.62em; font-weight: 700; padding: 5px 10px; cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: inherit; }
 .fd-save-btn:hover { background: rgba(0,212,255,0.2); }
 .fd-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .fd-save-ok { font-size: 0.6em; color: var(--green); display: none; font-weight: 700; margin-left: 4px; }
+
+.fd-field-inp[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.5;
+  cursor: pointer;
+}
+.fd-field-sel option { background: #0d1220; color: #fff; }
 
 /* Floating Action Button */
 #fdAddFab { position: fixed; bottom: calc(var(--nav-h) + 16px); right: 18px; width: 52px; height: 52px; border-radius: 16px; background: linear-gradient(135deg, var(--blue), var(--purple)); border: none; color: #fff; font-size: 2em; line-height: 1; cursor: pointer; z-index: 200; box-shadow: 0 6px 24px rgba(0,212,255,0.4); display: none; align-items: center; justify-content: center; transition: transform 0.15s, box-shadow 0.15s; -webkit-tap-highlight-color: transparent; }
@@ -2918,6 +2941,7 @@ function fdRenderCards(){
     html+='<span class="fd-amount">₨ '+fr(fd.amount,0)+'</span>';
     if(daysLbl) html+='<span class="fd-days-badge">'+daysLbl+'</span>';
     html+='<span class="fd-status-pill '+pillClass+'" id="fdpill-'+fd.id+'">'+fd.status+'</span>';
+    html+='<button class="fd-edit-toggle" onclick="toggleFDEdit('+fd.id+')" title="Edit Status/Remarks">✏️</button>';
     html+='</div>';
     html+='<div class="fd-meta">';
     html+='<span><b>ID:</b> #'+fd.id+'</span>';
@@ -2933,6 +2957,8 @@ function fdRenderCards(){
     html+='<span class="fd-int-lbl">'+(isMonthly?'Monthly interest':'Maturity interest')+'</span>';
     html+='<span class="fd-int-val">₨ '+fr(fd.interest,0)+'</span>';
     html+='</div>';
+    if(fd.remarks) html+='<div class="fd-remark" id="fdrem-txt-'+fd.id+'">📝 '+esc(fd.remarks)+'</div>';
+    
     // ── Inline edit row ──
     html+='<div class="fd-edit-row">';
     html+='<select class="fd-status-sel" id="fdsel-'+fd.id+'">';
@@ -2947,6 +2973,11 @@ function fdRenderCards(){
     html+='</div>';
   });
   wrap.innerHTML=html;
+}
+
+function toggleFDEdit(id){
+  var card=document.getElementById('fdcard-'+id);
+  if(card) card.classList.toggle('editing');
 }
 
 function saveFDCard(id){
@@ -2969,10 +3000,23 @@ function saveFDCard(id){
           var pc=newStatus==='In Progress'?'fd-status-active':newStatus==='Matured'?'fd-status-matured':'fd-status-broken';
           pill.className='fd-status-pill '+pc;
         }
-        // Update card border
+        // Update remarks text
+        var remTxt=document.getElementById('fdrem-txt-'+id);
+        if(newRemarks){
+          if(remTxt) remTxt.textContent='📝 '+newRemarks;
+          else {
+            // If it didn't exist, we might need to re-render or insert it.
+            // For simplicity, let's just re-render cards if remarks was empty before but now added.
+            // But we already updated the data in memory below.
+          }
+        } else if(remTxt) {
+          remTxt.remove();
+        }
+
+        // Update card border and exit editing
         var card=document.getElementById('fdcard-'+id);
         if(card){
-          card.classList.remove('fd-active','fd-matured','fd-broken');
+          card.classList.remove('fd-active','fd-matured','fd-broken','editing');
           card.classList.add(newStatus==='In Progress'?'fd-active':newStatus==='Matured'?'fd-matured':'fd-broken');
         }
         // Update _fdData in memory
@@ -7403,8 +7447,13 @@ function buildSWTicker(RAW){
         <div class="fd-field">
           <label class="fd-field-lbl">Type</label>
           <select id="fda-type" class="fd-field-sel">
-            <option value="Monthly">Monthly Interest</option>
-            <option value="Maturity">At Maturity</option>
+            <option value="2 years monthly">2 years monthly</option>
+            <option value="1 years monthly">1 years monthly</option>
+            <option value="6 months maturity">6 months maturity</option>
+            <option value="3 months maturity">3 months maturity</option>
+            <option value="3 years maturity">3 years maturity</option>
+            <option value="monthly Interst">monthly Interst</option>
+            <option value="2 years maturity">2 years maturity</option>
           </select>
         </div>
         <div class="fd-field">
