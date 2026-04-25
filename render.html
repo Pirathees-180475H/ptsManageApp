@@ -1662,37 +1662,72 @@ input[type=date].swae-input{color-scheme:dark;}
 .fd-analysis-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
 
 /* Inline Edit Styles */
-.fd-card-top { position: relative; }
-.fd-edit-toggle { position: absolute; top: 0; right: 0; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: rgba(255,255,255,0.5); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 12px; }
+.fd-edit-toggle { 
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; 
+  color: rgba(255,255,255,0.5); width: 28px; height: 28px; display: flex; align-items: center; 
+  justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 11px; flex-shrink: 0;
+  margin-left: auto;
+}
 .fd-edit-toggle:hover { background: rgba(0,212,255,0.15); color: var(--blue); border-color: rgba(0,212,255,0.3); }
 .fd-edit-row { display: none; gap: 8px; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.06); }
 .fd-card.editing .fd-edit-row { display: flex; }
 .fd-card.editing .fd-status-pill { display: none; }
 .fd-card.editing .fd-remark { display: none; }
 
-.fd-status-sel, .fd-field-sel { 
-  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; font-size: 0.65em; padding: 4px 6px; outline: none; flex-shrink: 0; font-family: inherit;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.5)'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  padding-right: 28px !important;
+.fd-status-sel, .fd-field-sel, .fd-field-inp, .fd-remarks-inp { 
+  background: #161b26 !important; 
+  border: 1px solid rgba(255,255,255,0.12) !important; 
+  border-radius: 10px !important; 
+  color: #fff !important; 
+  font-family: inherit !important;
+  outline: none !important;
+  color-scheme: dark !important; /* Force dark mode browser UI */
 }
-.fd-status-sel:focus, .fd-field-sel:focus { border-color: var(--blue); background-color: rgba(0,212,255,0.05); }
 
-.fd-remarks-inp { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; font-size: 0.65em; padding: 4px 8px; outline: none; font-family: inherit; }
-.fd-remarks-inp:focus { border-color: var(--blue); }
-.fd-save-btn { background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 6px; color: var(--blue); font-size: 0.62em; font-weight: 700; padding: 5px 10px; cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: inherit; }
-.fd-save-btn:hover { background: rgba(0,212,255,0.2); }
-.fd-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.fd-save-ok { font-size: 0.6em; color: var(--green); display: none; font-weight: 700; margin-left: 4px; }
+/* Specifics for inline edit fields */
+.fd-status-sel, .fd-remarks-inp {
+  font-size: 0.65em !important;
+  padding: 5px 10px !important;
+}
+
+/* Specifics for modal fields */
+.fd-field-sel, .fd-field-inp {
+  font-size: 0.85em !important;
+  padding: 10px 14px !important;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Dropdown arrow styling */
+.fd-status-sel, .fd-field-sel {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='white'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  padding-right: 32px !important;
+}
+
+.fd-status-sel:focus, .fd-field-sel:focus, .fd-field-inp:focus, .fd-remarks-inp:focus { 
+  border-color: var(--blue) !important; 
+  background-color: #1a2233 !important; 
+}
 
 .fd-field-inp[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
-  opacity: 0.5;
+  opacity: 0.7;
   cursor: pointer;
 }
-.fd-field-sel option { background: #0d1220; color: #fff; }
+.fd-field-sel option { background: #161b26; color: #fff; }
+
+.fd-save-btn { 
+  background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3); border-radius: 8px; 
+  color: var(--blue); font-size: 0.65em; font-weight: 700; padding: 6px 12px; cursor: pointer; 
+  transition: all 0.2s; white-space: nowrap; font-family: inherit; 
+}
+.fd-save-btn:hover { background: rgba(0,212,255,0.25); border-color: var(--blue); }
+.fd-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.fd-save-ok { font-size: 0.65em; color: var(--green); display: none; font-weight: 700; margin-left: 6px; }
 
 /* Floating Action Button */
 #fdAddFab { position: fixed; bottom: calc(var(--nav-h) + 16px); right: 18px; width: 52px; height: 52px; border-radius: 16px; background: linear-gradient(135deg, var(--blue), var(--purple)); border: none; color: #fff; font-size: 2em; line-height: 1; cursor: pointer; z-index: 200; box-shadow: 0 6px 24px rgba(0,212,255,0.4); display: none; align-items: center; justify-content: center; transition: transform 0.15s, box-shadow 0.15s; -webkit-tap-highlight-color: transparent; }
