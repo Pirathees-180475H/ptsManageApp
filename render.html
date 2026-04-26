@@ -226,73 +226,118 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   animation:bankModalIn .3s ease;
 }
 @keyframes bankModalIn{from{opacity:0;transform:scale(.95) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
-.bm-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.07);}
-.bm-title{font-size:.95em;font-weight:800;color:#fff;letter-spacing:.5px;}
-.bm-close{background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.5);width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
-.bm-close:hover{background:rgba(255,80,80,.2);color:#ff5050;}
+.bm-hdr{padding:18px 22px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);}
+.bm-title{font-size:.80em;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:rgba(255,255,255,.45);}
+.bm-close{background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.45);width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.bm-close:hover{background:rgba(255,255,255,.12);color:#fff;}
 .bm-body{padding:20px 22px;display:flex;flex-direction:column;gap:20px;}
 .bm-main-row{display:grid;grid-template-columns:1fr 220px;gap:24px;align-items:start;}
 .bm-list{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 .bm-item{
-  position:relative;border-radius:20px;padding:16px;
-  display:flex;flex-direction:column;gap:12px;
-  transition:all .3s cubic-bezier(.4,0,.2,1);
-  overflow:hidden;border:1px solid rgba(255,255,255,.08);
+  background:rgba(255,255,255,.032);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:16px;
+  padding:16px;
+  transition:all .28s cubic-bezier(.4,0,.2,1);
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
-.bm-item::before{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(255,255,255,.05),transparent);
-  opacity:0;transition:opacity .3s;
+.bm-item:hover{
+  transform:translateY(-3px);
+  box-shadow:0 12px 36px rgba(0,0,0,.4);
+  background:rgba(255,255,255,.05);
+  border-color:rgba(255,255,255,.1);
 }
-.bm-item:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.4);}
-.bm-item:hover::before{opacity:1;}
+.bm-item::after{
+  content:'';
+  position:absolute;
+  left:0;top:0;bottom:0;
+  width:3px;
+  background:var(--bank-color, #6366f1);
+  box-shadow:2px 0 10px var(--bank-color, #6366f1);
+  opacity:.7;
+}
 
-/* Card Color Variants */
-.bm-item.c0{background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(56,189,248,.05));border-color:rgba(56,189,248,.25);}
-.bm-item.c1{background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(168,85,247,.05));border-color:rgba(168,85,247,.25);}
-.bm-item.c2{background:linear-gradient(135deg,rgba(52,211,153,.15),rgba(52,211,153,.05));border-color:rgba(52,211,153,.25);}
-.bm-item.c3{background:linear-gradient(135deg,rgba(251,191,36,.15),rgba(251,191,36,.05));border-color:rgba(251,191,36,.25);}
-.bm-item.c4{background:linear-gradient(135deg,rgba(251,113,133,.15),rgba(251,113,133,.05));border-color:rgba(251,113,133,.25);}
-.bm-item.c5{background:linear-gradient(135deg,rgba(45,212,191,.15),rgba(45,212,191,.05));border-color:rgba(45,212,191,.25);}
-
-.bm-item-top{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;}
-.bm-blink{
-  width:6px;height:6px;border-radius:50%;
-  background:currentColor;
-  box-shadow:0 0 8px currentColor;
-  animation:bmPulse 2s infinite;
+.bm-item-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
 }
-@keyframes bmPulse{0%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.8);}100%{opacity:1;transform:scale(1);}}
+.bm-avatar{
+  width:38px;height:38px;
+  border-radius:11px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.85em;
+  font-weight:800;
+  flex-shrink:0;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  font-family:'Inter',sans-serif;
+}
+.bm-info{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
 
 .bm-item-source{
-  background:transparent;border:none;color:rgba(255,255,255,.45);
-  font-family:inherit;font-size:.58em;font-weight:800;
-  letter-spacing:1.5px;text-transform:uppercase;outline:none;
-  padding:0;width:100%;transition:color .2s;
+  border:none;
+  font-family:'Inter',sans-serif;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  outline:none;
+  padding:3px 9px;
+  border-radius:7px;
+  width:fit-content;
+  transition:all .2s;
 }
-.bm-item:hover .bm-item-source{color:rgba(255,255,255,.8);}
 
 .bm-item-amt{
-  background:transparent;border:none;color:#fff;
-  font-family:inherit;font-size:1.35em;font-weight:800;
-  outline:none;padding:0;width:100%;position:relative;z-index:1;
-  letter-spacing:-.5px;
+  background:transparent;
+  border:none;
+  color:rgba(255,255,255,.6);
+  font-family:'Inter',sans-serif;
+  font-size:.80em;
+  font-weight:700;
+  outline:none;
+  padding:2px 0;
+  width:100%;
+  letter-spacing:0.5px;
 }
-.bm-item-amt:focus{color:#fff;}
+.bm-item-amt:focus{color:rgba(255,255,255,.95);}
 
 .bm-side{display:flex;flex-direction:column;gap:16px;}
 .bm-chart-box{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:14px;height:180px;position:relative;}
 .bm-total-box{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:16px;padding:14px 18px;display:flex;flex-direction:column;gap:4px;}
-.bm-total-lbl{font-size:.55em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);}
-.bm-total-val{font-size:1.15em;font-weight:800;color:var(--blue);text-shadow:0 0 16px rgba(0,212,255,.3);}
-.bm-foot{display:flex;justify-content:flex-end;gap:12px;padding:0 22px 22px;}
-.bm-btn{padding:10px 24px;border-radius:10px;font-family:inherit;font-size:.85em;font-weight:700;cursor:pointer;transition:all .2s;border:none;}
-.bm-btn-cancel{background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);}
-.bm-btn-cancel:hover{background:rgba(255,255,255,.1);color:#fff;}
-.bm-btn-save{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;box-shadow:0 8px 24px rgba(0,212,255,.25);}
-.bm-btn-save:hover{transform:translateY(-1px);box-shadow:0 12px 32px rgba(0,212,255,.4);}
-.bm-btn-save:active{transform:translateY(0);opacity:.8;}
-.bm-btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+.bm-total-lbl{font-size:.58em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:3px;}
+.bm-total-val{font-size:.80em;font-weight:800;color:rgba(255,255,255,.75);letter-spacing:0.5px;line-height:1.2;}
+
+.bm-foot{display:flex;justify-content:flex-end;gap:12px;padding:20px 22px 24px;border-top:1px solid rgba(255,255,255,.04);}
+.bm-btn{display:flex;align-items:center;justify-content:center;padding:11px 22px;border-radius:14px;font-family:'Inter',sans-serif;font-size:.78em;font-weight:700;cursor:pointer;transition:all .25s ease;border:none;letter-spacing:.5px;}
+
+.bm-btn-save{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.7);
+  box-shadow:0 4px 15px rgba(0,0,0,.2);
+}
+.bm-btn-save:hover{
+  background:rgba(255,255,255,.1);
+  color:#fff;
+  border-color:rgba(255,255,255,.2);
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+.bm-btn-save:active{transform:translateY(0);}
+.bm-btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
 
 @media(max-width:750px){
   .bm-main-row{grid-template-columns:1fr;gap:16px;}
@@ -2359,8 +2404,9 @@ input[type=date].swae-input{color-scheme:dark;}
       </div>
     </div>
     <div class="bm-foot">
-      <button class="bm-btn bm-btn-cancel" onclick="moneyToggle()">Cancel</button>
-      <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()">Save Changes</button>
+      <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()" title="Save Changes">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+      </button>
     </div>
   </div>
 </div>
@@ -7600,6 +7646,22 @@ function bmLoad() {
     .getBankBalances();
 }
 
+const _BANK_COLORS = {
+  'boc': { bg: '#fbbf24', fg: '#1f2937' },
+  'hnb': { bg: '#1e3a8a', fg: '#ffffff' },
+  'commercial': { bg: '#2563eb', fg: '#ffffff' },
+  'sampath': { bg: '#ea580c', fg: '#ffffff' },
+  'ntb': { bg: '#7dd3fc', fg: '#0c4a6e' }
+};
+
+function getBankStyle(name) {
+  const n = (name||'').toLowerCase();
+  for (let k in _BANK_COLORS) {
+    if (n.includes(k)) return _BANK_COLORS[k];
+  }
+  return { bg: 'rgba(255,255,255,0.1)', fg: '#ffffff' };
+}
+
 function bmRender() {
   const list = document.getElementById('bmList');
   const totalEl = document.getElementById('bmTotal');
@@ -7617,14 +7679,17 @@ function bmRender() {
   
   _bmData.forEach((item, i) => {
     total += item.amount;
-    const cIdx = i % 6;
+    const style = getBankStyle(item.source);
+    const initials = (item.source || '??').substring(0, 3).toUpperCase();
     html += `
-      <div class="bm-item c${cIdx}">
-        <div class="bm-item-top">
-          <input type="text" class="bm-item-source" value="${esc(item.source)}" onchange="bmUpdateData(${i}, 'source', this.value)" placeholder="Bank Name">
-          <div class="bm-blink"></div>
+      <div class="bm-item" style="--bank-color: ${style.bg}">
+        <div class="bm-item-row">
+          <div class="bm-avatar" style="background:${style.bg}; color:${style.fg}">${initials}</div>
+          <div class="bm-info">
+            <input type="text" id="bm-src-${i}" class="bm-item-source" style="background:${style.bg};color:${style.fg};" value="${esc(item.source)}" onchange="bmUpdateData(${i}, 'source', this.value)" placeholder="Bank Name">
+            <input type="number" class="bm-item-amt" value="${item.amount}" onchange="bmUpdateData(${i}, 'amount', this.value)" step="0.01">
+          </div>
         </div>
-        <input type="number" class="bm-item-amt" value="${item.amount}" onchange="bmUpdateData(${i}, 'amount', this.value)" step="0.01">
       </div>
     `;
   });
@@ -7640,6 +7705,22 @@ function bmUpdateData(index, key, value) {
     _bmData[index].amount = parseFloat(value) || 0;
   } else {
     _bmData[index].source = value;
+    const style = getBankStyle(value);
+    const inp = document.getElementById('bm-src-' + index);
+    const itemEl = inp.closest('.bm-item');
+    const avatar = itemEl.querySelector('.bm-avatar');
+    if(inp) {
+      inp.style.background = style.bg;
+      inp.style.color = style.fg;
+    }
+    if(avatar) {
+      avatar.style.background = style.bg;
+      avatar.style.color = style.fg;
+      avatar.textContent = (value || '??').substring(0, 3).toUpperCase();
+    }
+    if(itemEl) {
+      itemEl.style.setProperty('--bank-color', style.bg);
+    }
   }
   
   let total = _bmData.reduce((s, item) => s + item.amount, 0);
@@ -7653,11 +7734,13 @@ function bmUpdateChart(total) {
   const ctx = canvas.getContext('2d');
   const labels = _bmData.map(d => d.source);
   const data = _bmData.map(d => d.amount);
-  const colors = ['#38bdf8', '#818cf8', '#a78bfa', '#fb7185', '#fb923c', '#fbbf24', '#34d399', '#2dd4bf'];
+  const bgColors = labels.map(l => getBankStyle(l).bg);
   
   if (_bmChart) {
     _bmChart.data.labels = labels;
     _bmChart.data.datasets[0].data = data;
+    _bmChart.data.datasets[0].backgroundColor = bgColors;
+    _bmChart.data.datasets[0].borderColor = bgColors;
     _bmChart.update();
   } else {
     _bmChart = new Chart(ctx, {
@@ -7666,8 +7749,8 @@ function bmUpdateChart(total) {
         labels: labels,
         datasets: [{
           data: data,
-          backgroundColor: colors.map(c => c + '33'),
-          borderColor: colors,
+          backgroundColor: bgColors,
+          borderColor: bgColors,
           borderWidth: 2
         }]
       },
@@ -7694,16 +7777,18 @@ function bmUpdateChart(total) {
 
 function bmSave() {
   const btn = document.getElementById('bmSaveBtn');
-  const oldTxt = btn.textContent;
+  const oldHtml = btn.innerHTML;
   btn.disabled = true;
-  btn.textContent = 'Saving…';
+  btn.innerHTML = '<div class="ld-spin" style="width:16px;height:16px;border-width:2px;"></div>';
   
   google.script.run
     .withSuccessHandler(function() {
-      btn.textContent = 'Saved! ✓';
+      btn.innerHTML = '✓';
+      btn.style.color = 'var(--green)';
       setTimeout(() => {
         btn.disabled = false;
-        btn.textContent = oldTxt;
+        btn.innerHTML = oldHtml;
+        btn.style.color = '';
         moneyToggle();
         if (typeof reloadPage === 'function') {
           const activePage = document.querySelector('.spa-page.active').id.replace('page-', '');
