@@ -612,6 +612,55 @@ function updateCSEPrices() {
   priceRange.setValues(output);
 }
 
+// ── Bank Balance Management ──
+function getBankBalances() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Portfolio');
+    if (!sheet) throw new Error('Sheet "Portfolio" not found');
+    
+    var data = sheet.getRange("G1:I10").getValues();
+    var bankBalances = [];
+    
+    for (var i = 0; i < data.length; i++) {
+      var type = (data[i][0] || '').toString().trim();
+      if (type.toUpperCase() === 'BANK') {
+        bankBalances.push({
+          row: i + 1, // 1-based row relative to G1
+          source: (data[i][1] || '').toString().trim(),
+          amount: parseFloat(data[i][2]) || 0
+        });
+      }
+    }
+    return bankBalances;
+  } catch (e) {
+    throw new Error('Failed to load bank balances: ' + e.message);
+  }
+}
+
+function updateBankBalances(updates) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Portfolio');
+    if (!sheet) throw new Error('Sheet "Portfolio" not found');
+    
+    updates.forEach(function(update) {
+      if (update.source !== undefined) {
+        sheet.getRange(update.row, 8).setValue(update.source);
+      }
+      if (update.amount !== undefined) {
+        sheet.getRange(update.row, 9).setValue(update.amount);
+      }
+    });
+    
+    SpreadsheetApp.flush();
+    return { success: true };
+  } catch (e) {
+    throw new Error('Failed to update bank balances: ' + e.message);
+  }
+}
+
+
 function sendMonthlyNotification() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const data = sheet.getRange("F58:I83").getValues();

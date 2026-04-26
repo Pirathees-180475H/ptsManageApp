@@ -205,6 +205,104 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pg-calc-btn:active{transform:scale(.9);}
 .pg-calc-btn.calc-active{background:rgba(168,85,247,.28);border-color:rgba(168,85,247,.6);color:#c084fc;}
 
+.pg-money-btn{
+  background:rgba(0,230,118,.13);border:1px solid rgba(0,230,118,.28);
+  color:var(--green);border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-money-btn:active{transform:scale(.9);}
+
+#bank-modal-bg{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;padding:16px;
+}
+#bank-modal-bg.open{display:flex;}
+#bank-modal{
+  background:#0d1220;border:1px solid rgba(255,255,255,.1);
+  border-radius:24px;width:95%;max-width:800px;
+  box-shadow:0 24px 80px rgba(0,0,0,.8);overflow:hidden;
+  animation:bankModalIn .3s ease;
+}
+@keyframes bankModalIn{from{opacity:0;transform:scale(.95) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.bm-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid rgba(255,255,255,.07);}
+.bm-title{font-size:.95em;font-weight:800;color:#fff;letter-spacing:.5px;}
+.bm-close{background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.5);width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.bm-close:hover{background:rgba(255,80,80,.2);color:#ff5050;}
+.bm-body{padding:20px 22px;display:flex;flex-direction:column;gap:20px;}
+.bm-main-row{display:grid;grid-template-columns:1fr 220px;gap:24px;align-items:start;}
+.bm-list{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.bm-item{
+  position:relative;border-radius:20px;padding:16px;
+  display:flex;flex-direction:column;gap:12px;
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+  overflow:hidden;border:1px solid rgba(255,255,255,.08);
+}
+.bm-item::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.05),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.bm-item:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.4);}
+.bm-item:hover::before{opacity:1;}
+
+/* Card Color Variants */
+.bm-item.c0{background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(56,189,248,.05));border-color:rgba(56,189,248,.25);}
+.bm-item.c1{background:linear-gradient(135deg,rgba(168,85,247,.15),rgba(168,85,247,.05));border-color:rgba(168,85,247,.25);}
+.bm-item.c2{background:linear-gradient(135deg,rgba(52,211,153,.15),rgba(52,211,153,.05));border-color:rgba(52,211,153,.25);}
+.bm-item.c3{background:linear-gradient(135deg,rgba(251,191,36,.15),rgba(251,191,36,.05));border-color:rgba(251,191,36,.25);}
+.bm-item.c4{background:linear-gradient(135deg,rgba(251,113,133,.15),rgba(251,113,133,.05));border-color:rgba(251,113,133,.25);}
+.bm-item.c5{background:linear-gradient(135deg,rgba(45,212,191,.15),rgba(45,212,191,.05));border-color:rgba(45,212,191,.25);}
+
+.bm-item-top{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;}
+.bm-blink{
+  width:6px;height:6px;border-radius:50%;
+  background:currentColor;
+  box-shadow:0 0 8px currentColor;
+  animation:bmPulse 2s infinite;
+}
+@keyframes bmPulse{0%{opacity:1;transform:scale(1);}50%{opacity:.3;transform:scale(.8);}100%{opacity:1;transform:scale(1);}}
+
+.bm-item-source{
+  background:transparent;border:none;color:rgba(255,255,255,.45);
+  font-family:inherit;font-size:.58em;font-weight:800;
+  letter-spacing:1.5px;text-transform:uppercase;outline:none;
+  padding:0;width:100%;transition:color .2s;
+}
+.bm-item:hover .bm-item-source{color:rgba(255,255,255,.8);}
+
+.bm-item-amt{
+  background:transparent;border:none;color:#fff;
+  font-family:inherit;font-size:1.35em;font-weight:800;
+  outline:none;padding:0;width:100%;position:relative;z-index:1;
+  letter-spacing:-.5px;
+}
+.bm-item-amt:focus{color:#fff;}
+
+.bm-side{display:flex;flex-direction:column;gap:16px;}
+.bm-chart-box{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:14px;height:180px;position:relative;}
+.bm-total-box{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:16px;padding:14px 18px;display:flex;flex-direction:column;gap:4px;}
+.bm-total-lbl{font-size:.55em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);}
+.bm-total-val{font-size:1.15em;font-weight:800;color:var(--blue);text-shadow:0 0 16px rgba(0,212,255,.3);}
+.bm-foot{display:flex;justify-content:flex-end;gap:12px;padding:0 22px 22px;}
+.bm-btn{padding:10px 24px;border-radius:10px;font-family:inherit;font-size:.85em;font-weight:700;cursor:pointer;transition:all .2s;border:none;}
+.bm-btn-cancel{background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);}
+.bm-btn-cancel:hover{background:rgba(255,255,255,.1);color:#fff;}
+.bm-btn-save{background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff;box-shadow:0 8px 24px rgba(0,212,255,.25);}
+.bm-btn-save:hover{transform:translateY(-1px);box-shadow:0 12px 32px rgba(0,212,255,.4);}
+.bm-btn-save:active{transform:translateY(0);opacity:.8;}
+.bm-btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important;}
+
+@media(max-width:750px){
+  .bm-main-row{grid-template-columns:1fr;gap:16px;}
+  .bm-list{grid-template-columns:repeat(2,1fr);}
+  .bm-side{order:-1;}
+}
+@media(max-width:500px){
+  .bm-list{grid-template-columns:1fr;}
+}
+
 #calc-panel{
   position:fixed;bottom:calc(var(--nav-h) + 10px);left:12px;
   width:234px;z-index:8000;
@@ -1870,14 +1968,16 @@ input[type=date].swae-input{color-scheme:dark;}
   <div class="load-bar">
     <div class="load-fill" id="loadFill"></div>
   </div>
-  <div class="cse-header">
+  <div class="pg-hdr">
     <div style="display:flex;align-items:center;gap:10px;">
-      <span class="h-title">📈 Investment Analysis</span>
+      <span class="h-title">📈 Investments</span>
       <span class="mkt-pill" id="mktPill">—</span>
     </div>
-    <div class="h-right">
+    <div class="pg-hdr-actions">
       <span class="upd-lbl" id="updLbl">Starting…</span>
-      <button class="refresh-btn" id="refreshBtn" onclick="cseStartLoad()" disabled>↺</button>
+      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" id="refreshBtn" onclick="cseStartLoad()">↺ Reload</button>
     </div>
   </div>
   <div class="tabs">
@@ -1935,6 +2035,7 @@ input[type=date].swae-input{color-scheme:dark;}
   <div class="pg-hdr">
     <span class="pg-hdr-title">💳 Cards</span>
     <div class="pg-hdr-actions">
+      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
     </div>
@@ -1955,6 +2056,7 @@ input[type=date].swae-input{color-scheme:dark;}
   <div class="pg-hdr">
     <span class="pg-hdr-title">📊 Expenses</span>
     <div class="pg-hdr-actions">
+      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
     </div>
@@ -1988,6 +2090,7 @@ input[type=date].swae-input{color-scheme:dark;}
   <div class="pg-hdr">
     <span class="pg-hdr-title">💼 Summary</span>
     <div class="pg-hdr-actions">
+      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('port')">↺ Reload</button>
     </div>
@@ -2013,6 +2116,7 @@ input[type=date].swae-input{color-scheme:dark;}
   <div class="pg-hdr">
     <span class="pg-hdr-title">💸 Money Flow</span>
     <div class="pg-hdr-actions">
+      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('mf')">↺ Reload</button>
     </div>
@@ -2030,6 +2134,7 @@ input[type=date].swae-input{color-scheme:dark;}
   <div class="pg-hdr">
     <span class="pg-hdr-title">🤝 Splitwise</span>
     <div class="pg-hdr-actions">
+      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>
     </div>
@@ -2226,6 +2331,40 @@ input[type=date].swae-input{color-scheme:dark;}
     <button class="ck ck-eq"  onclick="calcEval()">=</button>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════════════
+     BANK BALANCE MODAL
+     Data from Portfolio G1:I10
+═══════════════════════════════════════════ -->
+<div id="bank-modal-bg" onclick="if(event.target===this)moneyToggle()">
+  <div id="bank-modal">
+    <div class="bm-hdr">
+      <span class="bm-title">🏦 Bank Balances</span>
+      <button class="bm-close" onclick="moneyToggle()">✕</button>
+    </div>
+    <div class="bm-body">
+      <div class="bm-main-row">
+        <div class="bm-list" id="bmList">
+          <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;">Loading bank data…</div>
+        </div>
+        <div class="bm-side">
+          <div class="bm-chart-box">
+            <canvas id="bmChart"></canvas>
+          </div>
+          <div class="bm-total-box">
+            <span class="bm-total-lbl">Total Liquid Balance</span>
+            <span class="bm-total-val" id="bmTotal">₨ 0.00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="bm-foot">
+      <button class="bm-btn bm-btn-cancel" onclick="moneyToggle()">Cancel</button>
+      <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- ═══════════════════════════════════════════
      BOTTOM NAV
@@ -7430,6 +7569,155 @@ function buildSWTicker(RAW){
   _buildTick('swTickerWrap', 'swTickerTrack', items, 32);
 }
 
+
+
+// ── Bank Balance Manager ──
+var _bmData = [];
+var _bmChart = null;
+
+function moneyToggle() {
+  const bg = document.getElementById('bank-modal-bg');
+  if (bg.classList.contains('open')) {
+    bg.classList.remove('open');
+  } else {
+    bg.classList.add('open');
+    bmLoad();
+  }
+}
+
+function bmLoad() {
+  const list = document.getElementById('bmList');
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;"><div class="edm-spin" style="margin:0 auto 10px"></div>Fetching bank data…</div>';
+  
+  google.script.run
+    .withSuccessHandler(function(data) {
+      _bmData = data;
+      bmRender();
+    })
+    .withFailureHandler(function(err) {
+      list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);font-size:.8em;">⚠ ' + (err.message || err) + '</div>';
+    })
+    .getBankBalances();
+}
+
+function bmRender() {
+  const list = document.getElementById('bmList');
+  const totalEl = document.getElementById('bmTotal');
+  
+  if (!_bmData || !_bmData.length) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;">No bank rows found in Portfolio G1:I10.</div>';
+    totalEl.textContent = '₨ 0.00';
+    if (_bmChart) _bmChart.destroy();
+    _bmChart = null;
+    return;
+  }
+  
+  let total = 0;
+  let html = '';
+  
+  _bmData.forEach((item, i) => {
+    total += item.amount;
+    const cIdx = i % 6;
+    html += `
+      <div class="bm-item c${cIdx}">
+        <div class="bm-item-top">
+          <input type="text" class="bm-item-source" value="${esc(item.source)}" onchange="bmUpdateData(${i}, 'source', this.value)" placeholder="Bank Name">
+          <div class="bm-blink"></div>
+        </div>
+        <input type="number" class="bm-item-amt" value="${item.amount}" onchange="bmUpdateData(${i}, 'amount', this.value)" step="0.01">
+      </div>
+    `;
+  });
+  
+  list.innerHTML = html;
+  totalEl.textContent = '₨ ' + total.toLocaleString('en-IN', {minimumFractionDigits:2});
+  
+  bmUpdateChart(total);
+}
+
+function bmUpdateData(index, key, value) {
+  if (key === 'amount') {
+    _bmData[index].amount = parseFloat(value) || 0;
+  } else {
+    _bmData[index].source = value;
+  }
+  
+  let total = _bmData.reduce((s, item) => s + item.amount, 0);
+  document.getElementById('bmTotal').textContent = '₨ ' + total.toLocaleString('en-IN', {minimumFractionDigits:2});
+  bmUpdateChart(total);
+}
+
+function bmUpdateChart(total) {
+  const canvas = document.getElementById('bmChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const labels = _bmData.map(d => d.source);
+  const data = _bmData.map(d => d.amount);
+  const colors = ['#38bdf8', '#818cf8', '#a78bfa', '#fb7185', '#fb923c', '#fbbf24', '#34d399', '#2dd4bf'];
+  
+  if (_bmChart) {
+    _bmChart.data.labels = labels;
+    _bmChart.data.datasets[0].data = data;
+    _bmChart.update();
+  } else {
+    _bmChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: colors.map(c => c + '33'),
+          borderColor: colors,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '70%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const val = ctx.parsed;
+                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                return ' ' + ctx.label + ': ₨ ' + val.toLocaleString() + ' (' + pct + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+function bmSave() {
+  const btn = document.getElementById('bmSaveBtn');
+  const oldTxt = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  
+  google.script.run
+    .withSuccessHandler(function() {
+      btn.textContent = 'Saved! ✓';
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = oldTxt;
+        moneyToggle();
+        if (typeof reloadPage === 'function') {
+          const activePage = document.querySelector('.spa-page.active').id.replace('page-', '');
+          if (activePage === 'port' || activePage === 'cse') reloadPage(activePage);
+        }
+      }, 1000);
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled = false;
+      btn.textContent = oldTxt;
+      alert('Failed to save: ' + (err.message || err));
+    })
+    .updateBankBalances(_bmData);
+}
 
 </script>
 
