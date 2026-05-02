@@ -820,7 +820,7 @@ function getSplitwiseData() {
 
     // ── 4. Validate LKR balance ──
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('CC_SW_CL_INST');
-    const sheetBalance = sheet ? sheet.getRange('C44').getValue() : 0;
+    const sheetBalance = sheet ? sheet.getRange('C57').getValue() : 0;
     const lkrTotal = totals['LKR'] || 0;
     const validationResult = validateBalance(lkrTotal, sheetBalance);
 
