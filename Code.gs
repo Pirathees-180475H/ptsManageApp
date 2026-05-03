@@ -399,7 +399,7 @@ function getCardData() {
     }
     
     // Get data from range A4:I6 (data starts at row 4, col I = Available to Spend)
-    var range = sheet.getRange('A4:I6');
+    var range = sheet.getRange('A4:I7');
     var values = range.getValues();
     
     return values;
@@ -819,8 +819,8 @@ function getSplitwiseData() {
     } catch(e) {}
 
     // ── 4. Validate LKR balance ──
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('CC_SW_CL_INST');
-    const sheetBalance = sheet ? sheet.getRange('C57').getValue() : 0;
+    const portfolioSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Portfolio');
+    const sheetBalance = portfolioSheet ? portfolioSheet.getRange('B14').getValue() : 0;
     const lkrTotal = totals['LKR'] || 0;
     const validationResult = validateBalance(lkrTotal, sheetBalance);
 
