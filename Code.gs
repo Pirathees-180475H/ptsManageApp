@@ -1,4 +1,4 @@
-/* ── Web App entry point (SPA) ── */
+﻿/* ── Web App entry point (SPA) ── */
 function doGet(e) {
   var appUrl = ScriptApp.getService().getUrl();
   var html = HtmlService.createHtmlOutputFromFile('render');
@@ -2306,3 +2306,33 @@ function updateExpenseCells(payload) {
     return { success: false, error: err.message || String(err) };
   }
 }
+
+function getBankHolidays(year) {
+  if (!year) year = new Date().getFullYear();
+  var url = 'https://www.cbsl.gov.lk/en/about/about-the-bank/bank-holidays-' + year;
+  try {
+    var response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    if (response.getResponseCode() !== 200) return [];
+    var html = response.getContentText();
+    var holidays = [];
+    
+    var rowRegex = /<tr>\s*<td[^>]*>(.*?)<\/td>\s*<td[^>]*>(.*?)<\/td>\s*<\/tr>/gi;
+    var match;
+    while ((match = rowRegex.exec(html)) !== null) {
+      var dateStr = match[1].replace(/&nbsp;/g, ' ').replace(/<[^>]+>/g, '').trim();
+      var descStr = match[2].replace(/&nbsp;/g, ' ').replace(/<[^>]+>/g, '').replace(/[^ -~]/g, ' ').replace(/\s+/g, ' ').trim();
+      if (dateStr && descStr && dateStr.length > 3 && descStr.length > 3) {
+        if (dateStr.toLowerCase().indexOf('date') === -1 && descStr.toLowerCase().indexOf('holiday') === -1) {
+           if (dateStr.match(/^[a-zA-Z]+\s+\d{1,2}/)) {
+             holidays.push({ date: dateStr, desc: descStr });
+           }
+        }
+      }
+    }
+    return holidays;
+  } catch (e) {
+    Logger.log(e);
+    return [];
+  }
+}
+

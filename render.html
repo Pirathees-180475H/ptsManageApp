@@ -205,6 +205,77 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pg-calc-btn:active{transform:scale(.9);}
 .pg-calc-btn.calc-active{background:rgba(168,85,247,.28);border-color:rgba(168,85,247,.6);color:#c084fc;}
 
+.pg-cal-btn{
+  background:rgba(0,212,255,.13);border:1px solid rgba(0,212,255,.28);
+  color:#00d4ff;border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-cal-btn:active{transform:scale(.9);}
+.pg-cal-btn.cal-active{background:rgba(0,212,255,.28);border-color:rgba(0,212,255,.6);color:#7dd3fc;}
+
+#cal-panel {
+  position:fixed;bottom:calc(var(--nav-h) + 10px);right:12px;
+  width:500px;z-index:8000;
+  max-height: calc(100vh - 80px);
+  background:rgba(6,11,24,.84);backdrop-filter:blur(28px);
+  -webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.11);border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+  display:none;flex-direction:column;overflow:hidden;
+}
+#cal-panel.open{display:flex;animation:calcIn .2s ease;}
+
+.cal-topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 13px 8px;border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;cursor:grab;user-select:none;
+}
+.cal-topbar:active{cursor:grabbing;}
+.cal-title{font-size:.63em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.35); display:flex; align-items:center; gap: 8px;}
+.cal-close{background:none;border:none;color:rgba(255,255,255,.25);font-size:.85em;cursor:pointer;padding:2px 5px;line-height:1;font-family:inherit;}
+.cal-close:hover{color:#fff;}
+
+.cal-header-controls {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 13px; border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.cal-btn {
+  background: rgba(255,255,255,.06); border: none; color: #fff;
+  border-radius: 6px; padding: 4px 8px; cursor: pointer;
+  font-size: .8em; transition: background .15s;
+}
+.cal-btn:hover { background: rgba(255,255,255,.12); }
+.cal-month-lbl { font-size: .85em; font-weight: 700; color: #fff; }
+
+.cal-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+  padding: 8px 13px;
+}
+.cal-day-hdr {
+  font-size: .6em; font-weight: 700; color: rgba(255,255,255,.4);
+  text-align: center; padding-bottom: 4px;
+}
+.cal-day {
+  aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; font-size: .75em; font-weight: 600;
+  color: #fff; border: 1px solid transparent;
+  transition: all .15s; position: relative;
+}
+.cal-day.empty { visibility: hidden; }
+.cal-day.today { background: rgba(0,212,255,.15); color: #00d4ff; border-color: rgba(0,212,255,.3); }
+.cal-day.holiday { background: rgba(255,77,109,.15); color: var(--red); border-color: rgba(255,77,109,.3); }
+.cal-holidays-list {
+  padding: 10px 13px; max-height: 120px; overflow-y: auto;
+  border-top: 1px solid rgba(255,255,255,.05); font-size: .65em;
+}
+.cal-holiday-item {
+  display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.03);
+}
+.cal-holiday-item:last-child { border-bottom: none; }
+.cal-hol-date { color: var(--red); font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+.cal-hol-desc { color: rgba(255,255,255,.7); }
+
 .pg-money-btn{
   background:rgba(0,230,118,.13);border:1px solid rgba(0,230,118,.28);
   color:var(--green);border-radius:8px;padding:5px 10px;
@@ -2021,6 +2092,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <span class="upd-lbl" id="updLbl">Starting…</span>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" id="refreshBtn" onclick="cseStartLoad()">↺ Reload</button>
     </div>
@@ -2081,6 +2153,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">💳 Cards</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
     </div>
@@ -2102,6 +2175,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">📊 Expenses</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
     </div>
@@ -2136,6 +2210,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">💼 Summary</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('port')">↺ Reload</button>
     </div>
@@ -2162,6 +2237,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">💸 Money Flow</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('mf')">↺ Reload</button>
     </div>
@@ -2180,6 +2256,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">🤝 Splitwise</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>
     </div>
@@ -2338,6 +2415,21 @@ input[type=date].swae-input{color-scheme:dark;}
 <!-- ═══════════════════════════════════════════
      FLOATING CALCULATOR
 ═══════════════════════════════════════════ -->
+<!-- CALENDAR PANEL -->
+<div id="cal-panel">
+  <div class="cal-topbar">
+    <span class="cal-title">📅 Calendar</span>
+    <button class="cal-close" onclick="calClose()">✕</button>
+  </div>
+  <div class="cal-header-controls">
+    <button class="cal-btn" onclick="calChangeMonth(-1)">◀</button>
+    <div class="cal-month-lbl" id="cal-month-lbl">January 2026</div>
+    <button class="cal-btn" onclick="calChangeMonth(1)">▶</button>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div class="cal-holidays-list" id="cal-holidays-list"></div>
+</div>
+
 <div id="calc-panel">
   <div class="calc-topbar">
     <span class="calc-title">🧮 Calculator</span>
@@ -7346,6 +7438,141 @@ function swaeSubmit(){
     document.addEventListener('touchmove', function(e){ if(!_drag) return; e.preventDefault(); var t=e.touches[0]; moveDrag(t.clientX, t.clientY); },{passive:false});
     document.addEventListener('touchend',  endDrag);
   });
+
+  // --- CALENDAR LOGIC ---
+  var _positionedCal = false;
+  var _calYear = new Date().getFullYear();
+  var _calMonth = new Date().getMonth();
+  var _cachedHolidays = {};
+  
+  window.calToggle = function(){
+    var p = document.getElementById('cal-panel');
+    var opening = !p.classList.contains('open');
+    if(opening && !_positionedCal){
+      p.style.bottom = 'calc(var(--nav-h) + 10px)';
+      p.style.top  = 'auto';
+      p.style.left = Math.max(12, window.innerWidth - 480) + 'px';
+      _positionedCal = true;
+    }
+    p.classList.toggle('open');
+    document.querySelectorAll('.pg-cal-btn').forEach(function(b){
+      b.classList.toggle('cal-active', opening);
+    });
+    if (opening) {
+      calRender();
+    }
+  };
+
+  window.calClose = function(){
+    document.getElementById('cal-panel').classList.remove('open');
+    document.querySelectorAll('.pg-cal-btn').forEach(function(b){
+      b.classList.remove('cal-active');
+    });
+  };
+
+  window.calChangeMonth = function(dir) {
+    _calMonth += dir;
+    if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+    else if (_calMonth < 0) { _calMonth = 11; _calYear--; }
+    calRender();
+  };
+
+  window.calRender = function() {
+    var monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    document.getElementById('cal-month-lbl').innerText = monthNames[_calMonth] + " " + _calYear;
+    
+    var grid = document.getElementById('cal-grid');
+    grid.innerHTML = '<div class="cal-day-hdr">Su</div><div class="cal-day-hdr">Mo</div><div class="cal-day-hdr">Tu</div><div class="cal-day-hdr">We</div><div class="cal-day-hdr">Th</div><div class="cal-day-hdr">Fr</div><div class="cal-day-hdr">Sa</div>';
+    
+    var firstDay = new Date(_calYear, _calMonth, 1).getDay();
+    var daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
+    
+    var today = new Date();
+    var isCurrentMonth = (today.getFullYear() === _calYear && today.getMonth() === _calMonth);
+    
+    for (var i = 0; i < firstDay; i++) {
+      var empty = document.createElement('div');
+      empty.className = 'cal-day empty';
+      grid.appendChild(empty);
+    }
+    
+    for (var d = 1; d <= daysInMonth; d++) {
+      var day = document.createElement('div');
+      day.className = 'cal-day';
+      day.innerText = d;
+      day.id = 'cal-day-' + d;
+      if (isCurrentMonth && d === today.getDate()) {
+        day.classList.add('today');
+      }
+      grid.appendChild(day);
+    }
+    
+    document.getElementById('cal-holidays-list').innerHTML = '<div style="text-align:center;color:var(--muted)">Loading holidays...</div>';
+    
+    if (_cachedHolidays[_calYear]) {
+      calApplyHolidays(_cachedHolidays[_calYear]);
+    } else {
+      google.script.run.withSuccessHandler(function(data) {
+        _cachedHolidays[_calYear] = data;
+        if (_calYear === _calYear) {
+          calApplyHolidays(data);
+        }
+      }).getBankHolidays(_calYear);
+    }
+  };
+
+  window.calApplyHolidays = function(holidays) {
+    var monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    var currentMonthName = monthNames[_calMonth];
+    var listHtml = '';
+    
+    holidays.forEach(function(h) {
+      if (h.date.startsWith(currentMonthName)) {
+        var match = h.date.match(/\d{1,2}/);
+        if (match) {
+          var dayNum = parseInt(match[0], 10);
+          var dayEl = document.getElementById('cal-day-' + dayNum);
+          if (dayEl) {
+             dayEl.classList.add('holiday');
+             dayEl.title = h.desc;
+          }
+        }
+        listHtml += '<div class="cal-holiday-item"><div class="cal-hol-date">' + h.date + '</div><div class="cal-hol-desc">' + h.desc + '</div></div>';
+      }
+    });
+    
+    if (listHtml === '') {
+      listHtml = '<div style="text-align:center;color:var(--muted)">No bank holidays this month.</div>';
+    }
+    document.getElementById('cal-holidays-list').innerHTML = listHtml;
+  };
+
+  // Draggable calendar
+  (function(){
+    var panel = document.getElementById('cal-panel');
+    if (!panel) return;
+    var topbar = panel.querySelector('.cal-topbar');
+    var _drag = false, _ox = 0, _oy = 0;
+    topbar.addEventListener('mousedown', function(e){
+      if(e.target.closest('.cal-close')) return;
+      var r = panel.getBoundingClientRect();
+      _ox = e.clientX - r.left;
+      _oy = e.clientY - r.top;
+      _drag = true;
+      topbar.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove', function(e){
+      if(!_drag) return;
+      panel.style.bottom = 'auto';
+      panel.style.right = 'auto';
+      panel.style.left = (e.clientX - _ox) + 'px';
+      panel.style.top = (e.clientY - _oy) + 'px';
+    });
+    window.addEventListener('mouseup', function(){
+      _drag = false;
+      topbar.style.cursor = 'grab';
+    });
+  })();
 
   window.calcToggle = function(){
     var p = document.getElementById('calc-panel');
