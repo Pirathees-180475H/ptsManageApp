@@ -284,23 +284,27 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 }
 .pg-money-btn:active{transform:scale(.9);}
 
-#bank-modal-bg{
-  position:fixed;inset:0;z-index:9999;
-  background:rgba(0,0,0,.75);backdrop-filter:blur(10px);
-  display:none;align-items:center;justify-content:center;padding:16px;
-}
-#bank-modal-bg.open{display:flex;}
 #bank-modal{
-  background:#0d1220;border:1px solid rgba(255,255,255,.1);
-  border-radius:24px;width:95%;max-width:800px;
-  box-shadow:0 24px 80px rgba(0,0,0,.8);overflow:hidden;
-  animation:bankModalIn .3s ease;
+  position:fixed; top:10vh; left:calc(50vw - 400px);
+  width:95%; max-width:800px; z-index:8000;
+  background:rgba(6,11,24,.84);backdrop-filter:blur(28px);
+  -webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.11);border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+  display:none;flex-direction:column;overflow:hidden;
 }
+#bank-modal.open{display:flex;animation:bankModalIn .3s ease;}
+@media(max-width:850px){ #bank-modal{ left:2.5%; } }
 @keyframes bankModalIn{from{opacity:0;transform:scale(.95) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
-.bm-hdr{padding:18px 22px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);}
-.bm-title{font-size:.80em;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:rgba(255,255,255,.45);}
-.bm-close{background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.45);width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
-.bm-close:hover{background:rgba(255,255,255,.12);color:#fff;}
+.bm-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 13px 8px;border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;cursor:grab;user-select:none;
+}
+.bm-hdr:active{cursor:grabbing;}
+.bm-title{font-size:.63em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.35); display:flex; align-items:center; gap: 8px;}
+.bm-close{background:none;border:none;color:rgba(255,255,255,.25);font-size:.85em;cursor:pointer;padding:2px 5px;line-height:1;font-family:inherit;}
+.bm-close:hover{color:#fff;}
 .bm-body{padding:20px 22px;display:flex;flex-direction:column;gap:20px;}
 .bm-main-row{display:grid;grid-template-columns:1fr 220px;gap:24px;align-items:start;}
 .bm-list{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
@@ -2473,33 +2477,31 @@ input[type=date].swae-input{color-scheme:dark;}
      BANK BALANCE MODAL
      Data from Portfolio G1:I10
 ═══════════════════════════════════════════ -->
-<div id="bank-modal-bg" onclick="if(event.target===this)moneyToggle()">
-  <div id="bank-modal">
-    <div class="bm-hdr">
-      <span class="bm-title">🏦 Bank Balances</span>
-      <button class="bm-close" onclick="moneyToggle()">✕</button>
-    </div>
-    <div class="bm-body">
-      <div class="bm-main-row">
-        <div class="bm-list" id="bmList">
-          <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;">Loading bank data…</div>
+<div id="bank-modal">
+  <div class="bm-hdr">
+    <span class="bm-title">🏦 Bank Balances</span>
+    <button class="bm-close" onclick="moneyToggle()">✕</button>
+  </div>
+  <div class="bm-body">
+    <div class="bm-main-row">
+      <div class="bm-list" id="bmList">
+        <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;">Loading bank data…</div>
+      </div>
+      <div class="bm-side">
+        <div class="bm-chart-box">
+          <canvas id="bmChart"></canvas>
         </div>
-        <div class="bm-side">
-          <div class="bm-chart-box">
-            <canvas id="bmChart"></canvas>
-          </div>
-          <div class="bm-total-box">
-            <span class="bm-total-lbl">Total Liquid Balance</span>
-            <span class="bm-total-val" id="bmTotal">₨ 0.00</span>
-          </div>
+        <div class="bm-total-box">
+          <span class="bm-total-lbl">Total Liquid Balance</span>
+          <span class="bm-total-val" id="bmTotal">₨ 0.00</span>
         </div>
       </div>
     </div>
-    <div class="bm-foot">
-      <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()" title="Save Changes">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-      </button>
-    </div>
+  </div>
+  <div class="bm-foot">
+    <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()" title="Save Changes">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+    </button>
   </div>
 </div>
 
@@ -7849,15 +7851,57 @@ function buildSWTicker(RAW){
 var _bmData = [];
 var _bmChart = null;
 
+var _positionedBank = false;
 function moneyToggle() {
-  const bg = document.getElementById('bank-modal-bg');
-  if (bg.classList.contains('open')) {
-    bg.classList.remove('open');
+  const p = document.getElementById('bank-modal');
+  if (p.classList.contains('open')) {
+    p.classList.remove('open');
   } else {
-    bg.classList.add('open');
+    if(!_positionedBank) {
+      _positionedBank = true;
+    }
+    p.classList.add('open');
     bmLoad();
   }
 }
+
+// Draggable Bank Modal
+document.addEventListener('DOMContentLoaded', function(){
+  var panel = document.getElementById('bank-modal');
+  if (!panel) return;
+  var topbar = panel.querySelector('.bm-hdr');
+  var _drag = false, _ox = 0, _oy = 0;
+  
+  function startDrag(cx, cy){
+    var r = panel.getBoundingClientRect();
+    _ox = cx - r.left;
+    _oy = cy - r.top;
+    _drag = true;
+    topbar.style.cursor = 'grabbing';
+  }
+  function moveDrag(cx, cy){
+    if(!_drag) return;
+    var pw = panel.offsetWidth, ph = panel.offsetHeight;
+    var maxX = window.innerWidth - pw;
+    var maxY = window.innerHeight - ph;
+    var nx = Math.max(0, Math.min(cx - _ox, maxX));
+    var ny = Math.max(0, Math.min(cy - _oy, maxY));
+    panel.style.left = nx + 'px';
+    panel.style.top = ny + 'px';
+  }
+  function endDrag(){
+    _drag = false;
+    topbar.style.cursor = 'grab';
+  }
+
+  topbar.addEventListener('mousedown', function(e){ if(e.target.closest('button')) return; startDrag(e.clientX, e.clientY); });
+  document.addEventListener('mousemove', function(e){ moveDrag(e.clientX, e.clientY); });
+  document.addEventListener('mouseup', endDrag);
+
+  topbar.addEventListener('touchstart', function(e){ if(e.target.closest('button')) return; var t=e.touches[0]; startDrag(t.clientX, t.clientY); },{passive:true});
+  document.addEventListener('touchmove', function(e){ if(!_drag) return; e.preventDefault(); var t=e.touches[0]; moveDrag(t.clientX, t.clientY); },{passive:false});
+  document.addEventListener('touchend', endDrag);
+});
 
 function bmLoad() {
   const list = document.getElementById('bmList');
