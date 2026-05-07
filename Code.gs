@@ -375,6 +375,47 @@ function saveMoneyFlowNotes(monthStr, notes) {
   } catch(e) { return { success: false, error: e.message }; }
 }
 
+/**
+ * Saves investment amounts for a given month from the Money Flow dashboard.
+ * amountsJson: JSON string like {"sentHome":10000,"cal":5000,"ndb":0,...}
+ * key → 1-based sheet column mapping matches getMoneyFlowData() indices.
+ */
+function saveMoneyFlowAmounts(monthStr, amountsJson) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Money Flow and invest');
+    if (!sheet) throw new Error('Sheet "Money Flow and invest" not found');
+
+    var amounts = JSON.parse(amountsJson || '{}');
+    var keyColMap = { sentHome:2, cal:3, ndb:4, binance:5, stock:6, fd:7, gold:8 };
+
+    var vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+    for (var i = 0; i < vals.length; i++) {
+      var raw = vals[i][0];
+      var m   = raw instanceof Date
+        ? Utilities.formatDate(raw, Session.getScriptTimeZone(), 'MMM/yyyy')
+        : (raw || '').toString().trim();
+      if (m === monthStr) {
+        Object.keys(amounts).forEach(function(key) {
+          var colIdx = keyColMap[key];
+          if (colIdx) {
+            var val = amounts[key];
+            // Write 0 as empty or "NTM" to preserve sheet convention
+            if (val === 0 || val === '' || val === null) {
+              sheet.getRange(i + 2, colIdx).setValue('NTM');
+            } else {
+              sheet.getRange(i + 2, colIdx).setValue(val);
+            }
+          }
+        });
+        SpreadsheetApp.flush();
+        return { success: true };
+      }
+    }
+    return { success: false, error: 'Month "' + monthStr + '" not found' };
+  } catch(e) { return { success: false, error: e.message }; }
+}
+
 function showCreditCardSummary() {
   try {
     var html = HtmlService.createHtmlOutputFromFile('showCreditCardSummary')

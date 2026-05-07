@@ -1417,9 +1417,9 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-mf .plan-chip{display:inline-block;padding:4px 14px;border-radius:20px;background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.3);color:#00e676;font-size:.63em;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;}
 #page-mf .plan-month-label{font-size:1.05em;font-weight:800;letter-spacing:-.5px;color:#fff;margin-top:3px;}
 #page-mf .plan-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;margin-bottom:12px;}
-#page-mf .plan-card{border-radius:14px;padding:14px 16px;border:1px solid;backdrop-filter:blur(20px);position:relative;}
+#page-mf .plan-card{border-radius:14px;padding:14px 16px;border:1px solid;backdrop-filter:blur(20px);position:relative;transition:all .3s ease;}
 #page-mf .plan-card.invested{background:linear-gradient(135deg,rgba(0,212,255,.09),rgba(0,212,255,.03));border-color:rgba(0,212,255,.3);}
-#page-mf .plan-card.ntm{background:linear-gradient(135deg,rgba(255,107,53,.07),rgba(255,107,53,.02));border-color:rgba(255,107,53,.25);}
+#page-mf .plan-card.ntm{background:linear-gradient(135deg,rgba(255,107,53,.07),rgba(255,107,53,.02));border-color:rgba(255,107,53,.25);cursor:pointer;}
 #page-mf .plan-card.failed-card{background:linear-gradient(135deg,rgba(255,77,109,.1),rgba(255,77,109,.03));border-color:rgba(255,77,109,.35);}
 #page-mf .pc-header{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:7px;}
 #page-mf .pc-emoji{font-size:1.25em;display:block;line-height:1;}
@@ -1428,6 +1428,28 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-mf .pc-amount.has-val{color:#00d4ff;text-shadow:0 0 16px rgba(0,212,255,.3);}
 #page-mf .pc-amount.is-ntm{color:rgba(255,107,53,.8);font-size:.75em;font-weight:700;letter-spacing:2px;}
 #page-mf .pc-amount.is-fail{color:#ff4d6d;font-size:.75em;font-weight:700;letter-spacing:1.5px;}
+#page-mf .pc-body{position:relative;min-height:50px;cursor:pointer;transition:all .25s ease;}
+#page-mf .pc-ntm-view{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 0;transition:all .3s ease;}
+#page-mf .pc-ntm-view.hidden{display:none;}
+#page-mf .pc-ntm-badge{font-size:1.1em;font-weight:800;color:rgba(255,107,53,.9);letter-spacing:3px;text-shadow:0 0 20px rgba(255,107,53,.3);}
+#page-mf .pc-ntm-hint{font-size:.55em;color:rgba(255,255,255,.25);margin-top:4px;letter-spacing:1px;}
+#page-mf .plan-card.ntm:hover .pc-ntm-hint{color:rgba(0,230,118,.5);}
+#page-mf .plan-card.ntm:hover{border-color:rgba(0,230,118,.4);background:linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,230,118,.02));}
+#page-mf .plan-card.ntm:active{transform:scale(.98);}
+#page-mf .pc-value-view{transition:all .3s ease;}
+#page-mf .pc-value-view.hidden{display:none;}
+#page-mf .pc-input-row{display:flex;align-items:center;gap:4px;}
+#page-mf .pc-currency{font-size:.85em;font-weight:700;color:rgba(0,212,255,.6);}
+#page-mf .pc-amount-input{flex:1;min-width:0;background:rgba(255,255,255,.04);border:1px solid rgba(0,212,255,.25);border-radius:8px;color:#00d4ff;font-size:1.1em;font-weight:800;letter-spacing:-.5px;padding:8px 10px;outline:none;font-family:inherit;text-shadow:0 0 16px rgba(0,212,255,.3);transition:all .2s;}
+#page-mf .pc-amount-input:focus{border-color:rgba(0,212,255,.6);background:rgba(0,212,255,.08);box-shadow:0 0 20px rgba(0,212,255,.15);}
+#page-mf .pc-amount-input:disabled{opacity:.5;cursor:not-allowed;color:#ff4d6d;border-color:rgba(255,77,109,.3);}
+#page-mf .pc-amount-input::placeholder{color:rgba(255,255,255,.2);font-weight:400;}
+#page-mf .pc-amount-input.input-error{border-color:#ff4d6d;background:rgba(255,77,109,.1);animation:shake .4s ease;}
+#page-mf .pc-to-ntm-btn{display:block;width:100%;margin-top:8px;padding:5px 0;font-size:.55em;font-weight:600;letter-spacing:.5px;color:rgba(255,107,53,.7);background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);border-radius:6px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+#page-mf .pc-to-ntm-btn:hover{background:rgba(255,107,53,.18);color:rgba(255,107,53,.95);border-color:rgba(255,107,53,.4);}
+#page-mf .pc-fail-badge{display:block;text-align:center;margin-top:6px;font-size:.65em;font-weight:700;color:#ff4d6d;letter-spacing:2px;}
+#page-mf .hidden{display:none!important;}
+@keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-4px);}40%,80%{transform:translateX(4px);}}
 #page-mf .pc-partial{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.06);display:none;}
 #page-mf .pc-partial.show{display:block;}
 #page-mf .pc-partial-row{display:flex;align-items:center;gap:5px;}
@@ -5784,7 +5806,7 @@ function mfRender(DATA) {
       '<textarea class="pne-ta" id="mf-planNotesTa" placeholder="Add notes or reasons\u2026"></textarea>'+
       '<div class="pne-footer">'+
         '<div class="pne-msg" id="mf-planNotesMsg"></div>'+
-        '<button class="pne-save" onclick="mfSavePlanNotes()">💾 Save Notes</button>'+
+        '<button class="pne-save" onclick="mfSaveAll()">💾 Save</button>'+
       '</div>'+
     '</div>'+
     '</div>'+
@@ -5985,28 +6007,18 @@ function mfRenderPlanForMonth(cur){
     var isFailed=val===-1;
     var isNTM=val===0;
 
-    if(isNTM){
-      return '<div class="plan-card ntm">'+
-        '<div class="pc-header"><span class="pc-emoji">'+(MF_EMOJIS[k]||'💼')+'</span></div>'+
-        '<div class="pc-name">'+MF_CATS[i]+'</div>'+
-        '<div class="pc-amount is-ntm">NTM</div>'+
-        '</div>';
-    }
-
-    var cardCls=isFailed?'failed-card':'invested';
-    var amtCls=isFailed?'is-fail':'has-val';
-    var amtLbl=isFailed?'FAILED':'₨'+val.toLocaleString('en-IN');
+    var cardCls=isNTM?'ntm':isFailed?'failed-card':'invested';
     var sv=_mfCurStatus[k]||'Pending';
     var pa=_mfCurStatus[k+'_partial']||'';
     var isP=sv==='Partially Done';
     var cls=sv==='DONE'?'done':sv==='Failed'?'failed':isP?'partial':'pending';
     var SVL=sv==='DONE'?'✅ Done':sv==='Failed'?'❌ Failed':isP?'🔸 Partial':'⏳ Pending';
 
-    return '<div class="plan-card '+cardCls+'" id="mf-pc-'+k+'">'+
+    return '<div class="plan-card '+cardCls+'" id="mf-pc-'+k+'" data-ntm="'+(isNTM?'true':'false')+'" data-key="'+k+'">'+
       '<div class="pc-header">'+
         '<span class="pc-emoji">'+(MF_EMOJIS[k]||'💼')+'</span>'+
-        '<div style="display:flex;align-items:center;gap:4px;">'+
-          '<div class="pst-dd" id="mf-pst-dd-'+k+'">'+
+        '<div class="pc-header-right" style="display:flex;align-items:center;gap:4px;">'+
+          '<div class="pst-dd '+(isNTM?'hidden':'')+'" id="mf-pst-dd-'+k+'">'+
             '<button class="pst-dd-btn '+cls+'" onclick="mfToggleDD(event,\''+k+'\')">'+
               '<span>'+SVL+'</span><span class="pst-dd-arrow">▾</span>'+
             '</button>'+
@@ -6021,11 +6033,24 @@ function mfRenderPlanForMonth(cur){
         '</div>'+
       '</div>'+
       '<div class="pc-name">'+MF_CATS[i]+'</div>'+
-      '<div class="pc-amount '+amtCls+'">'+amtLbl+'</div>'+
+      '<div class="pc-body" onclick="mfCardClick(event,\''+k+'\')">'+
+        '<div class="pc-ntm-view '+(isNTM?'':'hidden')+'">'+
+          '<span class="pc-ntm-badge">NTM</span>'+
+          '<span class="pc-ntm-hint">tap to add</span>'+
+        '</div>'+
+        '<div class="pc-value-view '+(isNTM?'hidden':'')+'">'+
+          '<div class="pc-input-row">'+
+            '<span class="pc-currency">₨</span>'+
+            '<input type="number" class="pc-amount-input" id="mf-amt-'+k+'" value="'+(isFailed?'':val||'')+'" placeholder="0" '+(isFailed?'disabled':'')+' onclick="event.stopPropagation()">'+
+          '</div>'+
+          (isFailed?'<span class="pc-fail-badge">FAILED</span>':
+          '<button class="pc-to-ntm-btn" onclick="mfSetNTM(event,\''+k+'\')">Mark NTM</button>')+
+        '</div>'+
+      '</div>'+
       '<div class="pc-partial '+(isP?'show':'')+'" id="mf-pst-partial-'+k+'">'+
         '<div class="pc-partial-row">'+
           '<span class="pc-partial-lbl">Partial ₨</span>'+
-          '<input class="pc-partial-input" id="mf-pst-pinp-'+k+'" type="number" min="0" placeholder="amount" value="'+pa+'">'+
+          '<input class="pc-partial-input" id="mf-pst-pinp-'+k+'" type="number" min="0" placeholder="amount" value="'+pa+'" onclick="event.stopPropagation()">'+
           '<button class="pc-partial-save" onclick="mfPstPartialSave(\''+k+'\')">✓</button>'+
         '</div>'+
         '<span class="pc-partial-msg" id="mf-pst-pmsg-'+k+'"></span>'+
@@ -6052,6 +6077,64 @@ function mfUpdateOverallStatus(){
   else{cls='pending';label='⏳ Pending';}
   badge.className='plan-overall-badge '+cls;
   badge.textContent=label;
+}
+
+function mfCardClick(e,key){
+  var card=document.getElementById('mf-pc-'+key);
+  if(!card) return;
+  var isNTM=card.dataset.ntm==='true';
+  if(isNTM){
+    // Switch to value mode
+    mfSetValueMode(key);
+  }
+}
+
+function mfSetNTM(e,key){
+  e.stopPropagation();
+  var card=document.getElementById('mf-pc-'+key);
+  var inp=document.getElementById('mf-amt-'+key);
+  if(!card) return;
+
+  card.dataset.ntm='true';
+  card.classList.remove('invested','failed-card');
+  card.classList.add('ntm');
+
+  var ntmView=card.querySelector('.pc-ntm-view');
+  var valView=card.querySelector('.pc-value-view');
+  var dd=card.querySelector('.pst-dd');
+  var partial=card.querySelector('.pc-partial');
+
+  if(ntmView) ntmView.classList.remove('hidden');
+  if(valView) valView.classList.add('hidden');
+  if(dd) dd.classList.add('hidden');
+  if(partial) partial.classList.remove('show');
+  if(inp) inp.value='';
+
+  delete _mfCurStatus[key];
+  delete _mfCurStatus[key+'_partial'];
+  mfUpdateOverallStatus();
+}
+
+function mfSetValueMode(key){
+  var card=document.getElementById('mf-pc-'+key);
+  var inp=document.getElementById('mf-amt-'+key);
+  if(!card) return;
+
+  card.dataset.ntm='false';
+  card.classList.remove('ntm','failed-card');
+  card.classList.add('invested');
+
+  var ntmView=card.querySelector('.pc-ntm-view');
+  var valView=card.querySelector('.pc-value-view');
+  var dd=card.querySelector('.pst-dd');
+
+  if(ntmView) ntmView.classList.add('hidden');
+  if(valView) valView.classList.remove('hidden');
+  if(dd) dd.classList.remove('hidden');
+  if(inp){inp.focus();inp.select();}
+
+  _mfCurStatus[key]='Pending';
+  mfUpdateOverallStatus();
 }
 
 function mfToggleDD(e,key){
@@ -6088,10 +6171,18 @@ function mfSelectDD(key,sv){
   if(sv==='Failed'){
     google.script.run
       .withSuccessHandler(function(){
-        var amtEl=document.querySelector('#mf-pc-'+key+' .pc-amount');
-        if(amtEl){amtEl.textContent='FAILED';amtEl.className='pc-amount is-fail';}
         var card=document.getElementById('mf-pc-'+key);
-        if(card) card.className='plan-card failed-card';
+        var amtInp=document.getElementById('mf-amt-'+key);
+        if(amtInp){amtInp.disabled=true;amtInp.value='';}
+        if(card){
+          card.className='plan-card failed-card';
+          var toNtmBtn=card.querySelector('.pc-to-ntm-btn');
+          if(toNtmBtn) toNtmBtn.style.display='none';
+          var valView=card.querySelector('.pc-value-view');
+          if(valView&&!valView.querySelector('.pc-fail-badge')){
+            valView.insertAdjacentHTML('beforeend','<span class="pc-fail-badge">FAILED</span>');
+          }
+        }
       })
       .withFailureHandler(function(e){console.warn('writeInvestmentFailed:',e);})
       .writeInvestmentFailed(_mfCurMonth,key);
@@ -6125,6 +6216,59 @@ function mfSavePlanNotes(){
     .withSuccessHandler(function(){if(msg){msg.className='pne-msg ok';msg.textContent='✓ Saved';setTimeout(function(){msg.textContent='';},2000);}})
     .withFailureHandler(function(e){if(msg){msg.className='pne-msg err';msg.textContent='⚠ '+(e.message||'Error');}})
     .saveMoneyFlowNotes(_mfCurMonth,ta?ta.value:'');
+}
+
+function mfSaveAll(){
+  var ta=document.getElementById('mf-planNotesTa');
+  var msg=document.getElementById('mf-planNotesMsg');
+  var amounts={};
+  var errors=[];
+
+  // Collect amounts and validate
+  MF_KEYS.forEach(function(k){
+    var card=document.getElementById('mf-pc-'+k);
+    var inp=document.getElementById('mf-amt-'+k);
+    if(!card||!inp) return;
+
+    var isNTM=card.dataset.ntm==='true';
+    var val=parseFloat(inp.value)||0;
+
+    // Remove previous error highlight
+    inp.classList.remove('input-error');
+
+    if(isNTM){
+      amounts[k]=0; // NTM = 0
+    }else if(inp.disabled){
+      // Failed card - skip, keep current value
+    }else{
+      if(val<=0){
+        errors.push(k);
+        inp.classList.add('input-error');
+      }else{
+        amounts[k]=val;
+      }
+    }
+  });
+
+  // Validation failed
+  if(errors.length>0){
+    if(msg){msg.className='pne-msg err';msg.textContent='⚠ Please enter values for highlighted cards';}
+    // Scroll to first error
+    var firstErr=document.getElementById('mf-amt-'+errors[0]);
+    if(firstErr) firstErr.focus();
+    return;
+  }
+
+  if(msg){msg.className='pne-msg';msg.textContent='Saving…';}
+  google.script.run
+    .withSuccessHandler(function(){
+      google.script.run
+        .withSuccessHandler(function(){if(msg){msg.className='pne-msg ok';msg.textContent='✓ Saved';setTimeout(function(){msg.textContent='';},2000);}})
+        .withFailureHandler(function(e){if(msg){msg.className='pne-msg err';msg.textContent='⚠ '+(e.message||'Error');}})
+        .saveMoneyFlowNotes(_mfCurMonth,ta?ta.value:'');
+    })
+    .withFailureHandler(function(e){if(msg){msg.className='pne-msg err';msg.textContent='⚠ '+(e.message||'Error');}})
+    .saveMoneyFlowAmounts(_mfCurMonth,JSON.stringify(amounts));
 }
 
 function mfToggleInsights(){
