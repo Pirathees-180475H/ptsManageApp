@@ -1763,6 +1763,61 @@ function showInvestmentDashboard() {
   } catch(e) {}
 }
 
+/**
+ * Saves stock buying price and quantity to UT_CRYPTO sheet.
+ * rowIdx: 0-based index (0 = row 20, 1 = row 21, etc.)
+ * boughtPrice: column C, qty: column D
+ */
+function saveStockData(symbol, rowIdx, boughtPrice, qty) {
+  try {
+    var sheet = SpreadsheetApp.getActive().getSheetByName("UT_CRYPTO");
+    if (!sheet) throw new Error('UT_CRYPTO sheet not found');
+
+    var sheetRow = 20 + Number(rowIdx);
+    if (sheetRow < 20 || sheetRow > 29) throw new Error('Invalid row index');
+
+    // Verify symbol matches
+    var currentSymbol = sheet.getRange(sheetRow, 1).getValue();
+    if (currentSymbol !== symbol) {
+      throw new Error('Symbol mismatch: expected ' + symbol + ', found ' + currentSymbol);
+    }
+
+    // Update bought price (col C = 3) and qty (col D = 4)
+    sheet.getRange(sheetRow, 3).setValue(Number(boughtPrice) || 0);
+    sheet.getRange(sheetRow, 4).setValue(Number(qty) || 0);
+
+    SpreadsheetApp.flush();
+    return { success: true };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Save all stock holdings data at once
+ * updatesJson: JSON array of {symbol, rowIdx, bp, qty}
+ */
+function saveAllStockData(updatesJson) {
+  try {
+    var updates = JSON.parse(updatesJson);
+    var sheet = SpreadsheetApp.getActive().getSheetByName("UT_CRYPTO");
+    if (!sheet) throw new Error('UT_CRYPTO sheet not found');
+
+    updates.forEach(function(u) {
+      var sheetRow = 20 + Number(u.rowIdx);
+      if (sheetRow >= 20 && sheetRow <= 29) {
+        sheet.getRange(sheetRow, 3).setValue(Number(u.bp) || 0);
+        sheet.getRange(sheetRow, 4).setValue(Number(u.qty) || 0);
+      }
+    });
+
+    SpreadsheetApp.flush();
+    return { success: true };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+}
+
 // ── Stage 1: Instant – just reads sheet, zero API calls ─────────
 function getCSESheetData() {
   try {
