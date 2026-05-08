@@ -1450,6 +1450,76 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-mf .pc-fail-badge{display:block;text-align:center;margin-top:6px;font-size:.65em;font-weight:700;color:#ff4d6d;letter-spacing:2px;}
 #page-mf .hidden{display:none!important;}
 @keyframes shake{0%,100%{transform:translateX(0);}20%,60%{transform:translateX(-4px);}40%,80%{transform:translateX(4px);}}
+
+/* ── Add Month Plan FAB ── */
+#mf-fab{
+  position:fixed;bottom:calc(var(--nav-h) + 16px);right:18px;
+  width:52px;height:52px;border-radius:16px;
+  background:linear-gradient(135deg,#00d4ff,#00e676);
+  border:none;color:#0a0f1a;font-size:1.6em;font-weight:800;line-height:1;
+  cursor:pointer;z-index:200;
+  box-shadow:0 6px 24px rgba(0,212,255,.5),0 2px 8px rgba(0,0,0,.4);
+  display:none;align-items:center;justify-content:center;
+  transition:transform .15s,box-shadow .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+#mf-fab:active{transform:scale(.9);box-shadow:0 2px 10px rgba(0,212,255,.3);}
+
+/* ── Add Month Plan Modal ── */
+#mfadd-bg{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(12px);
+  display:none;align-items:center;justify-content:center;
+  padding:16px;
+}
+#mfadd-bg.open{display:flex;}
+#mfadd-sheet{
+  width:100%;max-width:480px;max-height:85vh;
+  background:linear-gradient(165deg,#0e1829 0%,#0a101c 100%);
+  border:1px solid rgba(0,212,255,.2);border-radius:20px;
+  box-shadow:0 16px 60px rgba(0,0,0,.6),0 0 40px rgba(0,212,255,.1);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.mfadd-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 12px;}
+.mfadd-title{font-size:.95em;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.8);}
+.mfadd-close{background:none;border:none;color:rgba(255,255,255,.35);font-size:1.3em;cursor:pointer;padding:4px 8px;border-radius:8px;line-height:1;}
+.mfadd-close:hover{color:#fff;background:rgba(255,255,255,.07);}
+.mfadd-month-row{padding:0 20px 14px;text-align:center;}
+.mfadd-month-label{font-size:1.4em;font-weight:800;color:#00d4ff;letter-spacing:1px;text-shadow:0 0 20px rgba(0,212,255,.4);}
+.mfadd-body{flex:1;overflow-y:auto;padding:0 20px 12px;}
+.mfadd-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+.mfadd-card{border-radius:12px;padding:12px;border:1px solid;cursor:pointer;transition:all .25s ease;}
+.mfadd-card.ntm{background:linear-gradient(135deg,rgba(255,107,53,.08),rgba(255,107,53,.02));border-color:rgba(255,107,53,.3);}
+.mfadd-card.ntm:hover{border-color:rgba(0,230,118,.4);background:linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,230,118,.02));}
+.mfadd-card.value{background:linear-gradient(135deg,rgba(0,212,255,.1),rgba(0,212,255,.03));border-color:rgba(0,212,255,.35);}
+.mfadd-card-head{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+.mfadd-card-emoji{font-size:1.1em;}
+.mfadd-card-name{font-size:.68em;font-weight:700;color:rgba(255,255,255,.5);letter-spacing:.3px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mfadd-ntm-view{text-align:center;padding:6px 0;}
+.mfadd-ntm-badge{font-size:.9em;font-weight:800;color:rgba(255,107,53,.9);letter-spacing:2px;}
+.mfadd-ntm-hint{font-size:.5em;color:rgba(255,255,255,.2);display:block;margin-top:2px;}
+.mfadd-val-view{display:none;}
+.mfadd-card.value .mfadd-ntm-view{display:none;}
+.mfadd-card.value .mfadd-val-view{display:block;}
+.mfadd-input-row{display:flex;align-items:center;gap:4px;}
+.mfadd-currency{font-size:.75em;font-weight:700;color:rgba(0,212,255,.6);}
+.mfadd-input{flex:1;min-width:0;background:rgba(255,255,255,.04);border:1px solid rgba(0,212,255,.25);border-radius:6px;color:#00d4ff;font-size:.95em;font-weight:700;padding:6px 8px;outline:none;font-family:inherit;}
+.mfadd-input:focus{border-color:rgba(0,212,255,.6);background:rgba(0,212,255,.08);}
+.mfadd-input.error{border-color:#ff4d6d;background:rgba(255,77,109,.1);}
+.mfadd-to-ntm{display:block;width:100%;margin-top:6px;padding:4px 0;font-size:.5em;font-weight:600;letter-spacing:.5px;color:rgba(255,107,53,.7);background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);border-radius:5px;cursor:pointer;text-transform:uppercase;}
+.mfadd-to-ntm:hover{background:rgba(255,107,53,.15);color:rgba(255,107,53,.95);}
+.mfadd-notes{margin-top:8px;}
+.mfadd-label{font-size:.6em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:6px;display:block;}
+.mfadd-ta{width:100%;min-height:60px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;color:#fff;font-size:.8em;font-family:inherit;outline:none;resize:vertical;}
+.mfadd-ta:focus{border-color:rgba(0,212,255,.5);background:rgba(0,212,255,.03);}
+.mfadd-foot{padding:14px 20px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid rgba(255,255,255,.06);}
+.mfadd-msg{font-size:.72em;flex:1;}
+.mfadd-msg.ok{color:#00e676;}
+.mfadd-msg.err{color:#ff4d6d;}
+.mfadd-btn{padding:6px 16px;font-size:.65em;font-weight:700;border-radius:7px;border:1px solid rgba(167,139,250,.4);background:rgba(167,139,250,.1);color:#a78bfa;cursor:pointer;transition:background .15s;}
+.mfadd-btn:hover{background:rgba(167,139,250,.22);}
+.mfadd-btn:disabled{opacity:.5;cursor:not-allowed;}
+
 #page-mf .pc-partial{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,255,255,.06);display:none;}
 #page-mf .pc-partial.show{display:block;}
 #page-mf .pc-partial-row{display:flex;align-items:center;gap:5px;}
@@ -2276,6 +2346,33 @@ input[type=date].swae-input{color-scheme:dark;}
   </div>
 </section>
 
+<!-- ── Add Month Plan FAB ── -->
+<button id="mf-fab" onclick="mfAddOpen()" title="Add Month Plan">＋</button>
+
+<!-- ── Add Month Plan Modal ── -->
+<div id="mfadd-bg" onclick="mfAddOutsideClose(event)">
+  <div id="mfadd-sheet">
+    <div class="mfadd-head">
+      <span class="mfadd-title">📅 Add Month Plan</span>
+      <button class="mfadd-close" onclick="mfAddClose()">✕</button>
+    </div>
+    <div class="mfadd-month-row">
+      <span class="mfadd-month-label" id="mfadd-monthLabel">Loading...</span>
+    </div>
+    <div class="mfadd-body">
+      <div class="mfadd-cards" id="mfadd-cards"></div>
+      <div class="mfadd-notes">
+        <label class="mfadd-label">📝 Notes</label>
+        <textarea class="mfadd-ta" id="mfadd-notesTa" placeholder="Add notes or reasons…"></textarea>
+      </div>
+    </div>
+    <div class="mfadd-foot">
+      <div class="mfadd-msg" id="mfadd-msg"></div>
+      <button class="mfadd-btn" id="mfadd-saveBtn" onclick="mfAddSave()">💾 Save Plan</button>
+    </div>
+  </div>
+</div>
+
 <section id="page-sw" class="spa-page">
   <div class="ticker-wrap" id="swTickerWrap" style="display:none;"><div class="ticker-track" id="swTickerTrack"></div></div>
   <div class="pg-hdr">
@@ -2574,6 +2671,10 @@ function _doShowPage(name){
   // Show/hide Add Expense FAB — only on Expenses tab
   var aeFab=document.getElementById('ae-fab');
   if(aeFab) aeFab.style.display = name==='exp' ? 'flex' : 'none';
+
+  // Show/hide MF Add Plan FAB — only on Money Flow tab
+  var mfFab=document.getElementById('mf-fab');
+  if(mfFab) mfFab.style.display = name==='mf' ? 'flex' : 'none';
 
   document.querySelectorAll('.spa-page').forEach(function(p){
     p.classList.remove('active');
@@ -5781,6 +5882,10 @@ function mfRender(DATA) {
       '<div style="text-align:center;padding:80px;color:rgba(255,255,255,.3)">No data found in "Money Flow and invest" sheet.</div>';
     return;
   }
+  // Show FAB now that data is ready
+  var mfFab=document.getElementById('mf-fab');
+  if(mfFab && _activePage==='mf') mfFab.style.display='flex';
+
   var totalInvested=DATA.reduce(function(s,d){return s+d.totalInvested;},0);
   var totalIncome=DATA.reduce(function(s,d){return s+d.income;},0);
   var avgSaving=DATA.reduce(function(s,d){return s+d.savingPct;},0)/DATA.length;
@@ -6269,6 +6374,179 @@ function mfSaveAll(){
     })
     .withFailureHandler(function(e){if(msg){msg.className='pne-msg err';msg.textContent='⚠ '+(e.message||'Error');}})
     .saveMoneyFlowAmounts(_mfCurMonth,JSON.stringify(amounts));
+}
+
+/* ── Add Month Plan Modal Functions ── */
+var _mfAddData = {};
+
+function mfAddOpen(){
+  var bg=document.getElementById('mfadd-bg');
+  if(!bg) return;
+  bg.classList.add('open');
+  mfAddInit();
+}
+
+function mfAddClose(){
+  var bg=document.getElementById('mfadd-bg');
+  if(bg) bg.classList.remove('open');
+  _mfAddData = {};
+}
+
+function mfAddOutsideClose(e){
+  if(e.target.id==='mfadd-bg') mfAddClose();
+}
+
+function mfAddInit(){
+  // Calculate next month from last available data
+  var lastMonth = _mfAllPlanData.length > 0 ? _mfAllPlanData[_mfAllPlanData.length-1].month : null;
+  var nextMonth = mfCalcNextMonth(lastMonth);
+
+  document.getElementById('mfadd-monthLabel').textContent = nextMonth;
+  document.getElementById('mfadd-notesTa').value = '';
+  document.getElementById('mfadd-msg').textContent = '';
+
+  _mfAddData = { month: nextMonth, amounts: {} };
+
+  // Initialize all categories as NTM
+  MF_KEYS.forEach(function(k){ _mfAddData.amounts[k] = 0; });
+
+  mfAddRenderCards();
+}
+
+function mfCalcNextMonth(lastMonth){
+  if(!lastMonth) {
+    var now = new Date();
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()] + '/' + now.getFullYear();
+  }
+  // Parse "MMM/yyyy" format
+  var parts = lastMonth.split('/');
+  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mIdx = monthNames.indexOf(parts[0]);
+  var year = parseInt(parts[1]);
+
+  if(mIdx === -1) mIdx = 0;
+  mIdx++;
+  if(mIdx > 11) { mIdx = 0; year++; }
+
+  return monthNames[mIdx] + '/' + year;
+}
+
+function mfAddRenderCards(){
+  var cardsEl = document.getElementById('mfadd-cards');
+  if(!cardsEl) return;
+
+  cardsEl.innerHTML = MF_KEYS.map(function(k, i){
+    var val = _mfAddData.amounts[k] || 0;
+    var isNTM = val === 0;
+    var cardCls = isNTM ? 'ntm' : 'value';
+
+    return '<div class="mfadd-card '+cardCls+'" id="mfadd-c-'+k+'" data-key="'+k+'" onclick="mfAddCardClick(\''+k+'\')">'+
+      '<div class="mfadd-card-head">'+
+        '<span class="mfadd-card-emoji">'+(MF_EMOJIS[k]||'💼')+'</span>'+
+        '<span class="mfadd-card-name">'+MF_CATS[i]+'</span>'+
+      '</div>'+
+      '<div class="mfadd-ntm-view">'+
+        '<span class="mfadd-ntm-badge">NTM</span>'+
+        '<span class="mfadd-ntm-hint">tap to add</span>'+
+      '</div>'+
+      '<div class="mfadd-val-view">'+
+        '<div class="mfadd-input-row">'+
+          '<span class="mfadd-currency">₨</span>'+
+          '<input type="number" class="mfadd-input" id="mfadd-inp-'+k+'" value="'+(val||'')+'" placeholder="0" onclick="event.stopPropagation()">'+
+        '</div>'+
+        '<button class="mfadd-to-ntm" onclick="mfAddSetNTM(event,\''+k+'\')">Mark NTM</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function mfAddCardClick(key){
+  var card = document.getElementById('mfadd-c-'+key);
+  if(!card) return;
+
+  if(card.classList.contains('ntm')){
+    // Switch to value mode
+    card.classList.remove('ntm');
+    card.classList.add('value');
+    var inp = document.getElementById('mfadd-inp-'+key);
+    if(inp) { inp.focus(); inp.select(); }
+  }
+}
+
+function mfAddSetNTM(e, key){
+  e.stopPropagation();
+  var card = document.getElementById('mfadd-c-'+key);
+  var inp = document.getElementById('mfadd-inp-'+key);
+  if(!card) return;
+
+  card.classList.remove('value');
+  card.classList.add('ntm');
+  if(inp) inp.value = '';
+  _mfAddData.amounts[key] = 0;
+}
+
+function mfAddSave(){
+  var msg = document.getElementById('mfadd-msg');
+  var btn = document.getElementById('mfadd-saveBtn');
+  var notesTa = document.getElementById('mfadd-notesTa');
+  var errors = [];
+
+  // Collect amounts and validate
+  MF_KEYS.forEach(function(k){
+    var card = document.getElementById('mfadd-c-'+k);
+    var inp = document.getElementById('mfadd-inp-'+k);
+    if(!card || !inp) return;
+
+    inp.classList.remove('error');
+
+    if(card.classList.contains('value')){
+      var val = parseFloat(inp.value) || 0;
+      if(val <= 0){
+        errors.push(k);
+        inp.classList.add('error');
+      } else {
+        _mfAddData.amounts[k] = val;
+      }
+    } else {
+      _mfAddData.amounts[k] = 0; // NTM
+    }
+  });
+
+  if(errors.length > 0){
+    if(msg){ msg.className = 'mfadd-msg err'; msg.textContent = '⚠ Enter values for highlighted cards'; }
+    var firstErr = document.getElementById('mfadd-inp-'+errors[0]);
+    if(firstErr) firstErr.focus();
+    return;
+  }
+
+  if(msg){ msg.className = 'mfadd-msg'; msg.textContent = 'Saving...'; }
+  if(btn) btn.disabled = true;
+
+  var payload = {
+    month: _mfAddData.month,
+    amounts: _mfAddData.amounts,
+    notes: notesTa ? notesTa.value : ''
+  };
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(btn) btn.disabled = false;
+      if(res && res.success){
+        if(msg){ msg.className = 'mfadd-msg ok'; msg.textContent = '✓ Plan saved!'; }
+        setTimeout(function(){
+          mfAddClose();
+          _spaLoaded.mf = false;
+          mfLoad();
+        }, 1500);
+      } else {
+        if(msg){ msg.className = 'mfadd-msg err'; msg.textContent = '⚠ '+(res && res.error ? res.error : 'Unknown error'); }
+      }
+    })
+    .withFailureHandler(function(e){
+      if(btn) btn.disabled = false;
+      if(msg){ msg.className = 'mfadd-msg err'; msg.textContent = '⚠ '+(e.message || 'Error'); }
+    })
+    .addMoneyFlowMonth(JSON.stringify(payload));
 }
 
 function mfToggleInsights(){

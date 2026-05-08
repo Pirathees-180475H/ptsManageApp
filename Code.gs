@@ -389,6 +389,10 @@ function saveMoneyFlowAmounts(monthStr, amountsJson) {
     var amounts = JSON.parse(amountsJson || '{}');
     var keyColMap = { sentHome:2, cal:3, ndb:4, binance:5, stock:6, fd:7, gold:8 };
 
+    // Colors
+    var ntmColor = '#cfe2f3';    // Light blue for NTM
+    var valueColor = '#fff2cc';  // Light yellow for values
+
     var vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
     for (var i = 0; i < vals.length; i++) {
       var raw = vals[i][0];
@@ -396,15 +400,19 @@ function saveMoneyFlowAmounts(monthStr, amountsJson) {
         ? Utilities.formatDate(raw, Session.getScriptTimeZone(), 'MMM/yyyy')
         : (raw || '').toString().trim();
       if (m === monthStr) {
+        var rowNum = i + 2;
         Object.keys(amounts).forEach(function(key) {
           var colIdx = keyColMap[key];
           if (colIdx) {
             var val = amounts[key];
-            // Write 0 as empty or "NTM" to preserve sheet convention
+            var cell = sheet.getRange(rowNum, colIdx);
+            // Write value and apply color
             if (val === 0 || val === '' || val === null) {
-              sheet.getRange(i + 2, colIdx).setValue('NTM');
+              cell.setValue('NTM');
+              cell.setBackground(ntmColor);
             } else {
-              sheet.getRange(i + 2, colIdx).setValue(val);
+              cell.setValue(val);
+              cell.setBackground(valueColor);
             }
           }
         });
@@ -414,6 +422,131 @@ function saveMoneyFlowAmounts(monthStr, amountsJson) {
     }
     return { success: false, error: 'Month "' + monthStr + '" not found' };
   } catch(e) { return { success: false, error: e.message }; }
+}
+
+/**
+ * Adds a new month row to the Money Flow sheet.
+ * payloadJson: JSON string { month: "MMM/yyyy", amounts: {...}, notes: "" }
+ */
+function addMoneyFlowMonth(payloadJson) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Money Flow and invest');
+    if (!sheet) throw new Error('Sheet "Money Flow and invest" not found');
+
+    var payload = JSON.parse(payloadJson || '{}');
+    var monthStr = payload.month || '';
+    var amounts = payload.amounts || {};
+    var notes = payload.notes || '';
+
+    if (!monthStr) throw new Error('Month is required');
+
+    // Check if month already exists
+    var lastRow = sheet.getLastRow();
+    var monthVals = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < monthVals.length; i++) {
+      var raw = monthVals[i][0];
+      var m = raw instanceof Date
+        ? Utilities.formatDate(raw, Session.getScriptTimeZone(), 'MMM/yyyy')
+        : (raw || '').toString().trim();
+      if (m === monthStr) {
+        return { success: false, error: 'Month "' + monthStr + '" already exists' };
+      }
+    }
+
+    // Parse month string to date (1st of month)
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var parts = monthStr.split('/');
+    var mIdx = monthNames.indexOf(parts[0]);
+    var year = parseInt(parts[1]);
+    var monthDate = new Date(year, mIdx, 1);
+
+    // Column mapping: A=month, B=sentHome, C=cal, D=ndb, E=binance, F=stock, G=fd, H=gold, I=totalInvested, J=income, K=savingPct, L=notes, M=status
+    var keyColMap = { sentHome:2, cal:3, ndb:4, binance:5, stock:6, fd:7, gold:8 };
+
+    // Build row values
+    var newRow = [];
+    newRow[0] = monthDate; // A: month date
+
+    // B-H: investment categories
+    ['sentHome','cal','ndb','binance','stock','fd','gold'].forEach(function(key, idx) {
+      var val = amounts[key] || 0;
+      newRow[idx + 1] = val === 0 ? 'NTM' : val;
+    });
+
+    // I: totalInvested (formula or sum)
+    var totalInvested = 0;
+    ['cal','ndb','binance','stock','fd','gold'].forEach(function(key) {
+      var v = amounts[key] || 0;
+      if (v > 0) totalInvested += v;
+    });
+    newRow[8] = totalInvested; // I
+
+    newRow[9] = 0;  // J: income (empty, user fills later)
+    newRow[10] = 0; // K: savingPct (empty, calculated)
+    newRow[11] = notes; // L: notes
+    newRow[12] = '{}'; // M: status (empty JSON)
+
+    // Find last row with a month value (Date or "MMM/yyyy" format)
+    var lastMonthRow = 1; // default to header row
+    for (var j = 0; j < monthVals.length; j++) {
+      var cellVal = monthVals[j][0];
+      var isMonth = false;
+
+      // Check if it's a Date object
+      if (cellVal instanceof Date && !isNaN(cellVal.getTime())) {
+        isMonth = true;
+      } else {
+        // Check if string contains month name
+        var cellStr = (cellVal || '').toString().trim();
+        for (var mi = 0; mi < monthNames.length; mi++) {
+          if (cellStr.indexOf(monthNames[mi]) >= 0) {
+            isMonth = true;
+            break;
+          }
+        }
+      }
+
+      if (isMonth) {
+        lastMonthRow = j + 2; // j is 0-based from row 2, so actual row = j + 2
+      }
+    }
+
+    // Insert after the last month row
+    var insertRow = lastMonthRow + 1;
+    if (insertRow <= lastRow) {
+      sheet.insertRowBefore(insertRow);
+    }
+
+    sheet.getRange(insertRow, 1, 1, 13).setValues([newRow]);
+
+    // Apply custom background colors
+    var ntmColor = '#cfe2f3';    // Light blue for NTM
+    var valueColor = '#fff2cc';  // Light yellow for values with pending status
+
+    // Column A (month) - no special color
+    sheet.getRange(insertRow, 1).setBackground('#ffffff');
+
+    // Columns B-H: investment categories - color based on NTM or value
+    ['sentHome','cal','ndb','binance','stock','fd','gold'].forEach(function(key, idx) {
+      var colNum = idx + 2; // B=2, C=3, etc.
+      var val = amounts[key] || 0;
+      if (val === 0) {
+        sheet.getRange(insertRow, colNum).setBackground(ntmColor); // NTM - light blue
+      } else {
+        sheet.getRange(insertRow, colNum).setBackground(valueColor); // Value - light yellow
+      }
+    });
+
+    // Columns I-M: totals and notes - white/default
+    sheet.getRange(insertRow, 9, 1, 5).setBackground('#ffffff');
+
+    SpreadsheetApp.flush();
+
+    return { success: true, month: monthStr };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
 }
 
 function showCreditCardSummary() {
