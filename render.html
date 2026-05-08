@@ -6373,7 +6373,7 @@ function mfSaveAll(){
         .saveMoneyFlowNotes(_mfCurMonth,ta?ta.value:'');
     })
     .withFailureHandler(function(e){if(msg){msg.className='pne-msg err';msg.textContent='⚠ '+(e.message||'Error');}})
-    .saveMoneyFlowAmounts(_mfCurMonth,JSON.stringify(amounts));
+    .saveMoneyFlowAmounts(_mfCurMonth,JSON.stringify(amounts),JSON.stringify(_mfCurStatus));
 }
 
 /* ── Add Month Plan Modal Functions ── */

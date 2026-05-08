@@ -380,18 +380,21 @@ function saveMoneyFlowNotes(monthStr, notes) {
  * amountsJson: JSON string like {"sentHome":10000,"cal":5000,"ndb":0,...}
  * key → 1-based sheet column mapping matches getMoneyFlowData() indices.
  */
-function saveMoneyFlowAmounts(monthStr, amountsJson) {
+function saveMoneyFlowAmounts(monthStr, amountsJson, statusJson) {
   try {
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Money Flow and invest');
     if (!sheet) throw new Error('Sheet "Money Flow and invest" not found');
 
     var amounts = JSON.parse(amountsJson || '{}');
+    var status = JSON.parse(statusJson || '{}');
     var keyColMap = { sentHome:2, cal:3, ndb:4, binance:5, stock:6, fd:7, gold:8 };
 
     // Colors
     var ntmColor = '#cfe2f3';    // Light blue for NTM
-    var valueColor = '#fff2cc';  // Light yellow for values
+    var valueColor = '#fff2cc';  // Light yellow for pending values
+    var doneColor = '#d9ead3';   // Light green for DONE
+    var failedColor = '#f4cccc'; // Light red for Failed
 
     var vals = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
     for (var i = 0; i < vals.length; i++) {
@@ -405,14 +408,21 @@ function saveMoneyFlowAmounts(monthStr, amountsJson) {
           var colIdx = keyColMap[key];
           if (colIdx) {
             var val = amounts[key];
+            var st = status[key] || '';
             var cell = sheet.getRange(rowNum, colIdx);
-            // Write value and apply color
+            // Write value and apply color based on status
             if (val === 0 || val === '' || val === null) {
               cell.setValue('NTM');
               cell.setBackground(ntmColor);
             } else {
               cell.setValue(val);
-              cell.setBackground(valueColor);
+              if (st === 'DONE') {
+                cell.setBackground(doneColor);
+              } else if (st === 'Failed') {
+                cell.setBackground(failedColor);
+              } else {
+                cell.setBackground(valueColor);
+              }
             }
           }
         });
