@@ -447,6 +447,7 @@ function addMoneyFlowMonth(payloadJson) {
     var payload = JSON.parse(payloadJson || '{}');
     var monthStr = payload.month || '';
     var amounts = payload.amounts || {};
+    var income = payload.income || 0;
     var notes = payload.notes || '';
 
     if (!monthStr) throw new Error('Month is required');
@@ -492,8 +493,10 @@ function addMoneyFlowMonth(payloadJson) {
     });
     newRow[8] = totalInvested; // I
 
-    newRow[9] = 0;  // J: income (empty, user fills later)
-    newRow[10] = 0; // K: savingPct (empty, calculated)
+    newRow[9] = income;  // J: income
+    // K: savingPct = (totalInvested / income) * 100
+    var savingPct = income > 0 ? Math.round((totalInvested / income) * 100) : 0;
+    newRow[10] = savingPct; // K: saving percentage
     newRow[11] = notes; // L: notes
     newRow[12] = '{}'; // M: status (empty JSON)
 
