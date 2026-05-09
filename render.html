@@ -265,16 +265,60 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .cal-day.empty { visibility: hidden; }
 .cal-day.today { background: rgba(0,212,255,.15); color: #00d4ff; border-color: rgba(0,212,255,.3); }
 .cal-day.holiday { background: rgba(255,77,109,.15); color: var(--red); border-color: rgba(255,77,109,.3); }
-.cal-holidays-list {
-  padding: 10px 13px; max-height: 120px; overflow-y: auto;
-  border-top: 1px solid rgba(255,255,255,.05); font-size: .65em;
+.cal-day.holiday::after { content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--red); border-radius: 50%; }
+.cal-holidays-section {
+  padding: 12px; border-top: 1px solid rgba(255,255,255,.05);
 }
-.cal-holiday-item {
-  display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,.03);
+.cal-holidays-title {
+  font-size: .6em; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+  color: rgba(255,255,255,.35); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
 }
-.cal-holiday-item:last-child { border-bottom: none; }
-.cal-hol-date { color: var(--red); font-weight: 700; white-space: nowrap; flex-shrink: 0; }
-.cal-hol-desc { color: rgba(255,255,255,.7); }
+.cal-holidays-title::before { content: '🎉'; font-size: 1.2em; }
+.cal-holidays-scroll {
+  display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.cal-holidays-scroll::-webkit-scrollbar { display: none; }
+.cal-hol-card {
+  flex-shrink: 0; width: 55px; height: 55px; padding: 5px;
+  background: linear-gradient(135deg, rgba(255,77,109,.12), rgba(168,85,247,.08));
+  border: 1px solid rgba(255,77,109,.2); border-radius: 6px;
+  transition: transform .15s, border-color .15s;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.cal-hol-card:hover { transform: translateY(-1px); border-color: rgba(255,77,109,.4); }
+.cal-hol-day {
+  font-size: .9em; font-weight: 800; color: var(--red); line-height: 1;
+}
+.cal-hol-month {
+  font-size: .42em; font-weight: 600; color: rgba(255,255,255,.3); text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.cal-hol-name {
+  font-size: .55em; font-weight: 600; color: rgba(255,255,255,.85); line-height: 1.2;
+  white-space: nowrap; min-width: max-content;
+  animation: none;
+}
+.cal-hol-card:hover .cal-hol-name {
+  animation: scroll-text 3s linear infinite;
+}
+@keyframes scroll-text {
+  0% { transform: translateX(25px); }
+  50% { transform: translateX(-100%); }
+  100% { transform: translateX(-100%); }
+}
+.cal-hol-card:hover .cal-hol-name {
+  animation: scroll-text 2.5s linear infinite;
+}
+@keyframes scroll-text {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+.cal-no-holidays {
+  text-align: center; padding: 16px; color: var(--muted); font-size: .7em;
+  background: rgba(255,255,255,.02); border-radius: 10px;
+}
 
 .pg-money-btn{
   background:rgba(0,230,118,.13);border:1px solid rgba(0,230,118,.28);
@@ -586,15 +630,15 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #stock-fab{
   position:fixed;bottom:calc(var(--nav-h) + 16px);right:18px;
   width:52px;height:52px;border-radius:16px;
-  background:linear-gradient(135deg,#00d4ff,#00e676);
-  color:#0a101c;font-size:26px;font-weight:700;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  color:#fff;font-size:1.5em;font-weight:700;
   border:none;cursor:pointer;display:none;z-index:200;
   align-items:center;justify-content:center;
-  box-shadow:0 4px 20px rgba(0,212,255,.35);
+  box-shadow:0 6px 24px rgba(0,212,255,0.4);
   transition:transform .15s,box-shadow .15s;
   -webkit-tap-highlight-color:transparent;
 }
-#stock-fab:active{transform:scale(.9);box-shadow:0 2px 10px rgba(0,212,255,.3);}
+#stock-fab:active{transform:scale(.9);}
 
 /* ── Stock Edit Modal ── */
 #stockedit-bg{
@@ -2430,7 +2474,7 @@ input[type=date].swae-input{color-scheme:dark;}
 </div>
 
 <!-- ── Stock Edit FAB ── -->
-<button id="stock-fab" onclick="stockEditOpen()" title="Edit Holdings">&lt;&gt;</button>
+<button id="stock-fab" onclick="stockEditOpen()" title="Edit Holdings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
 
 <!-- ── Stock Edit Modal ── -->
 <div id="stockedit-bg" onclick="stockEditOutsideClose(event)">
@@ -2623,7 +2667,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <button class="cal-btn" onclick="calChangeMonth(1)">▶</button>
   </div>
   <div class="cal-grid" id="cal-grid"></div>
-  <div class="cal-holidays-list" id="cal-holidays-list"></div>
+  <div class="cal-holidays-section" id="cal-holidays-section"></div>
 </div>
 
 <div id="calc-panel">
@@ -8105,7 +8149,7 @@ function swaeSubmit(){
       grid.appendChild(day);
     }
     
-    document.getElementById('cal-holidays-list').innerHTML = '<div style="text-align:center;color:var(--muted)">Loading holidays...</div>';
+    document.getElementById('cal-holidays-section').innerHTML = '<div class="cal-holidays-title">Bank Holidays</div><div style="text-align:center;color:var(--muted);font-size:.7em;">Loading...</div>';
     
     if (_cachedHolidays[_calYear]) {
       calApplyHolidays(_cachedHolidays[_calYear]);
@@ -8121,9 +8165,11 @@ function swaeSubmit(){
 
   window.calApplyHolidays = function(holidays) {
     var monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    var shortMonths = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
     var currentMonthName = monthNames[_calMonth];
-    var listHtml = '';
-    
+    var cardsHtml = '';
+    var count = 0;
+
     holidays.forEach(function(h) {
       if (h.date.startsWith(currentMonthName)) {
         var match = h.date.match(/\d{1,2}/);
@@ -8134,15 +8180,23 @@ function swaeSubmit(){
              dayEl.classList.add('holiday');
              dayEl.title = h.desc;
           }
+          cardsHtml += '<div class="cal-hol-card">';
+          cardsHtml += '<div class="cal-hol-day">' + dayNum + '</div>';
+          cardsHtml += '<div class="cal-hol-month">' + shortMonths[_calMonth] + ' ' + _calYear + '</div>';
+          cardsHtml += '<div class="cal-hol-name">' + h.desc + '</div>';
+          cardsHtml += '</div>';
+          count++;
         }
-        listHtml += '<div class="cal-holiday-item"><div class="cal-hol-date">' + h.date + '</div><div class="cal-hol-desc">' + h.desc + '</div></div>';
       }
     });
-    
-    if (listHtml === '') {
-      listHtml = '<div style="text-align:center;color:var(--muted)">No bank holidays this month.</div>';
+
+    var sectionHtml = '<div class="cal-holidays-title">Bank Holidays</div>';
+    if (count > 0) {
+      sectionHtml += '<div class="cal-holidays-scroll">' + cardsHtml + '</div>';
+    } else {
+      sectionHtml += '<div class="cal-no-holidays">✨ No bank holidays this month</div>';
     }
-    document.getElementById('cal-holidays-list').innerHTML = listHtml;
+    document.getElementById('cal-holidays-section').innerHTML = sectionHtml;
   };
 
   // Draggable calendar
