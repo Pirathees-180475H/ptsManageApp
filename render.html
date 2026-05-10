@@ -328,6 +328,115 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 }
 .pg-money-btn:active{transform:scale(.9);}
 
+.pg-sub-btn{
+  background:rgba(255,107,53,.13);border:1px solid rgba(255,107,53,.28);
+  color:var(--orange);border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-sub-btn:active{transform:scale(.9);}
+.pg-sub-btn.sub-active{background:rgba(255,107,53,.28);border-color:rgba(255,107,53,.6);color:#fb923c;}
+
+/* ── Subscription Modal ── */
+#sub-modal{
+  position:fixed;top:50%;left:50%;
+  width:95%;max-width:700px;max-height:85vh;z-index:8000;
+  background:rgba(6,11,24,.95);backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.11);border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+  display:none;flex-direction:column;overflow:hidden;
+}
+#sub-modal.open{display:flex;animation:subModalIn .3s ease;}
+@keyframes subModalIn{from{opacity:0;transform:translate(-50%,-50%) scale(.95);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+.sub-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 13px 8px;border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;cursor:grab;user-select:none;
+}
+.sub-hdr:active{cursor:grabbing;}
+.sub-title{font-size:.63em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:8px;}
+.sub-close{background:none;border:none;color:rgba(255,255,255,.25);font-size:.85em;cursor:pointer;padding:2px 5px;line-height:1;font-family:inherit;border-radius:6px;transition:all .15s;}
+.sub-close:hover{color:#fff;}
+.sub-body{flex:1;overflow-y:auto;padding:16px;}
+.sub-summary{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;
+}
+.sub-sum-card{
+  background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;
+}
+.sub-sum-label{font-size:.6em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px;}
+.sub-sum-value{font-size:1.3em;font-weight:800;color:#fff;}
+.sub-sum-value.green{color:var(--green);}
+.sub-sum-value.orange{color:var(--orange);}
+.sub-platforms{display:flex;flex-direction:column;gap:12px;}
+.sub-platform-card{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;overflow:hidden;transition:all .2s;
+}
+.sub-platform-card:hover{border-color:rgba(255,255,255,.15);}
+.sub-plat-header{
+  padding:12px 14px;cursor:pointer;display:flex;align-items:center;
+  justify-content:space-between;user-select:none;
+}
+.sub-plat-left{display:flex;align-items:center;gap:12px;}
+.sub-plat-icon{
+  width:36px;height:36px;border-radius:8px;display:flex;align-items:center;
+  justify-content:center;font-size:1.2em;
+}
+.sub-plat-icon.netflix{background:linear-gradient(135deg,#e50914,#b20710);}
+.sub-plat-icon.pubg{background:linear-gradient(135deg,#ff6b35,#f7931e);}
+.sub-plat-icon.claude{background:linear-gradient(135deg,#8b5cf6,#6366f1);}
+.sub-plat-icon.youtube{background:linear-gradient(135deg,#ff0000,#cc0000);}
+.sub-plat-info{display:flex;flex-direction:column;}
+.sub-plat-name{font-size:.75em;font-weight:800;color:#fff;}
+.sub-plat-status{font-size:.6em;color:rgba(255,255,255,.5);}
+.sub-plat-cost{font-size:.85em;font-weight:800;color:var(--orange);}
+.sub-plat-arrow{font-size:.9em;color:rgba(255,255,255,.4);transition:transform .2s;}
+.sub-platform-card.expanded .sub-plat-arrow{transform:rotate(180deg);}
+.sub-plat-body{
+  max-height:0;overflow:hidden;transition:max-height .3s ease;
+}
+.sub-platform-card.expanded .sub-plat-body{max-height:800px;}
+.sub-entries{padding:0 14px 12px;}
+.sub-entry{
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);
+  border-radius:8px;padding:10px 12px;margin-bottom:8px;
+}
+.sub-entry:last-child{margin-bottom:0;}
+.sub-entry-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.sub-entry-month{
+  font-size:.65em;font-weight:700;padding:3px 8px;border-radius:6px;
+  background:rgba(0,212,255,.12);color:var(--blue);
+}
+.sub-entry-month.active{background:rgba(0,230,118,.12);color:var(--green);}
+.sub-entry-plan{font-size:.7em;color:rgba(255,255,255,.7);}
+.sub-entry-costs{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.sub-cost-item{display:flex;flex-direction:column;gap:2px;}
+.sub-cost-label{font-size:.55em;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+.sub-cost-value{font-size:.75em;font-weight:800;}
+.sub-cost-value.total{color:rgba(255,255,255,.9);}
+.sub-cost-value.collection{color:var(--blue);}
+.sub-cost-value.net{color:var(--green);}
+.sub-cost-arrow{color:rgba(255,255,255,.3);font-size:.7em;}
+.sub-collection-badge{
+  display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);
+  border-radius:6px;font-size:.6em;color:var(--blue);margin-bottom:6px;
+}
+.sub-entry-note{
+  font-size:.65em;color:rgba(255,255,255,.5);line-height:1.4;
+  padding:6px 8px;background:rgba(255,255,255,.02);border-radius:6px;
+  border-left:2px solid rgba(255,107,53,.3);
+}
+.sub-total{
+  margin-top:16px;padding:14px;background:linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,212,255,.05));
+  border:1px solid rgba(0,230,118,.2);border-radius:10px;display:flex;
+  align-items:center;justify-content:space-between;
+}
+.sub-total-label{font-size:.7em;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.6);}
+.sub-total-value{font-size:1.4em;font-weight:800;color:var(--green);}
+
 #bank-modal{
   position:fixed; top:10vh; left:calc(50vw - 400px);
   width:95%; max-width:800px; z-index:8000;
@@ -2281,6 +2390,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <span class="upd-lbl" id="updLbl">Starting…</span>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-sub-btn" onclick="subToggle()">💳</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" id="refreshBtn" onclick="cseStartLoad()">↺ Reload</button>
@@ -2342,6 +2452,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">💳 Cards</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-sub-btn" onclick="subToggle()">💳</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
@@ -2364,6 +2475,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">📊 Expenses</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-sub-btn" onclick="subToggle()">💳</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
@@ -2706,6 +2818,24 @@ input[type=date].swae-input{color-scheme:dark;}
     <button class="ck ck-num ck-zero" onclick="calcInput('0')">0</button>
     <button class="ck ck-num" onclick="calcInput('.')">.</button>
     <button class="ck ck-eq"  onclick="calcEval()">=</button>
+  </div>
+</div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     SUBSCRIPTIONS MODAL
+═══════════════════════════════════════════ -->
+<div id="sub-modal">
+  <div class="sub-hdr">
+    <span class="sub-title">💳 My Subscriptions</span>
+    <button class="sub-close" onclick="subClose()">✕</button>
+  </div>
+  <div class="sub-body" id="sub-body">
+    <div style="text-align:center;padding:40px;color:var(--muted);">
+      <div style="font-size:2em;margin-bottom:10px;">⏳</div>
+      Loading subscriptions...
+    </div>
   </div>
 </div>
 
@@ -8514,6 +8644,306 @@ function moneyToggle() {
     bmLoad();
   }
 }
+
+// ═══════════════════════════════════════════
+// SUBSCRIPTIONS MODAL
+// ═══════════════════════════════════════════
+var _subscriptionsData = null;
+var _currentMonth = new Date().toLocaleString('en-US', {month: 'short', year: 'numeric'});
+var _positionedSub = false;
+
+function subToggle() {
+  const p = document.getElementById('sub-modal');
+  const opening = !p.classList.contains('open');
+
+  if(opening && !_positionedSub){
+    p.style.left = (window.innerWidth / 2 - 350) + 'px';
+    p.style.top = (window.innerHeight / 2 - 250) + 'px';
+    _positionedSub = true;
+  }
+
+  p.classList.toggle('open');
+  document.querySelectorAll('.pg-sub-btn').forEach(function(b){
+    b.classList.toggle('sub-active', opening);
+  });
+  if(opening && !_subscriptionsData) {
+    loadSubscriptions();
+  }
+}
+
+function subClose() {
+  document.getElementById('sub-modal').classList.remove('open');
+  document.querySelectorAll('.pg-sub-btn').forEach(function(b){
+    b.classList.remove('sub-active');
+  });
+}
+
+function loadSubscriptions() {
+  document.getElementById('sub-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading subscriptions...</div>';
+
+  google.script.run
+    .withSuccessHandler(function(data){
+      if(!data || !data.success) {
+        document.getElementById('sub-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error: ' + (data ? data.error : 'Unknown error') + '</div>';
+        return;
+      }
+      _subscriptionsData = data;
+      renderSubscriptions(data);
+    })
+    .withFailureHandler(function(err){
+      document.getElementById('sub-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error loading subscriptions:<br>' + err.message + '</div>';
+    })
+    .getSubscriptions();
+}
+
+function renderSubscriptions(data) {
+  if(!data || !data.entries || data.entries.length === 0) {
+    document.getElementById('sub-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">📭</div>No subscriptions found</div>';
+    return;
+  }
+
+  // Group by platform
+  var platforms = {};
+  data.entries.forEach(function(entry){
+    if(!entry.platform) return;
+    if(!platforms[entry.platform]) {
+      platforms[entry.platform] = [];
+    }
+    platforms[entry.platform].push(entry);
+  });
+
+  // Calculate totals
+  var totalCost = data.entries.reduce(function(sum, e){ return sum + (parseFloat(e.netCost) || 0); }, 0);
+  var activeSubs = Object.keys(platforms).length;
+
+  // Separate active and closed platforms
+  var closedKeywords = ['no need', 'closed', 'cancelled', 'stopped', 'expired', 'ended'];
+  var activePlatforms = {};
+  var closedPlatforms = {};
+
+  Object.keys(platforms).forEach(function(platName){
+    var entries = platforms[platName];
+    var isClosed = entries.some(function(e){
+      var noteText = (e.note || '').toLowerCase();
+      return closedKeywords.some(function(keyword){ return noteText.indexOf(keyword) !== -1; });
+    });
+
+    if(isClosed) {
+      closedPlatforms[platName] = entries;
+    } else {
+      activePlatforms[platName] = entries;
+    }
+  });
+
+  // Build HTML
+  var html = '<div class="sub-summary">';
+  html += '<div class="sub-sum-card"><div class="sub-sum-label">Total Net Cost</div><div class="sub-sum-value green">₨ ' + totalCost.toLocaleString() + '</div></div>';
+  html += '<div class="sub-sum-card"><div class="sub-sum-label">Platforms</div><div class="sub-sum-value orange">' + Object.keys(activePlatforms).length + '</div></div>';
+  html += '<div class="sub-sum-card"><div class="sub-sum-label">Closed</div><div class="sub-sum-value">' + Object.keys(closedPlatforms).length + '</div></div>';
+  html += '</div>';
+
+  html += '<div class="sub-platforms">';
+
+  var platformColors = {
+    'Netflix': {class: 'netflix', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/netflix.svg', color: '#E50914', fallback: '📺'},
+    'PubG': {class: 'pubg', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/pubg.svg', color: '#FF6B35', fallback: '🎮'},
+    'Cloude': {class: 'claude', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/anthropic.svg', color: '#8B5CF6', fallback: '🤖'},
+    'Claude': {class: 'claude', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/anthropic.svg', color: '#8B5CF6', fallback: '🤖'},
+    'YouTube': {class: 'youtube', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/youtube.svg', color: '#FF0000', fallback: '▶️'}
+  };
+
+  // Function to get fallback icon based on platform name
+  function getPlatformFallback(platName) {
+    var name = platName.toLowerCase();
+    if(name.includes('stream') || name.includes('video') || name.includes('tv')) return '📺';
+    if(name.includes('game') || name.includes('play')) return '🎮';
+    if(name.includes('music') || name.includes('spotify') || name.includes('sound')) return '🎵';
+    if(name.includes('ai') || name.includes('gpt') || name.includes('claude')) return '🤖';
+    if(name.includes('cloud') || name.includes('storage') || name.includes('drive')) return '☁️';
+    if(name.includes('mail') || name.includes('email')) return '📧';
+    if(name.includes('news') || name.includes('read')) return '📰';
+    if(name.includes('fitness') || name.includes('health')) return '💪';
+    if(name.includes('food') || name.includes('delivery')) return '🍔';
+    if(name.includes('phone') || name.includes('mobile')) return '📱';
+    return '💳';
+  }
+
+  // Render active platforms
+  Object.keys(activePlatforms).forEach(function(platName){
+    var entries = activePlatforms[platName];
+    var platConfig = platformColors[platName] || {class: 'netflix', icon: '', color: '#888888', fallback: getPlatformFallback(platName)};
+    var fallbackIcon = platConfig.fallback || getPlatformFallback(platName);
+    var latestEntry = entries[entries.length - 1];
+    var totalPlatCost = entries.reduce(function(sum, e){ return sum + (parseFloat(e.netCost) || 0); }, 0);
+
+    html += '<div class="sub-platform-card" id="sub-plat-' + platName.toLowerCase() + '">';
+    html += '<div class="sub-plat-header" onclick="togglePlatform(\'' + platName.toLowerCase() + '\')">';
+    html += '<div class="sub-plat-left">';
+    if(platConfig.icon) {
+      html += '<div class="sub-plat-icon ' + platConfig.class + '"><img src="' + platConfig.icon + '" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'' + fallbackIcon + '\';" style="width:20px;height:20px;filter:brightness(0) invert(1);" /></div>';
+    } else {
+      html += '<div class="sub-plat-icon ' + platConfig.class + '">' + fallbackIcon + '</div>';
+    }
+    html += '<div class="sub-plat-info">';
+    html += '<div class="sub-plat-name">' + platName + '</div>';
+    html += '<div class="sub-plat-status">' + entries.length + ' entries</div>';
+    html += '</div></div>';
+    html += '<div style="display:flex;align-items:center;gap:10px;">';
+    html += '<div class="sub-plat-cost">₨ ' + totalPlatCost.toLocaleString() + '</div>';
+    html += '<div class="sub-plat-arrow">▼</div>';
+    html += '</div></div>';
+
+    html += '<div class="sub-plat-body"><div class="sub-entries">';
+    entries.forEach(function(entry){
+      // Format date properly
+      var displayMonth = entry.month;
+      if(entry.month && entry.month.length > 15) {
+        try {
+          var d = new Date(entry.month);
+          if(!isNaN(d.getTime())) {
+            displayMonth = d.toLocaleString('en-US', {month: 'short', year: 'numeric'});
+          }
+        } catch(e) {}
+      }
+
+      var isActive = displayMonth === _currentMonth;
+      html += '<div class="sub-entry">';
+      html += '<div class="sub-entry-header">';
+      html += '<div class="sub-entry-month' + (isActive ? ' active' : '') + '">' + (displayMonth || '—') + '</div>';
+      html += '<div class="sub-entry-plan">' + (entry.plan || '—') + '</div>';
+      html += '</div>';
+
+      if(entry.collectionFrom && entry.collectionFrom !== 'N/A') {
+        html += '<div class="sub-collection-badge">💰 Collected from: ' + entry.collectionFrom + '</div>';
+      }
+
+      html += '<div class="sub-entry-costs">';
+      html += '<div class="sub-cost-item"><div class="sub-cost-label">Total</div><div class="sub-cost-value total">₨ ' + (parseFloat(entry.cost) || 0).toLocaleString() + '</div></div>';
+      if(entry.collections && parseFloat(entry.collections) > 0) {
+        html += '<div class="sub-cost-arrow">→</div>';
+        html += '<div class="sub-cost-item"><div class="sub-cost-label">Collected</div><div class="sub-cost-value collection">₨ ' + (parseFloat(entry.collections) || 0).toLocaleString() + '</div></div>';
+      }
+      html += '<div class="sub-cost-arrow">→</div>';
+      html += '<div class="sub-cost-item"><div class="sub-cost-label">Net</div><div class="sub-cost-value net">₨ ' + (parseFloat(entry.netCost) || 0).toLocaleString() + '</div></div>';
+      html += '</div>';
+
+      if(entry.note) {
+        html += '<div class="sub-entry-note">📝 ' + entry.note + '</div>';
+      }
+
+      html += '</div>';
+    });
+    html += '</div></div>';
+    html += '</div>';
+  });
+
+  // Render closed platforms if any
+  if(Object.keys(closedPlatforms).length > 0) {
+    html += '<div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);">';
+    html += '<div style="font-size:.65em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px;">🔒 Closed Platforms</div>';
+
+    Object.keys(closedPlatforms).forEach(function(platName){
+      var entries = closedPlatforms[platName];
+      var platConfig = platformColors[platName] || {class: 'netflix', icon: '', color: '#888888', fallback: getPlatformFallback(platName)};
+      var fallbackIcon = platConfig.fallback || getPlatformFallback(platName);
+      var totalPlatCost = entries.reduce(function(sum, e){ return sum + (parseFloat(e.netCost) || 0); }, 0);
+
+      html += '<div class="sub-platform-card" style="opacity:0.6;" id="sub-plat-closed-' + platName.toLowerCase() + '">';
+      html += '<div class="sub-plat-header" onclick="togglePlatform(\'closed-' + platName.toLowerCase() + '\')">';
+      html += '<div class="sub-plat-left">';
+      if(platConfig.icon) {
+        html += '<div class="sub-plat-icon ' + platConfig.class + '"><img src="' + platConfig.icon + '" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'' + fallbackIcon + '\';" style="width:20px;height:20px;filter:brightness(0) invert(1);" /></div>';
+      } else {
+        html += '<div class="sub-plat-icon ' + platConfig.class + '">' + fallbackIcon + '</div>';
+      }
+      html += '<div class="sub-plat-info">';
+      html += '<div class="sub-plat-name">' + platName + ' (Closed)</div>';
+      html += '<div class="sub-plat-status">' + entries.length + ' entries</div>';
+      html += '</div></div>';
+      html += '<div style="display:flex;align-items:center;gap:10px;">';
+      html += '<div class="sub-plat-cost">₨ ' + totalPlatCost.toLocaleString() + '</div>';
+      html += '<div class="sub-plat-arrow">▼</div>';
+      html += '</div></div>';
+
+      html += '<div class="sub-plat-body"><div class="sub-entries">';
+      entries.forEach(function(entry){
+        var displayMonth = entry.month;
+        if(entry.month && entry.month.length > 15) {
+          try {
+            var d = new Date(entry.month);
+            if(!isNaN(d.getTime())) {
+              displayMonth = d.toLocaleString('en-US', {month: 'short', year: 'numeric'});
+            }
+          } catch(e) {}
+        }
+
+        html += '<div class="sub-entry">';
+        html += '<div class="sub-entry-header">';
+        html += '<div class="sub-entry-month">' + (displayMonth || '—') + '</div>';
+        html += '<div class="sub-entry-plan">' + (entry.plan || '—') + '</div>';
+        html += '</div>';
+
+        if(entry.collectionFrom && entry.collectionFrom !== 'N/A') {
+          html += '<div class="sub-collection-badge">💰 Collected from: ' + entry.collectionFrom + '</div>';
+        }
+
+        html += '<div class="sub-entry-costs">';
+        html += '<div class="sub-cost-item"><div class="sub-cost-label">Total</div><div class="sub-cost-value total">₨ ' + (parseFloat(entry.cost) || 0).toLocaleString() + '</div></div>';
+        if(entry.collections && parseFloat(entry.collections) > 0) {
+          html += '<div class="sub-cost-arrow">→</div>';
+          html += '<div class="sub-cost-item"><div class="sub-cost-label">Collected</div><div class="sub-cost-value collection">₨ ' + (parseFloat(entry.collections) || 0).toLocaleString() + '</div></div>';
+        }
+        html += '<div class="sub-cost-arrow">→</div>';
+        html += '<div class="sub-cost-item"><div class="sub-cost-label">Net</div><div class="sub-cost-value net">₨ ' + (parseFloat(entry.netCost) || 0).toLocaleString() + '</div></div>';
+        html += '</div>';
+
+        if(entry.note) {
+          html += '<div class="sub-entry-note">📝 ' + entry.note + '</div>';
+        }
+
+        html += '</div>';
+      });
+      html += '</div></div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+
+  document.getElementById('sub-body').innerHTML = html;
+}
+
+function togglePlatform(platName) {
+  var card = document.getElementById('sub-plat-' + platName);
+  if(card) card.classList.toggle('expanded');
+}
+
+// Draggable Subscription Modal
+document.addEventListener('DOMContentLoaded', function(){
+  var panel = document.getElementById('sub-modal');
+  if (!panel) return;
+  var hdr = panel.querySelector('.sub-hdr');
+  if (!hdr) return;
+  var _drag = false, _ox = 0, _oy = 0;
+  hdr.addEventListener('mousedown', function(e){
+    if(e.target.closest('.sub-close')) return;
+    var r = panel.getBoundingClientRect();
+    _ox = e.clientX - r.left;
+    _oy = e.clientY - r.top;
+    _drag = true;
+    hdr.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', function(e){
+    if(!_drag) return;
+    panel.style.left = (e.clientX - _ox) + 'px';
+    panel.style.top = (e.clientY - _oy) + 'px';
+  });
+  window.addEventListener('mouseup', function(){
+    _drag = false;
+    hdr.style.cursor = 'grab';
+  });
+});
 
 // Draggable Bank Modal
 document.addEventListener('DOMContentLoaded', function(){

@@ -2578,3 +2578,98 @@ function getBankHolidays(year) {
   }
 }
 
+/**
+ * Get subscriptions data from OTHERS sheet
+ * Columns M to T (13-20), starting from row 2
+ * Headers in row 2:
+ * M: Month (until)
+ * N: Platform
+ * O: Plan/Type
+ * P: Cost
+ * Q: Collections
+ * R: collection from
+ * S: net cost
+ * T: Note
+ */
+function getSubscriptions() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+
+    if (!sheet) {
+      Logger.log('OTHERS sheet not found');
+      return { success: false, error: 'OTHERS sheet not found' };
+    }
+
+    // Get data from M3 onwards (skip header row 2)
+    var lastRow = sheet.getLastRow();
+    Logger.log('Last row: ' + lastRow);
+
+    if (lastRow < 3) {
+      Logger.log('No data rows found');
+      return { success: true, entries: [], total: 0 };
+    }
+
+    // Read M3:T[lastRow] (columns 13-20)
+    var data = sheet.getRange(3, 13, lastRow - 2, 8).getValues();
+    Logger.log('Data rows: ' + data.length);
+
+    var entries = [];
+    var total = 0;
+
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      var month = row[0] ? String(row[0]).trim() : '';
+      var platform = row[1] ? String(row[1]).trim() : '';
+      var plan = row[2] ? String(row[2]).trim() : '';
+      var cost = row[3] ? Number(row[3]) || 0 : 0;
+      var collections = row[4] ? Number(row[4]) || 0 : 0;
+      var collectionFrom = row[5] ? String(row[5]).trim() : '';
+      var netCost = row[6] ? Number(row[6]) || 0 : 0;
+      var note = row[7] ? String(row[7]).trim() : '';
+
+      // Skip empty rows or Total row
+      if (!platform || platform.toLowerCase() === 'total') {
+        if (platform.toLowerCase() === 'total' && netCost > 0) {
+          total = netCost;
+        }
+        continue;
+      }
+
+      entries.push({
+        month: month,
+        platform: platform,
+        plan: plan,
+        cost: cost,
+        collections: collections,
+        collectionFrom: collectionFrom,
+        netCost: netCost,
+        note: note
+      });
+    }
+
+    Logger.log('Entries found: ' + entries.length);
+    Logger.log('Total: ' + total);
+
+    // If no total found in sheet, calculate it
+    if (total === 0) {
+      for (var j = 0; j < entries.length; j++) {
+        total += entries[j].netCost;
+      }
+    }
+
+    var result = {
+      success: true,
+      entries: entries,
+      total: total
+    };
+
+    Logger.log('Returning result with ' + entries.length + ' entries');
+    return result;
+
+  } catch (e) {
+    Logger.log('Error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
