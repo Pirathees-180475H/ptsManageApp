@@ -339,7 +339,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 
 /* ── Subscription Modal ── */
 #sub-modal{
-  position:fixed;top:50%;left:50%;
+  position:fixed;
   width:95%;max-width:700px;max-height:85vh;z-index:8000;
   background:rgba(6,11,24,.95);backdrop-filter:blur(28px);
   border:1px solid rgba(255,255,255,.11);border-radius:18px;
@@ -347,7 +347,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   display:none;flex-direction:column;overflow:hidden;
 }
 #sub-modal.open{display:flex;animation:subModalIn .3s ease;}
-@keyframes subModalIn{from{opacity:0;transform:translate(-50%,-50%) scale(.95);}to{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+@keyframes subModalIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
 .sub-hdr{
   display:flex;align-items:center;justify-content:space-between;
   padding:10px 13px 8px;border-bottom:1px solid rgba(255,255,255,.06);
@@ -8656,18 +8656,27 @@ function subToggle() {
   const p = document.getElementById('sub-modal');
   const opening = !p.classList.contains('open');
 
-  if(opening && !_positionedSub){
-    p.style.left = (window.innerWidth / 2 - 350) + 'px';
-    p.style.top = (window.innerHeight / 2 - 250) + 'px';
-    _positionedSub = true;
-  }
+  if(opening) {
+    // Set position BEFORE opening to prevent jump
+    if(!_positionedSub){
+      p.style.left = (window.innerWidth / 2 - 350) + 'px';
+      p.style.top = (window.innerHeight / 2 - 250) + 'px';
+      _positionedSub = true;
+    }
 
-  p.classList.toggle('open');
-  document.querySelectorAll('.pg-sub-btn').forEach(function(b){
-    b.classList.toggle('sub-active', opening);
-  });
-  if(opening && !_subscriptionsData) {
-    loadSubscriptions();
+    p.classList.add('open');
+    document.querySelectorAll('.pg-sub-btn').forEach(function(b){
+      b.classList.add('sub-active');
+    });
+
+    if(!_subscriptionsData) {
+      loadSubscriptions();
+    }
+  } else {
+    p.classList.remove('open');
+    document.querySelectorAll('.pg-sub-btn').forEach(function(b){
+      b.classList.remove('sub-active');
+    });
   }
 }
 
