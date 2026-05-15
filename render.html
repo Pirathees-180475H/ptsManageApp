@@ -4854,7 +4854,42 @@ function expDetailRender(data) {
   var projected   = dailyAvg * daysInMonth;
 
   // ── Last month data ──
+  var prevM = data.month - 1, prevY = data.year;
+  if (prevM < 1) { prevM = 12; prevY--; }
+  var prevMonthLabel = months[prevM] + ' ' + prevY;
   var lmt = data.lastMonthTotals || {};
+  if (window._expDashData) {
+    var _D = window._expDashData;
+    var prevMonAbbr = EXP_MON_ORDER[prevM - 1].toLowerCase();
+    for (var pi = 0; pi < _D.months.length; pi++) {
+      var dm = _D.months[pi].toLowerCase();
+      if (dm.indexOf(prevMonAbbr) === 0 && dm.indexOf(String(prevY)) >= 0) {
+        var overrideLmt = {};
+        EXP_DETAIL_CAT_ORDER.forEach(function(cat) {
+          var catLow = cat.toLowerCase();
+          var val = 0;
+          // exact case-insensitive match
+          for (var ci = 0; ci < _D.categories.length; ci++) {
+            if (_D.categories[ci].name.toLowerCase() === catLow) {
+              val = _D.categories[ci].values[pi] || 0; break;
+            }
+          }
+          // first-word fallback (handles "Dress & Appearance" vs "Dress and Appearance")
+          if (!val) {
+            var fw = catLow.split(/[\s&]/)[0];
+            for (var ci2 = 0; ci2 < _D.categories.length; ci2++) {
+              if (_D.categories[ci2].name.toLowerCase().split(/[\s&]/)[0] === fw) {
+                val = _D.categories[ci2].values[pi] || 0; break;
+              }
+            }
+          }
+          if (val > 0) overrideLmt[cat] = val;
+        });
+        lmt = overrideLmt;
+        break;
+      }
+    }
+  }
 
   function fmtI(n){ return '₨ ' + Math.round(n).toLocaleString('en-IN'); }
   function lmtLookup(cat) {
@@ -4953,7 +4988,7 @@ function expDetailRender(data) {
       +   '<div class="edm-chart-center"><div class="edm-chart-center-val" style="color:'+remValColor+'">₨'+remK+'</div><div class="edm-chart-center-lbl">left</div></div>'
       +   '</div></div>'
       + '<div class="edm-chart-box">'
-      +   '<div class="edm-chart-title">📅 Last Month</div>'
+      +   '<div class="edm-chart-title">📅 ' + prevMonthLabel + '</div>'
       +   '<div class="edm-chart-wrap"><canvas id="edm-prev-chart"></canvas>'
       +   '<div class="edm-chart-center"><div class="edm-chart-center-val" style="color:#a78bfa">₨'+prevK+'</div><div class="edm-chart-center-lbl">spent</div></div>'
       +   '</div></div>'
@@ -5155,6 +5190,7 @@ function expShowErr(m){
 }
 
 function expBuild(D){
+  window._expDashData = D;
   var months=D.months,totals=D.monthlyTotals,cats=D.categories,yg=D.yearGroups,latest=D.latestMonth;
   var labels=months.map(expSl),n=months.length,li=n-1;
   var years=Object.keys(yg).sort();
