@@ -1220,6 +1220,13 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   color:rgba(255,255,255,.45);border-radius:50%;width:28px;height:28px;
   cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .edm-close:hover{color:#fff;background:rgba(255,255,255,.12);}
+.edm-nav-row{display:flex;align-items:center;gap:6px;}
+.edm-nav-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);border-radius:8px;width:28px;height:28px;
+  cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:background .12s,color .12s;}
+.edm-nav-btn:hover{color:#fff;background:rgba(255,255,255,.12);}
+.edm-nav-btn:disabled{opacity:.25;cursor:not-allowed;pointer-events:none;}
 .edm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:12px 18px 20px;}
 .edm-loading{display:flex;align-items:center;justify-content:center;gap:10px;
   padding:40px;color:var(--muted);font-size:12px;}
@@ -2757,10 +2764,14 @@ input[type=date].swae-input{color-scheme:dark;}
   <div id="exp-detail-modal">
     <div class="edm-hdr">
       <div>
-        <div class="edm-title">📋 Current Month Expenses</div>
+        <div class="edm-title" id="edm-title">📋 Monthly Expenses</div>
         <div class="edm-sub" id="edm-sub">Loading…</div>
       </div>
-      <button class="edm-close" onclick="expDetailClose()">✕</button>
+      <div class="edm-nav-row">
+        <button class="edm-nav-btn" id="edm-nav-prev" onclick="expDetailNav(-1)" title="Previous month">◀</button>
+        <button class="edm-nav-btn" id="edm-nav-next" onclick="expDetailNav(1)" title="Next month">▶</button>
+        <button class="edm-close" onclick="expDetailClose()">✕</button>
+      </div>
     </div>
     <div class="edm-body" id="edm-body">
       <div class="edm-loading"><div class="edm-spin"></div>Fetching entries…</div>
@@ -4694,6 +4705,9 @@ function expLoad(){
 
 /* ── Expense Detail Popup ── */
 var _edmLoaded = false;
+var _edmMonth  = 0;
+var _edmYear   = 0;
+var _edmCache  = {};
 var EXP_DETAIL_CAT_COLORS = {
   'Food':'#f59e0b','Supermarket':'#10b981','Uber':'#6366f1',
   'Uber Work':'#8b5cf6','Movies & Outing':'#ec4899','Other':'#f97316',
@@ -4704,17 +4718,53 @@ var EXP_DETAIL_CAT_ORDER = ['Food','Supermarket','Uber','Uber Work','Movies & Ou
 
 function expDetailOpen() {
   document.getElementById('exp-detail-overlay').classList.add('open');
-  if (_edmLoaded) return;
+  if (!_edmMonth) {
+    var now = new Date();
+    _edmMonth = now.getMonth() + 1;
+    _edmYear  = now.getFullYear();
+  }
+  expDetailLoadMonth();
+}
+
+function expDetailNav(dir) {
+  _edmMonth += dir;
+  if (_edmMonth > 12) { _edmMonth = 1;  _edmYear++; }
+  if (_edmMonth < 1)  { _edmMonth = 12; _edmYear--; }
+  expDetailLoadMonth();
+}
+
+function expDetailLoadMonth() {
+  var key  = _edmYear + '-' + _edmMonth;
+  var now  = new Date();
+  var nowM = now.getMonth() + 1, nowY = now.getFullYear();
+  var months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Update title
+  var titleEl = document.getElementById('edm-title');
+  if (titleEl) titleEl.textContent = '📋 ' + months[_edmMonth] + ' ' + _edmYear + ' Expenses';
+
+  // Disable next btn when viewing current or future month
+  var nextBtn = document.getElementById('edm-nav-next');
+  if (nextBtn) nextBtn.disabled = (_edmYear > nowY || (_edmYear === nowY && _edmMonth >= nowM));
+
+  // Serve from cache if available
+  if (_edmCache[key]) { expDetailRender(_edmCache[key]); return; }
+
   document.getElementById('edm-body').innerHTML =
     '<div class="edm-loading"><div class="edm-spin"></div>Fetching entries…</div>';
   document.getElementById('edm-sub').textContent = 'Loading…';
+  var _reqM = _edmMonth, _reqY = _edmYear;
   google.script.run
-    .withSuccessHandler(expDetailRender)
+    .withSuccessHandler(function(data) {
+      _edmCache[_reqY + '-' + _reqM] = data;
+      // Only render if user hasn't navigated away
+      if (_edmMonth === _reqM && _edmYear === _reqY) expDetailRender(data);
+    })
     .withFailureHandler(function(e){
       document.getElementById('edm-body').innerHTML =
         '<div class="edm-err-msg">⚠ ' + (e.message||String(e)) + '</div>';
     })
-    .getCurrentMonthExpensesList();
+    .getCurrentMonthExpensesList(_edmMonth, _edmYear);
 }
 
 function expDetailClose() {
@@ -5055,7 +5105,7 @@ function expDetailRender(data) {
 }
 
 /* Reset detail cache when expense tab reloads */
-function _expDetailReset() { _edmLoaded = false; if(window._edmCharts){window._edmCharts.forEach(function(c){try{c.destroy();}catch(e){}});window._edmCharts=[];} }
+function _expDetailReset() { _edmLoaded = false; _edmMonth = 0; _edmYear = 0; _edmCache = {}; if(window._edmCharts){window._edmCharts.forEach(function(c){try{c.destroy();}catch(e){}});window._edmCharts=[];} }
 
 function edmBeToggle() {
   var body  = document.getElementById('edm-be-body');

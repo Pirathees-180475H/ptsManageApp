@@ -1401,7 +1401,7 @@ function getExpenseData() {
    from the daily rows in "Monthly Expences" sheet,
    excluding Credit Card and Splitwise columns.
 ───────────────────────────────────────────────────────────────── */
-function getCurrentMonthExpensesList() {
+function getCurrentMonthExpensesList(reqMonth, reqYear) {
   try {
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Monthly Expences');
@@ -1409,8 +1409,8 @@ function getCurrentMonthExpensesList() {
 
     var tz       = ss.getSpreadsheetTimeZone();
     var now      = new Date();
-    var curMonth = parseInt(Utilities.formatDate(now, tz, 'M'), 10); // 1-12
-    var curYear  = parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
+    var curMonth = (reqMonth && reqMonth >= 1 && reqMonth <= 12) ? parseInt(reqMonth, 10) : parseInt(Utilities.formatDate(now, tz, 'M'), 10);
+    var curYear  = (reqYear  && reqYear  >= 2000) ? parseInt(reqYear, 10)  : parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
 
     // Column definitions (1-based), exclude CC (AE=31,AF=32,AG=33,AH=34,AI=35)
     // and SW (T=20, U=21, W=23)
