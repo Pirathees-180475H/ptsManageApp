@@ -215,7 +215,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pg-cal-btn.cal-active{background:rgba(0,212,255,.28);border-color:rgba(0,212,255,.6);color:#7dd3fc;}
 
 #cal-panel {
-  position:fixed;bottom:calc(var(--nav-h) + 10px);right:12px;
+  position:fixed;bottom:calc(var(--nav-h) + 10px);left:12px;
   width:500px;z-index:8000;
   max-height: calc(100vh - 80px);
   background:rgba(6,11,24,.84);backdrop-filter:blur(28px);
@@ -1239,7 +1239,11 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .edm-cat-sum{text-align:right!important;font-weight:700;color:#a855f7;font-size:.78em;}
 .edm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle;}
 .edm-day{font-size:.65em;color:var(--dim);font-weight:500;}
+.edm-dayname{display:block;font-size:.58em;color:rgba(255,255,255,.28);font-weight:500;letter-spacing:.5px;margin-top:1px;}
 .edm-ref{color:var(--muted);font-size:.75em;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.edm-claim-row td{background:rgba(255,215,0,.07)!important;}
+.edm-claim-row td:first-child{border-left:3px solid var(--gold);}
+.edm-ref-claim{color:var(--gold)!important;font-weight:600;}
 .edm-total-row{display:flex;justify-content:space-between;align-items:center;
   padding:11px 9px 0;border-top:1px solid rgba(255,255,255,.07);margin-top:4px;
   font-size:.78em;font-weight:700;color:var(--muted);}
@@ -4965,10 +4969,13 @@ function expDetailRender(data) {
               + '</tr>';
       }
     }
+    var _dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var _dayName = _dayNames[new Date(data.year, data.month - 1, e.day).getDay()];
+    var _isClaim = e.reference && /claim|pick\s*me/i.test(e.reference);
     var ref = e.reference
-      ? '<span class="edm-ref" title="' + e.reference + '">' + e.reference + '</span>'
+      ? '<span class="edm-ref' + (_isClaim ? ' edm-ref-claim' : '') + '" title="' + e.reference + '">' + e.reference + '</span>'
       : '<span class="edm-ref" style="color:rgba(255,255,255,.18)">—</span>';
-    html += '<tr><td><span class="edm-day">' + e.day + '</span></td>'
+    html += '<tr class="' + (_isClaim ? 'edm-claim-row' : '') + '"><td><span class="edm-day">' + e.day + '</span><span class="edm-dayname">' + _dayName + '</span></td>'
           + '<td>' + ref + '</td>'
           + '<td>₨ ' + Math.round(e.amount).toLocaleString('en-IN') + '</td></tr>';
   });
@@ -8223,7 +8230,7 @@ function swaeSubmit(){
     if(opening && !_positionedCal){
       p.style.bottom = 'calc(var(--nav-h) + 10px)';
       p.style.top  = 'auto';
-      p.style.left = Math.max(12, window.innerWidth - 480) + 'px';
+      p.style.left = '12px';
       _positionedCal = true;
     }
     p.classList.toggle('open');
