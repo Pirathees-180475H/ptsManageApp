@@ -2792,3 +2792,84 @@ function deleteSubscription(rowIndex) {
     return { success: false, error: e.message };
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   getCardExpenses
+   Returns both Expense and Payment entries for a credit card.
+   Column layout (from ADD_EXP.html):
+     AE=31 shared ref | AF=32 Amex-Exp | AG=33 Amex-Pay
+                      | AH=34 NTB-Exp  | AI=35 NTB-Pay
+───────────────────────────────────────────────────────────────── */
+function getCardExpenses(cardName, month, year) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var tz       = ss.getSpreadsheetTimeZone();
+    var now      = new Date();
+    var curMonth = (month >= 1 && month <= 12) ? parseInt(month, 10)
+                   : parseInt(Utilities.formatDate(now, tz, 'M'), 10);
+    var curYear  = (year >= 2000) ? parseInt(year, 10)
+                   : parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
+
+    // Hardcoded columns matching ADD_EXP.html (1-based):
+    // AE=31 ref | AF=32 Amex-Exp | AG=33 Amex-Pay | AH=34 NTB-Exp | AI=35 NTB-Pay
+    var REF_COL = 31; // AE — shared CC reference
+    var cardLow = (cardName || '').toLowerCase();
+    var expCol  = -1;
+    var payCol  = -1;
+
+    if (cardLow.indexOf('amex') >= 0 || cardLow.indexOf('american') >= 0) {
+      expCol = 32; // AF
+      payCol = 33; // AG
+    } else if (cardLow.indexOf('ntb') >= 0 || cardLow.indexOf('nations') >= 0) {
+      expCol = 34; // AH
+      payCol = 35; // AI
+    }
+
+    if (expCol < 0) {
+      return { success: true, entries: [], total: 0, totalPay: 0, cardName: cardName,
+               month: curMonth, year: curYear, noColumn: true };
+    }
+
+    // Read all data
+    var lastRow  = sheet.getLastRow();
+    var numCols  = Math.max(expCol, payCol, REF_COL);
+    var allData  = sheet.getRange(1, 1, lastRow, numCols).getValues();
+
+    var entries = [], totalExp = 0, totalPay = 0;
+
+    for (var r = 0; r < allData.length; r++) {
+      var row = allData[r];
+      var dateKey = _cellStr(row[0], true).trim();
+      var parts = dateKey.match(/^(\d{1,2})-(\d{1,2})$/);
+      if (!parts) continue;
+      if (parseInt(parts[1], 10) !== curMonth) continue;
+
+      // Parse expense amount
+      var rawExp = row[expCol - 1];
+      var exp = (typeof rawExp === 'number') ? rawExp : parseFloat(String(rawExp).replace(/[^0-9.+-]/g, '')) || 0;
+
+      // Parse payment amount
+      var rawPay = row[payCol - 1];
+      var pay = (typeof rawPay === 'number') ? rawPay : parseFloat(String(rawPay).replace(/[^0-9.+-]/g, '')) || 0;
+
+      // Skip rows with no data in either column
+      if (exp <= 0 && pay <= 0) continue;
+
+      var ref = String(row[REF_COL - 1] || '').trim();
+      entries.push({ day: parseInt(parts[2], 10), expense: exp, payment: pay, reference: ref });
+      totalExp += exp;
+      totalPay += pay;
+    }
+
+    entries.sort(function(a, b) { return a.day - b.day; });
+    return { success: true, entries: entries, totalExp: totalExp, totalPay: totalPay,
+             cardName: cardName, month: curMonth, year: curYear };
+
+  } catch (e) {
+    Logger.log('getCardExpenses error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}

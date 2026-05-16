@@ -1056,6 +1056,46 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .amt-val.danger{color:var(--red);}
 .amt-val.ok    {color:var(--green);}
 .amt-val.warn  {color:var(--amber);}
+/* ── CC Expenses floating panel (draggable, no overlay) ── */
+#cc-exp-panel{
+  position:fixed;width:95%;max-width:520px;max-height:80vh;z-index:9500;
+  background:linear-gradient(165deg,rgba(18,24,38,.98) 0%,rgba(8,12,22,.99) 100%);
+  border:1px solid rgba(255,255,255,.1);border-radius:20px;
+  box-shadow:0 25px 80px rgba(0,0,0,.8),0 8px 32px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);
+  display:none;flex-direction:column;overflow:hidden;backdrop-filter:blur(20px);
+}
+#cc-exp-panel.open{display:flex;animation:ccExpIn .3s cubic-bezier(.4,0,.2,1);}
+@keyframes ccExpIn{from{opacity:0;transform:scale(.92) translateY(16px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.cc-exp-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;cursor:grab;user-select:none;}
+.cc-exp-hdr:active{cursor:grabbing;}
+.cc-exp-title{font-size:.85em;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.cc-exp-sub{font-size:.62em;color:rgba(255,255,255,.45);margin-top:3px;font-weight:500;}
+.cc-exp-close{background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.4);font-size:.8em;cursor:pointer;padding:6px 10px;border-radius:8px;transition:all .2s;font-family:inherit;}
+.cc-exp-close:hover{color:#fff;background:rgba(255,77,109,.2);}
+.cc-exp-body{flex:1;overflow-y:auto;padding:16px 20px 20px;}
+.cc-exp-table{width:100%;border-collapse:collapse;}
+.cc-exp-table th{font-size:.6em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);padding:0 10px 12px;text-align:left;}
+.cc-exp-table th.col-amt{text-align:right;}
+.cc-exp-table td{padding:10px;font-size:.78em;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.cc-exp-table td.col-date{color:rgba(255,255,255,.5);font-weight:600;white-space:nowrap;}
+.cc-exp-table td.col-ref{color:rgba(255,255,255,.55);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cc-exp-table td.col-exp{text-align:right;font-weight:700;color:#ff6b8a;}
+.cc-exp-table td.col-pay{text-align:right;font-weight:700;color:#4ade80;}
+.cc-exp-table tr:hover td{background:rgba(255,255,255,.025);}
+.cc-exp-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px;}
+.cc-exp-stat{padding:12px 14px;border-radius:10px;}
+.cc-exp-stat.stat-exp{background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.18);}
+.cc-exp-stat.stat-pay{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.18);}
+.cc-exp-stat-lbl{font-size:.58em;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px;}
+.cc-exp-stat-val{font-size:1em;font-weight:800;}
+.cc-exp-stat.stat-exp .cc-exp-stat-val{color:#ff6b8a;}
+.cc-exp-stat.stat-pay .cc-exp-stat-val{color:#4ade80;}
+.cc-exp-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.35);font-size:.8em;line-height:1.7;}
+/* inline "view expenses" button inside the amt-block */
+.amt-lbl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+.cc-view-exp-btn{background:none;border:none;padding:0 2px;cursor:pointer;color:rgba(255,77,109,.5);line-height:1;transition:color .15s;display:flex;align-items:center;}
+.cc-view-exp-btn:hover{color:#ff4d6d;}
+.cc-view-exp-btn svg{display:block;}
 .cc-dates{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}
 .date-chip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:9px;padding:6px 11px;font-size:.6em;color:rgba(255,255,255,.42);flex:1;min-width:120px;}
 .date-chip .dc-icon{font-size:1.1em;flex-shrink:0;}
@@ -2962,6 +3002,23 @@ input[type=date].swae-input{color-scheme:dark;}
 </div>
 
 <!-- ═══════════════════════════════════════════
+     CC EXPENSES MINI-MODAL
+     Draggable floating panel — no overlay
+═══════════════════════════════════════════ -->
+<div id="cc-exp-panel">
+  <div class="cc-exp-hdr">
+    <div>
+      <div class="cc-exp-title" id="cc-exp-title">Card Expenses</div>
+      <div class="cc-exp-sub" id="cc-exp-sub">Current Month</div>
+    </div>
+    <button class="cc-exp-close" onclick="ccExpClose()">✕</button>
+  </div>
+  <div class="cc-exp-body" id="cc-exp-body">
+    <div class="cc-exp-empty">⏳ Loading…</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
      BANK BALANCE MODAL
      Data from Portfolio G1:I10
 ═══════════════════════════════════════════ -->
@@ -4707,7 +4764,13 @@ function ccDisplayData(data){
           '<button class="save-status-btn" id="save-status-btn-'+i+'" onclick="saveStatus('+i+')" style="display:none;margin-left:5px">Save</button></div>'+
         '</div>'+
         '<div class="cc-amounts">'+
-          '<div class="amt-block" style="border-color:rgba(255,77,109,.15)"><div class="amt-lbl">💳 Total Due</div><div class="amt-val '+amtClass+'">'+ccFmt(row[1])+'</div></div>'+
+          '<div class="amt-block" style="border-color:rgba(255,77,109,.15)">'+
+            '<div class="amt-lbl-row">'+
+              '<div class="amt-lbl">💳 Total Due</div>'+
+              '<button class="cc-view-exp-btn" onclick="showCardExpenses(\''+row[0].replace(/'/g,"\\'")+'\',\''+row[0].replace(/'/g,"\\'")+'\');" title="View this month\'s expenses"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></button>'+
+            '</div>'+
+            '<div class="amt-val '+amtClass+'">'+ccFmt(row[1])+'</div>'+
+          '</div>'+
         '</div>'+
         '<div class="cc-avail-row">'+
           '<span>💰</span>'+
@@ -4802,6 +4865,104 @@ function expSc(stacked){
 }
 function expMonKey(lbl){return lbl.split(' ')[0];}
 function expMonIdx(k){var i=EXP_MON_ORDER.findIndex(function(m){return m.toLowerCase()===k.toLowerCase();});return i>=0?i:11;}
+
+// ══════════════════════════════════════════
+// CC EXPENSES MINI-MODAL
+// ══════════════════════════════════════════
+var _ccExpPositioned = false;
+
+function showCardExpenses(cardName) {
+  var panel = document.getElementById('cc-exp-panel');
+  var now = new Date();
+  var months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var curM = now.getMonth() + 1;
+  var curY = now.getFullYear();
+
+  // Centre on first open; remember position after dragging
+  if (!_ccExpPositioned) {
+    panel.style.left = Math.max(0, (window.innerWidth  / 2 - 230)) + 'px';
+    panel.style.top  = Math.max(0, (window.innerHeight / 2 - 220)) + 'px';
+    _ccExpPositioned = true;
+  }
+
+  document.getElementById('cc-exp-title').textContent = cardName + ' — Expenses';
+  document.getElementById('cc-exp-sub').textContent = months[curM] + ' ' + curY;
+  document.getElementById('cc-exp-body').innerHTML = '<div class="cc-exp-empty">⏳ Loading…</div>';
+  panel.classList.add('open');
+
+  google.script.run
+    .withSuccessHandler(function(res) { ccExpRender(res); })
+    .withFailureHandler(function(err) {
+      document.getElementById('cc-exp-body').innerHTML = '<div class="cc-exp-empty">⚠️ ' + err.message + '</div>';
+    })
+    .getCardExpenses(cardName, curM, curY);
+}
+
+function ccExpClose() {
+  document.getElementById('cc-exp-panel').classList.remove('open');
+}
+
+function ccExpRender(res) {
+  var body = document.getElementById('cc-exp-body');
+  if (!res || !res.success) {
+    body.innerHTML = '<div class="cc-exp-empty">⚠️ ' + (res ? res.error : 'Error loading data') + '</div>';
+    return;
+  }
+  if (res.noColumn) {
+    body.innerHTML = '<div class="cc-exp-empty">📭 No expense column mapped for <strong>' + res.cardName + '</strong>.<br><span style="font-size:.9em;opacity:.6">Check card name contains "amex" or "ntb".</span></div>';
+    return;
+  }
+  var entries = res.entries || [];
+  if (!entries.length) {
+    body.innerHTML = '<div class="cc-exp-empty">📭 No transactions recorded this month.</div>';
+    return;
+  }
+  var months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mName = months[res.month] || '';
+  var html = '<table class="cc-exp-table"><thead><tr><th>Date</th><th>Reference</th><th class="col-amt">Expense</th><th class="col-amt">Payment</th></tr></thead><tbody>';
+  entries.forEach(function(e) {
+    var expStr = e.expense > 0 ? '₨ ' + e.expense.toLocaleString() : '—';
+    var payStr = e.payment > 0 ? '₨ ' + e.payment.toLocaleString() : '—';
+    html += '<tr>'
+      + '<td class="col-date">' + mName + ' ' + e.day + '</td>'
+      + '<td class="col-ref">' + (e.reference || '—') + '</td>'
+      + '<td class="col-exp">' + expStr + '</td>'
+      + '<td class="col-pay">' + payStr + '</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+  html += '<div class="cc-exp-summary">'
+    + '<div class="cc-exp-stat stat-exp"><div class="cc-exp-stat-lbl">Total Expense</div><div class="cc-exp-stat-val">₨ ' + (res.totalExp || 0).toLocaleString() + '</div></div>'
+    + '<div class="cc-exp-stat stat-pay"><div class="cc-exp-stat-lbl">Total Payment</div><div class="cc-exp-stat-val">₨ ' + (res.totalPay || 0).toLocaleString() + '</div></div>'
+    + '</div>';
+  body.innerHTML = html;
+}
+
+// Draggable cc-exp-panel
+document.addEventListener('DOMContentLoaded', function() {
+  var panel = document.getElementById('cc-exp-panel');
+  if (!panel) return;
+  var hdr = panel.querySelector('.cc-exp-hdr');
+  if (!hdr) return;
+  var _drag = false, _ox = 0, _oy = 0;
+  hdr.addEventListener('mousedown', function(e) {
+    if (e.target.closest('.cc-exp-close')) return;
+    var r = panel.getBoundingClientRect();
+    _ox = e.clientX - r.left;
+    _oy = e.clientY - r.top;
+    _drag = true;
+    hdr.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', function(e) {
+    if (!_drag) return;
+    panel.style.left = (e.clientX - _ox) + 'px';
+    panel.style.top  = (e.clientY - _oy) + 'px';
+  });
+  window.addEventListener('mouseup', function() {
+    _drag = false;
+    hdr.style.cursor = 'grab';
+  });
+});
 
 function expLoad(){
   google.script.run
