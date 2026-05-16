@@ -1611,6 +1611,64 @@ function saveControlPlan(updates) {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────
+   updateClaimStatus
+   Toggles a reference cell between "claim" and "claimed".
+   month/year/day identify the row (col A = "M-D").
+   category identifies the refCol.
+───────────────────────────────────────────────────────────────── */
+function updateClaimStatus(month, year, day, category, currentRef) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var REF_COLS = [
+      { name: 'Food',               refCol: 4  },
+      { name: 'Supermarket',        refCol: 6  },
+      { name: 'Uber',               refCol: 0  },
+      { name: 'Uber Work',          refCol: 0  },
+      { name: 'Movies & Outing',    refCol: 9  },
+      { name: 'Other',              refCol: 11 },
+      { name: 'Bus Fair',           refCol: 0  },
+      { name: 'Party',              refCol: 14 },
+      { name: 'Dress & Appearance', refCol: 16 },
+      { name: 'Rent',               refCol: 0  }
+    ];
+
+    // Find refCol for the category
+    var refCol = 0;
+    var catLow = (category || '').toLowerCase().replace(/\s+/g, ' ');
+    for (var i = 0; i < REF_COLS.length; i++) {
+      if (REF_COLS[i].name.toLowerCase() === catLow) { refCol = REF_COLS[i].refCol; break; }
+    }
+    if (!refCol) return { success: false, error: 'No reference column for: ' + category };
+
+    // Find the row: col A matches "month-day"
+    var dateKey  = parseInt(month, 10) + '-' + parseInt(day, 10);
+    var lastRow  = sheet.getLastRow();
+    var colAVals = sheet.getRange(1, 1, lastRow, 1).getValues();
+    var targetRow = -1;
+    for (var r = 0; r < colAVals.length; r++) {
+      if (_cellStr(colAVals[r][0], true).trim() === dateKey) { targetRow = r + 1; break; }
+    }
+    if (targetRow < 0) return { success: false, error: 'Row not found for ' + dateKey };
+
+    // Read & toggle
+    var cell    = sheet.getRange(targetRow, refCol);
+    var val     = String(cell.getValue() || '').trim();
+    var newRef  = /\bclaimed\b/i.test(val)
+      ? val.replace(/\bclaimed\b/gi, 'claim')
+      : val.replace(/\bclaim\b/gi,   'claimed').replace(/\bpick\s*me\b/gi, 'claimed');
+
+    cell.setValue(newRef);
+    SpreadsheetApp.flush();
+    return { success: true, newRef: newRef };
+  } catch(err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
 function getExpensesForFriend(friendId) {
   var apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
   var headers = { 'Authorization': 'Bearer ' + apiKey };
