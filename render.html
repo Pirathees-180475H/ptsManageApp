@@ -411,6 +411,12 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 }
 .sub-entry-month.active{background:rgba(0,230,118,.12);color:var(--green);}
 .sub-entry-plan{font-size:.7em;color:rgba(255,255,255,.7);}
+.sub-entry-del{
+  margin-left:auto;background:none;border:none;color:rgba(255,80,80,.4);
+  font-size:1.05em;cursor:pointer;padding:3px 7px;line-height:1;border-radius:6px;
+  transition:all .15s;font-family:inherit;display:flex;align-items:center;
+}
+.sub-entry-del:hover{color:#ff5050;background:rgba(255,80,80,.15);}
 .sub-entry-costs{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
 .sub-cost-item{display:flex;flex-direction:column;gap:2px;}
 .sub-cost-label{font-size:.55em;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.4);}
@@ -9013,6 +9019,23 @@ function subAddSave() {
     });
 }
 
+/* ── Delete a subscription entry ── */
+function subDeleteEntry(rowIndex, platform, month) {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.success) {
+        alert('Error: ' + (res ? res.error : 'Unknown error'));
+        return;
+      }
+      _subscriptionsData = null;
+      loadSubscriptions();
+    })
+    .withFailureHandler(function(err) {
+      alert('Error: ' + err.message);
+    })
+    .deleteSubscription(rowIndex);
+}
+
 function subToggle() {
   const p = document.getElementById('sub-modal');
   const opening = !p.classList.contains('open');
@@ -9116,7 +9139,7 @@ function renderSubscriptions(data) {
 
   var platformColors = {
     'Netflix': {class: 'netflix', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/netflix.svg', color: '#E50914', fallback: '📺'},
-    'PubG': {class: 'pubg', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/pubg.svg', color: '#FF6B35', fallback: '🎮'},
+    'Pubg': {class: 'pubg', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/pubg.svg', color: '#FF6B35', fallback: '🎮'},
     'Cloude': {class: 'claude', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/anthropic.svg', color: '#8B5CF6', fallback: '🤖'},
     'Claude': {class: 'claude', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/anthropic.svg', color: '#8B5CF6', fallback: '🤖'},
     'YouTube': {class: 'youtube', icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/youtube.svg', color: '#FF0000', fallback: '▶️'}
@@ -9181,6 +9204,7 @@ function renderSubscriptions(data) {
       html += '<div class="sub-entry-header">';
       html += '<div class="sub-entry-month' + (isActive ? ' active' : '') + '">' + (displayMonth || '—') + '</div>';
       html += '<div class="sub-entry-plan">' + (entry.plan || '—') + '</div>';
+      html += '<button class="sub-entry-del" onclick="subDeleteEntry(' + entry.rowIndex + ',\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (displayMonth||'').replace(/'/g,"\\'") + '\')" title="Remove entry"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
       html += '</div>';
 
       if(entry.collectionFrom && entry.collectionFrom !== 'N/A') {
@@ -9251,6 +9275,7 @@ function renderSubscriptions(data) {
         html += '<div class="sub-entry-header">';
         html += '<div class="sub-entry-month">' + (displayMonth || '—') + '</div>';
         html += '<div class="sub-entry-plan">' + (entry.plan || '—') + '</div>';
+        html += '<button class="sub-entry-del" onclick="subDeleteEntry(' + entry.rowIndex + ',\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (displayMonth||'').replace(/'/g,"\\'") + '\')" title="Remove entry"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
         html += '</div>';
 
         if(entry.collectionFrom && entry.collectionFrom !== 'N/A') {

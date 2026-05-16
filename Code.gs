@@ -2702,7 +2702,8 @@ function getSubscriptions() {
         collections: collections,
         collectionFrom: collectionFrom,
         netCost: netCost,
-        note: note
+        note: note,
+        rowIndex: i + 3  // actual sheet row number (data starts at row 3)
       });
     }
 
@@ -2771,3 +2772,23 @@ function addSubscription(entry) {
   }
 }
 
+function deleteSubscription(rowIndex) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    var lastRow = sheet.getLastRow();
+    if (rowIndex < 3 || rowIndex > lastRow) {
+      return { success: false, error: 'Invalid row index: ' + rowIndex };
+    }
+
+    sheet.deleteRow(rowIndex);
+    Logger.log('deleteSubscription: deleted row ' + rowIndex);
+    return { success: true };
+
+  } catch (e) {
+    Logger.log('deleteSubscription error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
