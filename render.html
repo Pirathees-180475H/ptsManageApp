@@ -436,6 +436,30 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 }
 .sub-total-label{font-size:.7em;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.6);}
 .sub-total-value{font-size:1.4em;font-weight:800;color:var(--green);}
+/* ── Sub toolbar (filter tabs + add btn) ── */
+.sub-toolbar{display:flex;align-items:center;gap:8px;padding:8px 13px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;}
+.sub-filter-tabs{display:flex;gap:4px;flex:1;}
+.sub-tab{padding:4px 14px;font-size:.6em;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:1px solid rgba(255,255,255,.12);border-radius:20px;background:transparent;color:rgba(255,255,255,.4);cursor:pointer;transition:all .15s;font-family:inherit;}
+.sub-tab.active{background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.4);color:var(--blue);}
+.sub-add-btn{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,rgba(0,230,118,.2),rgba(0,212,255,.12));border:1px solid rgba(0,230,118,.35);color:var(--green);font-size:1.15em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-family:inherit;}
+.sub-add-btn:hover{background:linear-gradient(135deg,rgba(0,230,118,.35),rgba(0,212,255,.25));transform:scale(1.1);}
+/* ── Sub add form ── */
+.sub-add-form{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(0,230,118,.04);flex-shrink:0;display:none;}
+.sub-add-form.open{display:block;}
+.sub-add-form-title{font-size:.6em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--green);margin-bottom:12px;}
+.sub-add-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.sub-add-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+.sub-add-field{display:flex;flex-direction:column;gap:4px;}
+.sub-add-label{font-size:.55em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+.sub-add-input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:6px 9px;color:#fff;font-size:.72em;font-family:inherit;outline:none;transition:border-color .15s;width:100%;box-sizing:border-box;}
+.sub-add-input:focus{border-color:rgba(0,230,118,.5);}
+.sub-add-input::placeholder{color:rgba(255,255,255,.25);}
+.sub-add-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;}
+.sub-form-save{padding:6px 18px;font-size:.65em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;background:linear-gradient(135deg,rgba(0,230,118,.2),rgba(0,212,255,.12));border:1px solid rgba(0,230,118,.4);color:var(--green);border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.sub-form-save:hover{background:linear-gradient(135deg,rgba(0,230,118,.35),rgba(0,212,255,.25));}
+.sub-form-save:disabled{opacity:.5;cursor:not-allowed;}
+.sub-form-cancel{padding:6px 18px;font-size:.65em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;background:transparent;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.4);border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.sub-form-cancel:hover{border-color:rgba(255,255,255,.25);color:rgba(255,255,255,.7);}
 
 #bank-modal{
   position:fixed; top:10vh; left:calc(50vw - 400px);
@@ -2868,6 +2892,60 @@ input[type=date].swae-input{color-scheme:dark;}
   <div class="sub-hdr">
     <span class="sub-title">💳 My Subscriptions</span>
     <button class="sub-close" onclick="subClose()">✕</button>
+  </div>
+  <!-- Toolbar: filter tabs + add button -->
+  <div class="sub-toolbar">
+    <div class="sub-filter-tabs">
+      <button class="sub-tab active" id="subTabActive" onclick="subSetFilter('active')">Active</button>
+      <button class="sub-tab" id="subTabAll" onclick="subSetFilter('all')">All</button>
+    </div>
+    <button class="sub-add-btn" onclick="subAddToggle()" title="Add new subscription entry">+</button>
+  </div>
+  <!-- Add form (hidden by default) -->
+  <div class="sub-add-form" id="sub-add-form">
+    <div class="sub-add-form-title">➕ New Subscription Entry</div>
+    <div class="sub-add-grid">
+      <div class="sub-add-field">
+        <label class="sub-add-label">Month</label>
+        <input class="sub-add-input" id="saMonth" type="text" placeholder="e.g. May 2026" />
+      </div>
+      <div class="sub-add-field">
+        <label class="sub-add-label">Platform</label>
+        <input class="sub-add-input" id="saPlatform" type="text" placeholder="e.g. Netflix" />
+      </div>
+    </div>
+    <div class="sub-add-grid">
+      <div class="sub-add-field">
+        <label class="sub-add-label">Plan</label>
+        <input class="sub-add-input" id="saPlan" type="text" placeholder="e.g. Premium" />
+      </div>
+      <div class="sub-add-field">
+        <label class="sub-add-label">Collection From</label>
+        <input class="sub-add-input" id="saCollFrom" type="text" placeholder="Optional" />
+      </div>
+    </div>
+    <div class="sub-add-grid-3">
+      <div class="sub-add-field">
+        <label class="sub-add-label">Cost (₨)</label>
+        <input class="sub-add-input" id="saCost" type="number" min="0" placeholder="0" oninput="saAutoNet()" />
+      </div>
+      <div class="sub-add-field">
+        <label class="sub-add-label">Collected (₨)</label>
+        <input class="sub-add-input" id="saCollections" type="number" min="0" placeholder="0" oninput="saAutoNet()" />
+      </div>
+      <div class="sub-add-field">
+        <label class="sub-add-label">Net Cost (₨)</label>
+        <input class="sub-add-input" id="saNetCost" type="number" placeholder="auto" />
+      </div>
+    </div>
+    <div class="sub-add-field">
+      <label class="sub-add-label">Note</label>
+      <input class="sub-add-input" id="saNote" type="text" placeholder="Optional note..." />
+    </div>
+    <div class="sub-add-actions">
+      <button class="sub-form-cancel" onclick="subAddToggle()">Cancel</button>
+      <button class="sub-form-save" id="subSaveBtn" onclick="subAddSave()">Save Entry</button>
+    </div>
   </div>
   <div class="sub-body" id="sub-body">
     <div style="text-align:center;padding:40px;color:var(--muted);">
@@ -8856,6 +8934,84 @@ function moneyToggle() {
 var _subscriptionsData = null;
 var _currentMonth = new Date().toLocaleString('en-US', {month: 'short', year: 'numeric'});
 var _positionedSub = false;
+var _subFilter = 'active';
+
+/* ── Sub filter tabs ── */
+function subSetFilter(type) {
+  _subFilter = type;
+  document.getElementById('subTabActive').classList.toggle('active', type === 'active');
+  document.getElementById('subTabAll').classList.toggle('active', type === 'all');
+  if (_subscriptionsData) renderSubscriptions(_subscriptionsData);
+}
+
+/* ── Sub add-form toggle ── */
+function subAddToggle() {
+  var form = document.getElementById('sub-add-form');
+  if (!form.classList.contains('open')) {
+    document.getElementById('saMonth').value = _currentMonth;
+    document.getElementById('saPlatform').value = '';
+    document.getElementById('saPlan').value = '';
+    document.getElementById('saCollFrom').value = '';
+    document.getElementById('saCost').value = '';
+    document.getElementById('saCollections').value = '';
+    document.getElementById('saNetCost').value = '';
+    document.getElementById('saNote').value = '';
+    form.classList.add('open');
+  } else {
+    form.classList.remove('open');
+  }
+}
+
+/* ── Auto-calculate net cost ── */
+function saAutoNet() {
+  var cost = parseFloat(document.getElementById('saCost').value) || 0;
+  var coll = parseFloat(document.getElementById('saCollections').value) || 0;
+  document.getElementById('saNetCost').value = (cost - coll) > 0 ? (cost - coll) : 0;
+}
+
+/* ── Save new subscription entry ── */
+function subAddSave() {
+  var month        = document.getElementById('saMonth').value.trim();
+  var platform     = document.getElementById('saPlatform').value.trim();
+  var plan         = document.getElementById('saPlan').value.trim();
+  var cost         = parseFloat(document.getElementById('saCost').value) || 0;
+  var collections  = parseFloat(document.getElementById('saCollections').value) || 0;
+  var collFrom     = document.getElementById('saCollFrom').value.trim();
+  var netCost      = parseFloat(document.getElementById('saNetCost').value) || 0;
+  var note         = document.getElementById('saNote').value.trim();
+
+  if (!month || !platform) {
+    alert('Month and Platform are required.');
+    return;
+  }
+
+  var btn = document.getElementById('subSaveBtn');
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.textContent = 'Save Entry';
+      btn.disabled = false;
+      if (!res || !res.success) {
+        alert('Error: ' + (res ? res.error : 'Unknown error'));
+        return;
+      }
+      document.getElementById('sub-add-form').classList.remove('open');
+      _subscriptionsData = null;
+      loadSubscriptions();
+    })
+    .withFailureHandler(function(err) {
+      btn.textContent = 'Save Entry';
+      btn.disabled = false;
+      alert('Error: ' + err.message);
+    })
+    .addSubscription({
+      month: month, platform: platform, plan: plan,
+      cost: cost, collections: collections,
+      collectionFrom: collFrom, netCost: netCost, note: note
+    });
+}
 
 function subToggle() {
   const p = document.getElementById('sub-modal');
@@ -9051,8 +9207,8 @@ function renderSubscriptions(data) {
     html += '</div>';
   });
 
-  // Render closed platforms if any
-  if(Object.keys(closedPlatforms).length > 0) {
+  // Render closed platforms if any (only when filter is 'all')
+  if(_subFilter === 'all' && Object.keys(closedPlatforms).length > 0) {
     html += '<div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);">';
     html += '<div style="font-size:.65em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px;">🔒 Closed Platforms</div>';
 

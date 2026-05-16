@@ -2731,3 +2731,43 @@ function getSubscriptions() {
   }
 }
 
+function addSubscription(entry) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    var lastRow = sheet.getLastRow();
+    var insertRow = lastRow + 1; // default: append
+
+    // Find first YouTube row in column N (col 14) from row 3 onwards
+    for (var i = 3; i <= lastRow; i++) {
+      var platCell = String(sheet.getRange(i, 14).getValue()).trim().toLowerCase();
+      if (platCell === 'youtube') {
+        insertRow = i;
+        sheet.insertRowBefore(i);
+        break;
+      }
+    }
+
+    // Write data to columns M–T (13–20)
+    sheet.getRange(insertRow, 13, 1, 8).setValues([[
+      entry.month        || '',
+      entry.platform     || '',
+      entry.plan         || '',
+      entry.cost         || 0,
+      entry.collections  || 0,
+      entry.collectionFrom || '',
+      entry.netCost      || 0,
+      entry.note         || ''
+    ]]);
+
+    Logger.log('addSubscription: inserted at row ' + insertRow);
+    return { success: true };
+
+  } catch (e) {
+    Logger.log('addSubscription error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
