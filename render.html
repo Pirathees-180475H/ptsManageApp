@@ -5303,6 +5303,15 @@ function expDetailRender(data) {
       + '</div>';
   }
 
+  // ── Count claims ──
+  var pendingClaimCount = 0, claimedCount = 0;
+  entries.forEach(function(e) {
+    if (e.reference) {
+      if (/\bclaimed\b/i.test(e.reference)) claimedCount++;
+      else if (/\bclaim\b|pick\s*me/i.test(e.reference)) pendingClaimCount++;
+    }
+  });
+
   // ── Insights strip ──
   var insHtml = '<div class="edm-insights">';
   if (totalBudget > 0) {
@@ -5318,6 +5327,13 @@ function expDetailRender(data) {
     } else {
       insHtml += '<div class="edm-ins-chip"><div class="edm-ins-lbl">Saved</div><div class="edm-ins-val ok">' + fmtI(savedAmt) + '</div></div>';
     }
+  }
+  // Claim chips (always show if any)
+  if (pendingClaimCount > 0) {
+    insHtml += '<div class="edm-ins-chip"><div class="edm-ins-lbl">Pending Claim</div><div class="edm-ins-val amber">⏳ ' + pendingClaimCount + '</div></div>';
+  }
+  if (claimedCount > 0) {
+    insHtml += '<div class="edm-ins-chip"><div class="edm-ins-lbl">Claimed</div><div class="edm-ins-val ok">✓ ' + claimedCount + '</div></div>';
   }
   insHtml += '</div>';
 
