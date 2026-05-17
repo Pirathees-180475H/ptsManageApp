@@ -1412,6 +1412,13 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .edm-leg-item{display:flex;align-items:center;gap:5px;}
 .edm-leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .edm-leg-lbl{font-size:.58em;color:rgba(255,255,255,.42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* daily expense trend chart */
+.edm-daily-chart{background:linear-gradient(180deg,rgba(168,85,247,.04) 0%,rgba(0,212,255,.02) 100%);border:1px solid rgba(168,85,247,.12);border-radius:14px;padding:14px 16px 12px;margin-bottom:14px;}
+.edm-daily-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.edm-daily-title{font-size:.65em;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.edm-daily-avg{font-size:.6em;color:rgba(255,255,255,.4);}
+.edm-daily-avg strong{color:#a78bfa;font-weight:700;}
+.edm-daily-wrap{height:140px;position:relative;}
 
 /* ═══════════════════════════════════════════
    PORTFOLIO SUMMARY PAGE
@@ -5314,6 +5321,30 @@ function expDetailRender(data) {
   }
   insHtml += '</div>';
 
+  // ── Daily spending chart ──
+  var dailyTotals = {};
+  var dailyByCategory = {}; // { day: { category: amount } }
+  entries.forEach(function(e) {
+    dailyTotals[e.day] = (dailyTotals[e.day] || 0) + e.amount;
+    if (!dailyByCategory[e.day]) dailyByCategory[e.day] = {};
+    dailyByCategory[e.day][e.category] = (dailyByCategory[e.day][e.category] || 0) + e.amount;
+  });
+  var dailyDays = Object.keys(dailyTotals).map(Number).sort(function(a,b){return a-b;});
+  var dailyAmts = dailyDays.map(function(d){return dailyTotals[d];});
+  var maxDay = isThisMon ? today.getDate() : daysInMonth;
+  var dailyChartHtml = '';
+  if (dailyDays.length > 1) {
+    var avgPerDay = dailyAmts.reduce(function(s,v){return s+v;},0) / dailyDays.length;
+    dailyChartHtml = '<div class="edm-daily-chart">'
+      + '<div class="edm-daily-hdr">'
+      +   '<span class="edm-daily-title">📈 Daily Spending Trend</span>'
+      +   '<span class="edm-daily-avg">Avg: <strong>' + fmtI(avgPerDay) + '/day</strong></span>'
+      + '</div>'
+      + '<div class="edm-daily-wrap"><canvas id="edm-daily-chart"></canvas></div>'
+      + '</div>';
+  }
+  window._edmDailyData = { days: dailyDays, amounts: dailyAmts, avgLine: dailyAvg, byCategory: dailyByCategory, month: data.month, year: data.year };
+
   // ── Donut charts ──
   var totalRemaining = 0;
   EXP_DETAIL_CAT_ORDER.forEach(function(c){ totalRemaining += Math.max(0,(adjustedCp[c]||0)-(catSpent[c]||0)); });
@@ -5351,7 +5382,7 @@ function expDetailRender(data) {
   }
 
   // ── Table ──
-  var html = beHtml + progressHtml + chartsHtml + paceHtml + insHtml + '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';
+  var html = beHtml + progressHtml + chartsHtml + paceHtml + insHtml + dailyChartHtml + '<table class="edm-table"><thead><tr><th>Day</th><th>Reference</th><th>Amount</th></tr></thead><tbody>';;
   var lastCat = null;
   entries.forEach(function(e) {
     if (e.category !== lastCat) {
@@ -5492,6 +5523,83 @@ function expDetailRender(data) {
               if(ctx.label==='No Data') return ' No data';
               return ' '+ctx.label+': ₨'+Math.round(ctx.parsed).toLocaleString('en-IN');
             }}}}}
+        }));
+      }
+
+      // Chart 4 — Daily Spending Trend (line/bar combo)
+      var c4 = document.getElementById('edm-daily-chart');
+      if (c4 && window._edmDailyData && window._edmDailyData.days.length > 1) {
+        var dd = window._edmDailyData;
+        var gradientFill = c4.getContext('2d').createLinearGradient(0, 0, 0, 140);
+        gradientFill.addColorStop(0, 'rgba(168,85,247,.35)');
+        gradientFill.addColorStop(1, 'rgba(168,85,247,.02)');
+        window._edmCharts.push(new Chart(c4,{
+          type:'bar',
+          data:{
+            labels: dd.days.map(function(d){return d;}),
+            datasets:[{
+              label:'Daily Spend',
+              data: dd.amounts,
+              backgroundColor: gradientFill,
+              borderColor: '#a855f7',
+              borderWidth: 2,
+              borderRadius: 6,
+              borderSkipped: false,
+              barPercentage: 0.7,
+              categoryPercentage: 0.8
+            }]
+          },
+          options:{
+            responsive:true,
+            maintainAspectRatio:false,
+            animation:{duration:800,easing:'easeOutQuart'},
+            interaction:{mode:'index',intersect:false},
+            scales:{
+              x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.3)',font:{size:9},maxRotation:0}},
+              y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.25)',font:{size:9},callback:function(v){return '₨'+Math.round(v/1000)+'k';}}}
+            },
+            plugins:{
+              legend:{display:false},
+              tooltip:{...TIP,
+                callbacks:{
+                  title:function(ctx){
+                    var day = parseInt(ctx[0].label);
+                    var weekdays = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                    var dateObj = new Date(dd.year, dd.month - 1, day);
+                    var dayName = weekdays[dateObj.getDay()];
+                    return dayName + ', ' + day + ' ' + ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dd.month];
+                  },
+                  label:function(ctx){
+                    return ' Total: ₨' + Math.round(ctx.parsed.y).toLocaleString('en-IN');
+                  },
+                  afterBody:function(ctx){
+                    var day = parseInt(ctx[0].label);
+                    var cats = dd.byCategory[day] || {};
+                    var lines = [];
+                    // Sort by amount descending
+                    var sorted = Object.keys(cats).sort(function(a,b){return cats[b]-cats[a];});
+                    sorted.forEach(function(cat){
+                      lines.push('  • ' + cat + ': ₨' + Math.round(cats[cat]).toLocaleString('en-IN'));
+                    });
+                    return lines.length ? [''].concat(lines) : [];
+                  }
+                }
+              },
+              annotation:{
+                annotations:{
+                  avgLine:{
+                    type:'line',
+                    yMin:dd.avgLine,
+                    yMax:dd.avgLine,
+                    borderColor:'rgba(0,212,255,.5)',
+                    borderWidth:2,
+                    borderDash:[6,4],
+                    label:{display:true,content:'Avg',position:'end',backgroundColor:'rgba(0,212,255,.15)',color:'#00d4ff',font:{size:9,weight:600},padding:3}
+                  }
+                }
+              }
+            }
+          }
         }));
       }
     },80);
