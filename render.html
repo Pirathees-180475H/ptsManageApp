@@ -1070,6 +1070,11 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .cc-exp-hdr:active{cursor:grabbing;}
 .cc-exp-title{font-size:.85em;font-weight:800;color:#fff;letter-spacing:-.3px;}
 .cc-exp-sub{font-size:.62em;color:rgba(255,255,255,.45);margin-top:3px;font-weight:500;}
+.cc-exp-nav{display:flex;align-items:center;gap:8px;}
+.cc-exp-nav-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-size:.75em;}
+.cc-exp-nav-btn:hover{background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.3);color:#fff;}
+.cc-exp-nav-btn:disabled{opacity:.3;cursor:not-allowed;}
+.cc-exp-nav-btn svg{width:14px;height:14px;}
 .cc-exp-close{background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.4);font-size:.8em;cursor:pointer;padding:6px 10px;border-radius:8px;transition:all .2s;font-family:inherit;}
 .cc-exp-close:hover{color:#fff;background:rgba(255,77,109,.2);}
 .cc-exp-body{flex:1;overflow-y:auto;padding:16px 20px 20px;}
@@ -3011,7 +3016,15 @@ input[type=date].swae-input{color-scheme:dark;}
       <div class="cc-exp-title" id="cc-exp-title">Card Expenses</div>
       <div class="cc-exp-sub" id="cc-exp-sub">Current Month</div>
     </div>
-    <button class="cc-exp-close" onclick="ccExpClose()">✕</button>
+    <div class="cc-exp-nav">
+      <button class="cc-exp-nav-btn" id="cc-exp-prev" onclick="ccExpNav(-1)" title="Previous month">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <button class="cc-exp-nav-btn" id="cc-exp-next" onclick="ccExpNav(1)" title="Next month">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="cc-exp-close" onclick="ccExpClose()">✕</button>
+    </div>
   </div>
   <div class="cc-exp-body" id="cc-exp-body">
     <div class="cc-exp-empty">⏳ Loading…</div>
@@ -4870,32 +4883,66 @@ function expMonIdx(k){var i=EXP_MON_ORDER.findIndex(function(m){return m.toLower
 // CC EXPENSES MINI-MODAL
 // ══════════════════════════════════════════
 var _ccExpPositioned = false;
+var _ccExpState = { cardName: '', month: 0, year: 0 };
+var _ccExpMonths = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function showCardExpenses(cardName) {
   var panel = document.getElementById('cc-exp-panel');
   var now = new Date();
-  var months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var curM = now.getMonth() + 1;
   var curY = now.getFullYear();
 
+  // Store state for navigation
+  _ccExpState = { cardName: cardName, month: curM, year: curY };
+
   // Centre on first open; remember position after dragging
   if (!_ccExpPositioned) {
-    panel.style.left = Math.max(0, (window.innerWidth  / 2 - 230)) + 'px';
+    panel.style.left = Math.max(0, (window.innerWidth  / 2 - 260)) + 'px';
     panel.style.top  = Math.max(0, (window.innerHeight / 2 - 220)) + 'px';
     _ccExpPositioned = true;
   }
 
-  document.getElementById('cc-exp-title').textContent = cardName + ' — Expenses';
-  document.getElementById('cc-exp-sub').textContent = months[curM] + ' ' + curY;
-  document.getElementById('cc-exp-body').innerHTML = '<div class="cc-exp-empty">⏳ Loading…</div>';
   panel.classList.add('open');
+  ccExpLoad();
+}
+
+function ccExpLoad() {
+  var m = _ccExpState.month;
+  var y = _ccExpState.year;
+  var now = new Date();
+  var curM = now.getMonth() + 1;
+  var curY = now.getFullYear();
+
+  document.getElementById('cc-exp-title').textContent = _ccExpState.cardName + ' — Transactions';
+  document.getElementById('cc-exp-sub').textContent = _ccExpMonths[m] + ' ' + y;
+  document.getElementById('cc-exp-body').innerHTML = '<div class="cc-exp-empty">⏳ Loading…</div>';
+
+  // Disable next button if viewing current month
+  var nextBtn = document.getElementById('cc-exp-next');
+  nextBtn.disabled = (m >= curM && y >= curY);
 
   google.script.run
     .withSuccessHandler(function(res) { ccExpRender(res); })
     .withFailureHandler(function(err) {
       document.getElementById('cc-exp-body').innerHTML = '<div class="cc-exp-empty">⚠️ ' + err.message + '</div>';
     })
-    .getCardExpenses(cardName, curM, curY);
+    .getCardExpenses(_ccExpState.cardName, m, y);
+}
+
+function ccExpNav(delta) {
+  var m = _ccExpState.month + delta;
+  var y = _ccExpState.year;
+
+  if (m < 1) { m = 12; y--; }
+  if (m > 12) { m = 1; y++; }
+
+  // Don't go beyond current month
+  var now = new Date();
+  if (y > now.getFullYear() || (y === now.getFullYear() && m > now.getMonth() + 1)) return;
+
+  _ccExpState.month = m;
+  _ccExpState.year = y;
+  ccExpLoad();
 }
 
 function ccExpClose() {
