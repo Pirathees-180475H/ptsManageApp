@@ -2794,6 +2794,76 @@ function deleteSubscription(rowIndex) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   getRotationData
+   Reads rotation (money given to friends) from OTHERS sheet F-K
+   F: Name, G: Given Date, H: Passed Days, I: Amount, J: Returned (TRUE/FALSE), K: Remarks
+───────────────────────────────────────────────────────────────── */
+function getRotationData() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 3) {
+      return { success: true, rotations: [] };
+    }
+
+    // Read F3:K[lastRow] (columns 6-11), starting from row 3 (row 2 is header)
+    var data = sheet.getRange(3, 6, lastRow - 2, 6).getValues();
+    var rotations = [];
+
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      var name = row[0] ? String(row[0]).trim() : '';
+      
+      // Skip empty rows
+      if (!name) continue;
+
+      var givenDateRaw = row[1];
+      var givenDate = '';
+      if (givenDateRaw instanceof Date) {
+        givenDate = Utilities.formatDate(givenDateRaw, Session.getScriptTimeZone(), 'dd MMM yyyy');
+      } else if (givenDateRaw) {
+        givenDate = String(givenDateRaw).trim();
+      }
+
+      var passedDays = row[2] ? String(row[2]).trim() : '';
+      var amount = row[3] ? Number(row[3]) || 0 : 0;
+      
+      // Skip entries with 0 amount
+      if (amount === 0) continue;
+      
+      // Handle returned status - could be TRUE/FALSE, "TRUE"/"FALSE", or empty
+      var returnedRaw = row[4];
+      var returned = false;
+      if (returnedRaw === true || returnedRaw === 'TRUE' || returnedRaw === 'true' || returnedRaw === 'Yes' || returnedRaw === 'yes') {
+        returned = true;
+      }
+
+      var remarks = row[5] ? String(row[5]).trim() : '';
+
+      rotations.push({
+        name: name,
+        givenDate: givenDate,
+        passedDays: passedDays,
+        amount: amount,
+        returned: returned,
+        remarks: remarks,
+        rowIndex: i + 3
+      });
+    }
+
+    Logger.log('getRotationData: ' + rotations.length + ' entries');
+    return { success: true, rotations: rotations };
+
+  } catch (e) {
+    Logger.log('getRotationData error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
    getCardExpenses
    Returns both Expense and Payment entries for a credit card.
    Column layout (from ADD_EXP.html):
