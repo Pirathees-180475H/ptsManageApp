@@ -337,6 +337,84 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pg-sub-btn:active{transform:scale(.9);}
 .pg-sub-btn.sub-active{background:rgba(255,107,53,.28);border-color:rgba(255,107,53,.6);color:#fb923c;}
 
+.pg-notes-btn{
+  background:rgba(45,212,191,.13);border:1px solid rgba(45,212,191,.28);
+  color:var(--teal);border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-notes-btn:active{transform:scale(.9);}
+.pg-notes-btn.notes-active{background:rgba(45,212,191,.28);border-color:rgba(45,212,191,.6);color:#5eead4;}
+
+/* ── Notes Modal ── */
+#notes-modal{
+  position:fixed;
+  width:95%;max-width:750px;max-height:85vh;z-index:8000;
+  background:rgba(6,11,24,.95);backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.11);border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+  display:none;flex-direction:column;overflow:hidden;
+}
+#notes-modal.open{display:flex;animation:notesModalIn .3s ease;}
+@keyframes notesModalIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.notes-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px 10px;border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;cursor:grab;user-select:none;
+}
+.notes-hdr:active{cursor:grabbing;}
+.notes-title{font-size:.7em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:8px;}
+.notes-close{background:none;border:none;color:rgba(255,255,255,.25);font-size:.85em;cursor:pointer;padding:2px 5px;line-height:1;font-family:inherit;border-radius:6px;transition:all .15s;}
+.notes-close:hover{color:#fff;}
+.notes-body{flex:1;overflow-y:auto;padding:16px;}
+/* Notes Tabs */
+.notes-tabs{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.08);padding:0 16px;flex-shrink:0;}
+.notes-tab{background:none;border:none;color:rgba(255,255,255,.4);font-size:.7em;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:12px 16px 10px;cursor:pointer;position:relative;transition:color .2s;font-family:inherit;}
+.notes-tab:hover{color:rgba(255,255,255,.7);}
+.notes-tab.active{color:var(--teal);}
+.notes-tab::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--teal);transform:scaleX(0);transition:transform .2s;}
+.notes-tab.active::after{transform:scaleX(1);}
+.notes-tab-content{display:none;}
+.notes-tab-content.active{display:block;}
+/* Rotation Section */
+.rot-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.rot-sum-card{background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;}
+.rot-sum-card.pending{border-color:rgba(255,77,109,.2);background:linear-gradient(135deg,rgba(255,77,109,.08),rgba(255,77,109,.02));}
+.rot-sum-card.returned{border-color:rgba(0,230,118,.2);background:linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,230,118,.02));}
+.rot-sum-lbl{font-size:.58em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px;}
+.rot-sum-val{font-size:1.2em;font-weight:800;color:#fff;}
+.rot-sum-card.pending .rot-sum-val{color:var(--red);}
+.rot-sum-card.returned .rot-sum-val{color:var(--green);}
+.rot-section-hdr{font-size:.65em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px;}
+.rot-person-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;margin-bottom:10px;overflow:hidden;}
+.rot-person-hdr{padding:12px 14px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;}
+.rot-person-left{display:flex;align-items:center;gap:12px;}
+.rot-person-avatar{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.85em;font-weight:800;background:linear-gradient(135deg,rgba(45,212,191,.2),rgba(45,212,191,.1));color:var(--teal);border:1px solid rgba(45,212,191,.3);}
+.rot-person-info{display:flex;flex-direction:column;}
+.rot-person-name{font-size:.8em;font-weight:700;color:#fff;}
+.rot-person-status{font-size:.6em;color:rgba(255,255,255,.45);}
+.rot-person-status.has-pending{color:var(--red);}
+.rot-person-amt{font-size:.9em;font-weight:800;}
+.rot-person-amt.pending{color:var(--red);}
+.rot-person-amt.clear{color:var(--green);}
+.rot-person-arrow{font-size:.9em;color:rgba(255,255,255,.4);transition:transform .2s;}
+.rot-person-card.expanded .rot-person-arrow{transform:rotate(180deg);}
+.rot-person-body{max-height:0;overflow:hidden;transition:max-height .3s ease;}
+.rot-person-card.expanded .rot-person-body{max-height:600px;}
+.rot-entries{padding:0 14px 12px;}
+.rot-entry{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.rot-entry:last-child{margin-bottom:0;}
+.rot-entry.returned{opacity:.6;}
+.rot-entry-left{display:flex;flex-direction:column;gap:3px;}
+.rot-entry-date{font-size:.65em;color:rgba(255,255,255,.5);}
+.rot-entry-days{font-size:.58em;color:rgba(255,255,255,.45);}
+.rot-entry-right{text-align:right;}
+.rot-entry-amt{font-size:.85em;font-weight:700;color:#fff;}
+.rot-entry-status{font-size:.55em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-top:2px;}
+.rot-entry-status.pending{color:var(--red);}
+.rot-entry-status.returned{color:var(--green);}
+.rot-entry-remarks{font-size:.6em;color:rgba(255,255,255,.5);margin-top:3px;font-style:italic;}
+
 /* ── Subscription Modal ── */
 #sub-modal{
   position:fixed;
@@ -2507,6 +2585,7 @@ input[type=date].swae-input{color-scheme:dark;}
       <span class="upd-lbl" id="updLbl">Starting…</span>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-sub-btn" onclick="subToggle()">💳</button>
+      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" id="refreshBtn" onclick="cseStartLoad()">↺ Reload</button>
@@ -2569,6 +2648,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-sub-btn" onclick="subToggle()">💳</button>
+      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
@@ -2592,6 +2672,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-sub-btn" onclick="subToggle()">💳</button>
+      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
@@ -2627,6 +2708,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">💼 Summary</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('port')">↺ Reload</button>
@@ -2654,6 +2736,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">💸 Money Flow</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('mf')">↺ Reload</button>
@@ -2724,6 +2807,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">🤝 Splitwise</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>
@@ -3009,6 +3093,35 @@ input[type=date].swae-input{color-scheme:dark;}
     <div style="text-align:center;padding:40px;color:var(--muted);">
       <div style="font-size:2em;margin-bottom:10px;">⏳</div>
       Loading subscriptions...
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     NOTES MODAL
+     Rotation tracking & other notes
+═══════════════════════════════════════════ -->
+<div id="notes-modal">
+  <div class="notes-hdr">
+    <span class="notes-title">📝 My Notes</span>
+    <button class="notes-close" onclick="notesClose()">✕</button>
+  </div>
+  <div class="notes-tabs">
+    <button class="notes-tab active" onclick="switchNotesTab('rotations')">🔄 Rotations</button>
+    <button class="notes-tab" onclick="switchNotesTab('losses')">📉 Losses</button>
+  </div>
+  <div class="notes-body">
+    <div id="notes-tab-rotations" class="notes-tab-content active">
+      <div style="text-align:center;padding:40px;color:var(--muted);">
+        <div style="font-size:2em;margin-bottom:10px;">⏳</div>
+        Loading rotations...
+      </div>
+    </div>
+    <div id="notes-tab-losses" class="notes-tab-content">
+      <div style="text-align:center;padding:40px;color:var(--muted);">
+        <div style="font-size:2em;margin-bottom:10px;">🚧</div>
+        Coming Soon<br><span style="font-size:.8em;opacity:.7;">Losses tracking will be available in a future update</span>
+      </div>
     </div>
   </div>
 </div>
@@ -9645,6 +9758,215 @@ function togglePlatform(platName) {
   var card = document.getElementById('sub-plat-' + platName);
   if(card) card.classList.toggle('expanded');
 }
+
+// ══════════════════════════════════════════
+// NOTES MODAL - Rotation Tracking
+// ══════════════════════════════════════════
+var _notesData = null;
+var _positionedNotes = false;
+var _notesActiveTab = 'rotations';
+
+function switchNotesTab(tabName) {
+  _notesActiveTab = tabName;
+  // Update tab buttons
+  document.querySelectorAll('.notes-tab').forEach(function(t){
+    t.classList.toggle('active', t.textContent.toLowerCase().indexOf(tabName) !== -1);
+  });
+  // Update tab content
+  document.querySelectorAll('.notes-tab-content').forEach(function(c){
+    c.classList.remove('active');
+  });
+  var content = document.getElementById('notes-tab-' + tabName);
+  if(content) content.classList.add('active');
+}
+
+function notesToggle() {
+  var p = document.getElementById('notes-modal');
+  var opening = !p.classList.contains('open');
+
+  if(opening) {
+    if(!_positionedNotes){
+      p.style.left = (window.innerWidth / 2 - 375) + 'px';
+      p.style.top = (window.innerHeight / 2 - 280) + 'px';
+      _positionedNotes = true;
+    }
+    p.classList.add('open');
+    document.querySelectorAll('.pg-notes-btn').forEach(function(b){
+      b.classList.add('notes-active');
+    });
+    if(!_notesData) {
+      loadNotesData();
+    }
+  } else {
+    notesClose();
+  }
+}
+
+function notesClose() {
+  document.getElementById('notes-modal').classList.remove('open');
+  document.querySelectorAll('.pg-notes-btn').forEach(function(b){
+    b.classList.remove('notes-active');
+  });
+}
+
+function loadNotesData() {
+  document.getElementById('notes-tab-rotations').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading rotations...</div>';
+
+  google.script.run
+    .withSuccessHandler(function(data){
+      if(!data || !data.success) {
+        document.getElementById('notes-tab-rotations').innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error: ' + (data ? data.error : 'Unknown error') + '</div>';
+        return;
+      }
+      _notesData = data;
+      renderNotesData(data);
+    })
+    .withFailureHandler(function(err){
+      document.getElementById('notes-tab-rotations').innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error: ' + err.message + '</div>';
+    })
+    .getRotationData();
+}
+
+function renderNotesData(data) {
+  var rotations = data.rotations || [];
+  
+  if(!rotations.length) {
+    document.getElementById('notes-tab-rotations').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">📭</div>No rotation entries found</div>';
+    return;
+  }
+
+  // Calculate totals
+  var totalPending = 0, totalReturned = 0, pendingCount = 0, returnedCount = 0;
+  rotations.forEach(function(r) {
+    if(r.returned) {
+      totalReturned += r.amount;
+      returnedCount++;
+    } else {
+      totalPending += r.amount;
+      pendingCount++;
+    }
+  });
+
+  // Group by person
+  var byPerson = {};
+  rotations.forEach(function(r) {
+    if(!byPerson[r.name]) {
+      byPerson[r.name] = { entries: [], totalPending: 0, totalReturned: 0 };
+    }
+    byPerson[r.name].entries.push(r);
+    if(r.returned) {
+      byPerson[r.name].totalReturned += r.amount;
+    } else {
+      byPerson[r.name].totalPending += r.amount;
+    }
+  });
+
+  var html = '';
+
+  // Summary cards
+  html += '<div class="rot-summary">';
+  html += '<div class="rot-sum-card pending"><div class="rot-sum-lbl">Pending Rotation</div><div class="rot-sum-val">₨ ' + totalPending.toLocaleString('en-IN') + '</div></div>';
+  html += '<div class="rot-sum-card returned"><div class="rot-sum-lbl">Returned</div><div class="rot-sum-val">₨ ' + totalReturned.toLocaleString('en-IN') + '</div></div>';
+  html += '<div class="rot-sum-card"><div class="rot-sum-lbl">Total Given</div><div class="rot-sum-val">₨ ' + (totalPending + totalReturned).toLocaleString('en-IN') + '</div></div>';
+  html += '</div>';
+
+  // Rotation section
+  html += '<div class="rot-section-hdr">🔄 Rotation Tracking (' + rotations.length + ' entries)</div>';
+
+  // Person cards
+  var people = Object.keys(byPerson).sort(function(a,b) {
+    // Sort by pending amount descending
+    return byPerson[b].totalPending - byPerson[a].totalPending;
+  });
+
+  html += '<div class="rot-people">';
+  people.forEach(function(name) {
+    var person = byPerson[name];
+    var initials = name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);
+    var hasPending = person.totalPending > 0;
+    var displayAmt = hasPending ? person.totalPending : person.totalReturned;
+    var amtClass = hasPending ? 'pending' : 'clear';
+    var statusText = hasPending ? pendingCount + ' pending' : 'All returned';
+    var statusClass = hasPending ? 'has-pending' : '';
+
+    html += '<div class="rot-person-card" id="rot-person-' + name.replace(/[^a-z0-9]/gi, '_') + '">';
+    html += '<div class="rot-person-hdr" onclick="toggleRotPerson(\'' + name.replace(/'/g, "\\'") + '\')">';
+    html += '<div class="rot-person-left">';
+    html += '<div class="rot-person-avatar">' + initials + '</div>';
+    html += '<div class="rot-person-info">';
+    html += '<div class="rot-person-name">' + escHtml(name) + '</div>';
+    html += '<div class="rot-person-status ' + statusClass + '">' + person.entries.length + ' entries · ' + (hasPending ? person.entries.filter(function(e){return !e.returned;}).length + ' pending' : 'All cleared') + '</div>';
+    html += '</div></div>';
+    html += '<div class="rot-person-amt ' + amtClass + '">₨ ' + displayAmt.toLocaleString('en-IN') + '</div>';
+    html += '<div class="rot-person-arrow">▼</div>';
+    html += '</div>';
+
+    // Entries
+    html += '<div class="rot-person-body"><div class="rot-entries">';
+    person.entries.sort(function(a,b) {
+      // Sort by returned status (pending first), then by date descending
+      if(a.returned !== b.returned) return a.returned ? 1 : -1;
+      return new Date(b.givenDate) - new Date(a.givenDate);
+    }).forEach(function(entry) {
+      var entryClass = entry.returned ? 'returned' : '';
+      html += '<div class="rot-entry ' + entryClass + '">';
+      html += '<div class="rot-entry-left">';
+      html += '<div class="rot-entry-date">📅 ' + (entry.givenDate || '—') + '</div>';
+      if(entry.passedDays) {
+        html += '<div class="rot-entry-days">⏱ ' + escHtml(entry.passedDays) + '</div>';
+      }
+      if(entry.remarks) {
+        html += '<div class="rot-entry-remarks">💬 ' + escHtml(entry.remarks) + '</div>';
+      }
+      html += '</div>';
+      html += '<div class="rot-entry-right">';
+      html += '<div class="rot-entry-amt">₨ ' + entry.amount.toLocaleString('en-IN') + '</div>';
+      html += '<div class="rot-entry-status ' + (entry.returned ? 'returned' : 'pending') + '">' + (entry.returned ? '✓ Returned' : '⏳ Pending') + '</div>';
+      html += '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  document.getElementById('notes-tab-rotations').innerHTML = html;
+}
+
+function toggleRotPerson(name) {
+  var card = document.getElementById('rot-person-' + name.replace(/[^a-z0-9]/gi, '_'));
+  if(card) card.classList.toggle('expanded');
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Draggable Notes Modal
+document.addEventListener('DOMContentLoaded', function(){
+  var panel = document.getElementById('notes-modal');
+  if (!panel) return;
+  var hdr = panel.querySelector('.notes-hdr');
+  if (!hdr) return;
+  var _drag = false, _ox = 0, _oy = 0;
+  hdr.addEventListener('mousedown', function(e){
+    if(e.target.closest('.notes-close')) return;
+    var r = panel.getBoundingClientRect();
+    _ox = e.clientX - r.left;
+    _oy = e.clientY - r.top;
+    _drag = true;
+    hdr.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', function(e){
+    if(!_drag) return;
+    panel.style.left = (e.clientX - _ox) + 'px';
+    panel.style.top = (e.clientY - _oy) + 'px';
+  });
+  window.addEventListener('mouseup', function(){
+    _drag = false;
+    hdr.style.cursor = 'grab';
+  });
+});
 
 // Draggable Subscription Modal
 document.addEventListener('DOMContentLoaded', function(){
