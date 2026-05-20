@@ -2864,6 +2864,79 @@ function getRotationData() {
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   getLossesData
+   Reads losses data from OTHERS sheet columns A-D
+   A: Ref, B: Amount, C: Lesson, D: isconformloss
+   Row 2 is headers, data starts from row 3
+───────────────────────────────────────────────────────────────── */
+function getLossesData() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 3) {
+      return { success: true, losses: [], totalConfirmed: 0, totalUnconfirmed: 0 };
+    }
+
+    // Read A3:D[lastRow] (columns 1-4), starting from row 3 (row 2 is header)
+    var data = sheet.getRange(3, 1, lastRow - 2, 4).getValues();
+    var losses = [];
+    var totalConfirmed = 0;
+    var totalUnconfirmed = 0;
+
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      var ref = row[0] ? String(row[0]).trim() : '';
+      
+      // Skip empty rows
+      if (!ref) continue;
+
+      var amount = row[1] ? Number(row[1]) || 0 : 0;
+      
+      // Skip entries with 0 amount
+      if (amount === 0) continue;
+
+      var lesson = row[2] ? String(row[2]).trim() : '';
+      
+      // Handle isconformloss - could be TRUE/FALSE, "TRUE"/"FALSE", or empty
+      var isConfirmLossRaw = row[3];
+      var isConfirmLoss = false;
+      if (isConfirmLossRaw === true || isConfirmLossRaw === 'TRUE' || isConfirmLossRaw === 'true' || isConfirmLossRaw === 'Yes' || isConfirmLossRaw === 'yes') {
+        isConfirmLoss = true;
+      }
+
+      if (isConfirmLoss) {
+        totalConfirmed += amount;
+      } else {
+        totalUnconfirmed += amount;
+      }
+
+      losses.push({
+        ref: ref,
+        amount: amount,
+        lesson: lesson,
+        isConfirmLoss: isConfirmLoss,
+        rowIndex: i + 3
+      });
+    }
+
+    Logger.log('getLossesData: ' + losses.length + ' entries, confirmed: ' + totalConfirmed + ', unconfirmed: ' + totalUnconfirmed);
+    return { 
+      success: true, 
+      losses: losses,
+      totalConfirmed: totalConfirmed,
+      totalUnconfirmed: totalUnconfirmed
+    };
+
+  } catch (e) {
+    Logger.log('getLossesData error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
    getCardExpenses
    Returns both Expense and Payment entries for a credit card.
    Column layout (from ADD_EXP.html):

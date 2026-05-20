@@ -415,6 +415,29 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .rot-entry-status.returned{color:var(--green);}
 .rot-entry-remarks{font-size:.6em;color:rgba(255,255,255,.5);margin-top:3px;font-style:italic;}
 
+/* ── Losses Section ── */
+.loss-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.loss-sum-card{background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:12px;}
+.loss-sum-card.confirmed{border-color:rgba(255,77,109,.2);background:linear-gradient(135deg,rgba(255,77,109,.08),rgba(255,77,109,.02));}
+.loss-sum-card.pending{border-color:rgba(251,146,60,.2);background:linear-gradient(135deg,rgba(251,146,60,.08),rgba(251,146,60,.02));}
+.loss-sum-lbl{font-size:.58em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:4px;}
+.loss-sum-val{font-size:1.2em;font-weight:800;color:#fff;}
+.loss-sum-card.confirmed .loss-sum-val{color:var(--red);}
+.loss-sum-card.pending .loss-sum-val{color:var(--amber);}
+.loss-section-hdr{font-size:.65em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px;}
+.loss-entries{display:flex;flex-direction:column;gap:10px;}
+.loss-entry{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:8px;}
+.loss-entry.confirmed{border-color:rgba(255,77,109,.2);background:linear-gradient(135deg,rgba(255,77,109,.04),transparent);}
+.loss-entry.pending{border-color:rgba(251,146,60,.2);background:linear-gradient(135deg,rgba(251,146,60,.04),transparent);}
+.loss-entry-top{display:flex;align-items:center;justify-content:space-between;}
+.loss-entry-ref{font-size:.75em;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;}
+.loss-entry-badge{font-size:.65em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:2px 8px;border-radius:6px;}
+.loss-entry-badge.confirmed{background:rgba(255,77,109,.15);color:var(--red);}
+.loss-entry-badge.pending{background:rgba(251,146,60,.15);color:var(--amber);}
+.loss-entry-amt{font-size:1em;font-weight:800;color:var(--red);}
+.loss-entry-lesson{font-size:.7em;color:rgba(255,255,255,.6);line-height:1.4;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid rgba(255,255,255,.1);}
+.loss-entry-lesson.has-text{border-left-color:var(--teal);}
+
 /* ── Subscription Modal ── */
 #sub-modal{
   position:fixed;
@@ -3119,8 +3142,8 @@ input[type=date].swae-input{color-scheme:dark;}
     </div>
     <div id="notes-tab-losses" class="notes-tab-content">
       <div style="text-align:center;padding:40px;color:var(--muted);">
-        <div style="font-size:2em;margin-bottom:10px;">🚧</div>
-        Coming Soon<br><span style="font-size:.8em;opacity:.7;">Losses tracking will be available in a future update</span>
+        <div style="font-size:2em;margin-bottom:10px;">⏳</div>
+        Loading losses...
       </div>
     </div>
   </div>
@@ -9811,7 +9834,9 @@ function notesClose() {
 
 function loadNotesData() {
   document.getElementById('notes-tab-rotations').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading rotations...</div>';
+  document.getElementById('notes-tab-losses').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading losses...</div>';
 
+  // Load rotations
   google.script.run
     .withSuccessHandler(function(data){
       if(!data || !data.success) {
@@ -9825,6 +9850,20 @@ function loadNotesData() {
       document.getElementById('notes-tab-rotations').innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error: ' + err.message + '</div>';
     })
     .getRotationData();
+
+  // Load losses
+  google.script.run
+    .withSuccessHandler(function(data){
+      if(!data || !data.success) {
+        document.getElementById('notes-tab-losses').innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error: ' + (data ? data.error : 'Unknown error') + '</div>';
+        return;
+      }
+      renderLossesData(data);
+    })
+    .withFailureHandler(function(err){
+      document.getElementById('notes-tab-losses').innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error: ' + err.message + '</div>';
+    })
+    .getLossesData();
 }
 
 function renderNotesData(data) {
@@ -9940,6 +9979,65 @@ function toggleRotPerson(name) {
 
 function escHtml(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderLossesData(data) {
+  var losses = data.losses || [];
+  var totalConfirmed = data.totalConfirmed || 0;
+  var totalUnconfirmed = data.totalUnconfirmed || 0;
+  
+  if(!losses.length) {
+    document.getElementById('notes-tab-losses').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">📭</div>No loss entries found</div>';
+    return;
+  }
+
+  var html = '';
+
+  // Summary cards
+  html += '<div class="loss-summary">';
+  html += '<div class="loss-sum-card confirmed"><div class="loss-sum-lbl">Confirmed Loss</div><div class="loss-sum-val">₨ ' + totalConfirmed.toLocaleString('en-IN') + '</div></div>';
+  html += '<div class="loss-sum-card pending"><div class="loss-sum-lbl">Unconfirmed</div><div class="loss-sum-val">₨ ' + totalUnconfirmed.toLocaleString('en-IN') + '</div></div>';
+  html += '<div class="loss-sum-card"><div class="loss-sum-lbl">Total Loss</div><div class="loss-sum-val">₨ ' + (totalConfirmed + totalUnconfirmed).toLocaleString('en-IN') + '</div></div>';
+  html += '</div>';
+
+  // Section header
+  html += '<div class="loss-section-hdr">📉 Loss Records (' + losses.length + ' entries)</div>';
+
+  // Loss entries
+  html += '<div class="loss-entries">';
+  
+  // Sort: confirmed first, then by amount descending
+  losses.sort(function(a,b) {
+    if(a.isConfirmLoss !== b.isConfirmLoss) return a.isConfirmLoss ? -1 : 1;
+    return b.amount - a.amount;
+  });
+
+  losses.forEach(function(entry) {
+    var entryClass = entry.isConfirmLoss ? 'confirmed' : 'pending';
+    var badgeText = entry.isConfirmLoss ? '✓ Confirmed' : '⏳ Pending';
+    
+    html += '<div class="loss-entry ' + entryClass + '">';
+    html += '<div class="loss-entry-top">';
+    html += '<div class="loss-entry-ref">';
+    html += '<span>' + escHtml(entry.ref) + '</span>';
+    html += '<span class="loss-entry-badge ' + entryClass + '">' + badgeText + '</span>';
+    html += '</div>';
+    html += '<div class="loss-entry-amt">₨ ' + entry.amount.toLocaleString('en-IN') + '</div>';
+    html += '</div>';
+    
+    // Lesson learned
+    if(entry.lesson) {
+      html += '<div class="loss-entry-lesson has-text">💡 ' + escHtml(entry.lesson) + '</div>';
+    } else {
+      html += '<div class="loss-entry-lesson"><span style="opacity:.5;">No lesson recorded</span></div>';
+    }
+    
+    html += '</div>';
+  });
+  
+  html += '</div>';
+
+  document.getElementById('notes-tab-losses').innerHTML = html;
 }
 
 // Draggable Notes Modal
