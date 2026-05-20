@@ -1396,6 +1396,90 @@ function getExpenseData() {
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   getCategoryAllTimeExpenses
+   Returns every non-zero entry for a given category across ALL months.
+   Extracts year directly from the Date cell in column A.
+───────────────────────────────────────────────────────────────── */
+function getCategoryAllTimeExpenses(categoryName) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var CATS = [
+      { name: 'Food',               amtCol: 3,  refCol: 4  },
+      { name: 'Supermarket',        amtCol: 5,  refCol: 6  },
+      { name: 'Uber',               amtCol: 7,  refCol: 0  },
+      { name: 'Uber Work',          amtCol: 8,  refCol: 0  },
+      { name: 'Movies & Outing',    amtCol: 10, refCol: 9  },
+      { name: 'Other expenses',     amtCol: 12, refCol: 11 },
+      { name: 'Bus Fair',           amtCol: 13, refCol: 0  },
+      { name: 'Party',              amtCol: 15, refCol: 14 },
+      { name: 'Dress and Apperence', amtCol: 17, refCol: 16 },
+      { name: 'Rent',               amtCol: 18, refCol: 0  }
+    ];
+
+    var targetNorm = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    var cat = null;
+    for (var ci = 0; ci < CATS.length; ci++) {
+      if (CATS[ci].name.toLowerCase().replace(/[^a-z0-9]/g, '') === targetNorm) {
+        cat = CATS[ci]; break;
+      }
+    }
+    if (!cat) return { success: false, error: 'Unknown category: ' + categoryName };
+
+    var lastRow = sheet.getLastRow();
+    var numCols = Math.min(35, sheet.getLastColumn());
+    var allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+    var MON_NAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    var entries = [];
+
+    for (var r = 0; r < allData.length; r++) {
+      var row      = allData[r];
+      var dateCell = row[0];
+      
+      // Skip non-date rows
+      if (!(dateCell instanceof Date) || isNaN(dateCell.getTime())) continue;
+      
+      var rowYear  = dateCell.getFullYear();
+      var rowMonth = dateCell.getMonth() + 1; // JS months are 0-based
+      var rowDay   = dateCell.getDate();
+
+      // Extract amount for target category
+      var rawAmt = row[cat.amtCol - 1];
+      var amt = typeof rawAmt === 'number' ? rawAmt : (parseFloat(String(rawAmt).replace(/[^0-9.+-]/g, '')) || 0);
+      if (isNaN(amt) || amt <= 0) continue;
+
+      var ref = cat.refCol > 0 ? String(row[cat.refCol - 1] || '').trim() : '';
+
+      entries.push({
+        day:       rowDay,
+        month:     rowMonth,
+        year:      rowYear,
+        dateLabel: MON_NAMES[rowMonth] + ' ' + rowDay + ', ' + rowYear,
+        reference: ref,
+        amount:    amt
+      });
+    }
+
+    // Sort chronologically by actual date
+    entries.sort(function(a, b) {
+      if (a.year  !== b.year)  return a.year  - b.year;
+      if (a.month !== b.month) return a.month - b.month;
+      return a.day - b.day;
+    });
+
+    var total = entries.reduce(function(s, e) { return s + e.amount; }, 0);
+    return { success: true, category: categoryName, entries: entries, total: total };
+
+  } catch (e) {
+    Logger.log('getCategoryAllTimeExpenses error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
    getCurrentMonthExpensesList
    Returns every non-zero expense entry for the current month
    from the daily rows in "Monthly Expences" sheet,

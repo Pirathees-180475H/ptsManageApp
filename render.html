@@ -1262,6 +1262,42 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .save-status-btn:disabled{opacity:.5;}
 #page-cc .error-box{text-align:center;padding:48px;color:var(--red);font-size:.88em;}
 
+/* ── Category All-Time Panel ── */
+#cat-alltime-panel{
+  position:fixed;width:95%;max-width:560px;max-height:82vh;z-index:9500;
+  background:linear-gradient(165deg,rgba(18,24,38,.98) 0%,rgba(8,12,22,.99) 100%);
+  border:1px solid rgba(255,255,255,.1);border-radius:20px;
+  box-shadow:0 25px 80px rgba(0,0,0,.8),0 8px 32px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);
+  display:none;flex-direction:column;overflow:hidden;backdrop-filter:blur(20px);
+}
+#cat-alltime-panel.open{display:flex;animation:ccExpIn .3s cubic-bezier(.4,0,.2,1);}
+.cat-p-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 14px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;cursor:grab;user-select:none;}
+.cat-p-hdr:active{cursor:grabbing;}
+.cat-p-title{font-size:.85em;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.cat-p-sub{font-size:.62em;color:rgba(255,255,255,.45);margin-top:3px;font-weight:500;}
+.cat-p-close{background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.4);font-size:.8em;cursor:pointer;padding:6px 10px;border-radius:8px;transition:all .2s;font-family:inherit;}
+.cat-p-close:hover{color:#fff;background:rgba(255,77,109,.2);}
+.cat-p-body{flex:1;overflow-y:auto;padding:16px 20px 20px;}
+.cat-p-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.cat-p-stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 12px;}
+.cat-p-stat-lbl{font-size:.57em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:4px;}
+.cat-p-stat-val{font-size:.95em;font-weight:800;color:#fff;}
+.cat-p-table{width:100%;border-collapse:collapse;}
+.cat-p-table th{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);padding:0 10px 10px;text-align:left;}
+.cat-p-table th.r{text-align:right;}
+.cat-p-table td{padding:9px 10px;font-size:.77em;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+.cat-p-table td.col-date{color:rgba(255,255,255,.5);font-weight:600;white-space:nowrap;}
+.cat-p-table td.col-ref{color:rgba(255,255,255,.55);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cat-p-table td.col-amt{text-align:right;font-weight:700;}
+.cat-p-table tr:hover td{background:rgba(255,255,255,.025);}
+.cat-p-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.35);font-size:.8em;line-height:1.7;}
+.cat-p-pager{display:flex;align-items:center;justify-content:space-between;padding:12px 0 2px;gap:8px;flex-shrink:0;}
+.cat-p-pager-info{font-size:.62em;color:rgba(255,255,255,.35);font-weight:600;white-space:nowrap;}
+.cat-p-pager-btns{display:flex;gap:6px;}
+.cat-p-pager-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.55);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:.7em;font-weight:700;font-family:inherit;transition:all .18s;}
+.cat-p-pager-btn:hover:not(:disabled){background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.35);color:#fff;}
+.cat-p-pager-btn:disabled{opacity:.3;cursor:not-allowed;}
+
 /* ═══════════════════════════════════════════
    RESPONSIVE (mobile-first)
 ═══════════════════════════════════════════ */
@@ -1351,6 +1387,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-exp .csub{font-size:10px;color:var(--muted);margin-bottom:10px;}
 #page-exp .cwrap canvas{max-height:210px;}
 #page-exp .cwrap.tall canvas{max-height:250px;}
+#expCRank{cursor:pointer;}
 #page-exp .ig{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:16px;}
 #page-exp .ic{border-radius:14px;padding:13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);}
 #page-exp .ic-ico{font-size:18px;margin-bottom:6px;}
@@ -3153,6 +3190,19 @@ input[type=date].swae-input{color-scheme:dark;}
      CC EXPENSES MINI-MODAL
      Draggable floating panel — no overlay
 ═══════════════════════════════════════════ -->
+<div id="cat-alltime-panel">
+  <div class="cat-p-hdr">
+    <div>
+      <div class="cat-p-title" id="cat-p-title">📊 Category Expenses</div>
+      <div class="cat-p-sub" id="cat-p-sub">All-time transactions</div>
+    </div>
+    <button class="cat-p-close" onclick="catPanelClose()">✕</button>
+  </div>
+  <div class="cat-p-body" id="cat-p-body">
+    <div class="cat-p-empty">⏳ Loading…</div>
+  </div>
+</div>
+
 <div id="cc-exp-panel">
   <div class="cc-exp-hdr">
     <div>
@@ -5161,6 +5211,132 @@ function expLoad(){
     .getExpenseData();
 }
 
+// ══════════════════════════════════════════
+// CATEGORY ALL-TIME DRILLDOWN PANEL
+// ══════════════════════════════════════════
+var _catPanelPositioned = false;
+var _catEntries = [];
+var _catPage = 0;
+var _catTotal = 0;
+var CAT_PAGE_SIZE = 20;
+
+function catPanelOpen(categoryName) {
+  var panel = document.getElementById('cat-alltime-panel');
+  if (!_catPanelPositioned) {
+    panel.style.left = Math.max(0, (window.innerWidth  / 2 - 280)) + 'px';
+    panel.style.top  = Math.max(0, (window.innerHeight / 2 - 240)) + 'px';
+    _catPanelPositioned = true;
+  }
+  document.getElementById('cat-p-title').textContent = '📊 ' + categoryName;
+  document.getElementById('cat-p-sub').textContent   = 'All-time transactions';
+  document.getElementById('cat-p-body').innerHTML    = '<div class="cat-p-empty">⏳ Loading…</div>';
+  _catEntries = [];
+  _catPage = 0;
+  panel.classList.add('open');
+
+  google.script.run
+    .withSuccessHandler(function(data){ catPanelRender(data); })
+    .withFailureHandler(function(err){
+      document.getElementById('cat-p-body').innerHTML =
+        '<div class="cat-p-empty">⚠️ ' + (err.message || String(err)) + '</div>';
+    })
+    .getCategoryAllTimeExpenses(categoryName);
+}
+
+function catPanelClose() {
+  document.getElementById('cat-alltime-panel').classList.remove('open');
+}
+
+function catPanelRender(data) {
+  var body = document.getElementById('cat-p-body');
+  if (!data || !data.success) {
+    body.innerHTML = '<div class="cat-p-empty">⚠️ ' + (data ? data.error : 'Failed to load') + '</div>';
+    return;
+  }
+  // Reverse: latest first
+  _catEntries = (data.entries || []).slice().reverse();
+  _catTotal   = data.total || 0;
+  _catPage    = 0;
+
+  if (!_catEntries.length) {
+    body.innerHTML = '<div class="cat-p-empty">📭 No transactions found for ' + escHtml(data.category) + '.</div>';
+    return;
+  }
+
+  var count  = _catEntries.length;
+  var avgAmt = count > 0 ? _catTotal / count : 0;
+  document.getElementById('cat-p-sub').textContent = count + ' entries · All-time';
+
+  // Stats bar (static, outside pagination)
+  var statsHtml = '<div class="cat-p-stats">'
+    + '<div class="cat-p-stat"><div class="cat-p-stat-lbl">Total</div><div class="cat-p-stat-val">₨ ' + _catTotal.toLocaleString('en-IN') + '</div></div>'
+    + '<div class="cat-p-stat"><div class="cat-p-stat-lbl">Entries</div><div class="cat-p-stat-val">' + count + '</div></div>'
+    + '<div class="cat-p-stat"><div class="cat-p-stat-lbl">Avg per Entry</div><div class="cat-p-stat-val">₨ ' + Math.round(avgAmt).toLocaleString('en-IN') + '</div></div>'
+    + '</div>';
+
+  body.innerHTML = statsHtml + '<div id="cat-p-table-wrap"></div>';
+  catPanelPage(0);
+}
+
+function catPanelPage(page) {
+  _catPage = page;
+  var count    = _catEntries.length;
+  var pages    = Math.ceil(count / CAT_PAGE_SIZE);
+  var start    = page * CAT_PAGE_SIZE;
+  var end      = Math.min(start + CAT_PAGE_SIZE, count);
+  var slice    = _catEntries.slice(start, end);
+
+  var html = '<table class="cat-p-table"><thead><tr><th>Date</th><th>Reference</th><th class="r">Amount</th></tr></thead><tbody>';
+  slice.forEach(function(e) {
+    var refCell = e.reference ? escHtml(e.reference) : '<span style="opacity:.35;">—</span>';
+    html += '<tr>'
+      + '<td class="col-date">' + escHtml(e.dateLabel) + '</td>'
+      + '<td class="col-ref">'  + refCell + '</td>'
+      + '<td class="col-amt">₨ ' + e.amount.toLocaleString('en-IN') + '</td>'
+      + '</tr>';
+  });
+  // Page total footer
+  var pageTotal = slice.reduce(function(s,e){return s+e.amount;},0);
+  html += '<tr style="border-top:2px solid rgba(255,255,255,.1);">'
+    + '<td colspan="2" style="font-weight:800;font-size:.8em;color:rgba(255,255,255,.7);padding:10px;">Page Total</td>'
+    + '<td class="col-amt" style="font-weight:800;color:#fff;">₨ ' + pageTotal.toLocaleString('en-IN') + '</td>'
+    + '</tr>';
+  html += '</tbody></table>';
+
+  // Pagination controls
+  html += '<div class="cat-p-pager">'
+    + '<span class="cat-p-pager-info">' + (start+1) + '–' + end + ' of ' + count + '</span>'
+    + '<div class="cat-p-pager-btns">'
+    + '<button class="cat-p-pager-btn" onclick="catPanelPage(0)" ' + (page===0?'disabled':'') + '>« First</button>'
+    + '<button class="cat-p-pager-btn" onclick="catPanelPage(' + (page-1) + ')" ' + (page===0?'disabled':'') + '>‹ Prev</button>'
+    + '<button class="cat-p-pager-btn" onclick="catPanelPage(' + (page+1) + ')" ' + (page>=pages-1?'disabled':'') + '>Next ›</button>'
+    + '<button class="cat-p-pager-btn" onclick="catPanelPage(' + (pages-1) + ')" ' + (page>=pages-1?'disabled':'') + '>Last »</button>'
+    + '</div></div>';
+
+  document.getElementById('cat-p-table-wrap').innerHTML = html;
+}
+
+// Draggable cat-alltime-panel
+document.addEventListener('DOMContentLoaded', function(){
+  var panel = document.getElementById('cat-alltime-panel');
+  if (!panel) return;
+  var hdr = panel.querySelector('.cat-p-hdr');
+  if (!hdr) return;
+  var _drag = false, _ox = 0, _oy = 0;
+  hdr.addEventListener('mousedown', function(e){
+    if(e.target.closest('.cat-p-close')) return;
+    var r = panel.getBoundingClientRect();
+    _ox = e.clientX - r.left; _oy = e.clientY - r.top;
+    _drag = true; hdr.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', function(e){
+    if(!_drag) return;
+    panel.style.left = (e.clientX - _ox) + 'px';
+    panel.style.top  = (e.clientY - _oy) + 'px';
+  });
+  window.addEventListener('mouseup', function(){ _drag = false; hdr.style.cursor = 'grab'; });
+});
+
 /* ── Expense Detail Popup ── */
 var _edmLoaded = false;
 var _edmMonth  = 0;
@@ -5939,7 +6115,7 @@ function expBuild(D){
       '<div class="cbox"><div class="ctitle">📊 Month-on-Month Change</div><div class="csub">Δ vs previous month</div><div class="cwrap"><canvas id="expCMom"></canvas></div></div>'+
     '</div>'+
     '<div class="row r1">'+
-      '<div class="cbox"><div class="ctitle">🏆 All-Time Category Ranking</div><div class="csub">Total spend per category across all months</div><div class="cwrap"><canvas id="expCRank"></canvas></div></div>'+
+      '<div class="cbox"><div class="ctitle">🏆 All-Time Category Ranking</div><div class="csub">Total spend per category across all months · <span style="color:var(--teal);font-weight:700;">click a bar to see all entries</span></div><div class="cwrap"><canvas id="expCRank"></canvas></div></div>'+
     '</div>'+
     '<div class="ig" id="exp-ig"></div>';
 
@@ -6008,13 +6184,22 @@ function expBuild(D){
     plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' ₨'+expF(Math.abs(c.raw))+(c.raw>=0?' ▲':' ▼');}}}},
     scales:expSc()}});
 
-  // Category ranking (horizontal)
+  // Category ranking (horizontal) — click a bar to open all-time drilldown
   new Chart(document.getElementById('expCRank'),{type:'bar',data:{
     labels:catAll.map(function(c){return c.name;}),
     datasets:[{label:'All-time Total',data:catAll.map(function(c){return c.tot;}),
       backgroundColor:catAll.map(function(c){return expCc(c.name,c.i)+'cc';}),borderWidth:0,borderRadius:4}]
   },options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw);}}}},
+    onClick:function(evt,elements){
+      if(elements && elements.length>0){
+        var idx=elements[0].index;
+        var catName=catAll[idx]&&catAll[idx].name;
+        if(catName) catPanelOpen(catName);
+      }
+    },
+    plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw)+' — click to drill down';}}},
+      cursor:{pointer:true}},
     scales:{x:{grid:{color:EXP_GC},ticks:{color:EXP_TC,callback:function(v){return '₨'+expF(v);}}},y:{grid:{color:'transparent'},ticks:{color:EXP_TC}}}}});
 
   // Insights
