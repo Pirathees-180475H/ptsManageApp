@@ -1419,11 +1419,33 @@ function getCategoryAllTimeExpenses(categoryName) {
       { name: 'Rent',               amtCol: 18, refCol: 0  }
     ];
 
+    // Flexible category matching: exact → first-word → contains
     var targetNorm = categoryName.toLowerCase().replace(/[^a-z0-9]/g, '');
+    var targetFirst = categoryName.toLowerCase().split(/[\s&]/)[0].replace(/[^a-z0-9]/g, '');
     var cat = null;
+    
+    // Pass 1: exact normalized match
     for (var ci = 0; ci < CATS.length; ci++) {
       if (CATS[ci].name.toLowerCase().replace(/[^a-z0-9]/g, '') === targetNorm) {
         cat = CATS[ci]; break;
+      }
+    }
+    // Pass 2: first-word match
+    if (!cat) {
+      for (var ci = 0; ci < CATS.length; ci++) {
+        var catFirst = CATS[ci].name.toLowerCase().split(/[\s&]/)[0].replace(/[^a-z0-9]/g, '');
+        if (catFirst === targetFirst) {
+          cat = CATS[ci]; break;
+        }
+      }
+    }
+    // Pass 3: contains match
+    if (!cat) {
+      for (var ci = 0; ci < CATS.length; ci++) {
+        var catNorm = CATS[ci].name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (catNorm.indexOf(targetNorm) >= 0 || targetNorm.indexOf(catNorm) >= 0) {
+          cat = CATS[ci]; break;
+        }
       }
     }
     if (!cat) return { success: false, error: 'Unknown category: ' + categoryName };

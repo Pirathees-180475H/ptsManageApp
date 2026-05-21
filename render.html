@@ -1297,6 +1297,12 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .cat-p-pager-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.55);padding:5px 12px;border-radius:7px;cursor:pointer;font-size:.7em;font-weight:700;font-family:inherit;transition:all .18s;}
 .cat-p-pager-btn:hover:not(:disabled){background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.35);color:#fff;}
 .cat-p-pager-btn:disabled{opacity:.3;cursor:not-allowed;}
+.cat-p-search{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+.cat-p-search-input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;color:#fff;font-size:.78em;font-family:inherit;outline:none;transition:border-color .2s,background .2s;}
+.cat-p-search-input::placeholder{color:rgba(255,255,255,.3);}
+.cat-p-search-input:focus{border-color:rgba(0,212,255,.4);background:rgba(255,255,255,.08);}
+.cat-p-search-clear{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:.7em;font-weight:700;font-family:inherit;transition:all .15s;}
+.cat-p-search-clear:hover{background:rgba(255,77,109,.15);border-color:rgba(255,77,109,.3);color:#fff;}
 
 /* ═══════════════════════════════════════════
    RESPONSIVE (mobile-first)
@@ -5215,9 +5221,11 @@ function expLoad(){
 // CATEGORY ALL-TIME DRILLDOWN PANEL
 // ══════════════════════════════════════════
 var _catPanelPositioned = false;
-var _catEntries = [];
+var _catEntriesAll = [];  // all entries (unfiltered)
+var _catEntries = [];     // filtered entries for display
 var _catPage = 0;
 var _catTotal = 0;
+var _catSearchTerm = '';
 var CAT_PAGE_SIZE = 20;
 
 function catPanelOpen(categoryName) {
@@ -5254,37 +5262,71 @@ function catPanelRender(data) {
     return;
   }
   // Reverse: latest first
-  _catEntries = (data.entries || []).slice().reverse();
-  _catTotal   = data.total || 0;
-  _catPage    = 0;
+  _catEntriesAll = (data.entries || []).slice().reverse();
+  _catEntries    = _catEntriesAll.slice();
+  _catTotal      = data.total || 0;
+  _catPage       = 0;
+  _catSearchTerm = '';
 
-  if (!_catEntries.length) {
+  if (!_catEntriesAll.length) {
     body.innerHTML = '<div class="cat-p-empty">📭 No transactions found for ' + escHtml(data.category) + '.</div>';
     return;
   }
 
-  var count  = _catEntries.length;
+  var count  = _catEntriesAll.length;
   var avgAmt = count > 0 ? _catTotal / count : 0;
   document.getElementById('cat-p-sub').textContent = count + ' entries · All-time';
 
-  // Stats bar (static, outside pagination)
+  // Stats bar + search
   var statsHtml = '<div class="cat-p-stats">'
     + '<div class="cat-p-stat"><div class="cat-p-stat-lbl">Total</div><div class="cat-p-stat-val">₨ ' + _catTotal.toLocaleString('en-IN') + '</div></div>'
     + '<div class="cat-p-stat"><div class="cat-p-stat-lbl">Entries</div><div class="cat-p-stat-val">' + count + '</div></div>'
     + '<div class="cat-p-stat"><div class="cat-p-stat-lbl">Avg per Entry</div><div class="cat-p-stat-val">₨ ' + Math.round(avgAmt).toLocaleString('en-IN') + '</div></div>'
+    + '</div>'
+    + '<div class="cat-p-search">'
+    + '<input type="text" id="cat-p-search-input" class="cat-p-search-input" placeholder="Search by date or reference..." oninput="catPanelSearch(this.value)">'
+    + '<button class="cat-p-search-clear" onclick="catPanelSearchClear()">✕ Clear</button>'
     + '</div>';
 
   body.innerHTML = statsHtml + '<div id="cat-p-table-wrap"></div>';
   catPanelPage(0);
 }
 
+function catPanelSearch(term) {
+  _catSearchTerm = (term || '').toLowerCase().trim();
+  if (!_catSearchTerm) {
+    _catEntries = _catEntriesAll.slice();
+  } else {
+    _catEntries = _catEntriesAll.filter(function(e) {
+      var dateMatch = e.dateLabel && e.dateLabel.toLowerCase().indexOf(_catSearchTerm) >= 0;
+      var refMatch  = e.reference && e.reference.toLowerCase().indexOf(_catSearchTerm) >= 0;
+      var amtMatch  = String(e.amount).indexOf(_catSearchTerm) >= 0;
+      return dateMatch || refMatch || amtMatch;
+    });
+  }
+  _catPage = 0;
+  catPanelPage(0);
+}
+
+function catPanelSearchClear() {
+  var inp = document.getElementById('cat-p-search-input');
+  if (inp) inp.value = '';
+  catPanelSearch('');
+}
+
 function catPanelPage(page) {
   _catPage = page;
   var count    = _catEntries.length;
-  var pages    = Math.ceil(count / CAT_PAGE_SIZE);
+  var pages    = Math.ceil(count / CAT_PAGE_SIZE) || 1;
   var start    = page * CAT_PAGE_SIZE;
   var end      = Math.min(start + CAT_PAGE_SIZE, count);
   var slice    = _catEntries.slice(start, end);
+
+  // Handle no results
+  if (!count) {
+    document.getElementById('cat-p-table-wrap').innerHTML = '<div class="cat-p-empty">🔍 No entries match your search.</div>';
+    return;
+  }
 
   var html = '<table class="cat-p-table"><thead><tr><th>Date</th><th>Reference</th><th class="r">Amount</th></tr></thead><tbody>';
   slice.forEach(function(e) {
@@ -5303,9 +5345,15 @@ function catPanelPage(page) {
     + '</tr>';
   html += '</tbody></table>';
 
+  // Pagination info - show filtered count if searching
+  var pagerInfo = (start+1) + '–' + end + ' of ' + count;
+  if (_catSearchTerm && count < _catEntriesAll.length) {
+    pagerInfo += ' <span style="opacity:.5;">(filtered from ' + _catEntriesAll.length + ')</span>';
+  }
+
   // Pagination controls
   html += '<div class="cat-p-pager">'
-    + '<span class="cat-p-pager-info">' + (start+1) + '–' + end + ' of ' + count + '</span>'
+    + '<span class="cat-p-pager-info">' + pagerInfo + '</span>'
     + '<div class="cat-p-pager-btns">'
     + '<button class="cat-p-pager-btn" onclick="catPanelPage(0)" ' + (page===0?'disabled':'') + '>« First</button>'
     + '<button class="cat-p-pager-btn" onclick="catPanelPage(' + (page-1) + ')" ' + (page===0?'disabled':'') + '>‹ Prev</button>'
