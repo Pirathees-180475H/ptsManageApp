@@ -1197,6 +1197,18 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .cc-exp-stat.stat-exp .cc-exp-stat-val{color:#ff6b8a;}
 .cc-exp-stat.stat-pay .cc-exp-stat-val{color:#4ade80;}
 .cc-exp-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.35);font-size:.8em;line-height:1.7;}
+.cc-exp-search{display:flex;align-items:center;gap:8px;margin-bottom:12px;}
+.cc-exp-search-input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 12px;color:#fff;font-size:.78em;font-family:inherit;outline:none;transition:border-color .2s,background .2s;}
+.cc-exp-search-input::placeholder{color:rgba(255,255,255,.3);}
+.cc-exp-search-input:focus{border-color:rgba(0,212,255,.4);background:rgba(255,255,255,.08);}
+.cc-exp-search-clear{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:.7em;font-weight:700;font-family:inherit;transition:all .15s;}
+.cc-exp-search-clear:hover{background:rgba(255,77,109,.15);border-color:rgba(255,77,109,.3);color:#fff;}
+.cc-exp-pager{display:flex;align-items:center;justify-content:space-between;padding:10px 0 2px;gap:8px;}
+.cc-exp-pager-info{font-size:.62em;color:rgba(255,255,255,.35);font-weight:600;white-space:nowrap;}
+.cc-exp-pager-btns{display:flex;gap:5px;}
+.cc-exp-pager-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.55);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:.68em;font-weight:700;font-family:inherit;transition:all .18s;}
+.cc-exp-pager-btn:hover:not(:disabled){background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.35);color:#fff;}
+.cc-exp-pager-btn:disabled{opacity:.3;cursor:not-allowed;}
 /* inline "view expenses" button inside the amt-block */
 .amt-lbl-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
 .cc-view-exp-btn{background:none;border:none;padding:0 2px;cursor:pointer;color:rgba(255,77,109,.5);line-height:1;transition:color .15s;display:flex;align-items:center;}
@@ -5084,6 +5096,13 @@ function expMonIdx(k){var i=EXP_MON_ORDER.findIndex(function(m){return m.toLower
 var _ccExpPositioned = false;
 var _ccExpState = { cardName: '', month: 0, year: 0 };
 var _ccExpMonths = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var _ccExpEntriesAll = [];
+var _ccExpEntries = [];
+var _ccExpPage = 0;
+var _ccExpSearchTerm = '';
+var _ccExpTotalExp = 0;
+var _ccExpTotalPay = 0;
+var CC_EXP_PAGE_SIZE = 20;
 
 function showCardExpenses(cardName) {
   var panel = document.getElementById('cc-exp-panel');
@@ -5158,15 +5177,74 @@ function ccExpRender(res) {
     body.innerHTML = '<div class="cc-exp-empty">📭 No expense column mapped for <strong>' + res.cardName + '</strong>.<br><span style="font-size:.9em;opacity:.6">Check card name contains "amex" or "ntb".</span></div>';
     return;
   }
-  var entries = res.entries || [];
-  if (!entries.length) {
+  _ccExpEntriesAll = res.entries || [];
+  _ccExpEntries = _ccExpEntriesAll.slice();
+  _ccExpTotalExp = res.totalExp || 0;
+  _ccExpTotalPay = res.totalPay || 0;
+  _ccExpPage = 0;
+  _ccExpSearchTerm = '';
+
+  if (!_ccExpEntriesAll.length) {
     body.innerHTML = '<div class="cc-exp-empty">📭 No transactions recorded this month.</div>';
     return;
   }
-  var months = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var mName = months[res.month] || '';
+
+  // Search bar + summary stats (static)
+  var html = '<div class="cc-exp-search">'
+    + '<input type="text" id="cc-exp-search-input" class="cc-exp-search-input" placeholder="Search by date or reference..." oninput="ccExpSearch(this.value)">'
+    + '<button class="cc-exp-search-clear" onclick="ccExpSearchClear()">✕ Clear</button>'
+    + '</div>'
+    + '<div class="cc-exp-summary" style="margin-bottom:14px;">'
+    + '<div class="cc-exp-stat stat-exp"><div class="cc-exp-stat-lbl">Total Expense</div><div class="cc-exp-stat-val">₨ ' + _ccExpTotalExp.toLocaleString() + '</div></div>'
+    + '<div class="cc-exp-stat stat-pay"><div class="cc-exp-stat-lbl">Total Payment</div><div class="cc-exp-stat-val">₨ ' + _ccExpTotalPay.toLocaleString() + '</div></div>'
+    + '</div>'
+    + '<div id="cc-exp-table-wrap"></div>';
+
+  body.innerHTML = html;
+  ccExpPage(0);
+}
+
+function ccExpSearch(term) {
+  _ccExpSearchTerm = (term || '').toLowerCase().trim();
+  var mName = _ccExpMonths[_ccExpState.month] || '';
+  if (!_ccExpSearchTerm) {
+    _ccExpEntries = _ccExpEntriesAll.slice();
+  } else {
+    _ccExpEntries = _ccExpEntriesAll.filter(function(e) {
+      var dateStr = mName + ' ' + e.day;
+      var dateMatch = dateStr.toLowerCase().indexOf(_ccExpSearchTerm) >= 0;
+      var refMatch = e.reference && e.reference.toLowerCase().indexOf(_ccExpSearchTerm) >= 0;
+      var expMatch = e.expense && String(e.expense).indexOf(_ccExpSearchTerm) >= 0;
+      var payMatch = e.payment && String(e.payment).indexOf(_ccExpSearchTerm) >= 0;
+      return dateMatch || refMatch || expMatch || payMatch;
+    });
+  }
+  _ccExpPage = 0;
+  ccExpPage(0);
+}
+
+function ccExpSearchClear() {
+  var inp = document.getElementById('cc-exp-search-input');
+  if (inp) inp.value = '';
+  ccExpSearch('');
+}
+
+function ccExpPage(page) {
+  _ccExpPage = page;
+  var count = _ccExpEntries.length;
+  var pages = Math.ceil(count / CC_EXP_PAGE_SIZE) || 1;
+  var start = page * CC_EXP_PAGE_SIZE;
+  var end = Math.min(start + CC_EXP_PAGE_SIZE, count);
+  var slice = _ccExpEntries.slice(start, end);
+  var mName = _ccExpMonths[_ccExpState.month] || '';
+
+  if (!count) {
+    document.getElementById('cc-exp-table-wrap').innerHTML = '<div class="cc-exp-empty">🔍 No entries match your search.</div>';
+    return;
+  }
+
   var html = '<table class="cc-exp-table"><thead><tr><th>Date</th><th>Reference</th><th class="col-amt">Expense</th><th class="col-amt">Payment</th></tr></thead><tbody>';
-  entries.forEach(function(e) {
+  slice.forEach(function(e) {
     var expStr = e.expense > 0 ? '₨ ' + e.expense.toLocaleString() : '—';
     var payStr = e.payment > 0 ? '₨ ' + e.payment.toLocaleString() : '—';
     html += '<tr>'
@@ -5177,11 +5255,23 @@ function ccExpRender(res) {
       + '</tr>';
   });
   html += '</tbody></table>';
-  html += '<div class="cc-exp-summary">'
-    + '<div class="cc-exp-stat stat-exp"><div class="cc-exp-stat-lbl">Total Expense</div><div class="cc-exp-stat-val">₨ ' + (res.totalExp || 0).toLocaleString() + '</div></div>'
-    + '<div class="cc-exp-stat stat-pay"><div class="cc-exp-stat-lbl">Total Payment</div><div class="cc-exp-stat-val">₨ ' + (res.totalPay || 0).toLocaleString() + '</div></div>'
-    + '</div>';
-  body.innerHTML = html;
+
+  // Pagination info
+  var pagerInfo = (start+1) + '–' + end + ' of ' + count;
+  if (_ccExpSearchTerm && count < _ccExpEntriesAll.length) {
+    pagerInfo += ' <span style="opacity:.5;">(filtered from ' + _ccExpEntriesAll.length + ')</span>';
+  }
+
+  html += '<div class="cc-exp-pager">'
+    + '<span class="cc-exp-pager-info">' + pagerInfo + '</span>'
+    + '<div class="cc-exp-pager-btns">'
+    + '<button class="cc-exp-pager-btn" onclick="ccExpPage(0)" ' + (page===0?'disabled':'') + '>«</button>'
+    + '<button class="cc-exp-pager-btn" onclick="ccExpPage(' + (page-1) + ')" ' + (page===0?'disabled':'') + '>‹ Prev</button>'
+    + '<button class="cc-exp-pager-btn" onclick="ccExpPage(' + (page+1) + ')" ' + (page>=pages-1?'disabled':'') + '>Next ›</button>'
+    + '<button class="cc-exp-pager-btn" onclick="ccExpPage(' + (pages-1) + ')" ' + (page>=pages-1?'disabled':'') + '>»</button>'
+    + '</div></div>';
+
+  document.getElementById('cc-exp-table-wrap').innerHTML = html;
 }
 
 // Draggable cc-exp-panel
