@@ -347,6 +347,36 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pg-notes-btn.notes-active{background:rgba(45,212,191,.28);border-color:rgba(45,212,191,.6);color:#5eead4;}
 
 /* ── Notes Modal ── */
+/* ── Quick-add confirm micro-modal ── */
+#qadd-confirm{
+  position:fixed;inset:0;z-index:20000;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(4px);
+}
+#qadd-confirm.open{display:flex;animation:qaddIn .18s ease;}
+@keyframes qaddIn{from{opacity:0;transform:scale(.93);}to{opacity:1;transform:scale(1);}}
+.qadd-box{
+  background:#161b22;border:1px solid rgba(255,255,255,.1);border-radius:14px;
+  padding:22px 22px 18px;width:290px;box-shadow:0 16px 48px rgba(0,0,0,.7);
+  display:flex;flex-direction:column;gap:14px;
+}
+.qadd-box-title{font-size:13px;font-weight:700;color:#e6edf3;line-height:1.4;}
+.qadd-box-sub{font-size:11px;color:#8b949e;line-height:1.5;margin-top:-8px;}
+.qadd-box-actions{display:flex;gap:8px;justify-content:flex-end;}
+.qadd-btn-cancel{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:#8b949e;padding:7px 16px;border-radius:8px;font-size:12px;
+  font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;
+}
+.qadd-btn-cancel:hover{border-color:rgba(255,255,255,.2);color:#e6edf3;}
+.qadd-btn-ok{
+  background:#1f6feb;border:none;color:#fff;padding:7px 18px;
+  border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
+  font-family:inherit;transition:background .15s;
+}
+.qadd-btn-ok:hover{background:#388bfd;}
+.qadd-btn-ok:disabled{opacity:.45;cursor:not-allowed;}
+
 #notes-modal{
   position:fixed;
   width:95%;max-width:750px;max-height:85vh;z-index:8000;
@@ -513,11 +543,18 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .sub-entry-month.active{background:rgba(0,230,118,.12);color:var(--green);}
 .sub-entry-plan{font-size:.7em;color:rgba(255,255,255,.7);}
 .sub-entry-del{
-  margin-left:auto;background:none;border:none;color:rgba(255,80,80,.4);
+  background:none;border:none;color:rgba(255,80,80,.4);
   font-size:1.05em;cursor:pointer;padding:3px 7px;line-height:1;border-radius:6px;
   transition:all .15s;font-family:inherit;display:flex;align-items:center;
 }
 .sub-entry-del:hover{color:#ff5050;background:rgba(255,80,80,.15);}
+.sub-entry-qadd{
+  background:none;border:none;color:rgba(63,185,80,.45);
+  font-size:1.05em;cursor:pointer;padding:3px 7px;line-height:1;border-radius:6px;
+  transition:all .15s;font-family:inherit;display:flex;align-items:center;font-weight:700;
+}
+.sub-entry-qadd:hover{color:#3fb950;background:rgba(63,185,80,.15);}
+.sub-entry-actions{margin-left:auto;display:flex;gap:2px;align-items:center;}
 .sub-entry-costs{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
 .sub-cost-item{display:flex;flex-direction:column;gap:2px;}
 .sub-cost-label{font-size:.55em;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.4);}
@@ -3171,6 +3208,18 @@ input[type=date].swae-input{color-scheme:dark;}
     <div style="text-align:center;padding:40px;color:var(--muted);">
       <div style="font-size:2em;margin-bottom:10px;">⏳</div>
       Loading subscriptions...
+    </div>
+  </div>
+</div>
+
+<!-- ── Quick-add confirm modal ── -->
+<div id="qadd-confirm">
+  <div class="qadd-box">
+    <div class="qadd-box-title" id="qadd-title"></div>
+    <div class="qadd-box-sub" id="qadd-sub"></div>
+    <div class="qadd-box-actions">
+      <button class="qadd-btn-cancel" onclick="qaddCancel()">Cancel</button>
+      <button class="qadd-btn-ok" id="qadd-ok-btn" onclick="qaddConfirm()">Add</button>
     </div>
   </div>
 </div>
@@ -9810,6 +9859,59 @@ function subAddSave() {
     });
 }
 
+/* ── Quick-add confirm modal state ── */
+var _qaddPending = null;
+
+function subQuickAdd(platform, plan, cost, collections, collFrom, netCost, note) {
+  var month = _currentMonth;
+  if (!month) { alert('Current month not detected.'); return; }
+
+  _qaddPending = { month: month, platform: platform, plan: plan,
+    cost: cost, collections: collections,
+    collectionFrom: collFrom, netCost: netCost, note: note };
+
+  document.getElementById('qadd-title').textContent =
+    'Add ' + platform + ' for ' + month + '?';
+  document.getElementById('qadd-sub').textContent =
+    (plan ? plan + '  ·  ' : '') + '₨ ' + netCost.toLocaleString() + ' net';
+
+  var btn = document.getElementById('qadd-ok-btn');
+  btn.textContent = 'Add';
+  btn.disabled = false;
+  document.getElementById('qadd-confirm').classList.add('open');
+}
+
+function qaddCancel() {
+  document.getElementById('qadd-confirm').classList.remove('open');
+  _qaddPending = null;
+}
+
+function qaddConfirm() {
+  if (!_qaddPending) return;
+  var entry = _qaddPending;
+  var btn = document.getElementById('qadd-ok-btn');
+  btn.textContent = 'Adding…';
+  btn.disabled = true;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      document.getElementById('qadd-confirm').classList.remove('open');
+      _qaddPending = null;
+      if (!res || !res.success) {
+        alert('Error: ' + (res ? res.error : 'Unknown error'));
+        return;
+      }
+      _subscriptionsData = null;
+      loadSubscriptions();
+    })
+    .withFailureHandler(function(err) {
+      document.getElementById('qadd-confirm').classList.remove('open');
+      _qaddPending = null;
+      alert('Error: ' + err.message);
+    })
+    .addSubscription(entry);
+}
+
 /* ── Delete a subscription entry ── */
 function subDeleteEntry(rowIndex, platform, month) {
   google.script.run
@@ -9995,7 +10097,10 @@ function renderSubscriptions(data) {
       html += '<div class="sub-entry-header">';
       html += '<div class="sub-entry-month' + (isActive ? ' active' : '') + '">' + (displayMonth || '—') + '</div>';
       html += '<div class="sub-entry-plan">' + (entry.plan || '—') + '</div>';
+      html += '<div class="sub-entry-actions">';
+      html += '<button class="sub-entry-qadd" onclick="subQuickAdd(\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (entry.plan||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.cost)||0) + ',' + (parseFloat(entry.collections)||0) + ',\'' + (entry.collectionFrom||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.netCost)||0) + ',\'' + (entry.note||'').replace(/'/g,"\\'") + '\')" title="Quick-add for current month"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>';
       html += '<button class="sub-entry-del" onclick="subDeleteEntry(' + entry.rowIndex + ',\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (displayMonth||'').replace(/'/g,"\\'") + '\')" title="Remove entry"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
+      html += '</div>';
       html += '</div>';
 
       if(entry.collectionFrom && entry.collectionFrom !== 'N/A') {
@@ -10066,7 +10171,10 @@ function renderSubscriptions(data) {
         html += '<div class="sub-entry-header">';
         html += '<div class="sub-entry-month">' + (displayMonth || '—') + '</div>';
         html += '<div class="sub-entry-plan">' + (entry.plan || '—') + '</div>';
+        html += '<div class="sub-entry-actions">';
+        html += '<button class="sub-entry-qadd" onclick="subQuickAdd(\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (entry.plan||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.cost)||0) + ',' + (parseFloat(entry.collections)||0) + ',\'' + (entry.collectionFrom||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.netCost)||0) + ',\'' + (entry.note||'').replace(/'/g,"\\'") + '\')" title="Quick-add for current month"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>';
         html += '<button class="sub-entry-del" onclick="subDeleteEntry(' + entry.rowIndex + ',\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (displayMonth||'').replace(/'/g,"\\'") + '\')" title="Remove entry"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
+        html += '</div>';
         html += '</div>';
 
         if(entry.collectionFrom && entry.collectionFrom !== 'N/A') {

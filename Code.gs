@@ -2845,17 +2845,16 @@ function addSubscription(entry) {
     if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
 
     var lastRow = sheet.getLastRow();
-    var insertRow = lastRow + 1; // default: append
 
-    // Find first YouTube row in column N (col 14) from row 3 onwards
+    // Find the last occupied row in the subscription columns (col N = 14)
+    // so we never insert a full row (which would corrupt other tables in cols A–K).
+    var lastSubRow = 2; // row 2 is the header; data starts at row 3
     for (var i = 3; i <= lastRow; i++) {
-      var platCell = String(sheet.getRange(i, 14).getValue()).trim().toLowerCase();
-      if (platCell === 'youtube') {
-        insertRow = i;
-        sheet.insertRowBefore(i);
-        break;
+      if (String(sheet.getRange(i, 14).getValue()).trim() !== '') {
+        lastSubRow = i;
       }
     }
+    var insertRow = lastSubRow + 1; // always append — no insertRowBefore
 
     // Write data to columns M–T (13–20)
     sheet.getRange(insertRow, 13, 1, 8).setValues([[
@@ -2870,10 +2869,101 @@ function addSubscription(entry) {
     ]]);
 
     Logger.log('addSubscription: inserted at row ' + insertRow);
-    return { success: true };
+
+    // ── Also record as Other expense in Monthly Expences ─────────────
+    var expResult = _addSubscriptionToExpenses(entry);
+    Logger.log('addSubscription: expense write result: ' + JSON.stringify(expResult));
+
+    return { success: true, expenseResult: expResult };
 
   } catch (e) {
     Logger.log('addSubscription error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/* ── _addSubscriptionToExpenses ──────────────────────────────────────
+   Finds a date row in the subscription's month (Monthly Expences) where
+   the Other-expense cells are free and writes:
+     col L (12) ← netCost (or cost)   [Other amount]
+     col K (11) ← platform            [Other ref]
+   Priority: row with both K & L empty → row with K empty → first row.
+─────────────────────────────────────────────────────────────────── */
+function _addSubscriptionToExpenses(entry) {
+  try {
+    var ss       = SpreadsheetApp.getActiveSpreadsheet();
+    var expSheet = ss.getSheetByName('Monthly Expences');
+    if (!expSheet) return { success: false, error: 'Monthly Expences sheet not found' };
+
+    // Parse "May 2026" → targetMonth=5, targetYear=2026
+    var MON_MAP = { jan:1,feb:2,mar:3,apr:4,may:5,jun:6,
+                    jul:7,aug:8,sep:9,oct:10,nov:11,dec:12 };
+    var monthStr = (entry.month || '').trim();
+    var mParts   = monthStr.match(/^([a-zA-Z]+)\s+(\d{4})$/);
+    if (!mParts) return { success: false, error: 'Cannot parse month: ' + monthStr };
+
+    var targetMonth = MON_MAP[mParts[1].toLowerCase()];
+    if (!targetMonth) return { success: false, error: 'Unknown month name: ' + mParts[1] };
+    var targetYear = parseInt(mParts[2], 10);
+
+    var tz      = ss.getSpreadsheetTimeZone();
+    var lastRow = expSheet.getLastRow();
+    // Read cols A–L (1–12) for all rows
+    var allData = expSheet.getRange(1, 1, lastRow, 12).getValues();
+
+    var candidates = [];
+    for (var r = 0; r < allData.length; r++) {
+      var dateCell = allData[r][0];
+      if (!(dateCell instanceof Date) || isNaN(dateCell.getTime())) continue;
+
+      var rowMonth = parseInt(Utilities.formatDate(dateCell, tz, 'M'),  10);
+      var rowYear  = parseInt(Utilities.formatDate(dateCell, tz, 'yyyy'), 10);
+      if (rowMonth !== targetMonth || rowYear !== targetYear) continue;
+
+      var otherAmt = allData[r][11]; // col L (0-indexed 11) — Other amount
+      var otherRef = allData[r][10]; // col K (0-indexed 10) — Other ref
+
+      var amtEmpty = (otherAmt === '' || otherAmt === null || otherAmt === undefined ||
+                      otherAmt === 0  || String(otherAmt).trim() === '');
+      var refEmpty = (otherRef === '' || otherRef === null || otherRef === undefined ||
+                      String(otherRef).trim() === '');
+
+      candidates.push({
+        rowNum:    r + 1,
+        amtEmpty:  amtEmpty,
+        refEmpty:  refEmpty,
+        bothEmpty: amtEmpty && refEmpty
+      });
+    }
+
+    if (!candidates.length) {
+      return { success: false, error: 'No rows found for ' + monthStr + ' in Monthly Expences' };
+    }
+
+    // Priority 1: both K and L are empty
+    var target = null;
+    for (var i = 0; i < candidates.length; i++) {
+      if (candidates[i].bothEmpty) { target = candidates[i]; break; }
+    }
+    // Priority 2: K (ref) is empty (no existing other-expense ref on that date)
+    if (!target) {
+      for (var i = 0; i < candidates.length; i++) {
+        if (candidates[i].refEmpty) { target = candidates[i]; break; }
+      }
+    }
+    // Priority 3: first row of that month
+    if (!target) target = candidates[0];
+
+    var amount = (entry.netCost > 0 ? entry.netCost : entry.cost) || 0;
+
+    expSheet.getRange(target.rowNum, 12).setValue(amount);              // L = Other amount
+    expSheet.getRange(target.rowNum, 11).setValue(entry.platform || ''); // K = Other ref
+    SpreadsheetApp.flush();
+
+    return { success: true, row: target.rowNum };
+
+  } catch (e) {
+    Logger.log('_addSubscriptionToExpenses error: ' + e.message);
     return { success: false, error: e.message };
   }
 }
