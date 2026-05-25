@@ -9988,14 +9988,17 @@ function renderSubscriptions(data) {
     return;
   }
 
-  // Group by platform
+  // Group by platform (case-insensitive)
   var platforms = {};
+  var platformDisplayNames = {};
   data.entries.forEach(function(entry){
     if(!entry.platform) return;
-    if(!platforms[entry.platform]) {
-      platforms[entry.platform] = [];
+    var key = entry.platform.toLowerCase();
+    if(!platforms[key]) {
+      platforms[key] = [];
+      platformDisplayNames[key] = entry.platform;
     }
-    platforms[entry.platform].push(entry);
+    platforms[key].push(entry);
   });
 
   // Calculate totals
@@ -10054,16 +10057,27 @@ function renderSubscriptions(data) {
     return '💳';
   }
 
+  // Case-insensitive platform config lookup
+  function getPlatformConfig(platKey) {
+    var lk = platKey.toLowerCase();
+    var matched = null;
+    Object.keys(platformColors).forEach(function(k){
+      if(k.toLowerCase() === lk) matched = platformColors[k];
+    });
+    return matched || {class: 'default', icon: '', color: '#888888', fallback: getPlatformFallback(platKey)};
+  }
+
   // Render active platforms
   Object.keys(activePlatforms).forEach(function(platName){
     var entries = activePlatforms[platName];
-    var platConfig = platformColors[platName] || {class: 'netflix', icon: '', color: '#888888', fallback: getPlatformFallback(platName)};
+    var displayName = platformDisplayNames[platName] || platName;
+    var platConfig = getPlatformConfig(platName);
     var fallbackIcon = platConfig.fallback || getPlatformFallback(platName);
     var latestEntry = entries[entries.length - 1];
     var totalPlatCost = entries.reduce(function(sum, e){ return sum + (parseFloat(e.netCost) || 0); }, 0);
 
-    html += '<div class="sub-platform-card" id="sub-plat-' + platName.toLowerCase() + '">';
-    html += '<div class="sub-plat-header" onclick="togglePlatform(\'' + platName.toLowerCase() + '\')">';
+    html += '<div class="sub-platform-card" id="sub-plat-' + platName + '">';
+    html += '<div class="sub-plat-header" onclick="togglePlatform(\'' + platName + '\')">';
     html += '<div class="sub-plat-left">';
     if(platConfig.icon) {
       html += '<div class="sub-plat-icon ' + platConfig.class + '"><img src="' + platConfig.icon + '" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'' + fallbackIcon + '\';" style="width:20px;height:20px;filter:brightness(0) invert(1);" /></div>';
@@ -10071,7 +10085,7 @@ function renderSubscriptions(data) {
       html += '<div class="sub-plat-icon ' + platConfig.class + '">' + fallbackIcon + '</div>';
     }
     html += '<div class="sub-plat-info">';
-    html += '<div class="sub-plat-name">' + platName + '</div>';
+    html += '<div class="sub-plat-name">' + displayName + '</div>';
     html += '<div class="sub-plat-status">' + entries.length + ' entries</div>';
     html += '</div></div>';
     html += '<div style="display:flex;align-items:center;gap:10px;">';
@@ -10134,12 +10148,13 @@ function renderSubscriptions(data) {
 
     Object.keys(closedPlatforms).forEach(function(platName){
       var entries = closedPlatforms[platName];
-      var platConfig = platformColors[platName] || {class: 'netflix', icon: '', color: '#888888', fallback: getPlatformFallback(platName)};
+      var displayName = platformDisplayNames[platName] || platName;
+      var platConfig = getPlatformConfig(platName);
       var fallbackIcon = platConfig.fallback || getPlatformFallback(platName);
       var totalPlatCost = entries.reduce(function(sum, e){ return sum + (parseFloat(e.netCost) || 0); }, 0);
 
-      html += '<div class="sub-platform-card" style="opacity:0.6;" id="sub-plat-closed-' + platName.toLowerCase() + '">';
-      html += '<div class="sub-plat-header" onclick="togglePlatform(\'closed-' + platName.toLowerCase() + '\')">';
+      html += '<div class="sub-platform-card" style="opacity:0.6;" id="sub-plat-closed-' + platName + '">';
+      html += '<div class="sub-plat-header" onclick="togglePlatform(\'closed-' + platName + '\')">';
       html += '<div class="sub-plat-left">';
       if(platConfig.icon) {
         html += '<div class="sub-plat-icon ' + platConfig.class + '"><img src="' + platConfig.icon + '" onerror="this.style.display=\'none\';this.parentNode.innerHTML=\'' + fallbackIcon + '\';" style="width:20px;height:20px;filter:brightness(0) invert(1);" /></div>';
@@ -10147,7 +10162,7 @@ function renderSubscriptions(data) {
         html += '<div class="sub-plat-icon ' + platConfig.class + '">' + fallbackIcon + '</div>';
       }
       html += '<div class="sub-plat-info">';
-      html += '<div class="sub-plat-name">' + platName + ' (Closed)</div>';
+      html += '<div class="sub-plat-name">' + displayName + ' (Closed)</div>';
       html += '<div class="sub-plat-status">' + entries.length + ' entries</div>';
       html += '</div></div>';
       html += '<div style="display:flex;align-items:center;gap:10px;">';
