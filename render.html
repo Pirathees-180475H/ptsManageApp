@@ -715,9 +715,13 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .inst-status{
   font-size:.6em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
   padding:3px 9px;border-radius:20px;flex-shrink:0;
+  cursor:pointer;transition:opacity .15s,transform .15s;
+  user-select:none;
 }
+.inst-status:hover{opacity:.75;transform:scale(1.06);}
 .inst-status.settled{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);}
 .inst-status.pending{background:rgba(255,165,0,.15);color:#ffa500;border:1px solid rgba(255,165,0,.3);}
+.inst-status.saving{opacity:.45;pointer-events:none;}
 
 /* ── Tracker Modal (combined) ── */
 #tracker-modal{
@@ -10661,7 +10665,9 @@ function renderInstallments(data) {
       }
       html += '<div class="inst-entry-month">' + (entry.month || '—') + '</div>';
       html += '<div class="inst-entry-amount">₨ ' + (parseFloat(entry.amount) || 0).toLocaleString() + '</div>';
-      html += '<div class="inst-status ' + statusClass + '">' + entry.status + '</div>';
+      var safeInstName = inst.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      var safeMonth = (entry.month || '').replace(/'/g,"\\'");
+      html += '<div class="inst-status ' + statusClass + '" data-status="' + statusClass + '" title="Click to toggle status" onclick="instToggleStatus(this,\'' + safeInstName + '\',' + entry.num + ',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ')">' + entry.status + '</div>';
       html += '</div>';
     });
     html += '</div></div></div>';
@@ -10674,6 +10680,37 @@ function renderInstallments(data) {
 function toggleInstCard(idx) {
   var card = document.getElementById('inst-card-' + idx);
   if (card) card.classList.toggle('expanded');
+}
+
+function instToggleStatus(el, instName, entryNum, entryMonth, entryAmount) {
+  var current = el.getAttribute('data-status'); // 'pending' or 'settled'
+  var newStatus = current === 'pending' ? 'Settled' : 'Pending';
+  var prevText = el.textContent;
+
+  el.classList.add('saving');
+  el.textContent = '...';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.success) {
+        var ns = newStatus.toLowerCase();
+        el.setAttribute('data-status', ns);
+        el.className = 'inst-status ' + ns;
+        el.textContent = newStatus;
+        // Reload to refresh counts, totals and donut chart
+        loadInstallments();
+      } else {
+        el.classList.remove('saving');
+        el.textContent = prevText;
+        alert('Could not update: ' + (res ? res.error : 'Unknown error'));
+      }
+    })
+    .withFailureHandler(function(err) {
+      el.classList.remove('saving');
+      el.textContent = prevText;
+      alert('Failed: ' + err.message);
+    })
+    .updateInstallmentStatus(instName, entryNum, newStatus, entryMonth, entryAmount);
 }
 
 // Draggable inst-modal — removed (handled by tracker-modal)

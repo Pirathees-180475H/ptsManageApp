@@ -2968,6 +2968,63 @@ function _addSubscriptionToExpenses(entry) {
   }
 }
 
+/* ── _addInstallmentToExpenses ─────────────────────────────────────────
+   Called when an installment entry is marked Settled.
+   Finds a free Other-expense slot in the entry's month and writes:
+     col K (11) ← instName   [Other ref]
+     col L (12) ← amount     [Other amount]
+───────────────────────────────────────────────────────────────── */
+function _addInstallmentToExpenses(instName, month, amount) {
+  try {
+    var ss       = SpreadsheetApp.getActiveSpreadsheet();
+    var expSheet = ss.getSheetByName('Monthly Expences');
+    if (!expSheet) return { success: false, error: 'Monthly Expences sheet not found' };
+
+    var MON_MAP = { jan:1,feb:2,mar:3,apr:4,may:5,jun:6,
+                    jul:7,aug:8,sep:9,oct:10,nov:11,dec:12 };
+    var mParts = String(month).trim().match(/^([a-zA-Z]+)\s+(\d{4})$/);
+    if (!mParts) return { success: false, error: 'Cannot parse month: ' + month };
+
+    var targetMonth = MON_MAP[mParts[1].toLowerCase()];
+    if (!targetMonth) return { success: false, error: 'Unknown month name: ' + mParts[1] };
+    var targetYear = parseInt(mParts[2], 10);
+
+    var tz      = ss.getSpreadsheetTimeZone();
+    var lastRow = expSheet.getLastRow();
+    var allData = expSheet.getRange(1, 1, lastRow, 12).getValues();
+
+    var candidates = [];
+    for (var r = 0; r < allData.length; r++) {
+      var dateCell = allData[r][0];
+      if (!(dateCell instanceof Date) || isNaN(dateCell.getTime())) continue;
+      if (parseInt(Utilities.formatDate(dateCell, tz, 'M'),   10) !== targetMonth) continue;
+      if (parseInt(Utilities.formatDate(dateCell, tz, 'yyyy'), 10) !== targetYear)  continue;
+
+      var otherAmt = allData[r][11];
+      var otherRef = allData[r][10];
+      var amtEmpty = (otherAmt === '' || otherAmt === null || otherAmt === undefined || otherAmt === 0 || String(otherAmt).trim() === '');
+      var refEmpty = (otherRef === '' || otherRef === null || otherRef === undefined || String(otherRef).trim() === '');
+      candidates.push({ rowNum: r + 1, amtEmpty: amtEmpty, refEmpty: refEmpty, bothEmpty: amtEmpty && refEmpty });
+    }
+
+    if (!candidates.length) return { success: false, error: 'No rows found for ' + month + ' in Monthly Expences' };
+
+    var target = null;
+    for (var i = 0; i < candidates.length; i++) { if (candidates[i].bothEmpty) { target = candidates[i]; break; } }
+    if (!target) { for (var i = 0; i < candidates.length; i++) { if (candidates[i].refEmpty) { target = candidates[i]; break; } } }
+    if (!target) target = candidates[0];
+
+    expSheet.getRange(target.rowNum, 11).setValue(instName); // K = Other ref
+    expSheet.getRange(target.rowNum, 12).setValue(amount);   // L = Other amount
+    SpreadsheetApp.flush();
+    return { success: true, row: target.rowNum };
+
+  } catch (e) {
+    Logger.log('_addInstallmentToExpenses error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 function deleteSubscription(rowIndex) {
   try {
     var ss = SpreadsheetApp.getActive();
@@ -3306,6 +3363,73 @@ function getInstallments() {
 
   } catch (e) {
     Logger.log('getInstallments error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   updateInstallmentStatus
+   Toggles the status of a specific installment entry in the sheet.
+   instName : display name of the installment (e.g. "iPhone")
+   entryNum : row-counter value from column V (0-based integer)
+   newStatus: "Settled" or "Pending"
+───────────────────────────────────────────────────────────────── */
+function updateInstallmentStatus(instName, entryNum, newStatus, entryMonth, entryAmount) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    var lastRow  = sheet.getLastRow();
+    var lastCol  = sheet.getLastColumn();
+    var START_COL = 22; // Column V
+
+    if (lastCol < START_COL + 2) return { success: false, error: 'No installment columns found' };
+
+    var numCols = lastCol - START_COL + 1;
+    var headers = sheet.getRange(2, START_COL, 1, numCols).getValues()[0];
+
+    // Find the status column offset for this installment
+    var statusColOffset = -1;
+    for (var i = 2; i + 1 < headers.length; i += 2) {
+      var amtHeader = String(headers[i] || '').trim();
+      var name = amtHeader.replace(/\s*amount\s*$/i, '').replace(/\s*amt\s*$/i, '').trim();
+      if (!name) {
+        name = String(headers[i + 1] || '').trim().replace(/\s*status\s*$/i, '').replace(/\s*sts\s*$/i, '').trim();
+      }
+      if (name.toLowerCase() === instName.toLowerCase()) {
+        statusColOffset = i + 1; // status column is one after the amount column
+        break;
+      }
+    }
+    if (statusColOffset === -1) return { success: false, error: 'Installment "' + instName + '" not found' };
+
+    if (lastRow < 3) return { success: false, error: 'No data rows' };
+
+    // Find the data row by the row-counter in column V (offset 0)
+    var numData = sheet.getRange(3, START_COL, lastRow - 2, 1).getValues();
+    var targetRow = -1;
+    for (var r = 0; r < numData.length; r++) {
+      if (parseInt(numData[r][0]) === parseInt(entryNum)) {
+        targetRow = 3 + r;
+        break;
+      }
+    }
+    if (targetRow === -1) return { success: false, error: 'Entry #' + entryNum + ' not found' };
+
+    // Write the new status
+    sheet.getRange(targetRow, START_COL + statusColOffset).setValue(newStatus);
+    SpreadsheetApp.flush();
+
+    // When settling, also log to Monthly Expences
+    if (newStatus === 'Settled' && entryMonth && entryAmount) {
+      _addInstallmentToExpenses(instName, entryMonth, entryAmount);
+    }
+
+    return { success: true };
+
+  } catch (e) {
+    Logger.log('updateInstallmentStatus error: ' + e.message);
     return { success: false, error: e.message };
   }
 }
