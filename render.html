@@ -719,6 +719,44 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .inst-status.settled{background:rgba(0,230,118,.15);color:var(--green);border:1px solid rgba(0,230,118,.3);}
 .inst-status.pending{background:rgba(255,165,0,.15);color:#ffa500;border:1px solid rgba(255,165,0,.3);}
 
+/* ── Tracker Modal (combined) ── */
+#tracker-modal{
+  position:fixed;
+  width:95%;max-width:750px;max-height:85vh;z-index:8000;
+  background:rgba(6,11,24,.95);backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.11);border-radius:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+  display:none;flex-direction:column;overflow:hidden;
+}
+#tracker-modal.open{display:flex;animation:trackerModalIn .3s ease;}
+@keyframes trackerModalIn{from{opacity:0;transform:scale(.95);}to{opacity:1;transform:scale(1);}}
+.tracker-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 13px 8px;border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;cursor:grab;user-select:none;
+}
+.tracker-hdr:active{cursor:grabbing;}
+.tracker-title{font-size:.63em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:8px;}
+.tracker-close{background:none;border:none;color:rgba(255,255,255,.25);font-size:.85em;cursor:pointer;padding:2px 5px;line-height:1;font-family:inherit;border-radius:6px;transition:all .15s;}
+.tracker-close:hover{color:#fff;}
+.tracker-tabs{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,.08);padding:0 13px;flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+.tracker-tabs::-webkit-scrollbar{display:none;}
+.trk-tab{background:none;border:none;color:rgba(255,255,255,.4);font-size:.65em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;padding:10px 14px 9px;cursor:pointer;position:relative;transition:color .2s;font-family:inherit;white-space:nowrap;flex-shrink:0;}
+.trk-tab:hover{color:rgba(255,255,255,.7);}
+.trk-tab.active{color:#818cf8;}
+.trk-tab::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:#818cf8;transform:scaleX(0);transition:transform .2s;}
+.trk-tab.active::after{transform:scaleX(1);}
+.trk-pane{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.trk-pane.active{display:flex;}
+.pg-tracker-btn{
+  background:rgba(99,102,241,.13);border:1px solid rgba(99,102,241,.28);
+  color:#818cf8;border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-tracker-btn:active{transform:scale(.9);}
+.pg-tracker-btn.tracker-active{background:rgba(99,102,241,.28);border-color:rgba(99,102,241,.6);color:#a5b4fc;}
+
 #bank-modal{
   position:fixed; top:10vh; left:calc(50vw - 400px);
   width:95%; max-width:800px; z-index:8000;
@@ -2813,11 +2851,9 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <span class="upd-lbl" id="updLbl">Starting…</span>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
-      <button class="pg-sub-btn" onclick="subToggle()">💳</button>
-      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
-      <button class="pg-inst-btn" onclick="instToggle()">📋</button>
       <button class="pg-reload-btn" id="refreshBtn" onclick="cseStartLoad()">↺ Reload</button>
     </div>
   </div>
@@ -2877,11 +2913,9 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">💳 Cards</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
-      <button class="pg-sub-btn" onclick="subToggle()">💳</button>
-      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
-      <button class="pg-inst-btn" onclick="instToggle()">📋</button>
       <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
     </div>
   </div>
@@ -2902,11 +2936,9 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">📊 Expenses</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
-      <button class="pg-sub-btn" onclick="subToggle()">💳</button>
-      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
-      <button class="pg-inst-btn" onclick="instToggle()">📋</button>
       <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
     </div>
   </div>
@@ -2940,10 +2972,9 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">💼 Summary</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
-      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
-      <button class="pg-inst-btn" onclick="instToggle()">📋</button>
       <button class="pg-reload-btn" onclick="reloadPage('port')">↺ Reload</button>
     </div>
   </div>
@@ -2969,10 +3000,9 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">💸 Money Flow</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
-      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
-      <button class="pg-inst-btn" onclick="instToggle()">📋</button>
       <button class="pg-reload-btn" onclick="reloadPage('mf')">↺ Reload</button>
     </div>
   </div>
@@ -3041,10 +3071,9 @@ input[type=date].swae-input{color-scheme:dark;}
     <span class="pg-hdr-title">🤝 Splitwise</span>
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
-      <button class="pg-notes-btn" onclick="notesToggle()">📝</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
-      <button class="pg-inst-btn" onclick="instToggle()">📋</button>
       <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>
     </div>
   </div>
@@ -3263,87 +3292,105 @@ input[type=date].swae-input{color-scheme:dark;}
 </div>
 
 <!-- ═══════════════════════════════════════════
-     SUBSCRIPTIONS MODAL
+     TRACKER MODAL  (Sub · Rotations · Losses · Installments)
 ═══════════════════════════════════════════ -->
-<div id="sub-modal">
-  <div class="sub-hdr">
-    <span class="sub-title">💳 My Subscriptions</span>
-    <button class="sub-close" onclick="subClose()">✕</button>
+<div id="tracker-modal">
+  <div class="tracker-hdr" id="tracker-hdr">
+    <span class="tracker-title">📋 My Tracker</span>
+    <button class="tracker-close" onclick="trackerClose()">✕</button>
   </div>
-  <!-- Toolbar: filter tabs + add button -->
-  <div class="sub-toolbar">
-    <div class="sub-filter-tabs">
-      <button class="sub-tab active" id="subTabActive" onclick="subSetFilter('active')">Active</button>
-      <button class="sub-tab" id="subTabAll" onclick="subSetFilter('all')">All</button>
-    </div>
-    <button class="sub-add-btn" onclick="subAddToggle()" title="Add new subscription entry">+</button>
+  <div class="tracker-tabs">
+    <button class="trk-tab active" id="trkTab-sub"  onclick="trackerSetTab('sub')">💳 Subscriptions</button>
+    <button class="trk-tab"        id="trkTab-rot"  onclick="trackerSetTab('rot')">🔄 Rotations</button>
+    <button class="trk-tab"        id="trkTab-loss" onclick="trackerSetTab('loss')">📉 Losses</button>
+    <button class="trk-tab"        id="trkTab-inst" onclick="trackerSetTab('inst')">📋 Installments</button>
   </div>
-  <!-- Add form (hidden by default) -->
-  <div class="sub-add-form" id="sub-add-form">
-    <div class="sub-add-form-title">➕ New Subscription Entry</div>
-    <div class="sub-add-grid">
-      <div class="sub-add-field">
-        <label class="sub-add-label">Month</label>
-        <input class="sub-add-input" id="saMonth" type="text" placeholder="e.g. May 2026" />
+  <!-- ── Subscriptions pane ── -->
+  <div class="trk-pane active" id="trk-pane-sub">
+    <div class="sub-toolbar">
+      <div class="sub-filter-tabs">
+        <button class="sub-tab active" id="subTabActive" onclick="subSetFilter('active')">Active</button>
+        <button class="sub-tab" id="subTabAll" onclick="subSetFilter('all')">All</button>
+      </div>
+      <button class="sub-add-btn" onclick="subAddToggle()" title="Add new subscription entry">+</button>
+    </div>
+    <div class="sub-add-form" id="sub-add-form">
+      <div class="sub-add-form-title">➕ New Subscription Entry</div>
+      <div class="sub-add-grid">
+        <div class="sub-add-field">
+          <label class="sub-add-label">Month</label>
+          <input class="sub-add-input" id="saMonth" type="text" placeholder="e.g. May 2026" />
+        </div>
+        <div class="sub-add-field">
+          <label class="sub-add-label">Platform</label>
+          <input class="sub-add-input" id="saPlatform" type="text" placeholder="e.g. Netflix" />
+        </div>
+      </div>
+      <div class="sub-add-grid">
+        <div class="sub-add-field">
+          <label class="sub-add-label">Plan</label>
+          <input class="sub-add-input" id="saPlan" type="text" placeholder="e.g. Premium" />
+        </div>
+        <div class="sub-add-field">
+          <label class="sub-add-label">Collection From</label>
+          <input class="sub-add-input" id="saCollFrom" type="text" placeholder="Optional" />
+        </div>
+      </div>
+      <div class="sub-add-grid-3">
+        <div class="sub-add-field">
+          <label class="sub-add-label">Cost (₨)</label>
+          <input class="sub-add-input" id="saCost" type="number" min="0" placeholder="0" oninput="saAutoNet()" />
+        </div>
+        <div class="sub-add-field">
+          <label class="sub-add-label">Collected (₨)</label>
+          <input class="sub-add-input" id="saCollections" type="number" min="0" placeholder="0" oninput="saAutoNet()" />
+        </div>
+        <div class="sub-add-field">
+          <label class="sub-add-label">Net Cost (₨)</label>
+          <input class="sub-add-input" id="saNetCost" type="number" placeholder="auto" />
+        </div>
       </div>
       <div class="sub-add-field">
-        <label class="sub-add-label">Platform</label>
-        <input class="sub-add-input" id="saPlatform" type="text" placeholder="e.g. Netflix" />
+        <label class="sub-add-label">Note</label>
+        <input class="sub-add-input" id="saNote" type="text" placeholder="Optional note..." />
+      </div>
+      <div class="sub-add-actions">
+        <button class="sub-form-cancel" onclick="subAddToggle()">Cancel</button>
+        <button class="sub-form-save" id="subSaveBtn" onclick="subAddSave()">Save Entry</button>
       </div>
     </div>
-    <div class="sub-add-grid">
-      <div class="sub-add-field">
-        <label class="sub-add-label">Plan</label>
-        <input class="sub-add-input" id="saPlan" type="text" placeholder="e.g. Premium" />
+    <div class="sub-body" id="sub-body">
+      <div style="text-align:center;padding:40px;color:var(--muted);">
+        <div style="font-size:2em;margin-bottom:10px;">⏳</div>
+        Loading subscriptions...
       </div>
-      <div class="sub-add-field">
-        <label class="sub-add-label">Collection From</label>
-        <input class="sub-add-input" id="saCollFrom" type="text" placeholder="Optional" />
-      </div>
-    </div>
-    <div class="sub-add-grid-3">
-      <div class="sub-add-field">
-        <label class="sub-add-label">Cost (₨)</label>
-        <input class="sub-add-input" id="saCost" type="number" min="0" placeholder="0" oninput="saAutoNet()" />
-      </div>
-      <div class="sub-add-field">
-        <label class="sub-add-label">Collected (₨)</label>
-        <input class="sub-add-input" id="saCollections" type="number" min="0" placeholder="0" oninput="saAutoNet()" />
-      </div>
-      <div class="sub-add-field">
-        <label class="sub-add-label">Net Cost (₨)</label>
-        <input class="sub-add-input" id="saNetCost" type="number" placeholder="auto" />
-      </div>
-    </div>
-    <div class="sub-add-field">
-      <label class="sub-add-label">Note</label>
-      <input class="sub-add-input" id="saNote" type="text" placeholder="Optional note..." />
-    </div>
-    <div class="sub-add-actions">
-      <button class="sub-form-cancel" onclick="subAddToggle()">Cancel</button>
-      <button class="sub-form-save" id="subSaveBtn" onclick="subAddSave()">Save Entry</button>
     </div>
   </div>
-  <div class="sub-body" id="sub-body">
-    <div style="text-align:center;padding:40px;color:var(--muted);">
-      <div style="font-size:2em;margin-bottom:10px;">⏳</div>
-      Loading subscriptions...
+  <!-- ── Rotations pane ── -->
+  <div class="trk-pane" id="trk-pane-rot">
+    <div id="notes-tab-rotations" style="flex:1;overflow-y:auto;padding:16px;">
+      <div style="text-align:center;padding:40px;color:var(--muted);">
+        <div style="font-size:2em;margin-bottom:10px;">⏳</div>
+        Loading rotations...
+      </div>
     </div>
   </div>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     INSTALLMENTS MODAL
-═══════════════════════════════════════════ -->
-<div id="inst-modal">
-  <div class="inst-hdr" id="inst-hdr">
-    <span class="inst-title">📋 My Installments</span>
-    <button class="inst-close" onclick="instClose()">✕</button>
+  <!-- ── Losses pane ── -->
+  <div class="trk-pane" id="trk-pane-loss">
+    <div id="notes-tab-losses" style="flex:1;overflow-y:auto;padding:16px;">
+      <div style="text-align:center;padding:40px;color:var(--muted);">
+        <div style="font-size:2em;margin-bottom:10px;">⏳</div>
+        Loading losses...
+      </div>
+    </div>
   </div>
-  <div class="inst-body" id="inst-body">
-    <div style="text-align:center;padding:40px;color:var(--muted);">
-      <div style="font-size:2em;margin-bottom:10px;">⏳</div>
-      Loading installments...
+  <!-- ── Installments pane ── -->
+  <div class="trk-pane" id="trk-pane-inst">
+    <div class="inst-body" id="inst-body">
+      <div style="text-align:center;padding:40px;color:var(--muted);">
+        <div style="font-size:2em;margin-bottom:10px;">⏳</div>
+        Loading installments...
+      </div>
     </div>
   </div>
 </div>
@@ -3356,35 +3403,6 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="qadd-box-actions">
       <button class="qadd-btn-cancel" onclick="qaddCancel()">Cancel</button>
       <button class="qadd-btn-ok" id="qadd-ok-btn" onclick="qaddConfirm()">Add</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════
-     NOTES MODAL
-     Rotation tracking & other notes
-═══════════════════════════════════════════ -->
-<div id="notes-modal">
-  <div class="notes-hdr">
-    <span class="notes-title">📝 My Notes</span>
-    <button class="notes-close" onclick="notesClose()">✕</button>
-  </div>
-  <div class="notes-tabs">
-    <button class="notes-tab active" onclick="switchNotesTab('rotations')">🔄 Rotations</button>
-    <button class="notes-tab" onclick="switchNotesTab('losses')">📉 Losses</button>
-  </div>
-  <div class="notes-body">
-    <div id="notes-tab-rotations" class="notes-tab-content active">
-      <div style="text-align:center;padding:40px;color:var(--muted);">
-        <div style="font-size:2em;margin-bottom:10px;">⏳</div>
-        Loading rotations...
-      </div>
-    </div>
-    <div id="notes-tab-losses" class="notes-tab-content">
-      <div style="text-align:center;padding:40px;color:var(--muted);">
-        <div style="font-size:2em;margin-bottom:10px;">⏳</div>
-        Loading losses...
-      </div>
     </div>
   </div>
 </div>
@@ -9911,6 +9929,69 @@ function moneyToggle() {
 }
 
 // ═══════════════════════════════════════════
+// TRACKER MODAL
+// ═══════════════════════════════════════════
+var _positionedTracker = false;
+var _trackerActiveTab  = 'sub';
+
+function trackerToggle(tab) {
+  var p = document.getElementById('tracker-modal');
+  var opening = !p.classList.contains('open');
+  tab = tab || _trackerActiveTab;
+  if (opening) {
+    if (!_positionedTracker) {
+      p.style.left = (window.innerWidth  / 2 - 375) + 'px';
+      p.style.top  = (window.innerHeight / 2 - 270) + 'px';
+      _positionedTracker = true;
+    }
+    p.classList.add('open');
+    document.querySelectorAll('.pg-tracker-btn').forEach(function(b){ b.classList.add('tracker-active'); });
+    trackerSetTab(tab);
+  } else {
+    trackerClose();
+  }
+}
+
+function trackerClose() {
+  document.getElementById('tracker-modal').classList.remove('open');
+  document.querySelectorAll('.pg-tracker-btn').forEach(function(b){ b.classList.remove('tracker-active'); });
+}
+
+function trackerSetTab(tab) {
+  _trackerActiveTab = tab;
+  ['sub','rot','loss','inst'].forEach(function(t) {
+    var btn  = document.getElementById('trkTab-' + t);
+    var pane = document.getElementById('trk-pane-' + t);
+    if (btn)  btn.classList.toggle('active',  t === tab);
+    if (pane) pane.classList.toggle('active', t === tab);
+  });
+  if (tab === 'sub'  && !_subscriptionsData)  loadSubscriptions();
+  if ((tab === 'rot' || tab === 'loss') && !_notesData) loadNotesData();
+  if (tab === 'inst' && !_installmentsData)   loadInstallments();
+}
+
+// Draggable tracker-modal
+document.addEventListener('DOMContentLoaded', function() {
+  var panel = document.getElementById('tracker-modal');
+  if (!panel) return;
+  var hdr = document.getElementById('tracker-hdr');
+  if (!hdr) return;
+  var _drag = false, _ox = 0, _oy = 0;
+  hdr.addEventListener('mousedown', function(e) {
+    if (e.target.closest('.tracker-close')) return;
+    var r = panel.getBoundingClientRect();
+    _ox = e.clientX - r.left; _oy = e.clientY - r.top;
+    _drag = true; hdr.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', function(e) {
+    if (!_drag) return;
+    panel.style.left = (e.clientX - _ox) + 'px';
+    panel.style.top  = (e.clientY - _oy) + 'px';
+  });
+  window.addEventListener('mouseup', function() { _drag = false; hdr.style.cursor = 'grab'; });
+});
+
+// ═══════════════════════════════════════════
 // SUBSCRIPTIONS MODAL
 // ═══════════════════════════════════════════
 var _subscriptionsData = null;
@@ -10065,40 +10146,8 @@ function subDeleteEntry(rowIndex, platform, month) {
     .deleteSubscription(rowIndex);
 }
 
-function subToggle() {
-  const p = document.getElementById('sub-modal');
-  const opening = !p.classList.contains('open');
-
-  if(opening) {
-    // Set position BEFORE opening to prevent jump
-    if(!_positionedSub){
-      p.style.left = (window.innerWidth / 2 - 350) + 'px';
-      p.style.top = (window.innerHeight / 2 - 250) + 'px';
-      _positionedSub = true;
-    }
-
-    p.classList.add('open');
-    document.querySelectorAll('.pg-sub-btn').forEach(function(b){
-      b.classList.add('sub-active');
-    });
-
-    if(!_subscriptionsData) {
-      loadSubscriptions();
-    }
-  } else {
-    p.classList.remove('open');
-    document.querySelectorAll('.pg-sub-btn').forEach(function(b){
-      b.classList.remove('sub-active');
-    });
-  }
-}
-
-function subClose() {
-  document.getElementById('sub-modal').classList.remove('open');
-  document.querySelectorAll('.pg-sub-btn').forEach(function(b){
-    b.classList.remove('sub-active');
-  });
-}
+function subToggle()  { trackerToggle('sub'); }
+function subClose()   { trackerClose(); }
 
 function loadSubscriptions() {
   document.getElementById('sub-body').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading subscriptions...</div>';
@@ -10368,29 +10417,9 @@ function togglePlatform(platName) {
 // INSTALLMENTS MODAL
 // ══════════════════════════════════════════
 var _installmentsData = null;
-var _positionedInst = false;
 
-function instToggle() {
-  var p = document.getElementById('inst-modal');
-  var opening = !p.classList.contains('open');
-  if (opening) {
-    if (!_positionedInst) {
-      p.style.left = (window.innerWidth / 2 - 340) + 'px';
-      p.style.top  = (window.innerHeight / 2 - 260) + 'px';
-      _positionedInst = true;
-    }
-    p.classList.add('open');
-    document.querySelectorAll('.pg-inst-btn').forEach(function(b){ b.classList.add('inst-active'); });
-    if (!_installmentsData) loadInstallments();
-  } else {
-    instClose();
-  }
-}
-
-function instClose() {
-  document.getElementById('inst-modal').classList.remove('open');
-  document.querySelectorAll('.pg-inst-btn').forEach(function(b){ b.classList.remove('inst-active'); });
-}
+function instToggle()  { trackerToggle('inst'); }
+function instClose()   { trackerClose(); }
 
 function loadInstallments() {
   document.getElementById('inst-body').innerHTML =
@@ -10497,81 +10526,16 @@ function toggleInstCard(idx) {
   if (card) card.classList.toggle('expanded');
 }
 
-// Draggable inst-modal
-document.addEventListener('DOMContentLoaded', function() {
-  var panel = document.getElementById('inst-modal');
-  if (!panel) return;
-  var hdr = document.getElementById('inst-hdr');
-  if (!hdr) return;
-  var _drag = false, _ox = 0, _oy = 0;
-  hdr.addEventListener('mousedown', function(e) {
-    if (e.target.closest('.inst-close')) return;
-    var r = panel.getBoundingClientRect();
-    _ox = e.clientX - r.left;
-    _oy = e.clientY - r.top;
-    _drag = true;
-    hdr.style.cursor = 'grabbing';
-  });
-  window.addEventListener('mousemove', function(e) {
-    if (!_drag) return;
-    panel.style.left = (e.clientX - _ox) + 'px';
-    panel.style.top  = (e.clientY - _oy) + 'px';
-  });
-  window.addEventListener('mouseup', function() {
-    _drag = false;
-    hdr.style.cursor = 'grab';
-  });
-});
+// Draggable inst-modal — removed (handled by tracker-modal)
 
 // ══════════════════════════════════════════
 // NOTES MODAL - Rotation Tracking
 // ══════════════════════════════════════════
 var _notesData = null;
-var _positionedNotes = false;
-var _notesActiveTab = 'rotations';
 
-function switchNotesTab(tabName) {
-  _notesActiveTab = tabName;
-  // Update tab buttons
-  document.querySelectorAll('.notes-tab').forEach(function(t){
-    t.classList.toggle('active', t.textContent.toLowerCase().indexOf(tabName) !== -1);
-  });
-  // Update tab content
-  document.querySelectorAll('.notes-tab-content').forEach(function(c){
-    c.classList.remove('active');
-  });
-  var content = document.getElementById('notes-tab-' + tabName);
-  if(content) content.classList.add('active');
-}
-
-function notesToggle() {
-  var p = document.getElementById('notes-modal');
-  var opening = !p.classList.contains('open');
-
-  if(opening) {
-    if(!_positionedNotes){
-      p.style.left = (window.innerWidth / 2 - 375) + 'px';
-      p.style.top = (window.innerHeight / 2 - 280) + 'px';
-      _positionedNotes = true;
-    }
-    p.classList.add('open');
-    document.querySelectorAll('.pg-notes-btn').forEach(function(b){
-      b.classList.add('notes-active');
-    });
-    if(!_notesData) {
-      loadNotesData();
-    }
-  } else {
-    notesClose();
-  }
-}
-
-function notesClose() {
-  document.getElementById('notes-modal').classList.remove('open');
-  document.querySelectorAll('.pg-notes-btn').forEach(function(b){
-    b.classList.remove('notes-active');
-  });
-}
+function switchNotesTab(tabName) { trackerSetTab(tabName === 'losses' ? 'loss' : 'rot'); }
+function notesToggle() { trackerToggle('rot'); }
+function notesClose()  { trackerClose(); }
 
 function loadNotesData() {
   document.getElementById('notes-tab-rotations').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading rotations...</div>';
@@ -10780,58 +10744,6 @@ function renderLossesData(data) {
 
   document.getElementById('notes-tab-losses').innerHTML = html;
 }
-
-// Draggable Notes Modal
-document.addEventListener('DOMContentLoaded', function(){
-  var panel = document.getElementById('notes-modal');
-  if (!panel) return;
-  var hdr = panel.querySelector('.notes-hdr');
-  if (!hdr) return;
-  var _drag = false, _ox = 0, _oy = 0;
-  hdr.addEventListener('mousedown', function(e){
-    if(e.target.closest('.notes-close')) return;
-    var r = panel.getBoundingClientRect();
-    _ox = e.clientX - r.left;
-    _oy = e.clientY - r.top;
-    _drag = true;
-    hdr.style.cursor = 'grabbing';
-  });
-  window.addEventListener('mousemove', function(e){
-    if(!_drag) return;
-    panel.style.left = (e.clientX - _ox) + 'px';
-    panel.style.top = (e.clientY - _oy) + 'px';
-  });
-  window.addEventListener('mouseup', function(){
-    _drag = false;
-    hdr.style.cursor = 'grab';
-  });
-});
-
-// Draggable Subscription Modal
-document.addEventListener('DOMContentLoaded', function(){
-  var panel = document.getElementById('sub-modal');
-  if (!panel) return;
-  var hdr = panel.querySelector('.sub-hdr');
-  if (!hdr) return;
-  var _drag = false, _ox = 0, _oy = 0;
-  hdr.addEventListener('mousedown', function(e){
-    if(e.target.closest('.sub-close')) return;
-    var r = panel.getBoundingClientRect();
-    _ox = e.clientX - r.left;
-    _oy = e.clientY - r.top;
-    _drag = true;
-    hdr.style.cursor = 'grabbing';
-  });
-  window.addEventListener('mousemove', function(e){
-    if(!_drag) return;
-    panel.style.left = (e.clientX - _ox) + 'px';
-    panel.style.top = (e.clientY - _oy) + 'px';
-  });
-  window.addEventListener('mouseup', function(){
-    _drag = false;
-    hdr.style.cursor = 'grab';
-  });
-});
 
 // Draggable Bank Modal
 document.addEventListener('DOMContentLoaded', function(){
