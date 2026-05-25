@@ -3212,3 +3212,100 @@ function getCardExpenses(cardName, month, year) {
     return { success: false, error: e.message };
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   getInstallments
+   Reads installment data from OTHERS sheet starting at column V (22).
+   V: row number (0-based counter), W: month label
+   X onwards: pairs of columns → [Amount, Status] per installment
+   Row 2: column headers (e.g. "iPhone Amount", "iPhone Status")
+   Status values: Settled, N/A, Pending  — N/A rows are skipped.
+───────────────────────────────────────────────────────────────── */
+function getInstallments() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+
+    // Column V is column 22 (1-based)
+    var START_COL = 22;
+    if (lastCol < START_COL + 2) {
+      return { success: true, installments: [] };
+    }
+
+    var numCols = lastCol - START_COL + 1;
+
+    // Read header row (row 2) from column V onwards
+    var headers = sheet.getRange(2, START_COL, 1, numCols).getValues()[0];
+
+    // Parse installment definitions from header pairs (starting at offset 2 = column X)
+    // headers[0]=V, headers[1]=W, headers[2]=X (amt), headers[3]=Y (status), ...
+    var instDefs = [];
+    for (var i = 2; i + 1 < headers.length; i += 2) {
+      var amtHeader = String(headers[i] || '').trim();
+      var stsHeader = String(headers[i + 1] || '').trim();
+      if (!amtHeader && !stsHeader) continue;
+
+      // Derive display name by stripping " Amount"/" Status" suffix
+      var name = amtHeader.replace(/\s*amount\s*$/i, '').replace(/\s*amt\s*$/i, '').trim();
+      if (!name) {
+        name = stsHeader.replace(/\s*status\s*$/i, '').replace(/\s*sts\s*$/i, '').trim();
+      }
+      if (!name) continue;
+
+      instDefs.push({ name: name, colOffset: i });
+    }
+
+    if (instDefs.length === 0 || lastRow < 3) {
+      return { success: true, installments: [] };
+    }
+
+    // Build installment entry lists
+    var installments = instDefs.map(function(d) {
+      return { name: d.name, colOffset: d.colOffset, entries: [] };
+    });
+
+    // Read data rows from row 3 onwards
+    var data = sheet.getRange(3, START_COL, lastRow - 2, numCols).getValues();
+    var tz = ss.getSpreadsheetTimeZone();
+
+    for (var r = 0; r < data.length; r++) {
+      var row = data[r];
+      var monthRaw = row[1];
+      var month = '';
+      if (monthRaw instanceof Date) {
+        month = Utilities.formatDate(monthRaw, tz, 'MMM yyyy');
+      } else if (monthRaw) {
+        month = String(monthRaw).trim();
+      }
+      if (!month) continue;
+
+      var num = (row[0] !== '' && row[0] !== null) ? parseInt(row[0]) : null;
+
+      for (var k = 0; k < installments.length; k++) {
+        var offset = installments[k].colOffset;
+        var amount = (row[offset] !== '' && row[offset] !== null) ? (Number(row[offset]) || 0) : 0;
+        var status = row[offset + 1] ? String(row[offset + 1]).trim() : '';
+
+        // Skip N/A and empty status rows
+        if (!status || status.toUpperCase() === 'N/A') continue;
+
+        installments[k].entries.push({ num: num, month: month, amount: amount, status: status });
+      }
+    }
+
+    // Remove installments with no qualifying entries
+    var result = installments.filter(function(inst) { return inst.entries.length > 0; })
+      .map(function(inst) { return { name: inst.name, entries: inst.entries }; });
+
+    Logger.log('getInstallments: ' + result.length + ' installments');
+    return { success: true, installments: result };
+
+  } catch (e) {
+    Logger.log('getInstallments error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
