@@ -832,64 +832,101 @@ function getV(id){ return evalF(document.getElementById(id).value)||0; }
    SALARY & TAX MANAGEMENT
 ═══════════════════════════════════════════════ */
 var _salaryValue = 0, _taxValue = 0;
+var _salaryAddedToX = false, _taxAddedToX = false;
 
 function loadSalaryAndTax(data) {
   _salaryValue = data.B || 0;
   _taxValue = data.D || 0;
   document.getElementById('salaryInp').value = _salaryValue || '';
   document.getElementById('taxInp').value = _taxValue || '';
-  // Default: unchecked (user must manually check to add to X)
-  document.getElementById('addSalaryToX').checked = false;
-  document.getElementById('addTaxToX').checked = false;
+  
+  // Check if salary/tax are already in X field
+  var fX = document.getElementById('fX');
+  var xVal = evalF(fX.value);
+  var hasSalary = false, hasTax = false;
+  
+  if (xVal !== null && _salaryValue && Math.abs(xVal - _salaryValue) < 0.01) {
+    hasSalary = true;
+  } else if (xVal !== null && _taxValue && Math.abs(xVal - _taxValue) < 0.01) {
+    hasTax = true;
+  } else if (xVal !== null && _salaryValue && _taxValue) {
+    if (Math.abs(xVal - (_salaryValue + _taxValue)) < 0.01) {
+      hasSalary = true;
+      hasTax = true;
+    }
+  }
+  
+  document.getElementById('addSalaryToX').checked = hasSalary;
+  document.getElementById('addTaxToX').checked = hasTax;
+  _salaryAddedToX = hasSalary;
+  _taxAddedToX = hasTax;
 }
 
 function editSalary() {
   var inp = document.getElementById('salaryInp');
+  if (!inp.readOnly) return; // Already in edit mode
   inp.readOnly = false;
   inp.focus();
-  inp.select();
   inp.onblur = function() {
     var num = parseFloat(inp.value) || 0;
     _salaryValue = num;
     inp.value = num || '';
     inp.readOnly = true;
     _changed['B'] = num || '';
-    updateHighIncomeFromToggles();
   };
 }
 
 function editTax() {
   var inp = document.getElementById('taxInp');
+  if (!inp.readOnly) return; // Already in edit mode
   inp.readOnly = false;
   inp.focus();
-  inp.select();
   inp.onblur = function() {
     var num = parseFloat(inp.value) || 0;
     _taxValue = num;
     inp.value = num || '';
     inp.readOnly = true;
     _changed['D'] = num || '';
-    updateHighIncomeFromToggles();
   };
 }
 
 function updateHighIncomeFromToggles() {
   var chkSalary = document.getElementById('addSalaryToX').checked;
   var chkTax = document.getElementById('addTaxToX').checked;
-  var total = (chkSalary ? _salaryValue : 0) + (chkTax ? _taxValue : 0);
-  
   var fX = document.getElementById('fX');
-  if (total > 0) {
-    var existing = fX.value.trim();
-    if (existing && existing !== '0' && existing !== '') {
-      // Has existing value — use formula
-      fX.value = '=' + existing + '+' + total;
-    } else {
-      fX.value = total;
-    }
+  
+  // Get current value
+  var currentVal = evalF(fX.value) || 0;
+  
+  // Remove previously added salary if it was added
+  if (_salaryAddedToX && _salaryValue) {
+    currentVal -= _salaryValue;
+  }
+  // Remove previously added tax if it was added
+  if (_taxAddedToX && _taxValue) {
+    currentVal -= _taxValue;
+  }
+  
+  // Add salary if checked
+  if (chkSalary && _salaryValue) {
+    currentVal += _salaryValue;
+  }
+  // Add tax if checked
+  if (chkTax && _taxValue) {
+    currentVal += _taxValue;
+  }
+  
+  // Update field
+  if (currentVal > 0) {
+    fX.value = currentVal;
   } else {
     fX.value = '';
   }
+  
+  // Update tracking flags
+  _salaryAddedToX = chkSalary;
+  _taxAddedToX = chkTax;
+  
   calcPreview(fX, 'calcX');
   updateTotals();
   markChanged(fX);
