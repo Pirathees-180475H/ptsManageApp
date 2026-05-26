@@ -10731,6 +10731,9 @@ function instAddToExpense(btn, instName, entryMonth, entryAmount) {
   var prevText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '...';
+  // Today's date in LKA timezone (UTC+5:30) → "M-D" key
+  var lka     = new Date(Date.now() + (5*60+30)*60*1000);
+  var dateKey = (lka.getUTCMonth()+1) + '-' + lka.getUTCDate();
   google.script.run
     .withSuccessHandler(function(res) {
       btn.disabled = false;
@@ -10751,7 +10754,7 @@ function instAddToExpense(btn, instName, entryMonth, entryAmount) {
       btn.textContent = prevText;
       alert('Failed: ' + err.message);
     })
-    .addInstallmentToExpense(instName, entryMonth, entryAmount);
+    .addInstallmentToExpense(instName, entryAmount, dateKey);
 }
 
 // Draggable inst-modal — removed (handled by tracker-modal)

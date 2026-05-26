@@ -2970,10 +2970,85 @@ function _addSubscriptionToExpenses(entry) {
 
 /* ── addInstallmentToExpense (public) ──────────────────────────────────
    Called from the "Add to Expense" button in the Installments UI.
-   Delegates to _addInstallmentToExpenses.
+   dateKey: "M-D" string matching col A (e.g. "5-26" for May 26).
+   instName may contain a card suffix: "iPhone:AMEX" → card = AMEX.
+   Writes to:
+     K (11)  ← Other ref    (concatenates if already filled)
+     L (12)  ← Other amount (formula =existing+new if already filled)
+     AE (31) ← CC ref       (if card detected)
+     AG/AI/AK               ← card Pay column (formula if already filled)
 ───────────────────────────────────────────────────────────────── */
-function addInstallmentToExpense(instName, month, amount) {
-  return _addInstallmentToExpenses(instName, month, amount);
+function addInstallmentToExpense(instName, amount, dateKey) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Monthly Expences sheet not found' };
+
+    // ── Find exact row for dateKey ──
+    var lastRow = sheet.getLastRow();
+    var colA    = sheet.getRange(1, 1, lastRow, 1).getValues();
+    var targetRow = -1;
+    var key = String(dateKey).trim();
+    for (var i = 0; i < colA.length; i++) {
+      if (_cellStr(colA[i][0], true).trim() === key) { targetRow = i + 1; break; }
+    }
+    if (targetRow === -1) return { success: false, error: 'No row found for date: ' + dateKey };
+
+    // ── Read full row up to AK (col 37) ──
+    var rowVals = sheet.getRange(targetRow, 1, 1, 37).getValues()[0];
+    var amtNum  = parseFloat(amount) || 0;
+
+    // Display name — strip card suffix ("iPhone:AMEX" → "iPhone", "iPhone-none:AMEX" → "iPhone-none")
+    var displayName = instName.indexOf(':') >= 0 ? instName.split(':')[0].trim() : instName;
+
+    // "none" flag — if display name contains "-none" skip Other (K/L), write only to card
+    var skipOther = displayName.toLowerCase().indexOf('none') >= 0;
+    // Clean label for refs (strip "-none" suffix if present)
+    var cleanName = displayName.replace(/-?none/i, '').trim();
+
+    // ── Detect card from instName suffix ──
+    var cardLow = instName.indexOf(':') >= 0 ? instName.split(':')[1].trim().toLowerCase() : '';
+    var payCol  = -1;
+    if      (cardLow.indexOf('amex') >= 0 || cardLow.indexOf('american') >= 0) payCol = 33; // AG
+    else if (cardLow.indexOf('ntb')  >= 0 || cardLow.indexOf('nations')  >= 0) payCol = 35; // AI
+    else if (cardLow.indexOf('selan') >= 0)                                     payCol = 37; // AK
+
+    // ── K = col 11 (Other ref) + L = col 12 (Other amount) — skip if "none" ──
+    if (!skipOther) {
+      var existingRef = String(rowVals[10] || '').trim();
+      sheet.getRange(targetRow, 11).setValue(existingRef ? existingRef + ', ' + cleanName : cleanName);
+
+      var existingAmt = rowVals[11];
+      var amtFilled   = (existingAmt !== '' && existingAmt !== null && existingAmt !== undefined && existingAmt !== 0);
+      if (amtFilled) {
+        sheet.getRange(targetRow, 12).setFormula('=' + (parseFloat(existingAmt) || 0) + '+' + amtNum);
+      } else {
+        sheet.getRange(targetRow, 12).setValue(amtNum);
+      }
+    }
+
+    // ── Card Pay column + AE ref (if card detected) ──
+    if (payCol > 0) {
+      var existingPay = rowVals[payCol - 1];
+      var payFilled   = (existingPay !== '' && existingPay !== null && existingPay !== undefined && existingPay !== 0);
+      if (payFilled) {
+        sheet.getRange(targetRow, payCol).setFormula('=' + (parseFloat(existingPay) || 0) + '+' + amtNum);
+      } else {
+        sheet.getRange(targetRow, payCol).setValue(amtNum);
+      }
+
+      // AE = col 31 (shared CC ref) — concatenate
+      var existingCCRef = String(rowVals[30] || '').trim();
+      sheet.getRange(targetRow, 31).setValue(existingCCRef ? existingCCRef + ', ' + cleanName : cleanName);
+    }
+
+    SpreadsheetApp.flush();
+    return { success: true };
+
+  } catch (e) {
+    Logger.log('addInstallmentToExpense error: ' + e.message);
+    return { success: false, error: e.message };
+  }
 }
 
 /* ── _addInstallmentToExpenses ─────────────────────────────────────────
