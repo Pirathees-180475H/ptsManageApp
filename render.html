@@ -480,7 +480,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ── Subscription Modal ── */
 #sub-modal{
   position:fixed;
-  width:95%;max-width:700px;max-height:85vh;z-index:8000;
+  width:95%;max-width:700px;max-height:55vh;z-index:8000;
   background:rgba(6,11,24,.95);backdrop-filter:blur(28px);
   border:1px solid rgba(255,255,255,.11);border-radius:18px;
   box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
@@ -497,7 +497,11 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .sub-title{font-size:.63em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.35);display:flex;align-items:center;gap:8px;}
 .sub-close{background:none;border:none;color:rgba(255,255,255,.25);font-size:.85em;cursor:pointer;padding:2px 5px;line-height:1;font-family:inherit;border-radius:6px;transition:all .15s;}
 .sub-close:hover{color:#fff;}
-.sub-body{flex:1;overflow-y:auto;padding:16px;}
+.sub-body{flex:1;overflow-y:auto;padding:16px;min-height:0;}
+.sub-body::-webkit-scrollbar{width:5px;}
+.sub-body::-webkit-scrollbar-track{background:transparent;}
+.sub-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
+.sub-body::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28);}
 .sub-summary{
   display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;
 }
@@ -735,7 +739,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ── Tracker Modal (combined) ── */
 #tracker-modal{
   position:fixed;
-  width:95%;max-width:750px;max-height:110vh;z-index:8000;
+  width:95%;max-width:750px;max-height:75vh;z-index:8000;
   background:rgba(6,11,24,.95);backdrop-filter:blur(28px);
   border:1px solid rgba(255,255,255,.11);border-radius:18px;
   box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
@@ -761,7 +765,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .trk-tab.active::after{transform:scaleX(1);}
 .trk-pane{display:none;flex-direction:column;flex:1;overflow:hidden;}
 .trk-pane.active{display:flex;}
-.trk-pane > div:first-child{flex:1;overflow-y:auto;padding:0;}
+.trk-pane > div:first-child{flex:1;overflow-y:auto;padding:0;min-height:0;}
 .trk-pane > div:first-child::-webkit-scrollbar{width:5px;}
 .trk-pane > div:first-child::-webkit-scrollbar-track{background:rgba(255,255,255,.03);}
 .trk-pane > div:first-child::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px;}

@@ -811,7 +811,7 @@ function getBankBalances() {
     
     for (var i = 0; i < data.length; i++) {
       var type = (data[i][0] || '').toString().trim();
-      if (type.toUpperCase() === 'BANK') {
+      if (type.toUpperCase() === 'BANK'||type.toUpperCase() === 'TEMP') {
         bankBalances.push({
           row: i + 1, // 1-based row relative to G1
           source: (data[i][1] || '').toString().trim(),
