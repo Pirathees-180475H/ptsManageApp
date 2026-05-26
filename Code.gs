@@ -2968,8 +2968,15 @@ function _addSubscriptionToExpenses(entry) {
   }
 }
 
+/* ── addInstallmentToExpense (public) ──────────────────────────────────
+   Called from the "Add to Expense" button in the Installments UI.
+   Delegates to _addInstallmentToExpenses.
+───────────────────────────────────────────────────────────────── */
+function addInstallmentToExpense(instName, month, amount) {
+  return _addInstallmentToExpenses(instName, month, amount);
+}
+
 /* ── _addInstallmentToExpenses ─────────────────────────────────────────
-   Called when an installment entry is marked Settled.
    Finds a free Other-expense slot in the entry's month and writes:
      col K (11) ← instName   [Other ref]
      col L (12) ← amount     [Other amount]
@@ -3420,11 +3427,6 @@ function updateInstallmentStatus(instName, entryNum, newStatus, entryMonth, entr
     // Write the new status
     sheet.getRange(targetRow, START_COL + statusColOffset).setValue(newStatus);
     SpreadsheetApp.flush();
-
-    // When settling, also log to Monthly Expences
-    if (newStatus === 'Settled' && entryMonth && entryAmount) {
-      _addInstallmentToExpenses(instName, entryMonth, entryAmount);
-    }
 
     return { success: true };
 
