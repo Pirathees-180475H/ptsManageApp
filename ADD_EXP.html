@@ -550,6 +550,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
           </div>
         </div>
 
+        <div class="cc-card">
+          <div class="cc-card-hd">🏅 Selan</div>
+          <div class="card-row">
+            <div class="card-field">
+              <div class="fsub">Expense <span class="cid">AJ</span></div>
+              <input class="inp fml cc" id="fAJ" data-col="AJ"
+                oninput="calcPreview(this,'calcAJ');updateTotals();markChanged(this)">
+              <div class="calc empty" id="calcAJ">—</div>
+            </div>
+            <div class="card-field">
+              <div class="fsub">Payment <span class="cid">AK</span></div>
+              <input class="inp fml cc" id="fAK" data-col="AK"
+                oninput="calcPreview(this,'calcAK');markChanged(this)">
+              <div class="calc empty" id="calcAK">—</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -598,7 +616,7 @@ var COL_MAP = {
   C:'fC',D:'fD',E:'fE',F:'fF',G:'fG',H:'fH',I:'fI',J:'fJ',
   K:'fK',L:'fL',M:'fM',N:'fN',O:'fO',P:'fP',Q:'fQ',R:'fR',
   T:'fT',U:'fU',W:'fW',
-  AE:'fAE',AF:'fAF',AG:'fAG',AH:'fAH',AI:'fAI'
+  AE:'fAE',AF:'fAF',AG:'fAG',AH:'fAH',AI:'fAI',AJ:'fAJ',AK:'fAK'
 };
 
 /* ═══════════════════════════════════════════════
@@ -743,7 +761,7 @@ function updateTotals(){
   var r  = getV('fC')+getV('fE');
   var nr = getV('fG')+getV('fH')+getV('fJ')+getV('fL')
           +getV('fM')+getV('fO')+getV('fQ')+getV('fR');
-  var cc = getV('fAF')+getV('fAH');
+  var cc = getV('fAF')+getV('fAH')+getV('fAJ');
   var tot= r+nr;
 
   // Dynamic label — "Today's Total" only when viewing today
@@ -837,7 +855,8 @@ function renderLog(data){
     {col:'S',      cat:'',   label:'TOTAL',       val:data.S,bold:true},
     {col:'T · U · W',cat:'sw',label:'Splitwise',  val:data.T,ref2:data.U,ref:data.W},
     {col:'AE·AF·AG',cat:'cc',label:'Amex',        val:data.AF,ref2:data.AG,ref:data.AE},
-    {col:'AH · AI', cat:'cc',label:'NTB',        val:data.AH,ref2:data.AI}
+    {col:'AH · AI', cat:'cc',label:'NTB',         val:data.AH,ref2:data.AI},
+    {col:'AJ · AK', cat:'cc',label:'Selan',        val:data.AJ,ref2:data.AK}
   ];
   function skip(v){return v===undefined||v===null||v===''||v==='0'||v===0;}
   var html='<table class="log-tbl"><thead><tr>'

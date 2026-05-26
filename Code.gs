@@ -3217,7 +3217,7 @@ function getCardExpenses(cardName, month, year) {
                    : parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
 
     // Hardcoded columns matching ADD_EXP.html (1-based):
-    // AE=31 ref | AF=32 Amex-Exp | AG=33 Amex-Pay | AH=34 NTB-Exp | AI=35 NTB-Pay
+    // AE=31 ref | AF=32 Amex-Exp | AG=33 Amex-Pay | AH=34 NTB-Exp | AI=35 NTB-Pay | AJ=36 Selan-Exp | AK=37 Selan-Pay
     var REF_COL = 31; // AE — shared CC reference
     var cardLow = (cardName || '').toLowerCase();
     var expCol  = -1;
@@ -3229,6 +3229,9 @@ function getCardExpenses(cardName, month, year) {
     } else if (cardLow.indexOf('ntb') >= 0 || cardLow.indexOf('nations') >= 0) {
       expCol = 34; // AH
       payCol = 35; // AI
+    } else if (cardLow.indexOf('selan') >= 0) {
+      expCol = 36; // AJ
+      payCol = 37; // AK
     }
 
     if (expCol < 0) {

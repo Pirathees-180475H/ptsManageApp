@@ -5444,7 +5444,7 @@ function ccExpRender(res) {
     return;
   }
   if (res.noColumn) {
-    body.innerHTML = '<div class="cc-exp-empty">📭 No expense column mapped for <strong>' + res.cardName + '</strong>.<br><span style="font-size:.9em;opacity:.6">Check card name contains "amex" or "ntb".</span></div>';
+    body.innerHTML = '<div class="cc-exp-empty">📭 No expense column mapped for <strong>' + res.cardName + '</strong>.<br><span style="font-size:.9em;opacity:.6">Check card name contains "amex", "ntb", or "selan".</span></div>';
     return;
   }
   _ccExpEntriesAll = res.entries || [];
