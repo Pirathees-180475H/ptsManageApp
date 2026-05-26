@@ -140,6 +140,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .sub-lbl{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
   color:var(--cc);padding:4px 0 2px;}
 
+/* ══ CUSTOM CHECKBOX ══ */
+.custom-chk{display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap;cursor:pointer;user-select:none;}
+.custom-chk input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:16px;height:16px;
+  border:2px solid rgba(88,166,255,.3);border-radius:4px;background:var(--card2);
+  cursor:pointer;position:relative;transition:all .15s;}
+.custom-chk input[type="checkbox"]:hover{border-color:rgba(88,166,255,.5);background:rgba(88,166,255,.05);}
+.custom-chk input[type="checkbox"]:checked{background:var(--blue);border-color:var(--blue);}
+.custom-chk input[type="checkbox"]:checked::after{content:'✓';position:absolute;top:-2px;left:2px;
+  font-size:12px;color:#fff;font-weight:700;}
+
 /* ══ NET CHIP ══ */
 .net-chip{
   border-radius:10px;padding:10px 14px;display:flex;align-items:center;
@@ -453,6 +463,68 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 
       </div>
     </div>
+
+    <!-- §5 High Level (Income/Expense/Transfers) -->
+    <div class="sec" id="sec-high">
+      <div class="sec-hd" onclick="toggleSec('sec-high')">
+        <div class="sec-dot" style="background:var(--blue)"></div>
+        <div class="sec-title">High Level</div>
+        <div class="sec-badge" style="background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.22);color:var(--blue)">HIGH</div>
+        <span class="chev">▾</span>
+      </div>
+      <div class="sec-bd">
+        <div class="frow single">
+          <div class="flbl">💼 High Level Income <span class="cid">X</span></div>
+          <div class="fcol">
+            <input class="inp fml" id="fX" data-col="X" oninput="calcPreview(this,'calcX');updateTotals();markChanged(this)">
+            <div class="calc empty" id="calcX">—</div>
+          </div>
+        </div>
+        <div class="frow single">
+          <div class="flbl">💸 High Level Expense <span class="cid">Y</span></div>
+          <div class="fcol">
+            <input class="inp fml" id="fY" data-col="Y" oninput="calcPreview(this,'calcY');updateTotals();markChanged(this)">
+            <div class="calc empty" id="calcY">—</div>
+          </div>
+        </div>
+        <div class="frow single">
+          <div class="flbl">🔄 Transfers <span class="cid">Z</span></div>
+          <div class="fcol">
+            <input class="inp fml" id="fZ" data-col="Z" oninput="calcPreview(this,'calcZ');updateTotals();markChanged(this)">
+            <div class="calc empty" id="calcZ">—</div>
+          </div>
+        </div>
+        <div class="frow single">
+          <div class="flbl">📋 Shared Reference <span class="cid">AA</span></div>
+          <div class="fcol">
+            <input class="inp ref" id="fAA" data-col="AA" oninput="markChanged(this)">
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div style="background:rgba(88,166,255,.03);border:1px solid rgba(88,166,255,.08);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--blue);margin-bottom:4px;">📊 Income Sources (B2, D2)</div>
+          <div style="display:grid;grid-template-columns:120px 1fr auto auto;gap:8px;align-items:center;">
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">💼 Salary</div>
+            <input class="inp fml" id="salaryInp" style="font-size:12px;" readonly>
+            <button type="button" class="btn-clr" style="padding:6px 12px;font-size:11px;" onclick="editSalary()">Edit</button>
+            <label class="custom-chk">
+              <input type="checkbox" id="addSalaryToX" onchange="updateHighIncomeFromToggles()">
+              <span>Add Salary</span>
+            </label>
+          </div>
+          <div style="display:grid;grid-template-columns:120px 1fr auto auto;gap:8px;align-items:center;">
+            <div style="font-size:12px;color:var(--muted);font-weight:600;">💰 Tax Refund</div>
+            <input class="inp fml" id="taxInp" style="font-size:12px;" readonly>
+            <button type="button" class="btn-clr" style="padding:6px 12px;font-size:11px;" onclick="editTax()">Edit</button>
+            <label class="custom-chk">
+              <input type="checkbox" id="addTaxToX" onchange="updateHighIncomeFromToggles()">
+              <span>Add Refund</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /col-left -->
 
   <!-- ═══ RIGHT COL: Splitwise + CC + Total + Log ═══ -->
@@ -616,6 +688,7 @@ var COL_MAP = {
   C:'fC',D:'fD',E:'fE',F:'fF',G:'fG',H:'fH',I:'fI',J:'fJ',
   K:'fK',L:'fL',M:'fM',N:'fN',O:'fO',P:'fP',Q:'fQ',R:'fR',
   T:'fT',U:'fU',W:'fW',
+  X:'fX',Y:'fY',Z:'fZ',AA:'fAA',
   AE:'fAE',AF:'fAF',AG:'fAG',AH:'fAH',AI:'fAI',AJ:'fAJ',AK:'fAK'
 };
 
@@ -716,6 +789,7 @@ function populateForm(data){
     if (document.getElementById(cid)) calcPreview(inp,cid);
   });
   _changed = {};
+  loadSalaryAndTax(data);
   updateTotals();
 }
 function clearForm(){
@@ -753,6 +827,73 @@ function calcPreview(inp,cid){
 }
 function fmt(n){ return Number(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:2}); }
 function getV(id){ return evalF(document.getElementById(id).value)||0; }
+
+/* ═══════════════════════════════════════════════
+   SALARY & TAX MANAGEMENT
+═══════════════════════════════════════════════ */
+var _salaryValue = 0, _taxValue = 0;
+
+function loadSalaryAndTax(data) {
+  _salaryValue = data.B || 0;
+  _taxValue = data.D || 0;
+  document.getElementById('salaryInp').value = _salaryValue || '';
+  document.getElementById('taxInp').value = _taxValue || '';
+  // Default: unchecked (user must manually check to add to X)
+  document.getElementById('addSalaryToX').checked = false;
+  document.getElementById('addTaxToX').checked = false;
+}
+
+function editSalary() {
+  var inp = document.getElementById('salaryInp');
+  inp.readOnly = false;
+  inp.focus();
+  inp.select();
+  inp.onblur = function() {
+    var num = parseFloat(inp.value) || 0;
+    _salaryValue = num;
+    inp.value = num || '';
+    inp.readOnly = true;
+    _changed['B'] = num || '';
+    updateHighIncomeFromToggles();
+  };
+}
+
+function editTax() {
+  var inp = document.getElementById('taxInp');
+  inp.readOnly = false;
+  inp.focus();
+  inp.select();
+  inp.onblur = function() {
+    var num = parseFloat(inp.value) || 0;
+    _taxValue = num;
+    inp.value = num || '';
+    inp.readOnly = true;
+    _changed['D'] = num || '';
+    updateHighIncomeFromToggles();
+  };
+}
+
+function updateHighIncomeFromToggles() {
+  var chkSalary = document.getElementById('addSalaryToX').checked;
+  var chkTax = document.getElementById('addTaxToX').checked;
+  var total = (chkSalary ? _salaryValue : 0) + (chkTax ? _taxValue : 0);
+  
+  var fX = document.getElementById('fX');
+  if (total > 0) {
+    var existing = fX.value.trim();
+    if (existing && existing !== '0' && existing !== '') {
+      // Has existing value — use formula
+      fX.value = '=' + existing + '+' + total;
+    } else {
+      fX.value = total;
+    }
+  } else {
+    fX.value = '';
+  }
+  calcPreview(fX, 'calcX');
+  updateTotals();
+  markChanged(fX);
+}
 
 /* ═══════════════════════════════════════════════
    TOTALS
@@ -810,7 +951,14 @@ function saveAll(){
   _saving=true; setSaving(true);
 
   var cells={};
-  cols.forEach(function(col){ cells[col]=document.getElementById(COL_MAP[col]).value; });
+  cols.forEach(function(col){
+    // B and D are special (salary/tax) - use _changed value directly
+    if (col === 'B' || col === 'D') {
+      cells[col] = _changed[col];
+    } else if (COL_MAP[col]) {
+      cells[col] = document.getElementById(COL_MAP[col]).value;
+    }
+  });
 
   google.script.run
     .withSuccessHandler(function(res){
@@ -842,6 +990,8 @@ function renderLog(data){
     'Row '+data._row+(data._prevDay?' · prev-day match':'');
   var rows=[
     {col:'A',      cat:'',   label:'Date',       val:data.A},
+    {col:'B',      cat:'',   label:'Salary',     val:data.B},
+    {col:'D',      cat:'',   label:'Tax Refund', val:data.D},
     {col:'C · D',  cat:'r',  label:'Food',        val:data.C,ref:data.D},
     {col:'E · F',  cat:'r',  label:'Supermarket', val:data.E,ref:data.F},
     {col:'G',      cat:'nr', label:'Uber',        val:data.G},
@@ -856,7 +1006,10 @@ function renderLog(data){
     {col:'T · U · W',cat:'sw',label:'Splitwise',  val:data.T,ref2:data.U,ref:data.W},
     {col:'AE·AF·AG',cat:'cc',label:'Amex',        val:data.AF,ref2:data.AG,ref:data.AE},
     {col:'AH · AI', cat:'cc',label:'NTB',         val:data.AH,ref2:data.AI},
-    {col:'AJ · AK', cat:'cc',label:'Selan',        val:data.AJ,ref2:data.AK}
+    {col:'AJ · AK', cat:'cc',label:'Selan',        val:data.AJ,ref2:data.AK},
+    {col:'X · AA',  cat:'',  label:'High Income', val:data.X,ref:data.AA},
+    {col:'Y',       cat:'',  label:'High Expense',val:data.Y},
+    {col:'Z',       cat:'',  label:'Transfers',   val:data.Z}
   ];
   function skip(v){return v===undefined||v===null||v===''||v==='0'||v===0;}
   var html='<table class="log-tbl"><thead><tr>'

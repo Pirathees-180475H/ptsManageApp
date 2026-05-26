@@ -2603,6 +2603,7 @@ function _cellStr(v, dateMode) {
    Returns an object keyed by column letter with raw cell values,
    plus _row (1-based row number) and _sheet (sheet name).
    Also accepts the previous day's key as prevKey for TZ fallback.
+   Additionally returns B and D values from row 2 (salary & tax refund).
 ─────────────────────────────────────────────────────────────── */
 function getExpenseRow(dateKey, prevKey) {
   try {
@@ -2655,6 +2656,13 @@ function getExpenseRow(dateKey, prevKey) {
         result[COLS[c]] = _cellStr(val, COLS[c] === 'A');
       }
     }
+
+    // Also read B and D from row 2 (salary & tax refund)
+    var row2Range = sheet.getRange(2, 2, 1, 3); // B2:D2
+    var row2Vals = row2Range.getValues()[0];
+    result.B = row2Vals[0] || 0; // B2 (salary)
+    result.D = row2Vals[2] || 0; // D2 (tax refund)
+
     return result;
 
   } catch (err) {
@@ -2685,7 +2693,10 @@ function updateExpenseCells(payload) {
     Object.keys(cells).forEach(function(col) {
       var colNum = _colToNum(col);
       var val    = cells[col];
-      var cell   = sheet.getRange(rowNum, colNum);
+      
+      // B and D are special: always write to row 2 (salary & tax refund)
+      var targetRow = (col === 'B' || col === 'D') ? 2 : rowNum;
+      var cell = sheet.getRange(targetRow, colNum);
 
       if (val === '' || val === null || val === undefined) {
         cell.clearContent();
