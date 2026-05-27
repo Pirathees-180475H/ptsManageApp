@@ -1256,14 +1256,14 @@ function logMonthlyEarnings() {
 }
 
 
-// ── Log current portfolio total (B16) into growth log (P:Q:R from row 3) ──
+// ── Log current portfolio total (B15) into growth log (P:Q:R from row 3) ──
 function logPortfolioAmount(note) {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Portfolio');
   if (!sheet) throw new Error('Portfolio sheet not found');
 
-  var currentAmount = Number(sheet.getRange('B16').getValue());
-  if (!currentAmount) throw new Error('B16 is empty or zero — nothing to log');
+  var currentAmount = Number(sheet.getRange('B15').getValue());
+  if (!currentAmount) throw new Error('B15 is empty or zero — nothing to log');
 
   var dateLabel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'M/yyyy');
   var noteStr   = (note || '').toString().trim();
