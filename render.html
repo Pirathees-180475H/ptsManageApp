@@ -2429,7 +2429,8 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-sw .friend-card[data-sw-friend-id] .friend-name::after{content:'→';margin-left:6px;font-size:.75em;color:rgba(255,255,255,.2);}
 #page-sw .friend-card[data-sw-friend-id]:hover .friend-name::after{color:rgba(255,255,255,.5);}
 #page-sw .txn-section{margin-bottom:18px;}
-#page-sw .txn-row{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:12px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);transition:background .2s ease;margin-bottom:6px;}
+#page-sw #sw-txnList{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;}
+#page-sw .txn-row{display:flex;align-items:center;gap:10px;padding:9px 13px;border-radius:12px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);transition:background .2s ease;}
 #page-sw .txn-row:hover{background:rgba(255,255,255,.04);}
 #page-sw .txn-row.highlight{border-color:rgba(255,215,0,.35);background:rgba(255,215,0,.06);}
 #page-sw .txn-icon{font-size:1.2em;flex-shrink:0;width:26px;text-align:center;}
@@ -2870,6 +2871,65 @@ input[type=date].swae-input{color-scheme:dark;}
 .az-price{font-size:1.5em;font-weight:800;color:#fff;margin-bottom:4px;}
 .az-sector{font-size:.7em;color:var(--muted);margin-bottom:10px;}
 .az-empty{color:var(--muted);font-size:.8em;padding:8px 0;}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE MEDIA QUERIES
+═══════════════════════════════════════════ */
+
+/* Tablet - 2 columns */
+@media (max-width: 1024px) {
+  .bm-list,
+  .rot-summary,
+  .loss-summary,
+  .port-insights,
+  .trk-insights,
+  .perf-insights {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .bm-main-row {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .sub-add-grid-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Mobile - 1 or 2 columns */
+@media (max-width: 768px) {
+  .bm-list,
+  .rot-summary,
+  .loss-summary,
+  .port-insights,
+  .trk-insights,
+  .perf-insights {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  .bm-main-row {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .sub-add-grid,
+  .sub-add-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Small mobile - 1 column only */
+@media (max-width: 480px) {
+  .bm-list,
+  .rot-summary,
+  .loss-summary,
+  .port-insights,
+  .trk-insights,
+  .perf-insights,
+  .sub-add-grid,
+  .sub-add-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
 </style>
 </head>
 <body>
