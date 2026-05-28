@@ -1,4 +1,4 @@
-﻿/* ── Web App entry point (SPA) ── */
+/* ── Web App entry point (SPA) ── */
 function doGet(e) {
   var appUrl = ScriptApp.getService().getUrl();
   var html = HtmlService.createHtmlOutputFromFile('render');
@@ -844,6 +844,44 @@ function updateBankBalances(updates) {
     return { success: true };
   } catch (e) {
     throw new Error('Failed to update bank balances: ' + e.message);
+  }
+}
+
+// ── Live USD → LKR rate via GOOGLEFINANCE (same rate Google shows) ──
+function getUsdToLkrRate() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Portfolio');
+  if (!sheet) throw new Error('Portfolio sheet not found');
+
+  // Use a far-right scratch cell that won't collide with any data
+  var scratchCell = sheet.getRange('Z1');
+  var prevFormula = scratchCell.getFormula();
+  var prevValue   = scratchCell.getValue();
+
+  try {
+    scratchCell.setFormula('=GOOGLEFINANCE("CURRENCY:USDLKR")');
+    SpreadsheetApp.flush();
+    Utilities.sleep(1500); // allow GOOGLEFINANCE to resolve
+    var rate = parseFloat(scratchCell.getValue());
+
+    // Restore cell to its previous state
+    if (prevFormula) {
+      scratchCell.setFormula(prevFormula);
+    } else {
+      scratchCell.clearContent();
+    }
+    SpreadsheetApp.flush();
+
+    if (!rate || isNaN(rate)) throw new Error('GOOGLEFINANCE returned no value');
+    return rate;
+  } catch (e) {
+    // Restore even on error
+    try {
+      if (prevFormula) { scratchCell.setFormula(prevFormula); }
+      else { scratchCell.clearContent(); }
+      SpreadsheetApp.flush();
+    } catch(_) {}
+    throw new Error('USD/LKR rate unavailable: ' + e.message);
   }
 }
 

@@ -936,12 +936,158 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   letter-spacing:0.5px;
 }
 .bm-item-amt:focus{color:rgba(255,255,255,.95);}
+.bm-item-usd{
+  font-size:.68em;
+  font-weight:600;
+  color:rgba(255,255,255,.35);
+  letter-spacing:.4px;
+  padding-top:2px;
+  font-family:'Inter',sans-serif;
+}
+.bm-rate-badge{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(16,185,129,.08);
+  border:1px solid rgba(16,185,129,.2);
+  border-radius:10px;
+  padding:4px 10px;
+  font-family:'Inter',sans-serif;
+  animation:fadeIn .4s ease;
+}
+.bm-rate-icon{font-size:.75em;}
+.bm-rate-label{
+  font-size:.55em;
+  font-weight:700;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.35);
+}
+.bm-rate-val{
+  font-size:.7em;
+  font-weight:800;
+  color:rgba(16,185,129,.9);
+  letter-spacing:.5px;
+}
+.bm-rate-loading .bm-rate-val{color:rgba(255,255,255,.25);animation:pulse 1.2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:.4;}50%{opacity:1;}}
 
-.bm-side{display:flex;flex-direction:column;gap:16px;}
+.bm-side{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
 .bm-chart-box{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:14px;height:180px;position:relative;}
 .bm-total-box{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:16px;padding:14px 18px;display:flex;flex-direction:column;gap:4px;}
 .bm-total-lbl{font-size:.58em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:3px;}
 .bm-total-val{font-size:.80em;font-weight:800;color:rgba(255,255,255,.75);letter-spacing:0.5px;line-height:1.2;}
+.bm-total-usd{font-size:.62em;font-weight:600;color:rgba(16,185,129,.6);letter-spacing:.4px;margin-top:3px;}
+
+/* ── Bottom Row: Total + Converter ── */
+.bm-bottom-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  padding:20px 22px 0;
+}
+.bm-converter{
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;
+  padding:10px 14px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.bm-conv-title{
+  font-size:.52em;
+  font-weight:700;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.3);
+  margin-bottom:2px;
+}
+.bm-conv-row{
+  display:flex;
+  align-items:flex-end;
+  gap:8px;
+}
+.bm-conv-field{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.bm-conv-cur{
+  font-size:.52em;
+  font-weight:700;
+  letter-spacing:1.3px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.35);
+}
+.bm-conv-input-wrap{
+  display:flex;
+  align-items:center;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:9px;
+  padding:0 10px;
+  gap:5px;
+  transition:border-color .2s,box-shadow .2s;
+  height:32px;
+}
+.bm-conv-input-wrap:focus-within{
+  border-color:rgba(0,212,255,.4);
+  box-shadow:0 0 0 2px rgba(0,212,255,.05);
+}
+.bm-conv-prefix{
+  font-size:.7em;
+  font-weight:700;
+  color:rgba(255,255,255,.3);
+  flex-shrink:0;
+}
+.bm-conv-input{
+  background:transparent;
+  border:none;
+  outline:none;
+  color:rgba(255,255,255,.9);
+  font-family:'Inter',sans-serif;
+  font-size:.78em;
+  font-weight:700;
+  padding:0;
+  width:100%;
+  letter-spacing:.2px;
+}
+.bm-conv-input::placeholder{color:rgba(255,255,255,.15);}
+.bm-conv-input::-webkit-inner-spin-button,
+.bm-conv-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+.bm-conv-swap{
+  background:rgba(0,212,255,.1);
+  border:1px solid rgba(0,212,255,.2);
+  border-radius:50%;
+  width:30px;height:30px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.9em;
+  color:rgba(0,212,255,.8);
+  cursor:pointer;
+  flex-shrink:0;
+  transition:all .2s ease;
+  padding:0;
+}
+.bm-conv-swap:hover{
+  background:rgba(0,212,255,.2);
+  transform:rotate(180deg) scale(1.05);
+  border-color:rgba(0,212,255,.4);
+}
+.bm-conv-hint{
+  font-size:.55em;
+  color:rgba(255,255,255,.22);
+  letter-spacing:.3px;
+  min-height:.9em;
+  transition:color .2s;
+  margin-top:2px;
+}
+.bm-conv-hint.active{
+  color:rgba(16,185,129,.7);
+}
 
 .bm-foot{display:flex;justify-content:flex-end;gap:12px;padding:20px 22px 24px;border-top:1px solid rgba(255,255,255,.04);}
 .bm-btn{display:flex;align-items:center;justify-content:center;padding:11px 22px;border-radius:14px;font-family:'Inter',sans-serif;font-size:.78em;font-weight:700;cursor:pointer;transition:all .25s ease;border:none;letter-spacing:.5px;}
@@ -965,7 +1111,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 @media(max-width:750px){
   .bm-main-row{grid-template-columns:1fr;gap:16px;}
   .bm-list{grid-template-columns:repeat(2,1fr);}
-  .bm-side{order:-1;}
+  .bm-bottom-row{grid-template-columns:1fr;gap:16px;}
 }
 @media(max-width:500px){
   .bm-list{grid-template-columns:1fr;}
@@ -3583,7 +3729,14 @@ input[type=date].swae-input{color-scheme:dark;}
 <div id="bank-modal">
   <div class="bm-hdr">
     <span class="bm-title">🏦 Bank Balances</span>
-    <button class="bm-close" onclick="moneyToggle()">✕</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="bm-rate-badge" id="bmRateBadge" title="USD/LKR rate from Google Finance">
+        <span class="bm-rate-icon">💱</span>
+        <span class="bm-rate-label">USD/LKR</span>
+        <span class="bm-rate-val" id="bmRateVal">—</span>
+      </div>
+      <button class="bm-close" onclick="moneyToggle()">✕</button>
+    </div>
   </div>
   <div class="bm-body">
     <div class="bm-main-row">
@@ -3594,12 +3747,41 @@ input[type=date].swae-input{color-scheme:dark;}
         <div class="bm-chart-box">
           <canvas id="bmChart"></canvas>
         </div>
-        <div class="bm-total-box">
-          <span class="bm-total-lbl">Total Liquid Balance</span>
-          <span class="bm-total-val" id="bmTotal">₨ 0.00</span>
-        </div>
       </div>
     </div>
+
+    <!-- Bottom Row: Total Balance + Converter -->
+    <div class="bm-bottom-row">
+      <div class="bm-total-box">
+        <span class="bm-total-lbl">Total Liquid Balance</span>
+        <span class="bm-total-val" id="bmTotal">₨ 0.00</span>
+        <span class="bm-total-usd" id="bmTotalUsd">≈ — USD</span>
+      </div>
+
+      <!-- USD ↔ LKR Converter -->
+      <div class="bm-converter">
+        <div class="bm-conv-title">💱 Convert</div>
+        <div class="bm-conv-row">
+          <div class="bm-conv-field">
+            <label class="bm-conv-cur">USD</label>
+            <div class="bm-conv-input-wrap">
+              <span class="bm-conv-prefix">$</span>
+              <input type="number" id="bm-conv-usd" class="bm-conv-input" placeholder="0.00" oninput="bmConvFromUsd()" step="any" min="0">
+            </div>
+          </div>
+          <button class="bm-conv-swap" onclick="bmConvSwap()" title="Swap currencies">⇄</button>
+          <div class="bm-conv-field">
+            <label class="bm-conv-cur">LKR</label>
+            <div class="bm-conv-input-wrap">
+              <span class="bm-conv-prefix">₨</span>
+              <input type="number" id="bm-conv-lkr" class="bm-conv-input" placeholder="0.00" oninput="bmConvFromLkr()" step="any" min="0">
+            </div>
+          </div>
+        </div>
+        <div class="bm-conv-hint" id="bm-conv-hint">Enter amount</div>
+      </div>
+    </div>
+
   </div>
   <div class="bm-foot">
     <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()" title="Save Changes">
@@ -11142,9 +11324,14 @@ document.addEventListener('DOMContentLoaded', function(){
   document.addEventListener('touchend', endDrag);
 });
 
+var _bmUsdRate = 0;
+
 function bmLoad() {
   const list = document.getElementById('bmList');
   list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;"><div class="edm-spin" style="margin:0 auto 10px"></div>Fetching bank data…</div>';
+
+  // Fetch USD/LKR rate from Yahoo Finance via server side
+  bmFetchRate();
   
   google.script.run
     .withSuccessHandler(function(data) {
@@ -11155,6 +11342,28 @@ function bmLoad() {
       list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);font-size:.8em;">⚠ ' + (err.message || err) + '</div>';
     })
     .getBankBalances();
+}
+
+function bmFetchRate() {
+  const badge = document.getElementById('bmRateBadge');
+  const valEl = document.getElementById('bmRateVal');
+  if (badge) badge.classList.add('bm-rate-loading');
+  if (valEl) valEl.textContent = '…';
+
+  google.script.run
+    .withSuccessHandler(function(rate) {
+      _bmUsdRate = parseFloat(rate) || 0;
+      if (valEl) valEl.textContent = _bmUsdRate > 0 ? _bmUsdRate.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : 'N/A';
+      if (badge) badge.classList.remove('bm-rate-loading');
+      // Re-render cards with USD now that rate is available
+      if (_bmData && _bmData.length) bmRender();
+    })
+    .withFailureHandler(function() {
+      _bmUsdRate = 0;
+      if (valEl) valEl.textContent = 'N/A';
+      if (badge) badge.classList.remove('bm-rate-loading');
+    })
+    .getUsdToLkrRate();
 }
 
 const _BANK_COLORS = {
@@ -11192,6 +11401,8 @@ function bmRender() {
     total += item.amount;
     const style = getBankStyle(item.source);
     const initials = (item.source || '??').substring(0, 3).toUpperCase();
+    const usdAmt = (_bmUsdRate > 0) ? (item.amount / _bmUsdRate).toFixed(2) : null;
+    const usdLine = usdAmt ? `<div class="bm-item-usd" id="bm-usd-${i}">≈ $${Number(usdAmt).toLocaleString('en-US',{minimumFractionDigits:2})} USD</div>` : `<div class="bm-item-usd" id="bm-usd-${i}">≈ — USD</div>`;
     html += `
       <div class="bm-item" style="--bank-color: ${style.bg}">
         <div class="bm-item-row">
@@ -11199,6 +11410,7 @@ function bmRender() {
           <div class="bm-info">
             <input type="text" id="bm-src-${i}" class="bm-item-source" style="background:${style.bg};color:${style.fg};" value="${esc(item.source)}" onchange="bmUpdateData(${i}, 'source', this.value)" placeholder="Bank Name">
             <input type="number" class="bm-item-amt" value="${item.amount}" onchange="bmUpdateData(${i}, 'amount', this.value)" step="0.01">
+            ${usdLine}
           </div>
         </div>
       </div>
@@ -11207,13 +11419,19 @@ function bmRender() {
   
   list.innerHTML = html;
   totalEl.textContent = '₨ ' + total.toLocaleString('en-IN', {minimumFractionDigits:2});
-  
+  bmUpdateTotalUsd(total);
   bmUpdateChart(total);
 }
 
 function bmUpdateData(index, key, value) {
   if (key === 'amount') {
     _bmData[index].amount = parseFloat(value) || 0;
+    // Update the USD sub-label for this card
+    const usdEl = document.getElementById('bm-usd-' + index);
+    if (usdEl) {
+      const usdAmt = (_bmUsdRate > 0) ? (_bmData[index].amount / _bmUsdRate) : null;
+      usdEl.textContent = usdAmt !== null ? '≈ $' + usdAmt.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' USD' : '≈ — USD';
+    }
   } else {
     _bmData[index].source = value;
     const style = getBankStyle(value);
@@ -11236,7 +11454,19 @@ function bmUpdateData(index, key, value) {
   
   let total = _bmData.reduce((s, item) => s + item.amount, 0);
   document.getElementById('bmTotal').textContent = '₨ ' + total.toLocaleString('en-IN', {minimumFractionDigits:2});
+  bmUpdateTotalUsd(total);
   bmUpdateChart(total);
+}
+
+function bmUpdateTotalUsd(total) {
+  const el = document.getElementById('bmTotalUsd');
+  if (!el) return;
+  if (_bmUsdRate > 0) {
+    const usd = total / _bmUsdRate;
+    el.textContent = '≈ $' + usd.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' USD';
+  } else {
+    el.textContent = '≈ — USD';
+  }
 }
 
 function bmUpdateChart(total) {
@@ -11313,6 +11543,71 @@ function bmSave() {
       alert('Failed to save: ' + (err.message || err));
     })
     .updateBankBalances(_bmData);
+}
+
+// ── USD ↔ LKR Converter ──
+var _bmUsdRate = 0; // Live rate from GOOGLEFINANCE
+
+function bmConvFromUsd() {
+  const usdInput = document.getElementById('bm-conv-usd');
+  const lkrInput = document.getElementById('bm-conv-lkr');
+  const hint = document.getElementById('bm-conv-hint');
+  
+  if (_bmUsdRate <= 0) {
+    hint.textContent = '⏳ Fetching exchange rate...';
+    hint.classList.remove('active');
+    return;
+  }
+
+  const usd = parseFloat(usdInput.value) || 0;
+  if (usd > 0) {
+    const lkr = usd * _bmUsdRate;
+    lkrInput.value = lkr.toFixed(2);
+    hint.textContent = `₨${lkr.toFixed(2)} LKR @ ${_bmUsdRate.toFixed(2)}`;
+    hint.classList.add('active');
+  } else {
+    lkrInput.value = '';
+    hint.textContent = `Rate: ₨${_bmUsdRate.toFixed(2)}/USD`;
+    hint.classList.remove('active');
+  }
+}
+
+function bmConvFromLkr() {
+  const usdInput = document.getElementById('bm-conv-usd');
+  const lkrInput = document.getElementById('bm-conv-lkr');
+  const hint = document.getElementById('bm-conv-hint');
+  
+  if (_bmUsdRate <= 0) {
+    hint.textContent = '⏳ Fetching exchange rate...';
+    hint.classList.remove('active');
+    return;
+  }
+
+  const lkr = parseFloat(lkrInput.value) || 0;
+  if (lkr > 0) {
+    const usd = lkr / _bmUsdRate;
+    usdInput.value = usd.toFixed(2);
+    hint.textContent = `$${usd.toFixed(2)} USD @ ${_bmUsdRate.toFixed(2)}`;
+    hint.classList.add('active');
+  } else {
+    usdInput.value = '';
+    hint.textContent = `Rate: ₨${_bmUsdRate.toFixed(2)}/USD`;
+    hint.classList.remove('active');
+  }
+}
+
+function bmConvSwap() {
+  const usdInput = document.getElementById('bm-conv-usd');
+  const lkrInput = document.getElementById('bm-conv-lkr');
+  const temp = usdInput.value;
+  usdInput.value = lkrInput.value;
+  lkrInput.value = temp;
+  
+  if (usdInput.value) {
+    bmConvFromUsd();
+  } else if (lkrInput.value) {
+    bmConvFromLkr();
+  }
 }
 
 </script>
