@@ -6999,6 +6999,7 @@ function renderHlExpData(res) {
   var entries = res.entries;
   var groupedData = res.groupedData;
   var totals = res.totals;
+  var prevYear = res.prevYear || { income: 0, expense: 0 };
   var body = document.getElementById('hl-exp-body');
   
   if (!entries || entries.length === 0) {
@@ -7007,13 +7008,36 @@ function renderHlExpData(res) {
   }
 
   var totalNet = totals.income - totals.expense;
+  var totalIncomeAll = totals.income + prevYear.income;
+  var totalExpenseAll = totals.expense + prevYear.expense;
+  var idealBalance = totalIncomeAll - totalExpenseAll - totals.transfers;
 
   var kpiHtml = 
     '<div class="hl-kpi-row">' +
-      '<div class="kpi c0"><div class="kpi-lbl">Total Income</div><div class="kpi-val" style="color:var(--green)">₨ ' + expFr(totals.income) + '</div><div class="kpi-sub">Since Jan 2026</div></div>' +
-      '<div class="kpi c5"><div class="kpi-lbl">Total Expense</div><div class="kpi-val" style="color:var(--red)">₨ ' + expFr(totals.expense) + '</div><div class="kpi-sub">Since Jan 2026</div></div>' +
-      '<div class="kpi c1"><div class="kpi-lbl">Total Transfers</div><div class="kpi-val" style="color:var(--purple)">₨ ' + expFr(totals.transfers) + '</div><div class="kpi-sub">Net Savings: ₨ ' + expFr(totalNet) + '</div></div>' +
+      '<div class="kpi c0">' +
+        '<div class="kpi-lbl">Total Income</div>' +
+        '<div class="kpi-val" style="color:var(--green)">' + expFr(totalIncomeAll) + '</div>' +
+        '<div class="kpi-sub">2026: ' + expFr(totals.income) + ' <span style="color:rgba(255,165,0,.7);">[Prev: ' + expFr(prevYear.income) + ']</span></div>' +
+      '</div>' +
+      '<div class="kpi c5">' +
+        '<div class="kpi-lbl">Total Expense</div>' +
+        '<div class="kpi-val" style="color:var(--red)">' + expFr(totalExpenseAll) + '</div>' +
+        '<div class="kpi-sub">2026: ' + expFr(totals.expense) + ' <span style="color:rgba(255,165,0,.7);">[Prev: ' + expFr(prevYear.expense) + ']</span></div>' +
+      '</div>' +
+      '<div class="kpi c1">' +
+        '<div class="kpi-lbl">Total Transfers</div>' +
+        '<div class="kpi-val" style="color:var(--purple)">' + expFr(totals.transfers) + '</div>' +
+        '<div class="kpi-sub">Net Savings: ' + expFr(totalNet) + '</div>' +
+      '</div>' +
+      '<div class="kpi" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);">' +
+        '<div class="kpi-lbl">IDEAL Balance</div>' +
+        '<div class="kpi-val" style="color:rgba(34,197,94,.9);">' + expFr(idealBalance) + '</div>' +
+        '<div class="kpi-sub" style="color:rgba(34,197,94,.6);">Income - Expense - Transfer</div>' +
+      '</div>' +
     '</div>';
+
+  // Remove separate prevYearHtml - now integrated into KPIs
+  var prevYearHtml = '';
 
   var chartHtml = 
     '<div class="hl-chart-full">' +
@@ -7023,7 +7047,7 @@ function renderHlExpData(res) {
   var tableHtml = 
     '<div class="cbox">' +
       '<div class="ctitle">📋 Detailed Entries (' + entries.length + ')</div>' +
-      '<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">' +
+      '<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">ac' +
         '<input type="text" id="hlSearchInput" class="hl-search-input" placeholder="Search by group..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font-size:.85em;" oninput="hlFilterTable()">' +
         '<div id="hlPaginationInfo" style="font-size:.8em;color:rgba(255,255,255,.5);min-width:100px;">—</div>' +
       '</div>' +
@@ -7038,7 +7062,7 @@ function renderHlExpData(res) {
       '</div>' +
     '</div>';
 
-  body.innerHTML = kpiHtml + chartHtml + tableHtml;
+  body.innerHTML = kpiHtml + prevYearHtml + chartHtml + tableHtml;
 
   // Initialize pagination variables
   window._hlAllEntries = entries;

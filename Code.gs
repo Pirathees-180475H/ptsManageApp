@@ -1907,11 +1907,26 @@ function getHighLevelData() {
 
     var groupedData = Object.keys(groupAgg).map(function(k) { return groupAgg[k]; });
 
+    // Fetch previous year data from "Yearly I & C" sheet
+    var prevYearInc = 0, prevYearExp = 0;
+    try {
+      var yearlySheet = ss.getSheetByName('Yearly I & C');
+      if (yearlySheet) {
+        var d11 = yearlySheet.getRange('D11').getValue();
+        var f11 = yearlySheet.getRange('F11').getValue();
+        prevYearInc = typeof d11 === 'number' ? d11 : (parseFloat(String(d11).replace(/[^0-9.+-]/g, '')) || 0);
+        prevYearExp = typeof f11 === 'number' ? f11 : (parseFloat(String(f11).replace(/[^0-9.+-]/g, '')) || 0);
+      }
+    } catch (e) {
+      // Silent fail if "Yearly I & C" sheet not found
+    }
+
     return { 
       success: true, 
       entries: entries,
       groupedData: groupedData,
-      totals: { income: totalInc, expense: totalExp, transfers: totalTrf }
+      totals: { income: totalInc, expense: totalExp, transfers: totalTrf },
+      prevYear: { income: prevYearInc, expense: prevYearExp }
     };
   } catch (e) {
     Logger.log('getHighLevelData error: ' + e.message);
