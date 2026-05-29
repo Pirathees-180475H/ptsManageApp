@@ -1878,6 +1878,68 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   color:var(--dim);padding:5px 9px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;}
 .edm-table th:last-child{text-align:right;}
 .edm-table td{padding:7px 9px;font-size:.78em;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
+
+/* ── High Level Expense Modal ── */
+#hl-exp-overlay{
+  display:none;position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.8);backdrop-filter:blur(15px);
+  align-items:center;justify-content:center;padding:16px;
+}
+#hl-exp-overlay.open{display:flex;}
+#hl-exp-modal{
+  background:#0d1220;border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;width:100%;max-width:1000px;
+  height:min(90vh,860px);display:flex;flex-direction:column;
+  box-shadow:0 24px 80px rgba(0,0,0,.7);animation:edmIn .25s ease;
+}
+#hl-exp-modal .cbox { border-radius:16px;padding:14px 14px 10px;background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.05); }
+#hl-exp-modal .ctitle { font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px; }
+#hl-exp-modal .cwrap { position:relative;width:100%;height:220px;margin-top:12px; }
+#hl-exp-modal .cwrap.tall { height:260px; }
+#hl-exp-modal .kpi { border-radius:14px;padding:13px 15px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(12px);position:relative;overflow:hidden; }
+#hl-exp-modal .kpi::before { content:'';position:absolute;top:0;left:0;right:0;height:2px; }
+#hl-exp-modal .kpi.c0::before { background:linear-gradient(90deg,#6366f1,#8b5cf6); }
+#hl-exp-modal .kpi.c5::before { background:linear-gradient(90deg,#ec4899,#f43f5e); }
+#hl-exp-modal .kpi.c1::before { background:linear-gradient(90deg,#06b6d4,#0ea5e9); }
+#hl-exp-modal .kpi-lbl { font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px; }
+#hl-exp-modal .kpi-val { font-size:17px;font-weight:700;letter-spacing:-.4px; }
+#hl-exp-modal .kpi-sub { font-size:10px;color:var(--muted);margin-top:3px; }
+.hl-exp-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none; padding: 4px 12px; border-radius: 20px;
+  color: white; font-size: 11px; font-weight: 700;
+  cursor: pointer; box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s; display: flex; align-items: center; gap: 4px;
+}
+.hl-exp-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.6);
+}
+.hl-kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.hl-chart-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+.hl-chart-full { margin-bottom: 16px; }
+.hl-search-input::placeholder { color: rgba(255,255,255,.2); }
+.hl-search-input:focus { border-color: rgba(0,212,255,.4); box-shadow: 0 0 0 2px rgba(0,212,255,.1); }
+.hl-pag-btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.02);
+  color: rgba(255,255,255,.5);
+  font-size: 0.85em;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+.hl-pag-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.12);
+  color: rgba(255,255,255,.75);
+}
+.hl-pag-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
 .edm-table td:last-child{text-align:right;font-weight:700;color:#a855f7;}
 .edm-table tr:hover td{background:rgba(255,255,255,.025);}
 .edm-cat-row td{padding:9px 9px 5px;background:rgba(255,255,255,.03);
@@ -3509,6 +3571,26 @@ input[type=date].swae-input{color-scheme:dark;}
     </div>
     <div class="edm-body" id="edm-body">
       <div class="edm-loading"><div class="edm-spin"></div>Fetching entries…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     HIGH LEVEL EXPENSE POPUP
+═══════════════════════════════════════════ -->
+<div id="hl-exp-overlay" onclick="if(event.target===this)hlExpModalClose()">
+  <div id="hl-exp-modal">
+    <div class="edm-hdr">
+      <div>
+        <div class="edm-title">📈 High Level Financial Overview</div>
+        <div class="edm-sub">Income, Expenses, and Transfers (Since Jan 2026)</div>
+      </div>
+      <div class="edm-nav-row">
+        <button class="edm-close" onclick="hlExpModalClose()">✕</button>
+      </div>
+    </div>
+    <div class="edm-body" id="hl-exp-body">
+      <div class="edm-loading"><div class="edm-spin"></div>Fetching data…</div>
     </div>
   </div>
 </div>
@@ -6728,7 +6810,7 @@ function expBuild(D){
 
   var root=document.getElementById('exp-root');
   root.innerHTML=
-    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div class="exp-badge" id="exp-badge">–</div></div>'+
+    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><button class="hl-exp-btn" onclick="hlExpModalOpen()">📈 High Level</button><div class="exp-badge" id="exp-badge">–</div></div></div>'+
     '<div class="sec-lbl">Overall</div>'+
     '<div class="kpi-strip">'+
       '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div><button class="kpi-detail-btn" onclick="expDetailOpen()">📋 View Details</button></div>'+
@@ -6887,6 +6969,264 @@ function expBuild(D){
   document.getElementById('exp-ig').innerHTML=expIns.map(function(x){
     return '<div class="ic"><div class="ic-ico">'+x.ico+'</div><div class="ic-lbl">'+x.lbl+'</div><div class="ic-val '+x.cls+'">'+x.val+'</div><div class="ic-desc">'+x.desc+'</div></div>';
   }).join('');
+}
+
+/* ═══════════════════════════════════════════
+   HIGH LEVEL EXPENSE JS
+═══════════════════════════════════════════ */
+function hlExpModalOpen() {
+  document.getElementById('hl-exp-overlay').classList.add('open');
+  document.getElementById('hl-exp-body').innerHTML = '<div class="edm-loading"><div class="edm-spin"></div>Fetching data...</div>';
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.success) {
+        document.getElementById('hl-exp-body').innerHTML = '<div class="exp-err">⚠️ Failed to load high level data: ' + (res ? res.error : 'Unknown') + '</div>';
+        return;
+      }
+      renderHlExpData(res);
+    })
+    .withFailureHandler(function(err) {
+      document.getElementById('hl-exp-body').innerHTML = '<div class="exp-err">⚠️ Error: ' + (err.message || String(err)) + '</div>';
+    })
+    .getHighLevelData();
+}
+
+function hlExpModalClose() {
+  document.getElementById('hl-exp-overlay').classList.remove('open');
+}
+
+function renderHlExpData(res) {
+  var entries = res.entries;
+  var groupedData = res.groupedData;
+  var totals = res.totals;
+  var body = document.getElementById('hl-exp-body');
+  
+  if (!entries || entries.length === 0) {
+    body.innerHTML = '<div class="exp-err">No data found from Jan 2026 onwards.</div>';
+    return;
+  }
+
+  var totalNet = totals.income - totals.expense;
+
+  var kpiHtml = 
+    '<div class="hl-kpi-row">' +
+      '<div class="kpi c0"><div class="kpi-lbl">Total Income</div><div class="kpi-val" style="color:var(--green)">₨ ' + expFr(totals.income) + '</div><div class="kpi-sub">Since Jan 2026</div></div>' +
+      '<div class="kpi c5"><div class="kpi-lbl">Total Expense</div><div class="kpi-val" style="color:var(--red)">₨ ' + expFr(totals.expense) + '</div><div class="kpi-sub">Since Jan 2026</div></div>' +
+      '<div class="kpi c1"><div class="kpi-lbl">Total Transfers</div><div class="kpi-val" style="color:var(--purple)">₨ ' + expFr(totals.transfers) + '</div><div class="kpi-sub">Net Savings: ₨ ' + expFr(totalNet) + '</div></div>' +
+    '</div>';
+
+  var chartHtml = 
+    '<div class="hl-chart-full">' +
+      '<div class="cbox"><div class="ctitle">📊 Totals by Group</div><div class="cwrap tall"><canvas id="hlGroupChart"></canvas></div></div>' +
+    '</div>';
+
+  var tableHtml = 
+    '<div class="cbox">' +
+      '<div class="ctitle">📋 Detailed Entries (' + entries.length + ')</div>' +
+      '<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">' +
+        '<input type="text" id="hlSearchInput" class="hl-search-input" placeholder="Search by group..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font-size:.85em;" oninput="hlFilterTable()">' +
+        '<div id="hlPaginationInfo" style="font-size:.8em;color:rgba(255,255,255,.5);min-width:100px;">—</div>' +
+      '</div>' +
+      '<div style="overflow-x:auto;"><table class="edm-table"><thead><tr>' +
+        '<th style="min-width:120px;">Date</th><th>Group/Reference</th><th style="min-width:110px;">Income</th><th style="min-width:110px;">Expense</th><th style="min-width:110px;">Transfer</th>' +
+      '</tr></thead><tbody id="hlTableBody">' +
+      '</tbody></table></div>' +
+      '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;align-items:center;">' +
+        '<button class="hl-pag-btn" onclick="hlPrevPage()" id="hlPrevBtn">◀ Prev</button>' +
+        '<div id="hlPageInfo" style="font-size:.85em;color:rgba(255,255,255,.6);min-width:80px;text-align:center;">Page 1</div>' +
+        '<button class="hl-pag-btn" onclick="hlNextPage()" id="hlNextBtn">Next ▶</button>' +
+      '</div>' +
+    '</div>';
+
+  body.innerHTML = kpiHtml + chartHtml + tableHtml;
+
+  // Initialize pagination variables
+  window._hlAllEntries = entries;
+  window._hlCurrentPage = 1;
+  window._hlPageSize = 10;
+  window._hlFilteredEntries = entries;
+
+  hlFilterTable();
+
+  // Render Charts
+  setTimeout(function() {
+    var gLabels = groupedData.map(function(g) { return g.group; });
+    var gLabelsAbbr = gLabels.map(function(label) {
+      return label.length > 12 ? label.substring(0, 12) + '…' : label;
+    });
+    var gInc = groupedData.map(function(g) { return g.income; });
+    var gExp = groupedData.map(function(g) { return g.expense; });
+    var gTrf = groupedData.map(function(g) { return g.transfers; });
+
+    var ctx = document.getElementById('hlGroupChart');
+    if (ctx) {
+      ctx.addEventListener('mousemove', function(e) {
+        var chart = Chart.getChart(ctx);
+        if (chart) {
+          var canvasPosition = Chart.helpers.getRelativePosition(e, chart);
+          var dataX = chart.scales.x.getValueForPixel(canvasPosition.x);
+          var dataIndex = Math.round(dataX);
+          if (dataIndex >= 0 && dataIndex < gLabels.length) {
+            ctx.title = gLabels[dataIndex];
+          }
+        }
+      });
+    }
+
+    new Chart(document.getElementById('hlGroupChart'), {
+      type: 'bar',
+      data: {
+        labels: gLabelsAbbr,
+        datasets: [
+          { 
+            label: 'Income', 
+            data: gInc, 
+            backgroundColor: 'rgba(16,185,129,0.85)',
+            borderColor: 'rgba(34,197,94,1)',
+            borderWidth: 2,
+            borderRadius: 8,
+            hoverBackgroundColor: 'rgba(34,197,94,1)',
+            shadowColor: 'rgba(16,185,129,0.3)',
+            shadowBlur: 8
+          },
+          { 
+            label: 'Expense', 
+            data: gExp, 
+            backgroundColor: 'rgba(239,68,68,0.85)',
+            borderColor: 'rgba(220,38,38,1)',
+            borderWidth: 2,
+            borderRadius: 8,
+            hoverBackgroundColor: 'rgba(220,38,38,1)',
+            shadowColor: 'rgba(239,68,68,0.3)',
+            shadowBlur: 8
+          },
+          { 
+            label: 'Transfers', 
+            data: gTrf, 
+            backgroundColor: 'rgba(168,85,247,0.85)',
+            borderColor: 'rgba(147,51,234,1)',
+            borderWidth: 2,
+            borderRadius: 8,
+            hoverBackgroundColor: 'rgba(147,51,234,1)',
+            shadowColor: 'rgba(168,85,247,0.3)',
+            shadowBlur: 8
+          }
+        ]
+      },
+      options: { 
+        responsive: true, 
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        plugins: { 
+          legend: {
+            ...EXP_LEG,
+            labels: {
+              ...EXP_LEG.labels,
+              font: { weight: '700', size: 12 },
+              padding: 16,
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            titleFont: { weight: 700, size: 13 },
+            bodyFont: { weight: 600, size: 12 },
+            padding: 12,
+            borderColor: 'rgba(255,255,255,0.2)',
+            borderWidth: 1,
+            displayColors: true,
+            boxPadding: 10,
+            callbacks: {
+              title: function(context) {
+                if (context && context.length > 0) {
+                  var idx = context[0].dataIndex;
+                  return gLabels[idx] || '';
+                }
+                return '';
+              },
+              label: function(context) {
+                var label = context.dataset.label || '';
+                var value = Math.round(context.parsed.y).toLocaleString('en-IN');
+                return label + ': ₨ ' + value;
+              }
+            }
+          }
+        }, 
+        scales: {
+          ...expSc(),
+          y: {
+            ...expSc().y,
+            ticks: {
+              ...expSc().y.ticks,
+              callback: function(value) {
+                return '₨ ' + (value / 1000).toFixed(0) + 'K';
+              }
+            }
+          }
+        }
+      }
+    });
+  }, 50);
+}
+
+function hlFilterTable() {
+  var searchVal = (document.getElementById('hlSearchInput') || {}).value || '';
+  var filtered = window._hlAllEntries.filter(function(e) {
+    return e.group.toLowerCase().indexOf(searchVal.toLowerCase()) !== -1;
+  });
+  window._hlFilteredEntries = filtered;
+  window._hlCurrentPage = 1;
+  hlRenderTablePage();
+}
+
+function hlRenderTablePage() {
+  var start = (window._hlCurrentPage - 1) * window._hlPageSize;
+  var end = start + window._hlPageSize;
+  var pageEntries = window._hlFilteredEntries.slice(start, end);
+  
+  var tbody = document.getElementById('hlTableBody');
+  if (!tbody) return;
+  
+  tbody.innerHTML = pageEntries.map(function(e) {
+    return '<tr class="edm-cat-row">' +
+      '<td style="min-width:120px;">' + e.date + '</td>' +
+      '<td>' + (e.group || '—') + '</td>' +
+      '<td style="color:var(--green);min-width:110px;">' + (e.income > 0 ? expFr(e.income) : '—') + '</td>' +
+      '<td style="color:var(--red);min-width:110px;">' + (e.expense > 0 ? expFr(e.expense) : '—') + '</td>' +
+      '<td style="color:var(--purple);min-width:110px;">' + (e.transfers > 0 ? expFr(e.transfers) : '—') + '</td>' +
+    '</tr>';
+  }).join('');
+  
+  var totalPages = Math.ceil(window._hlFilteredEntries.length / window._hlPageSize);
+  var pageInfo = document.getElementById('hlPageInfo');
+  if (pageInfo) {
+    pageInfo.textContent = 'Page ' + window._hlCurrentPage + ' / ' + totalPages;
+  }
+  
+  var paginationInfo = document.getElementById('hlPaginationInfo');
+  if (paginationInfo) {
+    paginationInfo.textContent = (start + 1) + ' - ' + Math.min(end, window._hlFilteredEntries.length) + ' of ' + window._hlFilteredEntries.length;
+  }
+  
+  var prevBtn = document.getElementById('hlPrevBtn');
+  var nextBtn = document.getElementById('hlNextBtn');
+  if (prevBtn) prevBtn.disabled = window._hlCurrentPage === 1;
+  if (nextBtn) nextBtn.disabled = window._hlCurrentPage >= totalPages;
+}
+
+function hlPrevPage() {
+  if (window._hlCurrentPage > 1) {
+    window._hlCurrentPage--;
+    hlRenderTablePage();
+  }
+}
+
+function hlNextPage() {
+  var totalPages = Math.ceil(window._hlFilteredEntries.length / window._hlPageSize);
+  if (window._hlCurrentPage < totalPages) {
+    window._hlCurrentPage++;
+    hlRenderTablePage();
+  }
 }
 
 /* ═══════════════════════════════════════════

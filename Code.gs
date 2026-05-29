@@ -1,4 +1,4 @@
-/* ── Web App entry point (SPA) ── */
+﻿/* ── Web App entry point (SPA) ── */
 function doGet(e) {
   var appUrl = ScriptApp.getService().getUrl();
   var html = HtmlService.createHtmlOutputFromFile('render');
@@ -1810,6 +1810,112 @@ function updateClaimStatus(month, year, day, category, currentRef) {
     return { success: true, newRef: newRef };
   } catch(err) {
     return { success: false, error: err.message || String(err) };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   getHighLevelData
+   Returns detailed entries and aggregated data for High Level Income (X), 
+   High Level Expense (Y), and Transfers (Z) from Jan 2026.
+   Groups by Column AA.
+───────────────────────────────────────────────────────────────── */
+function getHighLevelData() {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var lastRow = sheet.getLastRow();
+    var allData = sheet.getRange(1, 1, lastRow, 27).getValues(); // Need up to AA (27 columns)
+    var MON_NAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    var entries = [];
+    var groupAgg = {}; // Key: "Col AA Text", Value: { income, expense, transfers }
+    var totalInc = 0, totalExp = 0, totalTrf = 0;
+
+    for (var r = 0; r < allData.length; r++) {
+      var row = allData[r];
+      var dateCell = row[0];
+
+      // Skip non-date rows
+      if (!(dateCell instanceof Date) || isNaN(dateCell.getTime())) continue;
+
+      var rowYear = dateCell.getFullYear();
+      if (rowYear < 2026) continue;
+
+      var rowMonth = dateCell.getMonth() + 1; // 1-based
+      var rowDay = dateCell.getDate();
+      var monthLabel = MON_NAMES[rowMonth] + ' ' + rowDay + ', ' + rowYear;
+
+      // Extract values from X (23), Y (24), Z (25)
+      var valX = row[23];
+      var valY = row[24];
+      var valZ = row[25];
+
+      var inc = typeof valX === 'number' ? valX : (parseFloat(String(valX).replace(/[^0-9.+-]/g, '')) || 0);
+      var exp = typeof valY === 'number' ? valY : (parseFloat(String(valY).replace(/[^0-9.+-]/g, '')) || 0);
+      var trf = typeof valZ === 'number' ? valZ : (parseFloat(String(valZ).replace(/[^0-9.+-]/g, '')) || 0);
+
+      // Extract Group from AA (26)
+      var rawGroup = String(row[26] || '').trim();
+      var groupNameLower = rawGroup ? rawGroup.toLowerCase() : 'other';
+      var groupName = groupNameLower;
+
+      // Case-insensitive keyword grouping
+      if (groupNameLower.indexOf('device') !== -1) {
+        groupName = 'Device';
+      } else if (groupNameLower.indexOf('home') !== -1) {
+        groupName = 'Home';
+      } else if (groupNameLower.indexOf('tax') !== -1) {
+        groupName = 'Tax';
+      } else if (groupNameLower.indexOf('monthly') !== -1) {
+        groupName = 'Monthly';
+      } else if (groupNameLower.indexOf('room') !== -1) {
+        groupName = 'Room';
+      } else if (groupNameLower.indexOf('interest') !== -1) {
+        groupName = 'Interest';
+      } else {
+        // Title Case for others
+        groupName = groupNameLower.replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+      }
+
+      if (inc === 0 && exp === 0 && trf === 0) continue; // Skip empty rows
+
+      entries.push({
+        date: monthLabel,
+        timestamp: dateCell.getTime(),
+        group: groupName,
+        income: inc,
+        expense: exp,
+        transfers: trf
+      });
+
+      totalInc += inc;
+      totalExp += exp;
+      totalTrf += trf;
+
+      if (!groupAgg[groupName]) {
+        groupAgg[groupName] = { group: groupName, income: 0, expense: 0, transfers: 0 };
+      }
+      groupAgg[groupName].income += inc;
+      groupAgg[groupName].expense += exp;
+      groupAgg[groupName].transfers += trf;
+    }
+
+    // Sort older -> newer
+    entries.sort(function(a, b) { return a.timestamp - b.timestamp; });
+
+    var groupedData = Object.keys(groupAgg).map(function(k) { return groupAgg[k]; });
+
+    return { 
+      success: true, 
+      entries: entries,
+      groupedData: groupedData,
+      totals: { income: totalInc, expense: totalExp, transfers: totalTrf }
+    };
+  } catch (e) {
+    Logger.log('getHighLevelData error: ' + e.message);
+    return { success: false, error: e.message };
   }
 }
 
