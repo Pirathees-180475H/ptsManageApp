@@ -7048,7 +7048,7 @@ function renderHlExpData(res) {
     '<div class="cbox">' +
       '<div class="ctitle">📋 Detailed Entries (' + entries.length + ')</div>' +
       '<div style="margin-bottom:14px;display:flex;gap:10px;align-items:center;">ac' +
-        '<input type="text" id="hlSearchInput" class="hl-search-input" placeholder="Search by group..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font-size:.85em;" oninput="hlFilterTable()">' +
+        '<input type="text" id="hlSearchInput" class="hl-search-input" placeholder="Search entries..." style="flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font-size:.85em;" oninput="hlFilterTable()">' +
         '<div id="hlPaginationInfo" style="font-size:.8em;color:rgba(255,255,255,.5);min-width:100px;">—</div>' +
       '</div>' +
       '<div style="overflow-x:auto;"><table class="edm-table"><thead><tr>' +
@@ -7196,7 +7196,8 @@ function renderHlExpData(res) {
 function hlFilterTable() {
   var searchVal = (document.getElementById('hlSearchInput') || {}).value || '';
   var filtered = window._hlAllEntries.filter(function(e) {
-    return e.group.toLowerCase().indexOf(searchVal.toLowerCase()) !== -1;
+    var displayValue = (e.rawGroup || e.group || '').toLowerCase();
+    return displayValue.indexOf(searchVal.toLowerCase()) !== -1;
   });
   window._hlFilteredEntries = filtered;
   window._hlCurrentPage = 1;
@@ -7214,7 +7215,7 @@ function hlRenderTablePage() {
   tbody.innerHTML = pageEntries.map(function(e) {
     return '<tr class="edm-cat-row">' +
       '<td style="min-width:120px;">' + e.date + '</td>' +
-      '<td>' + (e.group || '—') + '</td>' +
+      '<td>' + (e.rawGroup || e.group || '—') + '</td>' +
       '<td style="color:var(--green);min-width:110px;">' + (e.income > 0 ? expFr(e.income) : '—') + '</td>' +
       '<td style="color:var(--red);min-width:110px;">' + (e.expense > 0 ? expFr(e.expense) : '—') + '</td>' +
       '<td style="color:var(--purple);min-width:110px;">' + (e.transfers > 0 ? expFr(e.transfers) : '—') + '</td>' +

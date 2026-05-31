@@ -1862,16 +1862,18 @@ function getHighLevelData() {
       var groupName = groupNameLower;
 
       // Case-insensitive keyword grouping
-      if (groupNameLower.indexOf('device') !== -1) {
+      if (groupNameLower.indexOf('friend') !== -1) {
+        groupName = 'Friend Transfers';
+      } else if (groupNameLower.indexOf('device') !== -1) {
         groupName = 'Device';
       } else if (groupNameLower.indexOf('home') !== -1) {
         groupName = 'Home';
       } else if (groupNameLower.indexOf('tax') !== -1) {
-        groupName = 'Tax';
+        groupName = 'Tax Refund';
       } else if (groupNameLower.indexOf('monthly') !== -1) {
-        groupName = 'Monthly';
+        groupName = 'Monthly Expense';
       } else if (groupNameLower.indexOf('room') !== -1) {
-        groupName = 'Room';
+        groupName = 'Room Expense';
       } else if (groupNameLower.indexOf('interest') !== -1) {
         groupName = 'Interest';
       } else {
@@ -1885,6 +1887,7 @@ function getHighLevelData() {
         date: monthLabel,
         timestamp: dateCell.getTime(),
         group: groupName,
+        rawGroup: rawGroup,
         income: inc,
         expense: exp,
         transfers: trf
