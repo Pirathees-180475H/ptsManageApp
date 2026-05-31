@@ -7039,9 +7039,16 @@ function renderHlExpData(res) {
   // Remove separate prevYearHtml - now integrated into KPIs
   var prevYearHtml = '';
 
+  // Build group dropdown options
+  var groupOptions = groupedData.map(function(g) { return g.group; }).sort();
+  var groupDropdown = '<select id="hlGroupSelect" onchange="hlRenderGroupChart()" style="padding:6px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:.85em;cursor:pointer;">' +
+    groupOptions.map(function(g) { return '<option value="' + g + '">' + g + '</option>'; }).join('') +
+    '</select>';
+
   var chartHtml = 
     '<div class="hl-chart-full">' +
       '<div class="cbox"><div class="ctitle">📊 Totals by Group</div><div class="cwrap tall"><canvas id="hlGroupChart"></canvas></div></div>' +
+      '<div class="cbox"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div class="ctitle" style="margin:0;">📈 Group Details</div>' + groupDropdown + '</div><div class="cwrap tall"><canvas id="hlDetailChart"></canvas></div></div>' +
     '</div>';
 
   var tableHtml = 
@@ -7069,6 +7076,7 @@ function renderHlExpData(res) {
   window._hlCurrentPage = 1;
   window._hlPageSize = 10;
   window._hlFilteredEntries = entries;
+  window._hlGroupedData = groupedData;
 
   hlFilterTable();
 
@@ -7191,6 +7199,106 @@ function renderHlExpData(res) {
       }
     });
   }, 50);
+  
+  // Render initial group chart
+  hlRenderGroupChart();
+}
+
+function hlRenderGroupChart() {
+  var selectedGroup = document.getElementById('hlGroupSelect').value;
+  var entries = window._hlAllEntries;
+  
+  // Filter entries for the selected group
+  var groupEntries = entries.filter(function(e) {
+    return e.group === selectedGroup;
+  });
+  
+  if (groupEntries.length === 0) {
+    return;
+  }
+  
+  // Sort by date
+  groupEntries.sort(function(a, b) { return a.timestamp - b.timestamp; });
+  
+  // Prepare data for chart
+  var labels = groupEntries.map(function(e) { 
+    return e.date.split(',')[0]; // Just the date part
+  });
+  // Show the actual amount for each entry (income, expense, or transfer)
+  var amtData = groupEntries.map(function(e) {
+    if (e.income !== 0) return e.income;
+    if (e.expense !== 0) return -e.expense;
+    if (e.transfers !== 0) return e.transfers;
+    return 0;
+  });
+
+  var ctx = document.getElementById('hlDetailChart');
+  if (!ctx) return;
+
+  // Destroy existing chart if any
+  var existingChart = Chart.getChart(ctx);
+  if (existingChart) {
+    existingChart.destroy();
+  }
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Amount',
+          data: amtData,
+          borderColor: 'rgba(34,197,94,1)',
+          backgroundColor: 'rgba(16,185,129,0.1)',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: 'rgba(34,197,94,1)',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          tension: 0.4,
+          fill: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(0,0,0,0.9)',
+          titleFont: { weight: 700, size: 13 },
+          bodyFont: { weight: 600, size: 12 },
+          padding: 12,
+          borderColor: 'rgba(255,255,255,0.2)',
+          borderWidth: 1,
+          displayColors: true,
+          boxPadding: 10,
+          callbacks: {
+            label: function(context) {
+              var label = context.dataset.label || '';
+              var value = Math.round(context.parsed.y).toLocaleString('en-IN');
+              return label + ': ₨ ' + value;
+            }
+          }
+        }
+      },
+      scales: {
+        ...expSc(),
+        y: {
+          ...expSc().y,
+          ticks: {
+            ...expSc().y.ticks,
+            callback: function(value) {
+              return '₨ ' + (value / 1000).toFixed(0) + 'K';
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 function hlFilterTable() {
