@@ -7226,9 +7226,9 @@ function hlRenderGroupChart() {
   });
   // Show the actual amount for each entry (income, expense, or transfer)
   var amtData = groupEntries.map(function(e) {
-    if (e.income !== 0) return e.income;
-    if (e.expense !== 0) return -e.expense;
-    if (e.transfers !== 0) return e.transfers;
+    if (e.income !== 0) return Math.abs(e.income);
+    if (e.expense !== 0) return Math.abs(e.expense);
+    if (e.transfers !== 0) return Math.abs(e.transfers);
     return 0;
   });
 
