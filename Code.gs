@@ -1591,6 +1591,12 @@ function getCurrentMonthExpensesList(reqMonth, reqYear) {
       var rowDay   = parseInt(parts[2], 10);
       if (rowMonth !== curMonth) continue;
 
+      // Check year: if col A holds an actual Date object, compare its full year
+      if (row[0] instanceof Date && !isNaN(row[0])) {
+        var rowYear = parseInt(Utilities.formatDate(row[0], tz, 'yyyy'), 10);
+        if (rowYear !== curYear) continue;
+      }
+
       // Extract non-zero values per category
       CATS.forEach(function(cat) {
         var rawAmt = row[cat.amtCol - 1]; // 0-indexed
