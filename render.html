@@ -850,7 +850,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ── Tracker Modal (combined) ── */
 #tracker-modal{
   position:fixed;
-  width:95%;max-width:750px;max-height:75vh;z-index:8000;
+  width:95%;max-width:750px;max-height:85vh;z-index:8000;
   background:#0a0e1c;backdrop-filter:blur(28px);
   border:1px solid rgba(255,255,255,.1);border-radius:22px;
   box-shadow:0 32px 90px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.07);
@@ -11207,7 +11207,7 @@ function trackerToggle(tab) {
   if (opening) {
     if (!_positionedTracker) {
       p.style.left = (window.innerWidth  / 2 - 375) + 'px';
-      p.style.top  = (window.innerHeight / 2 - 270) + 'px';
+      p.style.top  = (window.innerHeight / 2 - 390) + 'px';
       _positionedTracker = true;
     }
     p.classList.add('open');
