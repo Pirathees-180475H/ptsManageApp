@@ -689,13 +689,25 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 }
 .sub-total-label{font-size:.7em;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.6);}
 .sub-total-value{font-size:1.4em;font-weight:800;color:var(--green);}
-/* ── Sub toolbar ── */
-.sub-toolbar{display:flex;align-items:center;justify-content:flex-end;padding:10px 20px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;}
+/* Sub pane: toolbar must not grow — override generic first-child rule */
+#trk-pane-sub > .sub-toolbar{flex:0 0 auto;overflow:visible;}
+#trk-pane-sub > .sub-add-form{flex-shrink:0;}
+#trk-pane-sub > .sub-body{flex:1;overflow-y:auto;min-height:0;}
+.sub-toolbar{display:flex;align-items:center;justify-content:flex-end;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;flex:0 0 auto;}
 .sub-filter-tabs{display:flex;gap:4px;}
 .sub-tab{padding:5px 14px;font-size:.58em;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:1px solid rgba(255,255,255,.12);border-radius:20px;background:transparent;color:rgba(255,255,255,.4);cursor:pointer;transition:all .15s;font-family:inherit;}
 .sub-tab.active{background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.4);color:var(--blue);}
-.sub-add-btn{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,rgba(0,230,118,.2),rgba(0,212,255,.12));border:1px solid rgba(0,230,118,.35);color:var(--green);font-size:1.1em;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;font-family:inherit;flex-shrink:0;}
-.sub-add-btn:hover{background:linear-gradient(135deg,rgba(0,230,118,.35),rgba(0,212,255,.25));transform:scale(1.08);}
+.sub-add-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;
+  border-radius:10px;
+  background:linear-gradient(135deg,rgba(0,230,118,.18),rgba(0,212,255,.1));
+  border:1px solid rgba(0,230,118,.35);
+  color:var(--green);font-size:.7em;font-weight:700;letter-spacing:.5px;
+  cursor:pointer;font-family:inherit;flex-shrink:0;
+  transition:all .2s;
+}
+.sub-add-btn:hover{background:linear-gradient(135deg,rgba(0,230,118,.32),rgba(0,212,255,.22));transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,230,118,.18);}
 /* ── Sub add form ── */
 .sub-add-form{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);background:rgba(0,230,118,.04);flex-shrink:0;display:none;}
 .sub-add-form.open{display:block;}
@@ -850,7 +862,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ── Tracker Modal (combined) ── */
 #tracker-modal{
   position:fixed;
-  width:95%;max-width:750px;max-height:85vh;z-index:8000;
+  width:95%;max-width:750px;max-height:90vh;z-index:8000;
   background:#0a0e1c;backdrop-filter:blur(28px);
   border:1px solid rgba(255,255,255,.1);border-radius:22px;
   box-shadow:0 32px 90px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.07);
@@ -3949,7 +3961,7 @@ input[type=date].swae-input{color-scheme:dark;}
   <!-- ── Subscriptions pane ── -->
   <div class="trk-pane active" id="trk-pane-sub">
     <div class="sub-toolbar">
-      <button class="sub-add-btn" onclick="subAddToggle()" title="Add new subscription entry">+</button>
+      <button class="sub-add-btn" onclick="subAddToggle()" title="Add new subscription entry"><span style="font-size:1.2em;line-height:1">+</span> Add Entry</button>
     </div>
     <div class="sub-add-form" id="sub-add-form">
       <div class="sub-add-form-title">➕ New Subscription Entry</div>
@@ -11277,6 +11289,7 @@ function subAddToggle() {
     document.getElementById('saNetCost').value = '';
     document.getElementById('saNote').value = '';
     form.classList.add('open');
+    setTimeout(function(){ form.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 30);
   } else {
     form.classList.remove('open');
   }
