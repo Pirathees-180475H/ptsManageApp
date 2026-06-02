@@ -862,11 +862,14 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* ── Tracker Modal (combined) ── */
 #tracker-modal{
   position:fixed;
-  width:95%;max-width:750px;max-height:90vh;z-index:8000;
+  width:calc(100% - 24px);max-width:750px;max-height:90vh;z-index:8000;
   background:#0a0e1c;backdrop-filter:blur(28px);
   border:1px solid rgba(255,255,255,.1);border-radius:22px;
   box-shadow:0 32px 90px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.07);
-  display:none;flex-direction:column;overflow:hidden;position:relative;
+  display:none;flex-direction:column;overflow:hidden;
+  /* Centered fallback before JS positions it */
+  left:50%;transform:translateX(-50%);
+  top:6vh;
 }
 /* Top shimmer accent — matches HL modal + portfolio */
 #tracker-modal::before{
@@ -11218,8 +11221,17 @@ function trackerToggle(tab) {
   tab = tab || _trackerActiveTab;
   if (opening) {
     if (!_positionedTracker) {
-      p.style.left = (window.innerWidth  / 2 - 375) + 'px';
-      p.style.top  = (window.innerHeight / 2 - 390) + 'px';
+      var pw = Math.min(750, window.innerWidth - 24);
+      var ph = Math.min(window.innerHeight * 0.9, 780);
+      // On small screens: full-width, near top. On large screens: centered, upper-third.
+      if (window.innerWidth <= 600) {
+        p.style.left = '12px';
+        p.style.top  = '10px';
+      } else {
+        p.style.left = Math.max(12, (window.innerWidth  / 2 - pw / 2)) + 'px';
+        p.style.top  = Math.max(10, (window.innerHeight / 2 - ph / 2 - 60)) + 'px';
+      }
+      p.style.transform = 'none';
       _positionedTracker = true;
     }
     p.classList.add('open');
@@ -11248,25 +11260,68 @@ function trackerSetTab(tab) {
   if (tab === 'inst' && !_installmentsData)   loadInstallments();
 }
 
-// Draggable tracker-modal
+// Draggable tracker-modal (mouse + touch)
 document.addEventListener('DOMContentLoaded', function() {
   var panel = document.getElementById('tracker-modal');
   if (!panel) return;
   var hdr = document.getElementById('tracker-hdr');
   if (!hdr) return;
   var _drag = false, _ox = 0, _oy = 0;
+
+  function startDrag(cx, cy) {
+    var r = panel.getBoundingClientRect();
+    _ox = cx - r.left; _oy = cy - r.top;
+    _drag = true; hdr.style.cursor = 'grabbing';
+    // Switch from transform-centering to explicit left/top so drag works
+    if (panel.style.transform) {
+      panel.style.left = r.left + 'px';
+      panel.style.top  = r.top  + 'px';
+      panel.style.transform = 'none';
+    }
+  }
+  function moveDrag(cx, cy) {
+    if (!_drag) return;
+    var pw = panel.offsetWidth, ph = panel.offsetHeight;
+    var nx = Math.max(0, Math.min(cx - _ox, window.innerWidth  - pw));
+    var ny = Math.max(0, Math.min(cy - _oy, window.innerHeight - ph));
+    panel.style.left = nx + 'px';
+    panel.style.top  = ny + 'px';
+  }
+  function endDrag() { _drag = false; hdr.style.cursor = 'grab'; }
+
+  // Mouse
   hdr.addEventListener('mousedown', function(e) {
     if (e.target.closest('.tracker-close')) return;
-    var r = panel.getBoundingClientRect();
-    _ox = e.clientX - r.left; _oy = e.clientY - r.top;
-    _drag = true; hdr.style.cursor = 'grabbing';
+    startDrag(e.clientX, e.clientY);
   });
-  window.addEventListener('mousemove', function(e) {
+  window.addEventListener('mousemove', function(e) { moveDrag(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', endDrag);
+
+  // Touch
+  hdr.addEventListener('touchstart', function(e) {
+    if (e.target.closest('.tracker-close')) return;
+    var t = e.touches[0];
+    startDrag(t.clientX, t.clientY);
+  }, {passive: true});
+  window.addEventListener('touchmove', function(e) {
     if (!_drag) return;
-    panel.style.left = (e.clientX - _ox) + 'px';
-    panel.style.top  = (e.clientY - _oy) + 'px';
+    e.preventDefault();
+    var t = e.touches[0];
+    moveDrag(t.clientX, t.clientY);
+  }, {passive: false});
+  window.addEventListener('touchend', endDrag);
+
+  // Reposition on resize so modal stays on screen
+  window.addEventListener('resize', function() {
+    if (!panel.classList.contains('open')) return;
+    var r = panel.getBoundingClientRect();
+    var pw = panel.offsetWidth, ph = panel.offsetHeight;
+    if (r.right > window.innerWidth || r.bottom > window.innerHeight || r.left < 0 || r.top < 0) {
+      panel.style.transform = 'none';
+      panel.style.left = Math.max(0, Math.min(r.left, window.innerWidth  - pw)) + 'px';
+      panel.style.top  = Math.max(0, Math.min(r.top,  window.innerHeight - ph)) + 'px';
+    }
   });
-  window.addEventListener('mouseup', function() { _drag = false; hdr.style.cursor = 'grab'; });
 });
 
 // ═══════════════════════════════════════════
