@@ -6,6 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>PTS Finance</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/pikaday/css/pikaday.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/pikaday/pikaday.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ═══════════════════════════════════════════
@@ -214,110 +216,317 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pg-cal-btn:active{transform:scale(.9);}
 .pg-cal-btn.cal-active{background:rgba(0,212,255,.28);border-color:rgba(0,212,255,.6);color:#7dd3fc;}
 
-#cal-panel {
-  position:fixed;bottom:calc(var(--nav-h) + 10px);left:12px;
-  width:500px;z-index:8000;
-  max-height: calc(100vh - 80px);
-  background:rgba(6,11,24,.84);backdrop-filter:blur(28px);
-  -webkit-backdrop-filter:blur(28px);
-  border:1px solid rgba(255,255,255,.11);border-radius:18px;
-  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
-  display:none;flex-direction:column;overflow:hidden;
-}
-#cal-panel.open{display:flex;animation:calcIn .2s ease;}
+/* ═══ CALENDAR PANEL ═══ */
+@keyframes calIn{from{opacity:0;transform:scale(.93) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
 
+#cal-panel {
+  position:fixed;
+  width:292px;
+  z-index:8000;
+  background:#0c1323;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;
+  box-shadow:0 28px 70px rgba(0,0,0,.8),0 0 0 1px rgba(0,212,255,.04),inset 0 1px 0 rgba(255,255,255,.05);
+  display:none;flex-direction:column;overflow:hidden;
+  max-height:calc(100vh - 24px);
+  touch-action:none;
+}
+#cal-panel.open{display:flex;animation:calIn .2s cubic-bezier(.22,1,.36,1);}
+
+/* ── topbar ── */
 .cal-topbar{
   display:flex;align-items:center;justify-content:space-between;
-  padding:10px 13px 8px;border-bottom:1px solid rgba(255,255,255,.06);
-  flex-shrink:0;cursor:grab;user-select:none;
+  padding:13px 14px 11px;
+  background:linear-gradient(90deg,rgba(0,212,255,.07) 0%,rgba(168,85,247,.05) 100%);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;cursor:grab;user-select:none;-webkit-user-select:none;
+  position:relative;
 }
 .cal-topbar:active{cursor:grabbing;}
-.cal-title{font-size:.63em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.35); display:flex; align-items:center; gap: 8px;}
-.cal-close{background:none;border:none;color:rgba(255,255,255,.25);font-size:.85em;cursor:pointer;padding:2px 5px;line-height:1;font-family:inherit;}
-.cal-close:hover{color:#fff;}
+@media(max-width:768px){
+  .cal-topbar::before{
+    content:'';display:block;
+    width:32px;height:3px;border-radius:2px;
+    background:rgba(255,255,255,.15);
+    position:absolute;top:5px;left:50%;transform:translateX(-50%);
+  }
+  .cal-topbar{padding-top:16px;}
+}
+.cal-title{
+  font-size:.68em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
+  color:rgba(255,255,255,.65);display:flex;align-items:center;gap:7px;
+}
+.cal-title-icon{
+  width:24px;height:24px;border-radius:7px;
+  background:linear-gradient(135deg,#00d4ff 0%,#3b82f6 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.95em;flex-shrink:0;
+  box-shadow:0 3px 10px rgba(0,212,255,.25);
+}
+.cal-close{
+  width:26px;height:26px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);
+  color:rgba(255,255,255,.4);font-size:.75em;cursor:pointer;
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-family:inherit;transition:background .15s,color .15s,border-color .15s;
+  flex-shrink:0;
+}
+.cal-close:hover{background:rgba(255,77,109,.15);color:#ff6b85;border-color:rgba(255,77,109,.25);}
 
-.cal-header-controls {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 13px; border-bottom: 1px solid rgba(255,255,255,.05);
+/* ── Pikaday dark theme override ── */
+#cal-pikaday-container .pika-single {
+  font-family:'Inter',system-ui,sans-serif !important;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  color:#fff !important;
+  width:100% !important;
 }
-.cal-btn {
-  background: rgba(255,255,255,.06); border: none; color: #fff;
-  border-radius: 6px; padding: 4px 8px; cursor: pointer;
-  font-size: .8em; transition: background .15s;
+#cal-pikaday-container .pika-lendar {
+  width:100% !important;
+  margin:0 !important;
+  padding:6px 10px 8px !important;
+  float:none !important;
 }
-.cal-btn:hover { background: rgba(255,255,255,.12); }
-.cal-month-lbl { font-size: .85em; font-weight: 700; color: #fff; }
 
-.cal-grid {
-  display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
-  padding: 8px 13px;
+/* title row */
+#cal-pikaday-container .pika-title {
+  display:flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  padding:2px 0 8px !important;
 }
-.cal-day-hdr {
-  font-size: .6em; font-weight: 700; color: rgba(255,255,255,.4);
-  text-align: center; padding-bottom: 4px;
+#cal-pikaday-container .pika-title select { display:none !important; }
+#cal-pikaday-container .pika-label {
+  font-size:.92em !important;
+  font-weight:700 !important;
+  color:#fff !important;
+  background:transparent !important;
+  padding:0 !important;
+  cursor:default !important;
 }
-.cal-day {
-  aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center;
-  justify-content: center; font-size: .75em; font-weight: 600;
-  color: #fff; border: 1px solid transparent;
-  transition: all .15s; position: relative;
+#cal-pikaday-container .pika-prev,
+#cal-pikaday-container .pika-next {
+  width:30px !important; height:30px !important;
+  background:rgba(255,255,255,.06) !important;
+  background-image:none !important;
+  border:1px solid rgba(255,255,255,.1) !important;
+  border-radius:8px !important;
+  opacity:1 !important;
+  cursor:pointer !important;
+  transition:background .13s,border-color .13s,color .13s !important;
+  float:none !important;
+  text-indent:0 !important;
+  white-space:normal !important;
+  overflow:visible !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  font-size:1.1em !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+  padding:0 !important;
+  color:rgba(255,255,255,.55) !important;
+  flex-shrink:0 !important;
 }
-.cal-day.empty { visibility: hidden; }
-.cal-day.today { background: rgba(0,212,255,.15); color: #00d4ff; border-color: rgba(0,212,255,.3); }
-.cal-day.holiday { background: rgba(255,77,109,.15); color: var(--red); border-color: rgba(255,77,109,.3); }
-.cal-day.holiday::after { content: ''; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); width: 4px; height: 4px; background: var(--red); border-radius: 50%; }
-.cal-holidays-section {
-  padding: 12px; border-top: 1px solid rgba(255,255,255,.05);
+#cal-pikaday-container .pika-prev:hover,
+#cal-pikaday-container .pika-next:hover {
+  background:rgba(0,212,255,.12) !important;
+  border-color:rgba(0,212,255,.3) !important;
+  color:#00d4ff !important;
 }
-.cal-holidays-title {
-  font-size: .6em; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-  color: rgba(255,255,255,.35); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+#cal-pikaday-container .pika-prev:active,
+#cal-pikaday-container .pika-next:active { transform:scale(.85) !important; }
+#cal-pikaday-container .pika-prev.is-disabled,
+#cal-pikaday-container .pika-next.is-disabled { opacity:.2 !important; cursor:default !important; pointer-events:none !important; }
+
+/* table */
+#cal-pikaday-container table.pika-table {
+  width:100% !important;
+  border-collapse:separate !important;
+  border-spacing:2px !important;
+  table-layout:fixed !important;
 }
-.cal-holidays-title::before { content: '🎉'; font-size: 1.2em; }
-.cal-holidays-scroll {
-  display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px;
-  scrollbar-width: none;
+#cal-pikaday-container table.pika-table thead th {
+  text-align:center !important;
+  padding:0 0 4px !important;
+  font-size:.6em !important;
+  font-weight:600 !important;
+  color:rgba(255,255,255,.25) !important;
+  letter-spacing:.4px !important;
+  border:none !important;
 }
-.cal-holidays-scroll::-webkit-scrollbar { display: none; }
-.cal-hol-card {
-  flex-shrink: 0; width: 55px; height: 55px; padding: 5px;
-  background: linear-gradient(135deg, rgba(255,77,109,.12), rgba(168,85,247,.08));
-  border: 1px solid rgba(255,77,109,.2); border-radius: 6px;
-  transition: transform .15s, border-color .15s;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  overflow: hidden;
+/* Sun/Sat header tint */
+#cal-pikaday-container table.pika-table thead th:first-child abbr { color:rgba(255,100,120,.45) !important; }
+#cal-pikaday-container table.pika-table thead th:last-child abbr  { color:rgba(0,190,255,.4) !important; }
+#cal-pikaday-container table.pika-table thead th abbr {
+  text-decoration:none !important;
+  cursor:default !important;
+  font-size:1em !important;
 }
-.cal-hol-card:hover { transform: translateY(-1px); border-color: rgba(255,77,109,.4); }
-.cal-hol-day {
-  font-size: .9em; font-weight: 800; color: var(--red); line-height: 1;
+
+/* day cells */
+#cal-pikaday-container table.pika-table td {
+  text-align:center !important;
+  padding:2px !important;
+  border:none !important;
 }
-.cal-hol-month {
-  font-size: .42em; font-weight: 600; color: rgba(255,255,255,.3); text-transform: uppercase;
-  letter-spacing: .3px;
+#cal-pikaday-container .pika-button {
+  width:34px !important;
+  height:34px !important;
+  border-radius:50% !important;
+  background:transparent !important;
+  border:none !important;
+  color:rgba(255,255,255,.72) !important;
+  font-family:'Inter',system-ui,sans-serif !important;
+  font-size:.82em !important;
+  font-weight:500 !important;
+  cursor:pointer !important;
+  transition:background .12s, color .12s !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  margin:0 auto !important;
+  padding:0 !important;
+  font-variant-numeric:tabular-nums !important;
+  line-height:1 !important;
+  appearance:none !important;
+  -webkit-appearance:none !important;
 }
-.cal-hol-name {
-  font-size: .55em; font-weight: 600; color: rgba(255,255,255,.85); line-height: 1.2;
-  white-space: nowrap; min-width: max-content;
-  animation: none;
+#cal-pikaday-container .pika-button:hover,
+#cal-pikaday-container .pika-button:focus {
+  background:rgba(255,255,255,.09) !important;
+  color:#fff !important;
+  outline:none !important;
+  box-shadow:none !important;
 }
-.cal-hol-card:hover .cal-hol-name {
-  animation: scroll-text 3s linear infinite;
+/* today */
+#cal-pikaday-container .is-today .pika-button {
+  background:linear-gradient(135deg,#0ea5e9,#2563eb) !important;
+  color:#fff !important;
+  font-weight:700 !important;
+  box-shadow:0 4px 14px rgba(14,165,233,.4) !important;
 }
-@keyframes scroll-text {
-  0% { transform: translateX(25px); }
-  50% { transform: translateX(-100%); }
-  100% { transform: translateX(-100%); }
+#cal-pikaday-container .is-today .pika-button:hover {
+  background:linear-gradient(135deg,#38bdf8,#3b82f6) !important;
 }
-.cal-hol-card:hover .cal-hol-name {
-  animation: scroll-text 2.5s linear infinite;
+/* selected */
+#cal-pikaday-container .is-selected .pika-button {
+  background:rgba(0,212,255,.15) !important;
+  color:#00d4ff !important;
+  box-shadow:none !important;
 }
-@keyframes scroll-text {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+/* disabled / empty */
+#cal-pikaday-container .is-empty .pika-button,
+#cal-pikaday-container .is-disabled .pika-button {
+  opacity:.2 !important;
+  cursor:default !important;
 }
-.cal-no-holidays {
-  text-align: center; padding: 16px; color: var(--muted); font-size: .7em;
-  background: rgba(255,255,255,.02); border-radius: 10px;
+/* holiday custom class */
+#cal-pikaday-container .is-holiday .pika-button {
+  color:#ff8099 !important;
+  background:rgba(255,77,109,.1) !important;
+  box-shadow:inset 0 0 0 1px rgba(255,77,109,.22) !important;
+  position:relative !important;
+}
+#cal-pikaday-container .is-holiday .pika-button::after {
+  content:'' !important;
+  position:absolute !important;
+  top:3px !important; right:3px !important;
+  width:5px !important; height:5px !important;
+  background:#ff4d6d !important;
+  border-radius:50% !important;
+  box-shadow:0 0 5px rgba(255,77,109,.65) !important;
+}
+/* today + holiday */
+#cal-pikaday-container .is-today.is-holiday .pika-button {
+  background:linear-gradient(135deg,#0ea5e9,#2563eb) !important;
+  color:#fff !important;
+}
+#cal-pikaday-container .is-today.is-holiday .pika-button::after {
+  background:#fff !important;
+  box-shadow:none !important;
+}
+/* Sun col (1st) / Sat col (7th) tint */
+#cal-pikaday-container table.pika-table td:first-child .pika-button:not(:hover) { color:rgba(255,110,130,.65) !important; }
+#cal-pikaday-container table.pika-table td:last-child  .pika-button:not(:hover) { color:rgba(60,185,255,.6) !important; }
+
+/* ── separator ── */
+.cal-sep{
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+  margin:0 10px;
+  flex-shrink:0;
+}
+
+/* ── holidays section ── */
+.cal-holidays-section{
+  padding:8px 10px 12px;
+  max-height:152px;
+  overflow-y:auto;
+  scrollbar-width:none;
+  flex-shrink:0;
+}
+.cal-holidays-section::-webkit-scrollbar{display:none;}
+.cal-holidays-title{
+  font-size:.57em;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;
+  color:rgba(255,255,255,.25);margin-bottom:6px;
+  display:flex;align-items:center;gap:5px;padding:0 2px;
+}
+.cal-holidays-title::before{content:'🗓️';font-size:1.15em;}
+.cal-holidays-scroll{
+  display:flex;flex-direction:column;gap:4px;
+}
+.cal-hol-card{
+  display:flex;align-items:center;gap:9px;
+  padding:6px 8px;
+  border-radius:9px;
+  background:transparent;
+  border:1px solid transparent;
+  transition:background .12s,border-color .12s;
+}
+.cal-hol-card:hover{
+  background:rgba(255,77,109,.06);
+  border-color:rgba(255,77,109,.14);
+}
+.cal-hol-date{
+  flex-shrink:0;
+  width:36px;height:36px;
+  background:rgba(255,77,109,.1);
+  border:1px solid rgba(255,77,109,.18);
+  border-radius:9px;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:1px;
+}
+.cal-hol-day{
+  font-size:.9em;font-weight:800;color:#ff6b85;line-height:1;
+}
+.cal-hol-month{
+  font-size:.46em;font-weight:600;
+  color:rgba(255,160,175,.5);
+  text-transform:uppercase;letter-spacing:.5px;line-height:1;
+}
+.cal-hol-name{
+  font-size:.72em;font-weight:500;
+  color:rgba(255,255,255,.72);
+  line-height:1.35;
+  flex:1;
+}
+.cal-no-holidays{
+  text-align:center;padding:12px 8px;
+  color:rgba(255,255,255,.25);font-size:.68em;
+  background:rgba(255,255,255,.02);
+  border-radius:10px;
+  border:1px dashed rgba(255,255,255,.06);
+}
+
+/* ── responsive ── */
+@media(max-width:480px){
+  #cal-panel{width:calc(100vw - 16px);}
+}
+@media(min-width:481px) and (max-width:768px){
+  #cal-panel{width:310px;}
 }
 
 .pg-money-btn{
@@ -3894,15 +4103,11 @@ input[type=date].swae-input{color-scheme:dark;}
 <!-- CALENDAR PANEL -->
 <div id="cal-panel">
   <div class="cal-topbar">
-    <span class="cal-title">📅 Calendar</span>
+    <span class="cal-title"><span class="cal-title-icon">📅</span>Calendar</span>
     <button class="cal-close" onclick="calClose()">✕</button>
   </div>
-  <div class="cal-header-controls">
-    <button class="cal-btn" onclick="calChangeMonth(-1)">◀</button>
-    <div class="cal-month-lbl" id="cal-month-lbl">January 2026</div>
-    <button class="cal-btn" onclick="calChangeMonth(1)">▶</button>
-  </div>
-  <div class="cal-grid" id="cal-grid"></div>
+  <div id="cal-pikaday-container"></div>
+  <div class="cal-sep"></div>
   <div class="cal-holidays-section" id="cal-holidays-section"></div>
 </div>
 
@@ -10775,149 +10980,213 @@ function swaeSubmit(){
     document.addEventListener('touchend',  endDrag);
   });
 
-  // --- CALENDAR LOGIC ---
-  var _positionedCal = false;
-  var _calYear = new Date().getFullYear();
-  var _calMonth = new Date().getMonth();
+  // --- CALENDAR LOGIC (Pikaday) ---
+  var _positionedCal  = false;
   var _cachedHolidays = {};
-  
-  window.calToggle = function(){
+  var _pikaCal        = null;
+
+  function _calBuildHolidayMap(holidays, year) {
+    var map = {};
+    var monthNames = ['January','February','March','April','May','June',
+                      'July','August','September','October','November','December'];
+    (holidays || []).forEach(function(h) {
+      if (!h || !h.date) return;
+      var dateStr = h.date.toString();
+      monthNames.forEach(function(mn, mi) {
+        if (dateStr.indexOf(mn) === 0) {
+          var match = dateStr.match(/(\d{1,2})/);
+          if (match) {
+            var d = parseInt(match[1], 10);
+            var key = year + '-' + String(mi + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+            map[key] = h.desc;
+          }
+        }
+      });
+    });
+    return map;
+  }
+
+  function _calRenderHolidayList(year, month, map) {
+    var shortMonths = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    map = map || {};
+    var cardsHtml = '', count = 0;
+    Object.keys(map).sort().forEach(function(key) {
+      var parts = key.split('-');
+      var y = parseInt(parts[0], 10);
+      var m = parseInt(parts[1], 10) - 1;
+      var d = parseInt(parts[2], 10);
+      if (y === year && m === month) {
+        cardsHtml += '<div class="cal-hol-card">';
+        cardsHtml += '<div class="cal-hol-date"><div class="cal-hol-day">' + d + '</div>';
+        cardsHtml += '<div class="cal-hol-month">' + shortMonths[m] + '</div></div>';
+        cardsHtml += '<div class="cal-hol-name">' + map[key] + '</div>';
+        cardsHtml += '</div>';
+        count++;
+      }
+    });
+    var html = '<div class="cal-holidays-title">Bank Holidays</div>';
+    html += count > 0
+      ? '<div class="cal-holidays-scroll">' + cardsHtml + '</div>'
+      : '<div class="cal-no-holidays">✨ No bank holidays this month</div>';
+    var sec = document.getElementById('cal-holidays-section');
+    if (sec) sec.innerHTML = html;
+  }
+
+  window.calToggle = function() {
     var p = document.getElementById('cal-panel');
     var opening = !p.classList.contains('open');
-    if(opening && !_positionedCal){
-      p.style.bottom = 'calc(var(--nav-h) + 10px)';
-      p.style.top  = 'auto';
-      p.style.left = '12px';
+
+    if (opening && !_pikaCal) {
+      _pikaCal = new Pikaday({
+        field:          document.createElement('input'),
+        container:      document.getElementById('cal-pikaday-container'),
+        bound:          false,
+        defaultDate:    new Date(),
+        setDefaultDate: true,
+        i18n: {
+          previousMonth : '<',
+          nextMonth     : '>',
+          months        : ['January','February','March','April','May','June',
+                           'July','August','September','October','November','December'],
+          weekdays      : ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+          weekdaysShort : ['Su','Mo','Tu','We','Th','Fr','Sa']
+        },
+        onDraw: function(pika) {
+          var inst  = pika || _pikaCal;
+          if (!inst || !inst.calendars) return;
+          var year  = inst.calendars[0].year;
+          var month = inst.calendars[0].month;
+          var map   = inst._holidayMap || {};
+
+          // Mark holiday TD cells
+          var cells = document.querySelectorAll('#cal-pikaday-container td[data-day]');
+          cells.forEach(function(td) {
+            var btn = td.querySelector('.pika-button');
+            if (!btn) return;
+            var d = parseInt(btn.getAttribute('data-pika-day'),   10);
+            var m = parseInt(btn.getAttribute('data-pika-month'), 10);
+            var y = parseInt(btn.getAttribute('data-pika-year'),  10);
+            if (isNaN(d) || isNaN(m) || isNaN(y)) return;
+            var key = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+            if (map[key]) {
+              td.classList.add('is-holiday');
+              td.title = map[key];
+            } else {
+              td.classList.remove('is-holiday');
+              td.removeAttribute('title');
+            }
+          });
+
+          // Render holiday list
+          _calRenderHolidayList(year, month, map);
+
+          // Fetch holidays for this year if not yet loaded (won't loop: after load _cachedHolidays[year] exists)
+          if (!_cachedHolidays[year]) {
+            var sec = document.getElementById('cal-holidays-section');
+            if (sec) sec.innerHTML = '<div class="cal-holidays-title">Bank Holidays</div>'
+              + '<div style="text-align:center;color:var(--muted);font-size:.7em;padding:8px 0">Loading…</div>';
+            google.script.run
+              .withSuccessHandler(function(data) {
+                _cachedHolidays[year] = data || [];
+                inst._holidayMap = _calBuildHolidayMap(_cachedHolidays[year], year);
+                if (inst._v) inst.draw();
+              })
+              .withFailureHandler(function() {
+                _cachedHolidays[year] = [];
+                _calRenderHolidayList(year, month, {});
+              })
+              .getBankHolidays(year);
+          }
+        }
+      });
+    }
+
+    if (opening && !_positionedCal) {
+      var vw = window.innerWidth, vh = window.innerHeight;
+      var pw = parseInt(getComputedStyle(p).width) || 292;
+      var ph = 500;
+      var navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 62;
+      if (vw <= 480) {
+        p.style.left = Math.max(8, (vw - pw) / 2) + 'px';
+      } else if (vw <= 768) {
+        p.style.left = Math.max(8, vw - pw - 12) + 'px';
+      } else {
+        p.style.left = '12px';
+      }
+      p.style.top    = Math.max(8, vh - navH - 14 - ph) + 'px';
+      p.style.bottom = 'auto';
+      p.style.right  = 'auto';
       _positionedCal = true;
     }
+
     p.classList.toggle('open');
-    document.querySelectorAll('.pg-cal-btn').forEach(function(b){
+    document.querySelectorAll('.pg-cal-btn').forEach(function(b) {
       b.classList.toggle('cal-active', opening);
     });
-    if (opening) {
-      calRender();
-    }
   };
 
-  window.calClose = function(){
+  window.calClose = function() {
     document.getElementById('cal-panel').classList.remove('open');
-    document.querySelectorAll('.pg-cal-btn').forEach(function(b){
+    document.querySelectorAll('.pg-cal-btn').forEach(function(b) {
       b.classList.remove('cal-active');
     });
   };
 
-  window.calChangeMonth = function(dir) {
-    _calMonth += dir;
-    if (_calMonth > 11) { _calMonth = 0; _calYear++; }
-    else if (_calMonth < 0) { _calMonth = 11; _calYear--; }
-    calRender();
-  };
-
-  window.calRender = function() {
-    var monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    document.getElementById('cal-month-lbl').innerText = monthNames[_calMonth] + " " + _calYear;
-    
-    var grid = document.getElementById('cal-grid');
-    grid.innerHTML = '<div class="cal-day-hdr">Su</div><div class="cal-day-hdr">Mo</div><div class="cal-day-hdr">Tu</div><div class="cal-day-hdr">We</div><div class="cal-day-hdr">Th</div><div class="cal-day-hdr">Fr</div><div class="cal-day-hdr">Sa</div>';
-    
-    var firstDay = new Date(_calYear, _calMonth, 1).getDay();
-    var daysInMonth = new Date(_calYear, _calMonth + 1, 0).getDate();
-    
-    var today = new Date();
-    var isCurrentMonth = (today.getFullYear() === _calYear && today.getMonth() === _calMonth);
-    
-    for (var i = 0; i < firstDay; i++) {
-      var empty = document.createElement('div');
-      empty.className = 'cal-day empty';
-      grid.appendChild(empty);
-    }
-    
-    for (var d = 1; d <= daysInMonth; d++) {
-      var day = document.createElement('div');
-      day.className = 'cal-day';
-      day.innerText = d;
-      day.id = 'cal-day-' + d;
-      if (isCurrentMonth && d === today.getDate()) {
-        day.classList.add('today');
-      }
-      grid.appendChild(day);
-    }
-    
-    document.getElementById('cal-holidays-section').innerHTML = '<div class="cal-holidays-title">Bank Holidays</div><div style="text-align:center;color:var(--muted);font-size:.7em;">Loading...</div>';
-    
-    if (_cachedHolidays[_calYear]) {
-      calApplyHolidays(_cachedHolidays[_calYear]);
-    } else {
-      google.script.run.withSuccessHandler(function(data) {
-        _cachedHolidays[_calYear] = data;
-        if (_calYear === _calYear) {
-          calApplyHolidays(data);
-        }
-      }).getBankHolidays(_calYear);
-    }
-  };
-
-  window.calApplyHolidays = function(holidays) {
-    var monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    var shortMonths = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-    var currentMonthName = monthNames[_calMonth];
-    var cardsHtml = '';
-    var count = 0;
-
-    holidays.forEach(function(h) {
-      if (h.date.startsWith(currentMonthName)) {
-        var match = h.date.match(/\d{1,2}/);
-        if (match) {
-          var dayNum = parseInt(match[0], 10);
-          var dayEl = document.getElementById('cal-day-' + dayNum);
-          if (dayEl) {
-             dayEl.classList.add('holiday');
-             dayEl.title = h.desc;
-          }
-          cardsHtml += '<div class="cal-hol-card">';
-          cardsHtml += '<div class="cal-hol-day">' + dayNum + '</div>';
-          cardsHtml += '<div class="cal-hol-month">' + shortMonths[_calMonth] + ' ' + _calYear + '</div>';
-          cardsHtml += '<div class="cal-hol-name">' + h.desc + '</div>';
-          cardsHtml += '</div>';
-          count++;
-        }
-      }
-    });
-
-    var sectionHtml = '<div class="cal-holidays-title">Bank Holidays</div>';
-    if (count > 0) {
-      sectionHtml += '<div class="cal-holidays-scroll">' + cardsHtml + '</div>';
-    } else {
-      sectionHtml += '<div class="cal-no-holidays">✨ No bank holidays this month</div>';
-    }
-    document.getElementById('cal-holidays-section').innerHTML = sectionHtml;
-  };
-
-  // Draggable calendar
+  // Draggable calendar (mouse + touch, clamped to viewport)
   (function(){
     var panel = document.getElementById('cal-panel');
     if (!panel) return;
     var topbar = panel.querySelector('.cal-topbar');
     var _drag = false, _ox = 0, _oy = 0;
-    topbar.addEventListener('mousedown', function(e){
-      if(e.target.closest('.cal-close')) return;
+
+    function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+    function startDrag(cx, cy){
       var r = panel.getBoundingClientRect();
-      _ox = e.clientX - r.left;
-      _oy = e.clientY - r.top;
+      _ox = cx - r.left;
+      _oy = cy - r.top;
       _drag = true;
       topbar.style.cursor = 'grabbing';
-    });
-    window.addEventListener('mousemove', function(e){
-      if(!_drag) return;
       panel.style.bottom = 'auto';
-      panel.style.right = 'auto';
-      panel.style.left = (e.clientX - _ox) + 'px';
-      panel.style.top = (e.clientY - _oy) + 'px';
-    });
-    window.addEventListener('mouseup', function(){
+      panel.style.right  = 'auto';
+      panel.style.left   = r.left + 'px';
+      panel.style.top    = r.top  + 'px';
+    }
+
+    function moveDrag(cx, cy){
+      if (!_drag) return;
+      var pw = panel.offsetWidth, ph = panel.offsetHeight;
+      var nx = clamp(cx - _ox, 0, window.innerWidth  - pw);
+      var ny = clamp(cy - _oy, 0, window.innerHeight - ph);
+      panel.style.left = nx + 'px';
+      panel.style.top  = ny + 'px';
+    }
+
+    function endDrag(){
+      if (!_drag) return;
       _drag = false;
       topbar.style.cursor = 'grab';
+    }
+
+    topbar.addEventListener('mousedown', function(e){
+      if (e.target.closest('.cal-close')) return;
+      startDrag(e.clientX, e.clientY);
     });
+    window.addEventListener('mousemove', function(e){ moveDrag(e.clientX, e.clientY); });
+    window.addEventListener('mouseup',   endDrag);
+
+    topbar.addEventListener('touchstart', function(e){
+      if (e.target.closest('.cal-close')) return;
+      var t = e.touches[0];
+      startDrag(t.clientX, t.clientY);
+    }, {passive: true});
+    window.addEventListener('touchmove', function(e){
+      if (!_drag) return;
+      e.preventDefault();
+      var t = e.touches[0];
+      moveDrag(t.clientX, t.clientY);
+    }, {passive: false});
+    window.addEventListener('touchend', endDrag);
   })();
 
   window.calcToggle = function(){
