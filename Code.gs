@@ -2825,11 +2825,12 @@ function getExpenseRow(dateKey, prevKey) {
       }
     }
 
-    // Also read B and D from row 2 (salary & tax refund)
+    // Also read B from row 2 (salary) and D from row 2 (tax refund)
+    // Use key 'D2' for tax refund to avoid collision with 'D' (Food Reference)
     var row2Range = sheet.getRange(2, 2, 1, 3); // B2:D2
     var row2Vals = row2Range.getValues()[0];
-    result.B = row2Vals[0] || 0; // B2 (salary)
-    result.D = row2Vals[2] || 0; // D2 (tax refund)
+    result.B  = row2Vals[0] || 0; // B2 (salary)
+    result.D2 = row2Vals[2] || 0; // D2 (tax refund) — separate from result.D (Food Ref)
 
     return result;
 
@@ -2859,11 +2860,14 @@ function updateExpenseCells(payload) {
     var updated = [];
 
     Object.keys(cells).forEach(function(col) {
-      var colNum = _colToNum(col);
+      // D2 is a special key meaning "column D, row 2" (Tax Refund header row).
+      // Plain 'D' is the Food Reference column and must write to the date row.
+      var actualCol = (col === 'D2') ? 'D' : col;
+      var colNum = _colToNum(actualCol);
       var val    = cells[col];
       
-      // B and D are special: always write to row 2 (salary & tax refund)
-      var targetRow = (col === 'B' || col === 'D') ? 2 : rowNum;
+      // B and D2 are special: always write to row 2 (salary & tax refund)
+      var targetRow = (col === 'B' || col === 'D2') ? 2 : rowNum;
       var cell = sheet.getRange(targetRow, colNum);
 
       if (val === '' || val === null || val === undefined) {

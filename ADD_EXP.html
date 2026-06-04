@@ -465,7 +465,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
     </div>
 
     <!-- §5 High Level (Income/Expense/Transfers) -->
-    <div class="sec" id="sec-high">
+    <div class="sec collapsed" id="sec-high">
       <div class="sec-hd" onclick="toggleSec('sec-high')">
         <div class="sec-dot" style="background:var(--blue)"></div>
         <div class="sec-title">High Level</div>
@@ -836,7 +836,7 @@ var _salaryAddedToX = false, _taxAddedToX = false;
 
 function loadSalaryAndTax(data) {
   _salaryValue = data.B || 0;
-  _taxValue = data.D || 0;
+  _taxValue = data.D2 || 0;
   document.getElementById('salaryInp').value = _salaryValue || '';
   document.getElementById('taxInp').value = _taxValue || '';
   
@@ -886,7 +886,7 @@ function editTax() {
     _taxValue = num;
     inp.value = num || '';
     inp.readOnly = true;
-    _changed['D'] = num || '';
+    _changed['D2'] = num || '';
   };
 }
 
@@ -989,8 +989,9 @@ function saveAll(){
 
   var cells={};
   cols.forEach(function(col){
-    // B and D are special (salary/tax) - use _changed value directly
-    if (col === 'B' || col === 'D') {
+    // B and D2 are special (salary/tax) - use _changed value directly
+    // D2 means column D at row 2 (Tax Refund); plain 'D' is Food Reference
+    if (col === 'B' || col === 'D2') {
       cells[col] = _changed[col];
     } else if (COL_MAP[col]) {
       cells[col] = document.getElementById(COL_MAP[col]).value;
@@ -1028,7 +1029,7 @@ function renderLog(data){
   var rows=[
     {col:'A',      cat:'',   label:'Date',       val:data.A},
     {col:'B',      cat:'',   label:'Salary',     val:data.B},
-    {col:'D',      cat:'',   label:'Tax Refund', val:data.D},
+    {col:'D',      cat:'',   label:'Tax Refund', val:data.D2},
     {col:'C · D',  cat:'r',  label:'Food',        val:data.C,ref:data.D},
     {col:'E · F',  cat:'r',  label:'Supermarket', val:data.E,ref:data.F},
     {col:'G',      cat:'nr', label:'Uber',        val:data.G},
