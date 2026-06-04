@@ -1637,14 +1637,21 @@ function getCurrentMonthExpensesList(reqMonth, reqYear) {
         if (String(cpHdr[ci]).toLowerCase().indexOf('control') >= 0) { cpCol = ci; break; }
       }
       if (cpCol >= 0) {
-        var cpRows = sheet.getRange(7, 1, 10, cpCol + 1).getValues(); // 10 category rows
+        // Read up to 30 rows; stop early at empty name or 'total' row
+        var cpRowsAll = sheet.getRange(7, 1, 30, cpCol + 1).getValues();
+        var cpRows = [];
+        for (var ri = 0; ri < cpRowsAll.length; ri++) {
+          var nm0 = String(cpRowsAll[ri][0] || '').trim();
+          if (!nm0) break; // stop at first empty label
+          cpRows.push(cpRowsAll[ri]);
+        }
         // Build raw map keyed by normalized name
         var cpRaw = {};
         cpRows.forEach(function(r) {
           var nm = String(r[0] || '').toLowerCase().replace(/\s+/g, ' ').trim();
-          if (nm) cpRaw[nm] = parseFloat(r[cpCol]) || 0;
+          if (nm && nm.indexOf('total') < 0) cpRaw[nm] = parseFloat(r[cpCol]) || 0;
         });
-        // Map to CATS names: exact match first, then first-word partial, then row-order fallback
+        // First: map CATS names (exact → first-word partial → row-order fallback)
         CATS.forEach(function(cat, idx) {
           var nm  = cat.name.toLowerCase();
           var val = 0;
@@ -1656,31 +1663,49 @@ function getCurrentMonthExpensesList(reqMonth, reqYear) {
               if (k.indexOf(fw) >= 0) val = cpRaw[k];
             });
           }
-          // Row-order fallback: if still 0 and sheet row exists
-          if (val === 0 && cpRows[idx]) {
-            val = parseFloat(cpRows[idx][cpCol]) || 0;
-          }
+          if (val === 0 && cpRows[idx]) val = parseFloat(cpRows[idx][cpCol]) || 0;
           controlPlan[cat.name] = val;
+        });
+        // Also add any sheet categories not already covered
+        Object.keys(cpRaw).forEach(function(k) {
+          var alreadyMapped = Object.keys(controlPlan).some(function(cn) {
+            return cn.toLowerCase() === k || k.indexOf(cn.toLowerCase().split(' ')[0]) >= 0;
+          });
+          if (!alreadyMapped && cpRaw[k] > 0) controlPlan[k] = cpRaw[k];
         });
       }
     } catch(e2) { /* control plan unavailable — not critical */ }
 
     // ── Last month totals from summary rows ──
-    // Column order from right: Control Plan Amount | Total | Current Month | Prev Month | ...
+    // Dynamically find all month columns in the header row (row 6), then use the
+    // second-to-last month column as "previous month" — robust against any column layout.
     var lastMonthTotals = {};
     try {
       var hdrFull = sheet.getRange(6, 1, 1, sheet.getLastColumn()).getValues()[0];
-      // Find Control Plan Amount column (0-based)
-      var cpColIdx2 = -1;
-      for (var ci2 = 0; ci2 < hdrFull.length; ci2++) {
-        if (String(hdrFull[ci2] || '').toLowerCase().indexOf('control') >= 0) {
-          cpColIdx2 = ci2; break;
-        }
+
+      // Collect all month-like columns: non-empty, not "total", not "control"
+      var monthColIndices = [];
+      for (var ci2 = 1; ci2 < hdrFull.length; ci2++) {
+        var h2 = String(hdrFull[ci2] || '').trim().toLowerCase();
+        if (!h2) continue;
+        if (h2.indexOf('total') >= 0 || h2.indexOf('control') >= 0) continue;
+        monthColIndices.push(ci2); // 0-based index in hdrFull (= column number - 1)
       }
-      // prevMonthCol = Control - 3
-      var prevColIdx = cpColIdx2 >= 3 ? cpColIdx2 - 3 : -1;
+
+      // Need at least 2 month columns to have a "previous" one
+      var prevColIdx = monthColIndices.length >= 2
+        ? monthColIndices[monthColIndices.length - 2]
+        : -1;
+
       if (prevColIdx >= 1) {
-        var sumRows = sheet.getRange(7, 1, 10, prevColIdx + 1).getValues();
+        // Read up to 30 rows; stop early at empty name
+        var sumRowsAll = sheet.getRange(7, 1, 30, prevColIdx + 1).getValues();
+        var sumRows = [];
+        for (var ri2 = 0; ri2 < sumRowsAll.length; ri2++) {
+          var nm0b = String(sumRowsAll[ri2][0] || '').trim();
+          if (!nm0b) break;
+          sumRows.push(sumRowsAll[ri2]);
+        }
         // Build raw map keyed by normalised sheet name
         var lmtRaw = {};
         sumRows.forEach(function(row) {
@@ -1688,7 +1713,7 @@ function getCurrentMonthExpensesList(reqMonth, reqYear) {
           if (!nm || nm.toLowerCase().indexOf('total') >= 0) return;
           lmtRaw[nm.toLowerCase().replace(/\s+/g,' ')] = { raw: nm, val: parseFloat(row[prevColIdx]) || 0 };
         });
-        // Map to CATS names: exact → first-word partial → row-order fallback (same as controlPlan)
+        // First: map CATS names (exact → first-word partial → row-order fallback)
         CATS.forEach(function(cat, idx) {
           var key = cat.name.toLowerCase().replace(/\s+/g,' ');
           var entry = lmtRaw[key];
@@ -1697,9 +1722,16 @@ function getCurrentMonthExpensesList(reqMonth, reqYear) {
             Object.keys(lmtRaw).forEach(function(k) { if (k.indexOf(fw) >= 0) entry = lmtRaw[k]; });
           }
           var val = entry ? entry.val : 0;
-          // Row-order fallback
           if (val === 0 && sumRows[idx]) val = parseFloat(sumRows[idx][prevColIdx]) || 0;
           if (val > 0) lastMonthTotals[cat.name] = val;
+        });
+        // Also add any sheet categories not already covered by CATS mapping
+        Object.keys(lmtRaw).forEach(function(k) {
+          if (lmtRaw[k].val <= 0) return;
+          var alreadyMapped = Object.keys(lastMonthTotals).some(function(cn) {
+            return cn.toLowerCase() === k || k.indexOf(cn.toLowerCase().split(' ')[0]) >= 0;
+          });
+          if (!alreadyMapped) lastMonthTotals[lmtRaw[k].raw] = lmtRaw[k].val;
         });
       }
     } catch(e3) {}
