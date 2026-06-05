@@ -3640,6 +3640,79 @@ input[type=date].swae-input{color-scheme:dark;}
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PTS TOAST + CHART SKELETON  (global utilities)
+═══════════════════════════════════════════════════════════════ */
+#pts-toast-c{
+  position:fixed;top:16px;right:16px;z-index:999999;
+  display:flex;flex-direction:column;gap:8px;pointer-events:none;
+  max-width:min(380px,calc(100vw - 32px));
+}
+.pts-toast{
+  pointer-events:auto;
+  display:flex;align-items:flex-start;gap:10px;
+  background:rgba(22,27,34,.96);
+  border:1px solid rgba(255,255,255,.1);
+  border-left:4px solid #58a6ff;
+  color:#e6edf3;
+  padding:10px 12px;border-radius:10px;
+  font:600 13px/1.4 'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  box-shadow:0 8px 28px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.3);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  transform:translateX(120%);opacity:0;
+  transition:transform .28s cubic-bezier(.34,1.56,.64,1),opacity .2s;
+  min-width:220px;
+}
+.pts-toast.show{transform:translateX(0);opacity:1;}
+.pts-t-ic{font-size:16px;line-height:1.2;flex-shrink:0;width:18px;text-align:center;}
+.pts-t-msg{flex:1;word-break:break-word;}
+.pts-t-x{
+  background:none;border:none;color:rgba(255,255,255,.4);
+  font-size:18px;line-height:1;cursor:pointer;padding:0 2px;
+  font-family:inherit;flex-shrink:0;
+}
+.pts-t-x:hover{color:#fff;}
+.pts-t-info{border-left-color:#58a6ff;}
+.pts-t-info .pts-t-ic{color:#58a6ff;}
+.pts-t-success,.pts-t-ok{border-left-color:#3fb950;}
+.pts-t-success .pts-t-ic,.pts-t-ok .pts-t-ic{color:#3fb950;}
+.pts-t-error,.pts-t-err{border-left-color:#f85149;}
+.pts-t-error .pts-t-ic,.pts-t-err .pts-t-ic{color:#f85149;}
+.pts-t-warn{border-left-color:#e3b341;}
+.pts-t-warn .pts-t-ic{color:#e3b341;}
+.pts-t-loading{border-left-color:#8b949e;}
+.pts-t-loading .pts-t-ic{color:#8b949e;animation:pts-spin 1s linear infinite;display:inline-block;}
+@keyframes pts-spin{to{transform:rotate(360deg);}}
+
+/* Chart skeleton shimmer — auto-applied to canvas parents until Chart paints */
+.pts-skel-active{position:relative;overflow:hidden;}
+.pts-skel-active > canvas{opacity:0;transition:opacity .25s;}
+.pts-skel-active::before{
+  content:'';position:absolute;inset:0;
+  background:rgba(255,255,255,.025);
+  border-radius:inherit;pointer-events:none;z-index:1;
+}
+.pts-skel-active::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,.05) 20%,
+    rgba(255,255,255,.10) 50%,
+    rgba(255,255,255,.05) 80%,
+    rgba(255,255,255,0) 100%);
+  background-size:200% 100%;
+  animation:pts-shimmer 1.4s linear infinite;
+  pointer-events:none;border-radius:inherit;z-index:2;
+}
+@keyframes pts-shimmer{
+  0%{background-position:200% 0;}
+  100%{background-position:-200% 0;}
+}
+@media (prefers-reduced-motion: reduce){
+  .pts-toast{transition:none;}
+  .pts-skel-active::after{animation:none;}
+}
 </style>
 </head>
 <body>
@@ -13040,6 +13113,134 @@ function submitAddFD(){
     })
     .addFDItem(bank, amt, opened, end, type, intr, status, rmk);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PTS Toast + Chart Skeleton (global utilities)
+═══════════════════════════════════════════════════════════════ */
+(function(){
+  window.PTS = window.PTS || {};
+
+  /* ── Toast ─────────────────────────────────────────────────── */
+  function ensureToastContainer(){
+    var c = document.getElementById('pts-toast-c');
+    if (!c){
+      c = document.createElement('div');
+      c.id = 'pts-toast-c';
+      (document.body || document.documentElement).appendChild(c);
+    }
+    return c;
+  }
+  var ICONS = {info:'ℹ',success:'✓',ok:'✓',error:'⚠',err:'⚠',warn:'⚠',loading:'⟳'};
+  PTS.toast = function(msg, kind, ms){
+    kind = kind || 'info';
+    if (ms === undefined) ms = kind === 'loading' ? 0 : (kind === 'error' || kind === 'err' ? 5000 : 3200);
+    var c = ensureToastContainer();
+    var t = document.createElement('div');
+    t.className = 'pts-toast pts-t-' + kind;
+    t.setAttribute('role', kind === 'error' || kind === 'err' ? 'alert' : 'status');
+    var ic = document.createElement('span'); ic.className = 'pts-t-ic'; ic.textContent = ICONS[kind] || 'ℹ';
+    var sp = document.createElement('span'); sp.className = 'pts-t-msg'; sp.textContent = String(msg);
+    var x  = document.createElement('button'); x.className = 'pts-t-x'; x.type='button';
+    x.setAttribute('aria-label','Dismiss'); x.textContent = '×';
+    t.appendChild(ic); t.appendChild(sp); t.appendChild(x);
+    c.appendChild(t);
+    requestAnimationFrame(function(){ t.classList.add('show'); });
+    var to = ms > 0 ? setTimeout(remove, ms) : null;
+    function remove(){
+      if (to) clearTimeout(to);
+      t.classList.remove('show');
+      setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 280);
+    }
+    x.onclick = remove;
+    return { dismiss: remove, el: t };
+  };
+  PTS.toastClearAll = function(){
+    var c = document.getElementById('pts-toast-c');
+    if (c) c.innerHTML = '';
+  };
+  // Don't clobber any existing helpers used inside modals — only set if free
+  if (typeof window.toast === 'undefined') window.toast = PTS.toast;
+
+  /* ── Chart skeleton ────────────────────────────────────────── */
+  function findSkelAncestor(el){
+    // Prefer immediate parent; fall back to a known wrapper class within 3 levels.
+    var p = el.parentElement;
+    if (!p) return null;
+    // Skip if parent is too tiny (e.g. inline chart) — but default ok
+    return p;
+  }
+  function markSkel(canvas){
+    if (!canvas || canvas.__ptsCharted) return;
+    var p = findSkelAncestor(canvas);
+    if (p) p.classList.add('pts-skel-active');
+  }
+  function unmarkSkel(canvas){
+    if (!canvas) return;
+    canvas.__ptsCharted = true;
+    var el = canvas.parentElement;
+    var hops = 0;
+    while (el && hops < 4){
+      if (el.classList && el.classList.contains('pts-skel-active')){
+        el.classList.remove('pts-skel-active');
+        return;
+      }
+      el = el.parentElement; hops++;
+    }
+  }
+  PTS.skel    = function(target){ var c = (typeof target === 'string') ? document.getElementById(target) : target; if (c) markSkel(c); };
+  PTS.unskel  = function(target){ var c = (typeof target === 'string') ? document.getElementById(target) : target; if (c) unmarkSkel(c); };
+
+  // Register Chart.js plugin so skeleton clears automatically on first paint
+  function registerPlugin(){
+    if (typeof Chart === 'undefined' || !Chart.register || Chart.__ptsPlugin) return false;
+    try {
+      Chart.register({
+        id: 'pts-skel-clear',
+        beforeInit: function(chart){ if (chart && chart.canvas) unmarkSkel(chart.canvas); },
+        afterDestroy: function(chart){ if (chart && chart.canvas) chart.canvas.__ptsCharted = false; }
+      });
+      Chart.__ptsPlugin = true;
+      return true;
+    } catch(e) { return false; }
+  }
+
+  // Watch for new canvases and auto-apply skeleton
+  function scan(root){
+    var nodes = (root || document).querySelectorAll('canvas');
+    for (var i = 0; i < nodes.length; i++) markSkel(nodes[i]);
+  }
+  function init(){
+    ensureToastContainer();
+    // Try registering Chart plugin now and retry until Chart loads
+    if (!registerPlugin()){
+      var tries = 0;
+      var iv = setInterval(function(){
+        if (registerPlugin() || ++tries > 60) clearInterval(iv);
+      }, 100);
+    }
+    scan();
+    try {
+      var mo = new MutationObserver(function(muts){
+        for (var i = 0; i < muts.length; i++){
+          var nodes = muts[i].addedNodes;
+          for (var j = 0; j < nodes.length; j++){
+            var n = nodes[j];
+            if (!n || n.nodeType !== 1) continue;
+            if (n.tagName === 'CANVAS') markSkel(n);
+            else if (n.querySelectorAll) {
+              var inner = n.querySelectorAll('canvas');
+              for (var k = 0; k < inner.length; k++) markSkel(inner[k]);
+            }
+          }
+        }
+      });
+      mo.observe(document.body, { childList:true, subtree:true });
+    } catch(e) {}
+  }
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', init);
+  } else { init(); }
+})();
 </script>
 </body>
 </html>
