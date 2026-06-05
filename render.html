@@ -3327,6 +3327,77 @@ input[type=date].swae-input{color-scheme:dark;}
 .sw-drawer-tab{flex:1;padding:11px 8px;font-size:.68em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;color:rgba(255,255,255,.28);border-bottom:2px solid transparent;text-align:center;transition:all .18s;}
 .sw-drawer-tab:hover{color:rgba(255,255,255,.6);background:rgba(255,255,255,.03);}
 .sw-drawer-tab.active{color:#ff4d6d;border-bottom-color:#ff4d6d;background:rgba(255,77,109,.04);}
+/* ── Splitwise Transaction Detail Modal (draggable, closable) ── */
+.sw-txn-detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:500;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+.sw-txn-detail-overlay.open{opacity:1;pointer-events:all;}
+.sw-txn-detail-modal{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);
+  width:min(520px,90vw);max-height:85vh;
+  background:linear-gradient(135deg,#0d1117,#0a0f1a);
+  border:1px solid rgba(255,255,255,.1);border-radius:16px;
+  box-shadow:0 24px 96px rgba(0,0,0,.7),0 8px 32px rgba(0,0,0,.4);
+  z-index:501;
+  display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;
+  transition:all .25s cubic-bezier(.34,1.56,.64,1);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  cursor:move;user-select:none;
+}
+.sw-txn-detail-modal.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+.sw-txn-detail-modal.dragging{transition:none;}
+.sw-txn-detail-header{
+  padding:16px 20px 12px;border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  flex-shrink:0;cursor:move;
+}
+.sw-txn-detail-title{
+  font-size:1.1em;font-weight:800;color:#fff;letter-spacing:-.3px;flex:1;
+}
+.sw-txn-detail-close{
+  width:32px;height:32px;border-radius:8px;border:none;
+  background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);
+  font-size:1.2em;line-height:1;cursor:pointer;
+  transition:all .18s;display:flex;align-items:center;justify-content:center;
+}
+.sw-txn-detail-close:hover{background:rgba(255,77,109,.2);color:#ff4d6d;border-color:rgba(255,77,109,.3);}
+.sw-txn-detail-body{
+  flex:1;overflow-y:auto;padding:16px 20px;
+  display:flex;flex-direction:column;gap:14px;
+}
+.sw-txn-detail-body::-webkit-scrollbar{width:4px;}
+.sw-txn-detail-body::-webkit-scrollbar-track{background:transparent;}
+.sw-txn-detail-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px;}
+.sw-txn-detail-body::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.15);}
+.sw-txn-detail-section{display:flex;flex-direction:column;gap:8px;}
+.sw-txn-detail-label{font-size:.65em;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:rgba(255,255,255,.3);}
+.sw-txn-detail-value{
+  font-size:.95em;font-weight:600;color:#fff;padding:8px 12px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;
+  word-break:break-word;
+}
+.sw-txn-detail-value.amount-owed{color:#00e676;background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.2);}
+.sw-txn-detail-value.amount-owe{color:#ff4d6d;background:rgba(255,77,109,.1);border-color:rgba(255,77,109,.2);}
+.sw-txn-detail-participants{display:flex;flex-direction:column;gap:7px;}
+.sw-txn-detail-participant{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;
+  background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);border-radius:10px;
+}
+.sw-txn-detail-participant-avatar{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.75em;font-weight:800;flex-shrink:0;
+}
+.sw-txn-detail-participant.paid-by .sw-txn-detail-participant-avatar{background:rgba(168,85,247,.15);color:#a855f7;border:1px solid rgba(168,85,247,.2);}
+.sw-txn-detail-participant.paid-for .sw-txn-detail-participant-avatar{background:rgba(58,166,255,.1);color:#58a6ff;border:1px solid rgba(58,166,255,.2);}
+.sw-txn-detail-participant-info{flex:1;}
+.sw-txn-detail-participant-role{font-size:.55em;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);}
+.sw-txn-detail-participant-name{font-size:.9em;font-weight:700;color:#fff;margin-top:2px;}
+.sw-txn-detail-participant-share{font-size:.85em;font-weight:600;white-space:nowrap;flex-shrink:0;}
+.sw-txn-detail-participant.paid-by .sw-txn-detail-participant-share{color:#a855f7;}
+.sw-txn-detail-participant.paid-for .sw-txn-detail-participant-share{color:#58a6ff;}
+.sw-txn-detail-divider{height:1px;background:rgba(255,255,255,.06);margin:2px 0;}
+.sw-txn-detail-loading{text-align:center;padding:40px 20px;color:rgba(255,255,255,.25);font-size:.9em;}
+.sw-txn-detail-error{color:#ff4d6d;text-align:center;padding:24px 20px;font-size:.85em;background:rgba(255,77,109,.08);border-radius:10px;}
 /* ── SW pager ── */
 .sw-dtxn-pager{display:flex;align-items:center;justify-content:center;gap:5px;padding:14px 0 4px;flex-wrap:wrap;}
 .sw-page-btn{min-width:30px;height:30px;padding:0 8px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);cursor:pointer;font-size:.72em;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:inherit;}
@@ -4022,6 +4093,18 @@ input[type=date].swae-input{color-scheme:dark;}
       <div class="sw-spin-ring"></div>
       Loading transactions…
     </div>
+  </div>
+</div>
+
+<!-- ── Splitwise Transaction Detail Modal (draggable, closable) ── -->
+<div class="sw-txn-detail-overlay" id="sw-txnDetailOverlay" onclick="swCloseTxnDetail()"></div>
+<div class="sw-txn-detail-modal" id="sw-txnDetailModal">
+  <div class="sw-txn-detail-header">
+    <div class="sw-txn-detail-title" id="sw-txnDetailTitle">Transaction Details</div>
+    <button class="sw-txn-detail-close" onclick="swCloseTxnDetail()">✕</button>
+  </div>
+  <div class="sw-txn-detail-body" id="sw-txnDetailBody">
+    <div class="sw-txn-detail-loading">Loading transaction details…</div>
   </div>
 </div>
 
@@ -10092,6 +10175,9 @@ function swRender(data){
   /* ── Post-render: charts, analysis, bars, click handlers ── */
   swBuildCharts(RAW, totalOwe, totalOwed);
   swBuildAnalysis(TRANSACTIONS, VALIDATION);
+  
+  // Store transactions for detail modal
+  window._swAllTransactions = TRANSACTIONS || [];
 
   /* animate friend bars */
   var allAbs = RAW.map(function(d){ return Math.abs(d.amount); });
@@ -10102,6 +10188,16 @@ function swRender(data){
       bar.style.width = (abs/maxAbs*100).toFixed(1)+'%';
     });
   },350);
+
+  /* wire up transaction row clicks */
+  document.querySelectorAll('#page-sw .txn-row').forEach(function(row){
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', function(){
+      var txId = row.dataset.id;
+      var tx = (TRANSACTIONS||[]).find(function(t){ return (t.id||'').toString() === txId.toString(); });
+      if(tx) swOpenTxnDetail(tx);
+    });
+  });
 
   /* wire up friend card clicks */
   document.querySelectorAll('#page-sw .friend-card[data-sw-friend-id]').forEach(function(card){
@@ -10446,8 +10542,156 @@ function swRenderSuspectPanel(){
 }
 
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){ swCloseDrawer(); swaeClose(); }
+  if(e.key==='Escape'){ swCloseDrawer(); swaeClose(); swCloseTxnDetail(); }
 });
+
+/* ═══════════════════════════════════════════
+   SPLITWISE TRANSACTION DETAIL MODAL
+═══════════════════════════════════════════ */
+var _swTxnDetailDrag = { active: false, x: 0, y: 0, startX: 0, startY: 0, offsetX: 0, offsetY: 0 };
+
+function swOpenTxnDetail(txn){
+  if(!txn||!txn.id) return;
+  var modal = document.getElementById('sw-txnDetailModal');
+  var overlay = document.getElementById('sw-txnDetailOverlay');
+  
+  // Build detail content
+  var amountCls = txn.myNet > 0 ? 'amount-owed' : (txn.myNet < 0 ? 'amount-owe' : '');
+  var amountVal = txn.myNet > 0 ? '+'+txn.myNet.toFixed(2) : txn.myNet.toFixed(2);
+  var statusTxt = txn.isPayment ? '💸 Payment' : (txn.paidByMe ? '🧾 You paid' : '📋 You borrowed');
+  
+  var html = '';
+  html += '<div class="sw-txn-detail-section">';
+  html += '  <div class="sw-txn-detail-label">Description</div>';
+  html += '  <div class="sw-txn-detail-value">'+swEscHtml(txn.description)+'</div>';
+  html += '</div>';
+  html += '<div class="sw-txn-detail-divider"></div>';
+  
+  html += '<div class="sw-txn-detail-section">';
+  html += '  <div class="sw-txn-detail-label">Total Amount</div>';
+  html += '  <div class="sw-txn-detail-value">'+txn.currency+' '+txn.cost.toFixed(2)+'</div>';
+  html += '</div>';
+  
+  html += '<div class="sw-txn-detail-section">';
+  html += '  <div class="sw-txn-detail-label">Your Share</div>';
+  html += '  <div class="sw-txn-detail-value '+amountCls+'">'+txn.currency+' '+amountVal+'</div>';
+  html += '</div>';
+  html += '<div class="sw-txn-detail-divider"></div>';
+  
+  html += '<div class="sw-txn-detail-section">';
+  html += '  <div class="sw-txn-detail-label">Date</div>';
+  html += '  <div class="sw-txn-detail-value">'+(txn.date || 'N/A')+'</div>';
+  html += '</div>';
+  
+  html += '<div class="sw-txn-detail-section">';
+  html += '  <div class="sw-txn-detail-label">Status</div>';
+  html += '  <div class="sw-txn-detail-value">'+statusTxt+'</div>';
+  html += '</div>';
+  
+  if(txn.category){
+    html += '<div class="sw-txn-detail-section">';
+    html += '  <div class="sw-txn-detail-label">Category</div>';
+    html += '  <div class="sw-txn-detail-value">'+swEscHtml(txn.category)+'</div>';
+    html += '</div>';
+  }
+  
+  if(txn.notes){
+    html += '<div class="sw-txn-detail-section">';
+    html += '  <div class="sw-txn-detail-label">Notes</div>';
+    html += '  <div class="sw-txn-detail-value">'+swEscHtml(txn.notes)+'</div>';
+    html += '</div>';
+  }
+  
+  // Participants section
+  if(txn.participants && txn.participants.length > 0){
+    html += '<div class="sw-txn-detail-divider"></div>';
+    html += '<div class="sw-txn-detail-section">';
+    html += '  <div class="sw-txn-detail-label">Participants</div>';
+    html += '  <div class="sw-txn-detail-participants">';
+    
+    txn.participants.forEach(function(p){
+      var isYou = p.isMe;
+      var role = p.paidBy ? 'Paid by' : 'Owes share';
+      var share = p.share ? txn.currency + ' ' + p.share.toFixed(2) : '—';
+      var cls = p.paidBy ? 'paid-by' : 'paid-for';
+      var avatar = (p.name || '?').substring(0,1).toUpperCase();
+      
+      html += '    <div class="sw-txn-detail-participant '+cls+'">';
+      html += '      <div class="sw-txn-detail-participant-avatar">'+avatar+'</div>';
+      html += '      <div class="sw-txn-detail-participant-info">';
+      html += '        <div class="sw-txn-detail-participant-role">'+role+(isYou?' (You)':'')+'</div>';
+      html += '        <div class="sw-txn-detail-participant-name">'+swEscHtml(p.name || 'Unknown')+'</div>';
+      html += '      </div>';
+      html += '      <div class="sw-txn-detail-participant-share">'+share+'</div>';
+      html += '    </div>';
+    });
+    
+    html += '  </div>';
+    html += '</div>';
+  }
+  
+  document.getElementById('sw-txnDetailTitle').textContent = txn.isPayment ? '💸 Payment Details' : '🧾 Expense Details';
+  document.getElementById('sw-txnDetailBody').innerHTML = html;
+  
+  // Show modal with animation
+  modal.classList.add('open');
+  overlay.classList.add('open');
+  
+  // Setup drag
+  setupTxnDetailDrag();
+}
+
+function swCloseTxnDetail(){
+  var modal = document.getElementById('sw-txnDetailModal');
+  var overlay = document.getElementById('sw-txnDetailOverlay');
+  modal.classList.remove('open');
+  overlay.classList.remove('open');
+  _swTxnDetailDrag.active = false;
+}
+
+function setupTxnDetailDrag(){
+  var modal = document.getElementById('sw-txnDetailModal');
+  var header = modal.querySelector('.sw-txn-detail-header');
+  if(!header) return;
+  
+  header.addEventListener('mousedown', function(e){
+    if(e.target.closest('.sw-txn-detail-close')) return;
+    _swTxnDetailDrag.active = true;
+    _swTxnDetailDrag.startX = e.clientX;
+    _swTxnDetailDrag.startY = e.clientY;
+    
+    var rect = modal.getBoundingClientRect();
+    _swTxnDetailDrag.offsetX = rect.left;
+    _swTxnDetailDrag.offsetY = rect.top;
+    
+    modal.classList.add('dragging');
+    e.preventDefault();
+  });
+  
+  document.addEventListener('mousemove', function(e){
+    if(!_swTxnDetailDrag.active) return;
+    var deltaX = e.clientX - _swTxnDetailDrag.startX;
+    var deltaY = e.clientY - _swTxnDetailDrag.startY;
+    var newX = _swTxnDetailDrag.offsetX + deltaX;
+    var newY = _swTxnDetailDrag.offsetY + deltaY;
+    
+    // Clamp to viewport
+    newX = Math.max(0, Math.min(newX, window.innerWidth - 200));
+    newY = Math.max(0, Math.min(newY, window.innerHeight - 100));
+    
+    modal.style.left = newX + 'px';
+    modal.style.top = newY + 'px';
+    modal.style.transform = 'none';
+  });
+  
+  document.addEventListener('mouseup', function(){
+    if(_swTxnDetailDrag.active){
+      _swTxnDetailDrag.active = false;
+      var modal = document.getElementById('sw-txnDetailModal');
+      modal.classList.remove('dragging');
+    }
+  });
+}
 
 /* ═══════════════════════════════════════════
    ADD EXPENSE MODAL
