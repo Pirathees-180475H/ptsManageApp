@@ -3332,7 +3332,7 @@ input[type=date].swae-input{color-scheme:dark;}
 .sw-txn-detail-overlay.open{opacity:1;pointer-events:all;}
 .sw-txn-detail-modal{
   position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);
-  width:min(520px,90vw);max-height:85vh;
+  width:min(780px,95vw);max-height:85vh;
   background:linear-gradient(135deg,#0d1117,#0a0f1a);
   border:1px solid rgba(255,255,255,.1);border-radius:16px;
   box-shadow:0 24px 96px rgba(0,0,0,.7),0 8px 32px rgba(0,0,0,.4);
@@ -3398,6 +3398,47 @@ input[type=date].swae-input{color-scheme:dark;}
 .sw-txn-detail-divider{height:1px;background:rgba(255,255,255,.06);margin:2px 0;}
 .sw-txn-detail-loading{text-align:center;padding:40px 20px;color:rgba(255,255,255,.25);font-size:.9em;}
 .sw-txn-detail-error{color:#ff4d6d;text-align:center;padding:24px 20px;font-size:.85em;background:rgba(255,77,109,.08);border-radius:10px;}
+
+/* Horizontal layout details modal elements */
+.sw-txn-detail-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 20px;
+  align-items: start;
+}
+.sw-txn-detail-col-left, .sw-txn-detail-col-right {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.sw-txn-detail-card-hero {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sw-txn-detail-hero-desc {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.35;
+}
+.sw-txn-detail-hero-cost {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #00d4ff;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  margin-top: 4px;
+}
+@media (max-width: 680px) {
+  .sw-txn-detail-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
 /* ── SW pager ── */
 .sw-dtxn-pager{display:flex;align-items:center;justify-content:center;gap:5px;padding:14px 0 4px;flex-wrap:wrap;}
 .sw-page-btn{min-width:30px;height:30px;padding:0 8px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);cursor:pointer;font-size:.72em;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:inherit;}
@@ -10457,7 +10498,7 @@ function swRenderPage(page){
     var flag    = flagIds[tx.id]?'<span class="sw-dtxn-flag">🚩</span>':'';
     var others  = (tx.participants||[]).filter(function(p){return p;}).join(', ');
     html+=
-      '<div class="sw-dtxn">'
+      '<div class="sw-dtxn" style="cursor:pointer;" onclick="swOpenTxnDetailFromId(\''+tx.id+'\')">'
         +'<div class="sw-dtxn-ico">'+icon+'</div>'
         +'<div class="sw-dtxn-info">'
           +'<div class="sw-dtxn-desc">'+swEscHtml(tx.description)+flag+'</div>'
@@ -10528,7 +10569,7 @@ function swRenderSuspectPanel(){
     var tx=s.tx;
     var nc=tx.myNet<0?'owe':'owed';
     var nl=tx.myNet<0?tx.myNet.toFixed(2):'+'+tx.myNet.toFixed(2);
-    html+='<div class="sw-suspect-card">'
+    html+='<div class="sw-suspect-card" style="cursor:pointer;" onclick="swOpenTxnDetailFromId(\''+tx.id+'\')">'
       +'<span class="sw-suspect-net '+nc+'">'+tx.currency+' '+nl+'</span>'
       +'<div class="sw-dtxn-desc">'+swEscHtml(tx.description)+'</div>'
       +'<div class="sw-suspect-meta"><span>'+tx.date+'</span><span>'+tx.currency+' '+tx.cost.toFixed(2)+'</span></div>'
@@ -10555,12 +10596,152 @@ function swOpenTxnDetail(txn){
   var modal = document.getElementById('sw-txnDetailModal');
   var overlay = document.getElementById('sw-txnDetailOverlay');
   
-  // Build detail content
+  document.getElementById('sw-txnDetailTitle').textContent = txn.isPayment ? '💸 Payment Details' : '🧾 Expense Details';
+  
+  // Show loading spinner
+  document.getElementById('sw-txnDetailBody').innerHTML = 
+    '<div class="sw-txn-detail-loading">'
+    + '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px 0;">'
+    +   '<div style="width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:#ff4d6d;border-radius:50%;animation:spin .8s linear infinite"></div>'
+    +   '<div style="color:rgba(255,255,255,.4);font-size:.85em">Loading full transaction details…</div>'
+    + '</div>'
+    + '</div>';
+  
+  // Show modal with animation
+  modal.classList.add('open');
+  overlay.classList.add('open');
+  setupTxnDetailDrag();
+
+  google.script.run
+    .withSuccessHandler(function(response){
+      if(response && response.success && response.expense){
+        swRenderTxnFullDetail(response.expense);
+      } else {
+        var errMsg = (response && response.error) ? response.error : 'Failed to fetch details';
+        swRenderTxnDetailError(errMsg, txn);
+      }
+    })
+    .withFailureHandler(function(err){
+      swRenderTxnDetailError(err.message || err, txn);
+    })
+    .getSplitwiseExpenseDetails(txn.id);
+}
+
+function swRenderTxnFullDetail(expense){
+  var amountCls = expense.myNet > 0 ? 'amount-owed' : (expense.myNet < 0 ? 'amount-owe' : '');
+  var amountVal = expense.myNet > 0 ? '+'+expense.myNet.toFixed(2) : expense.myNet.toFixed(2);
+  var statusTxt = expense.isPayment ? '💸 Payment' : (expense.paidByMe ? '🧾 You paid' : '📋 You borrowed');
+  
+  var html = '';
+  html += '<div class="sw-txn-detail-grid">';
+  
+  // Left Column: Main info
+  html += '  <div class="sw-txn-detail-col-left">';
+  
+  // Hero section
+  html += '    <div class="sw-txn-detail-card-hero">';
+  html += '      <div class="sw-txn-detail-label">Description</div>';
+  html += '      <div class="sw-txn-detail-hero-desc">'+swEscHtml(expense.description)+'</div>';
+  html += '      <div class="sw-txn-detail-hero-cost">'+expense.currency+' '+expense.cost.toFixed(2)+'</div>';
+  html += '    </div>';
+  
+  // Your share
+  html += '    <div class="sw-txn-detail-section">';
+  html += '      <div class="sw-txn-detail-label">Your Share</div>';
+  html += '      <div class="sw-txn-detail-value '+amountCls+'">'+expense.currency+' '+amountVal+'</div>';
+  html += '    </div>';
+  
+  // Meta details row
+  html += '    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">';
+  html += '      <div class="sw-txn-detail-section">';
+  html += '        <div class="sw-txn-detail-label">Date</div>';
+  html += '        <div class="sw-txn-detail-value" style="font-size:0.82em; padding:8px 10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+(expense.date || 'N/A')+'">'+(expense.date || 'N/A')+'</div>';
+  html += '      </div>';
+  html += '      <div class="sw-txn-detail-section">';
+  html += '        <div class="sw-txn-detail-label">Invoiced By</div>';
+  html += '        <div class="sw-txn-detail-value" style="font-size:0.82em; padding:8px 10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+swEscHtml(expense.createdBy || 'Unknown')+'">'+swEscHtml(expense.createdBy || 'Unknown')+'</div>';
+  html += '      </div>';
+  html += '    </div>';
+
+  
+  // Notes
+  if(expense.details){
+    html += '    <div class="sw-txn-detail-section">';
+    html += '      <div class="sw-txn-detail-label">Notes / Details</div>';
+    html += '      <div class="sw-txn-detail-value" style="font-weight:400; font-size:0.88em; line-height:1.5; color:rgba(255,255,255,0.7); background:rgba(255,255,255,0.02); border-left:3px solid #00d4ff; border-radius:4px 8px 8px 4px;">'+swEscHtml(expense.details)+'</div>';
+    html += '    </div>';
+  }
+  
+  html += '  </div>'; // End Left Column
+  
+  // Right Column: Participants Split
+  html += '  <div class="sw-txn-detail-col-right">';
+  html += '    <div class="sw-txn-detail-label">Participants Split</div>';
+  
+  if(expense.users && expense.users.length > 0){
+    html += '    <div class="sw-txn-detail-participants" style="max-height:280px; overflow-y:auto; padding-right:2px;">';
+    
+    expense.users.forEach(function(u){
+      var isYou = u.isMe;
+      var avatar = (u.name || '?').substring(0,1).toUpperCase();
+      
+      var cls = 'paid-for'; // default
+      var role = '';
+      if (u.paidShare > 0 && u.owedShare > 0) {
+        cls = 'paid-by';
+        role = 'Paid ' + expense.currency + ' ' + u.paidShare.toFixed(2) + ' (Owes ' + u.owedShare.toFixed(2) + ')';
+      } else if (u.paidShare > 0) {
+        cls = 'paid-by';
+        role = 'Paid ' + expense.currency + ' ' + u.paidShare.toFixed(2);
+      } else {
+        role = 'Owes ' + expense.currency + ' ' + u.owedShare.toFixed(2);
+      }
+      
+      var netLbl = '';
+      var netCls = '';
+      if (u.netBalance > 0) {
+        netLbl = '+' + u.netBalance.toFixed(2);
+        netCls = 'owed';
+      } else if (u.netBalance < 0) {
+        netLbl = u.netBalance.toFixed(2);
+        netCls = 'owe';
+      } else {
+        netLbl = 'Settled';
+        netCls = 'zero';
+      }
+      
+      html += '      <div class="sw-txn-detail-participant '+cls+'" style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:6px; padding:6px 10px;">';
+      html += '        <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">';
+      html += '          <div class="sw-txn-detail-participant-avatar" style="width:28px; height:28px; font-size:0.7em;">'+avatar+'</div>';
+      html += '          <div class="sw-txn-detail-participant-info" style="min-width:0; overflow:hidden;">';
+      html += '            <div class="sw-txn-detail-participant-role" style="font-size:0.48em; letter-spacing:0.5px;">'+role+'</div>';
+      html += '            <div class="sw-txn-detail-participant-name" style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap; font-size:0.8em;">'+swEscHtml(u.name || 'Unknown')+(isYou?' (You)':'')+'</div>';
+      html += '          </div>';
+      html += '        </div>';
+      html += '        <div class="sw-txn-detail-participant-share sw-dtxn-net '+netCls+'" style="margin-left:8px; font-size:0.7em; padding:2px 6px; border-radius:4px;">'+netLbl+'</div>';
+      html += '      </div>';
+    });
+    
+    html += '    </div>';
+  } else {
+    html += '    <div style="color:rgba(255,255,255,0.25); font-size:0.85em; text-align:center; padding:30px 10px;">No participants split details available.</div>';
+  }
+  
+  html += '  </div>'; // End Right Column
+  
+  html += '</div>'; // End Grid
+  
+  document.getElementById('sw-txnDetailBody').innerHTML = html;
+}
+
+function swRenderTxnDetailError(error, txn){
   var amountCls = txn.myNet > 0 ? 'amount-owed' : (txn.myNet < 0 ? 'amount-owe' : '');
   var amountVal = txn.myNet > 0 ? '+'+txn.myNet.toFixed(2) : txn.myNet.toFixed(2);
   var statusTxt = txn.isPayment ? '💸 Payment' : (txn.paidByMe ? '🧾 You paid' : '📋 You borrowed');
   
   var html = '';
+  html += '<div class="sw-txn-detail-error" style="margin-bottom:12px; padding:10px 12px; font-size:0.8em;">⚠️ Failed to load complete details: ' + swEscHtml(error) + '</div>';
+  
   html += '<div class="sw-txn-detail-section">';
   html += '  <div class="sw-txn-detail-label">Description</div>';
   html += '  <div class="sw-txn-detail-value">'+swEscHtml(txn.description)+'</div>';
@@ -10588,57 +10769,12 @@ function swOpenTxnDetail(txn){
   html += '  <div class="sw-txn-detail-value">'+statusTxt+'</div>';
   html += '</div>';
   
-  if(txn.category){
-    html += '<div class="sw-txn-detail-section">';
-    html += '  <div class="sw-txn-detail-label">Category</div>';
-    html += '  <div class="sw-txn-detail-value">'+swEscHtml(txn.category)+'</div>';
-    html += '</div>';
-  }
-  
-  if(txn.notes){
-    html += '<div class="sw-txn-detail-section">';
-    html += '  <div class="sw-txn-detail-label">Notes</div>';
-    html += '  <div class="sw-txn-detail-value">'+swEscHtml(txn.notes)+'</div>';
-    html += '</div>';
-  }
-  
-  // Participants section
-  if(txn.participants && txn.participants.length > 0){
-    html += '<div class="sw-txn-detail-divider"></div>';
-    html += '<div class="sw-txn-detail-section">';
-    html += '  <div class="sw-txn-detail-label">Participants</div>';
-    html += '  <div class="sw-txn-detail-participants">';
-    
-    txn.participants.forEach(function(p){
-      var isYou = p.isMe;
-      var role = p.paidBy ? 'Paid by' : 'Owes share';
-      var share = p.share ? txn.currency + ' ' + p.share.toFixed(2) : '—';
-      var cls = p.paidBy ? 'paid-by' : 'paid-for';
-      var avatar = (p.name || '?').substring(0,1).toUpperCase();
-      
-      html += '    <div class="sw-txn-detail-participant '+cls+'">';
-      html += '      <div class="sw-txn-detail-participant-avatar">'+avatar+'</div>';
-      html += '      <div class="sw-txn-detail-participant-info">';
-      html += '        <div class="sw-txn-detail-participant-role">'+role+(isYou?' (You)':'')+'</div>';
-      html += '        <div class="sw-txn-detail-participant-name">'+swEscHtml(p.name || 'Unknown')+'</div>';
-      html += '      </div>';
-      html += '      <div class="sw-txn-detail-participant-share">'+share+'</div>';
-      html += '    </div>';
-    });
-    
-    html += '  </div>';
-    html += '</div>';
-  }
-  
-  document.getElementById('sw-txnDetailTitle').textContent = txn.isPayment ? '💸 Payment Details' : '🧾 Expense Details';
   document.getElementById('sw-txnDetailBody').innerHTML = html;
-  
-  // Show modal with animation
-  modal.classList.add('open');
-  overlay.classList.add('open');
-  
-  // Setup drag
-  setupTxnDetailDrag();
+}
+
+function swOpenTxnDetailFromId(txId){
+  var tx = (_swAllTxns||[]).find(function(t){ return (t.id||'').toString() === txId.toString(); });
+  if(tx) swOpenTxnDetail(tx);
 }
 
 function swCloseTxnDetail(){

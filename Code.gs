@@ -1,4 +1,4 @@
-﻿/* ── Web App entry point (SPA) ── */
+/* ── Web App entry point (SPA) ── */
 function doGet(e) {
   var appUrl = ScriptApp.getService().getUrl();
   var html = HtmlService.createHtmlOutputFromFile('render');
@@ -1058,6 +1058,89 @@ function getSplitwiseData() {
   } catch (error) {
     Logger.log('getSplitwiseData error: ' + error);
     return { balanceData: [], recentTransactions: [], validationResult: null };
+  }
+}
+
+function getSplitwiseExpenseDetails(expenseId) {
+  const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
+  const headers = { 'Authorization': 'Bearer ' + apiKey };
+  const opts = { method: 'get', headers: headers, muteHttpExceptions: true };
+
+  try {
+    const url = 'https://secure.splitwise.com/api/v3.0/get_expense/' + expenseId;
+    const resp = UrlFetchApp.fetch(url, opts);
+    const content = resp.getContentText();
+    const data = JSON.parse(content);
+    if (resp.getResponseCode() !== 200) {
+      throw new Error(data.errors ? JSON.stringify(data.errors) : 'Error ' + resp.getResponseCode());
+    }
+    const e = data.expense;
+
+    // Get current user ID to determine roles
+    var currentUserId = null;
+    try {
+      const meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', opts);
+      currentUserId = JSON.parse(meResp.getContentText()).user.id;
+    } catch(err) {}
+
+    var myNet = 0, paidByMe = false;
+    var users = [];
+    if (e.users) {
+      users = e.users.map(function(u) {
+        var isMe = currentUserId && (u.user_id === currentUserId);
+        var firstName = u.user ? (u.user.first_name || '') : '';
+        var lastName = u.user ? (u.user.last_name || '') : '';
+        var fullName = (firstName + ' ' + lastName).trim() || 'Unknown';
+        
+        if (isMe) {
+          myNet = parseFloat(u.net_balance || 0);
+          paidByMe = parseFloat(u.paid_share || 0) > 0;
+        }
+        
+        return {
+          userId: u.user_id,
+          name: fullName,
+          isMe: isMe,
+          paidShare: parseFloat(u.paid_share || 0),
+          owedShare: parseFloat(u.owed_share || 0),
+          netBalance: parseFloat(u.net_balance || 0)
+        };
+      });
+    }
+
+    var createdBy = 'Unknown';
+    if (e.created_by) {
+      createdBy = ((e.created_by.first_name || '') + ' ' + (e.created_by.last_name || '')).trim() || 'Unknown';
+      if (currentUserId && e.created_by.id === currentUserId) {
+        createdBy += ' (You)';
+      }
+    }
+
+    var rawDate = new Date(e.date);
+    var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+
+    return {
+      success: true,
+      expense: {
+        id:          e.id,
+        description: e.description || '(no description)',
+        details:     e.details || '',
+        date:        Utilities.formatDate(rawDate, tz, 'dd MMM yyyy HH:mm'),
+        cost:        parseFloat(e.cost),
+        currency:    e.currency_code,
+        myNet:       myNet,
+        paidByMe:    paidByMe,
+        isPayment:   e.payment === true,
+        createdBy:   createdBy,
+        users:       users,
+        category:    e.category ? e.category.name : '',
+        createdAt:   e.created_at,
+        updatedAt:   e.updated_at
+      }
+    };
+  } catch(err) {
+    Logger.log('getSplitwiseExpenseDetails error: ' + err.message);
+    return { success: false, error: err.message };
   }
 }
 
