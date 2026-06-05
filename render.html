@@ -3145,7 +3145,26 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-sw .txn-row.highlight{border-color:rgba(255,215,0,.35);background:rgba(255,215,0,.06);}
 #page-sw .txn-icon{font-size:1.2em;flex-shrink:0;width:26px;text-align:center;}
 #page-sw .txn-info{flex:1;min-width:0;}
-#page-sw .txn-desc{font-size:.82em;font-weight:600;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#page-sw .txn-desc{
+  font-size:.82em;
+  font-weight:600;
+  color:rgba(255,255,255,.8);
+  white-space:nowrap;
+  overflow:hidden;
+  position: relative;
+}
+#page-sw .txn-desc-inner {
+  display: inline-block;
+  white-space: nowrap;
+}
+#page-sw .txn-row:hover .txn-desc-inner {
+  animation: sw-marquee 8s linear infinite;
+  padding-left: 100%;
+}
+@keyframes sw-marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
 #page-sw .txn-date{font-size:.63em;color:rgba(255,255,255,.3);margin-top:2px;}
 #page-sw .txn-cost{font-size:.7em;color:rgba(255,255,255,.3);flex-shrink:0;white-space:nowrap;}
 #page-sw .txn-net{font-size:.85em;font-weight:700;flex-shrink:0;padding:3px 9px;border-radius:7px;white-space:nowrap;min-width:70px;text-align:right;}
@@ -4345,8 +4364,6 @@ input[type=date].swae-input{color-scheme:dark;}
     <button class="ck ck-num" onclick="calcInput('.')">.</button>
     <button class="ck ck-eq"  onclick="calcEval()">=</button>
   </div>
-</div>
-
 </div>
 
 <!-- ═══════════════════════════════════════════
@@ -10144,7 +10161,7 @@ function swRender(data){
         '<div class="txn-row" data-net="'+(tx.myNet||0)+'" data-currency="'+(tx.currency||'')+'" data-id="'+(tx.id||'')+'">'
           +'<div class="txn-icon">'+icon+'</div>'
           +'<div class="txn-info">'
-            +'<div class="txn-desc">'+swEscHtml(tx.description)+'</div>'
+            +'<div class="txn-desc"><span class="txn-desc-inner">'+swEscHtml(tx.description)+'</span></div>'
             +'<div class="txn-date">'+(tx.date||'')+'</div>'
           +'</div>'
           +'<div class="txn-cost">'+(tx.currency||'')+' '+tx.cost.toFixed(2)+'</div>'
