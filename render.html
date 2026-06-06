@@ -3173,7 +3173,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-sw .txn-net.zero{color:rgba(255,255,255,.25);background:rgba(255,255,255,.05);}
 #page-sw .txn-badge{font-size:.55em;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:5px;flex-shrink:0;text-transform:uppercase;}
 #page-sw .txn-badge.payment{background:rgba(168,85,247,.2);color:#a855f7;border:1px solid rgba(168,85,247,.3);}
-#page-sw .txn-badge.suspect{background:rgba(255,215,0,.2);color:#ffd700;border:1px solid rgba(255,215,0,.4);}
+#page-sw .txn-badge.suspect{background:rgba(255,215,0,.2);color:#ffd700;border:1px solid rgba(255,215,0,.4);width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0;border-radius:50%;}
 #page-sw .analysis-box{margin-bottom:14px;border-radius:14px;padding:14px 18px;background:linear-gradient(135deg,rgba(255,215,0,.07),rgba(255,107,53,.05));border:1px solid rgba(255,215,0,.25);}
 #page-sw .analysis-title{font-size:.78em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#ffd700;margin-bottom:9px;}
 #page-sw .analysis-body{font-size:.78em;color:rgba(255,255,255,.6);line-height:1.7;}
@@ -10390,7 +10390,7 @@ function swBuildAnalysis(TRANSACTIONS, VALIDATION){
         row.classList.add('highlight');
         var badge=document.createElement('span');
         badge.className='txn-badge suspect';
-        badge.textContent='Suspect';
+        badge.textContent='S';
         row.insertBefore(badge,row.querySelector('.txn-net'));
       }
     });
