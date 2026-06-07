@@ -1032,7 +1032,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   display:flex;align-items:center;gap:10px;
   background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.06);
   border-radius:9px;padding:9px 12px;margin-bottom:7px;
-  transition:border-color .15s;
+  transition:border-color .15s;flex-wrap:wrap;
 }
 .inst-entry:hover{border-color:rgba(255,255,255,.1);}
 .inst-entry:last-child{margin-bottom:0;}
@@ -1067,6 +1067,16 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .inst-add-exp-btn:hover{background:rgba(99,102,241,.3);transform:scale(1.05);}
 .inst-add-exp-btn:disabled{opacity:.45;pointer-events:none;}
 .inst-add-exp-btn.inst-add-exp-done{background:rgba(0,230,118,.15);color:var(--green);border-color:rgba(0,230,118,.35);}
+
+.inst-add-card-btn{
+  font-size:.58em;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;flex-shrink:0;cursor:pointer;
+  background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.35);
+  transition:background .15s,transform .15s,color .15s;user-select:none;
+}
+.inst-add-card-btn:hover{background:rgba(168,85,247,.3);transform:scale(1.05);}
+.inst-add-card-btn:disabled{opacity:.45;pointer-events:none;}
+.inst-add-card-btn.inst-add-exp-done{background:rgba(0,230,118,.15);color:var(--green);border-color:rgba(0,230,118,.35);}
 
 /* ── Tracker Modal (combined) ── */
 #tracker-modal{
@@ -12683,7 +12693,8 @@ function renderInstallments(data) {
       var safeInstName = inst.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
       var safeMonth = (entry.month || '').replace(/'/g,"\\'");
       html += '<div class="inst-status ' + statusClass + '" data-status="' + statusClass + '" title="Click to toggle status" onclick="instToggleStatus(this,\'' + safeInstName + '\',' + entry.num + ',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ')">' + entry.status + '</div>';
-      html += '<button class="inst-add-exp-btn" title="Add to Expense" onclick="instAddToExpense(this,\'' + safeInstName + '\',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ')">+ Expense</button>';
+      html += '<button class="inst-add-exp-btn" title="Add to Other Expense" onclick="instAddToExpense(this,\'' + safeInstName + '\',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ',\'other\')">+ Other</button>';
+      html += '<button class="inst-add-card-btn" title="Add to Card" onclick="instAddToExpense(this,\'' + safeInstName + '\',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ',\'card\')">+ Card</button>';
       html += '</div>';
     });
     html += '</div></div></div>';
@@ -12729,7 +12740,7 @@ function instToggleStatus(el, instName, entryNum, entryMonth, entryAmount) {
     .updateInstallmentStatus(instName, entryNum, newStatus, entryMonth, entryAmount);
 }
 
-function instAddToExpense(btn, instName, entryMonth, entryAmount) {
+function instAddToExpense(btn, instName, entryMonth, entryAmount, mode) {
   var prevText = btn.textContent;
   btn.disabled = true;
   btn.textContent = '...';
@@ -12748,7 +12759,7 @@ function instAddToExpense(btn, instName, entryMonth, entryAmount) {
         }, 2500);
       } else {
         btn.textContent = prevText;
-        alert('Could not add expense: ' + (res ? res.error : 'Unknown error'));
+        alert('Could not add: ' + (res ? res.error : 'Unknown error'));
       }
     })
     .withFailureHandler(function(err) {
@@ -12756,7 +12767,7 @@ function instAddToExpense(btn, instName, entryMonth, entryAmount) {
       btn.textContent = prevText;
       alert('Failed: ' + err.message);
     })
-    .addInstallmentToExpense(instName, entryAmount, dateKey);
+    .addInstallmentToExpense(instName, entryAmount, dateKey, mode);
 }
 
 // Draggable inst-modal — removed (handled by tracker-modal)

@@ -3270,13 +3270,11 @@ function _addSubscriptionToExpenses(entry) {
    Called from the "Add to Expense" button in the Installments UI.
    dateKey: "M-D" string matching col A (e.g. "5-26" for May 26).
    instName may contain a card suffix: "iPhone:AMEX" → card = AMEX.
-   Writes to:
-     K (11)  ← Other ref    (concatenates if already filled)
-     L (12)  ← Other amount (formula =existing+new if already filled)
-     AE (31) ← CC ref       (if card detected)
-     AG/AI/AK               ← card Pay column (formula if already filled)
+   mode: 'other' or 'card'. 
+   - 'other': Writes to Other columns (K, L)
+   - 'card': Writes to Card columns (AE, AG/AI/AK)
 ───────────────────────────────────────────────────────────────── */
-function addInstallmentToExpense(instName, amount, dateKey) {
+function addInstallmentToExpense(instName, amount, dateKey, mode) {
   try {
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Monthly Expences');
@@ -3299,20 +3297,11 @@ function addInstallmentToExpense(instName, amount, dateKey) {
     // Display name — strip card suffix ("iPhone:AMEX" → "iPhone", "iPhone-none:AMEX" → "iPhone-none")
     var displayName = instName.indexOf(':') >= 0 ? instName.split(':')[0].trim() : instName;
 
-    // "none" flag — if display name contains "-none" skip Other (K/L), write only to card
-    var skipOther = displayName.toLowerCase().indexOf('none') >= 0;
     // Clean label for refs (strip "-none" suffix if present)
     var cleanName = displayName.replace(/-?none/i, '').trim();
 
-    // ── Detect card from instName suffix ──
-    var cardLow = instName.indexOf(':') >= 0 ? instName.split(':')[1].trim().toLowerCase() : '';
-    var payCol  = -1;
-    if      (cardLow.indexOf('amex') >= 0 || cardLow.indexOf('american') >= 0) payCol = 33; // AG
-    else if (cardLow.indexOf('ntb')  >= 0 || cardLow.indexOf('nations')  >= 0) payCol = 35; // AI
-    else if (cardLow.indexOf('selan') >= 0)                                     payCol = 37; // AK
-
-    // ── K = col 11 (Other ref) + L = col 12 (Other amount) — skip if "none" ──
-    if (!skipOther) {
+    // ── K = col 11 (Other ref) + L = col 12 (Other amount) ──
+    if (mode === 'other') {
       var existingRef = String(rowVals[10] || '').trim();
       sheet.getRange(targetRow, 11).setValue(existingRef ? existingRef + ', ' + cleanName : cleanName);
 
@@ -3325,19 +3314,30 @@ function addInstallmentToExpense(instName, amount, dateKey) {
       }
     }
 
-    // ── Card Pay column + AE ref (if card detected) ──
-    if (payCol > 0) {
-      var existingPay = rowVals[payCol - 1];
-      var payFilled   = (existingPay !== '' && existingPay !== null && existingPay !== undefined && existingPay !== 0);
-      if (payFilled) {
-        sheet.getRange(targetRow, payCol).setFormula('=' + (parseFloat(existingPay) || 0) + '+' + amtNum);
-      } else {
-        sheet.getRange(targetRow, payCol).setValue(amtNum);
-      }
+    // ── Card Pay column + AE ref (if card detected and mode is 'card') ──
+    if (mode === 'card') {
+      // ── Detect card from instName suffix ──
+      var cardLow = instName.indexOf(':') >= 0 ? instName.split(':')[1].trim().toLowerCase() : '';
+      var payCol  = -1;
+      if      (cardLow.indexOf('amex') >= 0 || cardLow.indexOf('american') >= 0) payCol = 33; // AG
+      else if (cardLow.indexOf('ntb')  >= 0 || cardLow.indexOf('nations')  >= 0) payCol = 35; // AI
+      else if (cardLow.indexOf('selan') >= 0)                                     payCol = 37; // AK
 
-      // AE = col 31 (shared CC ref) — concatenate
-      var existingCCRef = String(rowVals[30] || '').trim();
-      sheet.getRange(targetRow, 31).setValue(existingCCRef ? existingCCRef + ', ' + cleanName : cleanName);
+      if (payCol > 0) {
+        var existingPay = rowVals[payCol - 1];
+        var payFilled   = (existingPay !== '' && existingPay !== null && existingPay !== undefined && existingPay !== 0);
+        if (payFilled) {
+          sheet.getRange(targetRow, payCol).setFormula('=' + (parseFloat(existingPay) || 0) + '+' + amtNum);
+        } else {
+          sheet.getRange(targetRow, payCol).setValue(amtNum);
+        }
+
+        // AE = col 31 (shared CC ref) — concatenate
+        var existingCCRef = String(rowVals[30] || '').trim();
+        sheet.getRange(targetRow, 31).setValue(existingCCRef ? existingCCRef + ', ' + cleanName : cleanName);
+      } else {
+        return { success: false, error: 'No credit card detected for this installment' };
+      }
     }
 
     SpreadsheetApp.flush();
