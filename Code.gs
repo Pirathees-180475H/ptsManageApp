@@ -3569,6 +3569,99 @@ function getLossesData() {
   }
 }
 
+/**
+ * addLossEntry
+ * Adds a new loss entry to OTHERS sheet columns A-D
+ * Finds the first row where Ref (Col A) is empty (starting from row 3)
+ */
+function addLossEntry(ref, amount, lesson, isConfirmLoss) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    var lastRow = sheet.getLastRow();
+    var targetRow = -1;
+
+    if (lastRow < 2) {
+      targetRow = 3;
+    } else {
+      // Look for the first empty cell in column A, starting from row 3
+      var colA = sheet.getRange(1, 1, lastRow + 1, 1).getValues();
+      for (var i = 2; i < colA.length; i++) {
+        if (!colA[i][0] || String(colA[i][0]).trim() === "") {
+          targetRow = i + 1;
+          break;
+        }
+      }
+      if (targetRow === -1) targetRow = lastRow + 1;
+    }
+
+    // Set values only in A-D
+    sheet.getRange(targetRow, 1).setValue(ref);
+    sheet.getRange(targetRow, 2).setValue(Number(amount) || 0);
+    sheet.getRange(targetRow, 3).setValue(lesson);
+    sheet.getRange(targetRow, 4).setValue(isConfirmLoss ? 'TRUE' : 'FALSE');
+
+    SpreadsheetApp.flush();
+    return { success: true, rowIndex: targetRow };
+  } catch (e) {
+    Logger.log('addLossEntry error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * updateLossEntry
+ * Updates a specific row index in OTHERS sheet columns A-D
+ */
+function updateLossEntry(rowIndex, ref, amount, lesson, isConfirmLoss) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    rowIndex = parseInt(rowIndex, 10);
+    if (isNaN(rowIndex) || rowIndex < 3) return { success: false, error: 'Invalid row index' };
+
+    // Update values only in A-D
+    sheet.getRange(rowIndex, 1).setValue(ref);
+    sheet.getRange(rowIndex, 2).setValue(Number(amount) || 0);
+    sheet.getRange(rowIndex, 3).setValue(lesson);
+    sheet.getRange(rowIndex, 4).setValue(isConfirmLoss ? 'TRUE' : 'FALSE');
+
+    SpreadsheetApp.flush();
+    return { success: true };
+  } catch (e) {
+    Logger.log('updateLossEntry error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * deleteLossEntry
+ * Clears cells in OTHERS sheet columns A-D for a specific row index
+ */
+function deleteLossEntry(rowIndex) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    rowIndex = parseInt(rowIndex, 10);
+    if (isNaN(rowIndex) || rowIndex < 3) return { success: false, error: 'Invalid row index' };
+
+    // Clear only A-D to avoid affecting other columns
+    sheet.getRange(rowIndex, 1, 1, 4).clearContent();
+
+    SpreadsheetApp.flush();
+    return { success: true };
+  } catch (e) {
+    Logger.log('deleteLossEntry error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 /* ─────────────────────────────────────────────────────────────────
    getCardExpenses
    Returns both Expense and Payment entries for a credit card.

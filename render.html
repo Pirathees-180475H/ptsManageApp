@@ -767,6 +767,67 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .loss-entry-lesson{font-size:.7em;color:rgba(255,255,255,.6);line-height:1.4;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid rgba(255,255,255,.1);}
 .loss-entry-lesson.has-text{border-left-color:var(--teal);}
 
+/* ── Loss Actions ── */
+.loss-entry-actions{
+  display:flex;align-items:center;gap:8px;
+  margin-top:4px;transition:opacity .2s;
+}
+.loss-action-btn{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.6);font-size:.65em;font-weight:700;
+  padding:3px 9px;border-radius:6px;cursor:pointer;
+  transition:all .15s;text-transform:uppercase;letter-spacing:.5px;
+}
+.loss-action-btn:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);}
+.loss-action-btn.edit:hover{background:rgba(99,102,241,.2);color:#a5b4fc;border-color:rgba(99,102,241,.3);}
+.loss-action-btn.delete:hover{background:rgba(239,68,68,.2);color:#fca5a5;border-color:rgba(239,68,68,.3);}
+
+.loss-toolbar{display:flex;align-items:center;justify-content:flex-end;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(8px);z-index:10;}
+.loss-add-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 16px;
+  border-radius:10px;
+  background:linear-gradient(135deg,rgba(239,68,68,.18),rgba(245,158,11,.1));
+  border:1px solid rgba(239,68,68,.35);
+  color:var(--red);font-size:.7em;font-weight:700;letter-spacing:.5px;
+  cursor:pointer;font-family:inherit;flex-shrink:0;
+  transition:all .2s;
+}
+.loss-add-btn:hover{background:linear-gradient(135deg,rgba(239,68,68,.32),rgba(245,158,11,.22));transform:translateY(-1px);box-shadow:0 4px 14px rgba(239,68,68,.18);}
+
+/* ── Loss Modal ── */
+#loss-form-modal{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);
+  width:90%;max-width:400px;z-index:9000;
+  background:#0f172a;border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);
+  display:none;flex-direction:column;opacity:0;transition:all .2s;
+}
+#loss-form-modal.open{display:flex;opacity:1;transform:translate(-50%,-50%) scale(1);}
+.lfm-hdr{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;}
+.lfm-title{font-size:.75em;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#fff;}
+.lfm-body{padding:18px;display:flex;flex-direction:column;gap:14px;}
+.lfm-field{display:flex;flex-direction:column;gap:5px;}
+.lfm-label{font-size:.6em;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.5px;}
+.lfm-input{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:9px 12px;color:#fff;font-size:.8em;font-family:inherit;
+  transition:border-color .15s;
+}
+.lfm-input:focus{outline:none;border-color:rgba(239,68,68,.5);background:rgba(255,255,255,.06);}
+.lfm-checkbox-row{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;padding:4px 0;}
+.lfm-checkbox{width:16px;height:16px;accent-color:#ef4444;}
+.lfm-footer{padding:14px 18px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:flex-end;gap:10px;}
+.lfm-btn{
+  padding:8px 16px;border-radius:10px;font-size:.7em;font-weight:700;cursor:pointer;
+  transition:all .15s;font-family:inherit;
+}
+.lfm-btn.cancel{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);}
+.lfm-btn.cancel:hover{background:rgba(255,255,255,.1);color:#fff;}
+.lfm-btn.save{background:#ef4444;border:none;color:#fff;box-shadow:0 4px 12px rgba(239,68,68,.3);}
+.lfm-btn.save:hover{background:#dc2626;transform:translateY(-1px);}
+.lfm-btn:disabled{opacity:.5;pointer-events:none;}
+
 /* ── Subscription Modal ── */
 #sub-modal{
   position:fixed;
@@ -902,6 +963,13 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #trk-pane-sub > .sub-toolbar{flex:0 0 auto;overflow:visible;}
 #trk-pane-sub > .sub-add-form{flex-shrink:0;}
 #trk-pane-sub > .sub-body{flex:1;overflow-y:auto;min-height:0;}
+
+#trk-pane-loss > .loss-toolbar{flex:0 0 auto;}
+#trk-pane-loss > #notes-tab-losses{flex:1;overflow-y:auto;padding:16px;min-height:0;}
+#trk-pane-loss > #notes-tab-losses::-webkit-scrollbar{width:4px;}
+#trk-pane-loss > #notes-tab-losses::-webkit-scrollbar-track{background:transparent;}
+#trk-pane-loss > #notes-tab-losses::-webkit-scrollbar-thumb{background:rgba(239,68,68,.3);border-radius:4px;}
+#trk-pane-loss > #notes-tab-losses::-webkit-scrollbar-thumb:hover{background:rgba(239,68,68,.55);}
 .sub-toolbar{display:flex;align-items:center;justify-content:flex-end;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;flex:0 0 auto;}
 .sub-filter-tabs{display:flex;gap:4px;}
 .sub-tab{padding:5px 14px;font-size:.58em;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:1px solid rgba(255,255,255,.12);border-radius:20px;background:transparent;color:rgba(255,255,255,.4);cursor:pointer;transition:all .15s;font-family:inherit;}
@@ -1140,8 +1208,14 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   box-shadow:0 0 8px rgba(99,102,241,.7);
 }
 .trk-tab.active::after{transform:scaleX(1);}
-.trk-pane{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.trk-pane{display:none;flex-direction:column;flex:1;overflow:hidden;height:100%;}
 .trk-pane.active{display:flex;}
+#trk-pane-loss > div:nth-child(2){flex:1;overflow-y:auto;padding:0;min-height:0;}
+#trk-pane-loss > div:nth-child(2)::-webkit-scrollbar{width:4px;}
+#trk-pane-loss > div:nth-child(2)::-webkit-scrollbar-track{background:transparent;}
+#trk-pane-loss > div:nth-child(2)::-webkit-scrollbar-thumb{background:rgba(239,68,68,.3);border-radius:4px;}
+#trk-pane-loss > div:nth-child(2)::-webkit-scrollbar-thumb:hover{background:rgba(239,68,68,.55);}
+
 .trk-pane > div:first-child{flex:1;overflow-y:auto;padding:0;min-height:0;}
 .trk-pane > div:first-child::-webkit-scrollbar{width:4px;}
 .trk-pane > div:first-child::-webkit-scrollbar-track{background:transparent;}
@@ -4458,7 +4532,12 @@ input[type=date].swae-input{color-scheme:dark;}
   </div>
   <!-- ── Losses pane ── -->
   <div class="trk-pane" id="trk-pane-loss">
-    <div id="notes-tab-losses" style="flex:1;overflow-y:auto;padding:16px;">
+    <div class="loss-toolbar">
+      <button class="loss-add-btn" onclick="openLossForm()" title="Add new loss entry">
+        <span style="font-size:1.4em;line-height:1;">+</span> Add Loss Entry
+      </button>
+    </div>
+    <div id="notes-tab-losses">
       <div style="text-align:center;padding:40px;color:var(--muted);">
         <div style="font-size:2em;margin-bottom:10px;">⏳</div>
         Loading losses...
@@ -4485,6 +4564,37 @@ input[type=date].swae-input{color-scheme:dark;}
       <button class="qadd-btn-cancel" onclick="qaddCancel()">Cancel</button>
       <button class="qadd-btn-ok" id="qadd-ok-btn" onclick="qaddConfirm()">Add</button>
     </div>
+  </div>
+</div>
+
+<!-- ── Loss Form Modal ── -->
+<div id="loss-form-modal">
+  <div class="lfm-hdr">
+    <div class="lfm-title" id="lfm-title">Add Loss Entry</div>
+    <button class="tracker-close" onclick="closeLossForm()">✕</button>
+  </div>
+  <div class="lfm-body">
+    <input type="hidden" id="lfm-row-index" value="">
+    <div class="lfm-field">
+      <label class="lfm-label">Reference / Name</label>
+      <input type="text" id="lfm-ref" class="lfm-input" placeholder="e.g. BTC Trade">
+    </div>
+    <div class="lfm-field">
+      <label class="lfm-label">Amount (₨)</label>
+      <input type="number" id="lfm-amount" class="lfm-input" placeholder="0">
+    </div>
+    <div class="lfm-field">
+      <label class="lfm-label">Lesson Learned</label>
+      <input type="text" id="lfm-lesson" class="lfm-input" placeholder="e.g. Don't fomo">
+    </div>
+    <label class="lfm-checkbox-row">
+      <input type="checkbox" id="lfm-confirm" class="lfm-checkbox">
+      <span class="lfm-label" style="margin:0;color:#fff;">Confirmed Loss</span>
+    </label>
+  </div>
+  <div class="lfm-footer">
+    <button class="lfm-btn cancel" onclick="closeLossForm()">Cancel</button>
+    <button class="lfm-btn save" id="lfm-save-btn" onclick="saveLossEntry()">Save Entry</button>
   </div>
 </div>
 
@@ -13048,6 +13158,14 @@ function renderLossesData(data) {
     } else {
       html += '<div class="loss-entry-lesson"><span style="opacity:.5;">No lesson recorded</span></div>';
     }
+
+    // Actions
+    var safeRef = escHtml(entry.ref).replace(/'/g, "\\'");
+    var safeLesson = escHtml(entry.lesson).replace(/'/g, "\\'");
+    html += '<div class="loss-entry-actions">';
+    html += '<button class="loss-action-btn edit" onclick="openLossForm(\'' + safeRef + '\',' + entry.amount + ',\'' + safeLesson + '\',' + entry.isConfirmLoss + ',' + entry.rowIndex + ')">Edit</button>';
+    html += '<button class="loss-action-btn delete" onclick="deleteLossRequest(' + entry.rowIndex + ')">Delete</button>';
+    html += '</div>';
     
     html += '</div>';
   });
@@ -13055,6 +13173,100 @@ function renderLossesData(data) {
   html += '</div>';
 
   document.getElementById('notes-tab-losses').innerHTML = html;
+}
+
+// Loss Form Functions
+function openLossForm(ref, amount, lesson, isConfirm, rowIndex) {
+  var modal = document.getElementById('loss-form-modal');
+  var title = document.getElementById('lfm-title');
+  var refInput = document.getElementById('lfm-ref');
+  var amtInput = document.getElementById('lfm-amount');
+  var lessonInput = document.getElementById('lfm-lesson');
+  var confirmCheck = document.getElementById('lfm-confirm');
+  var rowInput = document.getElementById('lfm-row-index');
+
+  if (rowIndex) {
+    title.innerText = 'Edit Loss Entry';
+    refInput.value = ref || '';
+    amtInput.value = amount || '';
+    lessonInput.value = lesson || '';
+    confirmCheck.checked = isConfirm === true || isConfirm === 'true';
+    rowInput.value = rowIndex;
+  } else {
+    title.innerText = 'Add Loss Entry';
+    refInput.value = '';
+    amtInput.value = '';
+    lessonInput.value = '';
+    confirmCheck.checked = false;
+    rowInput.value = '';
+  }
+
+  modal.classList.add('open');
+}
+
+function closeLossForm() {
+  document.getElementById('loss-form-modal').classList.remove('open');
+}
+
+function saveLossEntry() {
+  var ref = document.getElementById('lfm-ref').value;
+  var amount = document.getElementById('lfm-amount').value;
+  var lesson = document.getElementById('lfm-lesson').value;
+  var isConfirm = document.getElementById('lfm-confirm').checked;
+  var rowIndex = document.getElementById('lfm-row-index').value;
+  var saveBtn = document.getElementById('lfm-save-btn');
+
+  if (!ref || !amount) {
+    alert('Please fill in Reference and Amount');
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.innerText = 'Saving...';
+
+  var successHandler = function(res) {
+    saveBtn.disabled = false;
+    saveBtn.innerText = 'Save Entry';
+    if (res && res.success) {
+      closeLossForm();
+      loadNotesData(); // Refresh both tabs
+    } else {
+      alert('Error: ' + (res ? res.error : 'Unknown error'));
+    }
+  };
+
+  var failureHandler = function(err) {
+    saveBtn.disabled = false;
+    saveBtn.innerText = 'Save Entry';
+    alert('Failed: ' + err.message);
+  };
+
+  if (rowIndex) {
+    google.script.run
+      .withSuccessHandler(successHandler)
+      .withFailureHandler(failureHandler)
+      .updateLossEntry(rowIndex, ref, amount, lesson, isConfirm);
+  } else {
+    google.script.run
+      .withSuccessHandler(successHandler)
+      .withFailureHandler(failureHandler)
+      .addLossEntry(ref, amount, lesson, isConfirm);
+  }
+}
+
+function deleteLossRequest(rowIndex) {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.success) {
+        loadNotesData();
+      } else {
+        alert('Error: ' + (res ? res.error : 'Unknown error'));
+      }
+    })
+    .withFailureHandler(function(err) {
+      alert('Failed: ' + err.message);
+    })
+    .deleteLossEntry(rowIndex);
 }
 
 // Draggable Bank Modal
