@@ -1,12 +1,111 @@
 /* ── Web App entry point (SPA) ── */
+// ═══════════════════════════════════════════════════════════════
+// DOCUMENT MANAGEMENT (Drive Integration)
+// ═══════════════════════════════════════════════════════════════
+
+function getMyDocsFolder() {
+  var folderName = "myDocs";
+  var folders = DriveApp.getFoldersByName(folderName);
+  if (folders.hasNext()) {
+    return folders.next();
+  } else {
+    return DriveApp.createFolder(folderName);
+  }
+}
+
+function listMyDocs(searchQuery) {
+  var folder = getMyDocsFolder();
+  var files;
+  if (searchQuery) {
+    // Search within the folder. DriveApp.searchFiles can be used with 'parents' in query
+    var query = "title contains '" + searchQuery.replace(/'/g, "\\'") + "' and '" + folder.getId() + "' in parents and trashed = false";
+    files = DriveApp.searchFiles(query);
+  } else {
+    files = folder.getFiles();
+  }
+  
+  var result = [];
+  while (files.hasNext()) {
+    var file = files.next();
+    result.push({
+      id: file.getId(),
+      name: file.getName(),
+      mimeType: file.getMimeType(),
+      size: file.getSize(),
+      date: file.getDateCreated().getTime(),
+      thumbnailUrl: null, // file.getThumbnail() returns a Blob, not a URL. Usually better to use viewUrl or special thumbnail links if needed.
+      downloadUrl: file.getDownloadUrl(),
+      viewUrl: file.getUrl()
+    });
+  }
+  
+  // Sort by date descending
+  result.sort(function(a, b) { return b.date - a.date; });
+  return result;
+}
+
+function uploadDoc(base64Data, fileName, mimeType) {
+  var folder = getMyDocsFolder();
+  var decoded = Utilities.base64Decode(base64Data);
+  var blob = Utilities.newBlob(decoded, mimeType, fileName);
+  var file = folder.createFile(blob);
+  
+  // Try to make file viewable by anyone with link so preview works better
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch(e) {
+    // might fail if restricted by domain
+  }
+  
+  return {
+    id: file.getId(),
+    name: file.getName()
+  };
+}
+
+function deleteDoc(fileId) {
+  var file = DriveApp.getFileById(fileId);
+  var folder = getMyDocsFolder();
+  
+  // Security check: ensure the file is in our myDocs folder
+  var parents = file.getParents();
+  var inFolder = false;
+  while (parents.hasNext()) {
+    if (parents.next().getId() === folder.getId()) {
+      inFolder = true;
+      break;
+    }
+  }
+  
+  if (inFolder) {
+    file.setTrashed(true);
+    return true;
+  } else {
+    throw new Error("File not found in myDocs folder");
+  }
+}
+
+function getDocPreview(fileId) {
+  var file = DriveApp.getFileById(fileId);
+  return {
+    id: file.getId(),
+    name: file.getName(),
+    mimeType: file.getMimeType(),
+    viewUrl: file.getUrl(),
+    downloadUrl: file.getDownloadUrl()
+  };
+}
+
 function doGet(e) {
   var appUrl = ScriptApp.getService().getUrl();
-  var html = HtmlService.createHtmlOutputFromFile('render');
-  var inject = '<script>var _WEB_APP=true; var _APP_URL="' + appUrl + '";<\/script>\n';
-  var content = html.getContent().replace('</head>', inject + '</head>');
-  return HtmlService.createHtmlOutput(content)
+  var template = HtmlService.createTemplateFromFile('render');
+  template._WEB_APP = true;
+  template._APP_URL = appUrl;
+  
+  return template.evaluate()
     .setTitle('PTS Finance')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
 }
 
 function onEdit(e) {

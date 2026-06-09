@@ -216,7 +216,30 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pg-cal-btn:active{transform:scale(.9);}
 .pg-cal-btn.cal-active{background:rgba(0,212,255,.28);border-color:rgba(0,212,255,.6);color:#7dd3fc;}
 
-/* ═══ CALENDAR PANEL ═══ */
+.pg-docs-btn{
+  background:rgba(0,230,118,.13);border:1px solid rgba(0,230,118,.28);
+  color:#00e676;border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-docs-btn:active{transform:scale(.9);}
+.pg-docs-btn.docs-active{background:rgba(0,230,118,.28);border-color:rgba(0,230,118,.6);color:#69f0ae;}
+.pg-money-btn{
+  background:rgba(255,215,0,.13);border:1px solid rgba(255,215,0,.28);
+  color:var(--gold);border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-money-btn:active{transform:scale(.9);}
+.pg-tracker-btn{
+  background:rgba(59,130,246,.13);border:1px solid rgba(59,130,246,.28);
+  color:#3b82f6;border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-tracker-btn:active{transform:scale(.9);}
+
+  /* ═══ CALENDAR PANEL ═══ */
 @keyframes calIn{from{opacity:0;transform:scale(.93) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
 
 #cal-panel {
@@ -3931,6 +3954,11 @@ input[type=date].swae-input{color-scheme:dark;}
 </style>
 </head>
 <body>
+<script>
+  var _WEB_APP = true;
+  var _APP_URL = "<?= _APP_URL ?>";
+</script>
+<?!= HtmlService.createHtmlOutputFromFile('docs').getContent(); ?>
 
 <!-- ── PIN Modal (Summary tab) ── -->
 <div id="pin-modal-bg">
@@ -3985,6 +4013,7 @@ input[type=date].swae-input{color-scheme:dark;}
       <span class="upd-lbl" id="updLbl">Starting…</span>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" id="refreshBtn" onclick="cseStartLoad()">↺ Reload</button>
@@ -4047,6 +4076,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
@@ -4070,6 +4100,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
@@ -4106,6 +4137,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('port')">↺ Reload</button>
@@ -4134,6 +4166,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('mf')">↺ Reload</button>
@@ -4205,6 +4238,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <div class="pg-hdr-actions">
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
       <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>

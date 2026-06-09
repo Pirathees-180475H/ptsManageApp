@@ -1,0 +1,297 @@
+<!-- ═══ DOCS MODAL CSS ═══ -->
+<style>
+#docs-modal-bg {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(12px);
+  display: none; align-items: center; justify-content: center;
+}
+#docs-modal-bg.open { display: flex; }
+#docs-modal {
+  background: #0c1323; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 26px; width: 95%; max-width: 900px; height: 85vh;
+  display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+  overflow: hidden; animation: docsModalIn 0.3s cubic-bezier(0.2,1,0.2,1);
+}
+@keyframes docsModalIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+.docs-hdr {
+  padding: 20px 24px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+  background: linear-gradient(90deg, rgba(0,230,118,0.08), transparent);
+}
+.docs-title { font-size: 1.1em; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--green); display: flex; align-items: center; gap: 10px; }
+.docs-close { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.4);
+              border-radius: 10px; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.docs-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+.docs-body { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+.docs-toolbar { display: flex; gap: 15px; align-items: center; flex-shrink: 0; }
+.docs-search { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+               border-radius: 14px; padding: 12px 18px; color: #fff; font-size: 0.9em; font-family: inherit; outline: none; transition: border-color 0.2s; }
+.docs-search:focus { border-color: var(--green); }
+.docs-upload-btn { background: var(--green); color: #000; border: none; border-radius: 14px; padding: 12px 20px;
+                 font-weight: 700; font-size: 0.9em; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: transform 0.1s, opacity 0.2s; }
+.docs-upload-btn:active { transform: scale(0.96); }
+
+.docs-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.doc-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s; position: relative; }
+.doc-item:hover { background: rgba(255,255,255,0.06); border-color: rgba(0,230,118,0.3); transform: translateY(-2px); }
+
+.doc-top { display: flex; align-items: center; gap: 12px; }
+.doc-icon { width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,0.05);
+          display: flex; align-items: center; justify-content: center; font-size: 1.8em; flex-shrink: 0; }
+.doc-info { flex: 1; min-width: 0; }
+.doc-name { font-size: 0.95em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; color: #fff; }
+.doc-meta { font-size: 0.75em; color: var(--muted); }
+
+.doc-actions { display: flex; gap: 10px; border-top: 1px solid rgba(255,255,255,0.05); pt: 12px; margin-top: 4px; padding-top: 12px; }
+.doc-btn { flex: 1; background: rgba(255,255,255,0.05); border: none; color: rgba(255,255,255,0.6);
+         padding: 8px; border-radius: 10px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; font-size: 1.1em; }
+.doc-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.doc-btn.del:hover { background: rgba(255,77,109,0.15); color: var(--red); }
+
+.docs-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 0.9em; font-style: italic; grid-column: 1 / -1; }
+.docs-loading { text-align: center; padding: 40px; grid-column: 1 / -1; }
+
+/* Custom Confirm Modal */
+#docs-confirm-bg {
+  position: fixed; inset: 0; z-index: 9500;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center;
+}
+#docs-confirm-bg.open { display: flex; }
+.confirm-box {
+  background: #161c2d; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; width: 90%; max-width: 320px; padding: 24px;
+  text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+.confirm-title { font-weight: 700; font-size: 1.1em; margin-bottom: 10px; display: block; }
+.confirm-msg { font-size: 0.9em; color: var(--muted); margin-bottom: 24px; display: block; line-height: 1.4; }
+.confirm-btns { display: flex; gap: 12px; }
+.confirm-btn { flex: 1; padding: 10px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: opacity 0.2s; }
+.btn-cancel { background: rgba(255,255,255,0.05); color: #fff; }
+.btn-confirm { background: var(--red); color: #fff; }
+
+/* Preview Overlay */
+#doc-preview-bg {
+  position: fixed; inset: 0; z-index: 9100; background: rgba(0,0,0,0.9);
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+}
+#doc-preview-bg.open { display: flex; }
+.preview-close { position: absolute; top: 20px; right: 20px; color: #fff; background: rgba(255,255,255,0.1);
+               border: none; padding: 10px 15px; border-radius: 10px; cursor: pointer; font-weight: 700; z-index: 9101; }
+#preview-content { width: 90%; height: 85%; display: flex; align-items: center; justify-content: center; }
+#preview-frame { width: 100%; height: 100%; border: none; background: #fff; border-radius: 16px; }
+#preview-img { max-width: 100%; max-height: 100%; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
+</style>
+
+<div id="docs-modal-bg">
+  <div id="docs-modal">
+    <div class="docs-hdr">
+      <span class="docs-title">📂 My Documents</span>
+      <button class="docs-close" onclick="docsToggle()">✕</button>
+    </div>
+    <div class="docs-body">
+      <div class="docs-toolbar">
+        <input type="text" class="docs-search" id="docs-search-input" placeholder="Search documents..." oninput="docsLocalSearch()">
+        <button class="docs-upload-btn" onclick="document.getElementById('docs-file-input').click()">
+          <span>+</span> Upload
+        </button>
+        <input type="file" id="docs-file-input" style="display:none" onchange="docsHandleUpload(this)" accept="image/*,application/pdf">
+      </div>
+      <div id="docs-list-container" class="docs-list">
+        <div class="docs-loading">
+          <div class="ld-spin" style="margin: 0 auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Delete Confirmation -->
+<div id="docs-confirm-bg">
+  <div class="confirm-box">
+    <span class="confirm-title">Delete Document?</span>
+    <span class="confirm-msg" id="docs-confirm-msg">Are you sure you want to delete this file?</span>
+    <div class="confirm-btns">
+      <button class="confirm-btn btn-cancel" onclick="docsDeleteConfirm(false)">Cancel</button>
+      <button class="confirm-btn btn-confirm" onclick="docsDeleteConfirm(true)">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOCUMENT PREVIEW -->
+<div id="doc-preview-bg" onclick="docsPreviewClose()">
+  <button class="preview-close">✕ Close</button>
+  <div id="preview-content" onclick="event.stopPropagation()"></div>
+</div>
+
+<script>
+  (function() {
+    var _docsData = [];
+    var _deleteTargetId = null;
+
+    window.docsToggle = function() {
+    var modal = document.getElementById('docs-modal-bg');
+    var isOpening = !modal.classList.contains('open');
+    modal.classList.toggle('open', isOpening);
+    
+    document.querySelectorAll('.pg-docs-btn').forEach(function(b) {
+      b.classList.toggle('docs-active', isOpening);
+    });
+
+    if (isOpening) {
+      docsLoadList();
+    }
+  };
+
+    window.docsLoadList = function() {
+      var container = document.getElementById('docs-list-container');
+      container.innerHTML = '<div class="docs-loading"><div class="ld-spin" style="margin: 0 auto;"></div><p style="font-size:12px;color:var(--muted);margin-top:10px">Fetching documents...</p></div>';
+
+      google.script.run
+        .withSuccessHandler(function(files) {
+          _docsData = files;
+          docsRenderList(files);
+        })
+        .withFailureHandler(function(err) {
+          container.innerHTML = '<div class="docs-empty" style="color:var(--red)">Failed to load: ' + (err.message || err) + '</div>';
+        })
+        .listMyDocs('');
+    };
+
+    window.docsRenderList = function(files) {
+      var container = document.getElementById('docs-list-container');
+      if (!files || files.length === 0) {
+        container.innerHTML = '<div class="docs-empty">No documents found.</div>';
+        return;
+      }
+
+      var html = '';
+      files.forEach(function(f) {
+        var icon = '📄';
+        if (f.mimeType.indexOf('image/') === 0) icon = '🖼️';
+        if (f.mimeType === 'application/pdf') icon = '📕';
+        
+        var sizeStr = (f.size / 1024).toFixed(1) + ' KB';
+        if (f.size > 1024 * 1024) sizeStr = (f.size / (1024 * 1024)).toFixed(1) + ' MB';
+        var dateStr = new Date(f.date).toLocaleDateString();
+
+        html += '<div class="doc-item">';
+        html += '  <div class="doc-top">';
+        html += '    <div class="doc-icon">' + icon + '</div>';
+        html += '    <div class="doc-info">';
+        html += '      <div class="doc-name" title="' + f.name + '">' + f.name + '</div>';
+        html += '      <div class="doc-meta">' + dateStr + ' • ' + sizeStr + '</div>';
+        html += '    </div>';
+        html += '  </div>';
+        html += '  <div class="doc-actions">';
+        html += '    <button class="doc-btn" onclick="docsPreview(\'' + f.id + '\')" title="Preview">👁️</button>';
+        html += '    <button class="doc-btn" onclick="docsDownload(\'' + f.id + '\')" title="Download">⬇️</button>';
+        html += '    <button class="doc-btn del" onclick="docsDeleteReq(\'' + f.id + '\', \'' + f.name.replace(/'/g, "\\'") + '\')" title="Delete">🗑️</button>';
+        html += '  </div>';
+        html += '</div>';
+      });
+      container.innerHTML = html;
+    };
+
+    window.docsLocalSearch = function() {
+      var query = document.getElementById('docs-search-input').value.toLowerCase();
+      if (!query) {
+        docsRenderList(_docsData);
+        return;
+      }
+      var filtered = _docsData.filter(function(f) {
+        return f.name.toLowerCase().indexOf(query) !== -1;
+      });
+      docsRenderList(filtered);
+    };
+
+    window.docsHandleUpload = function(input) {
+      var file = input.files[0];
+      if (!file) return;
+
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var content = e.target.result.split(',')[1];
+        var container = document.getElementById('docs-list-container');
+        var oldHtml = container.innerHTML;
+        container.innerHTML = '<div class="docs-loading"><div class="ld-spin" style="margin: 0 auto;"></div><p style="font-size:12px;color:var(--muted);margin-top:10px">Uploading ' + file.name + '...</p></div>';
+
+        google.script.run
+          .withSuccessHandler(function() {
+            input.value = '';
+            docsLoadList();
+          })
+          .withFailureHandler(function(err) {
+            alert("Upload failed: " + err);
+            container.innerHTML = oldHtml;
+          })
+          .uploadDoc(content, file.name, file.type || 'application/octet-stream');
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.docsDeleteReq = function(id, name) {
+      _deleteTargetId = id;
+      document.getElementById('docs-confirm-msg').innerText = "Delete '" + name + "' permanently?";
+      document.getElementById('docs-confirm-bg').classList.add('open');
+    };
+
+    window.docsDeleteConfirm = function(yes) {
+      document.getElementById('docs-confirm-bg').classList.remove('open');
+      if (yes && _deleteTargetId) {
+        google.script.run
+          .withSuccessHandler(function() {
+            _deleteTargetId = null;
+            docsLoadList();
+          })
+          .withFailureHandler(function(err) {
+            alert("Delete failed: " + err);
+          })
+          .deleteDoc(_deleteTargetId);
+      } else {
+        _deleteTargetId = null;
+      }
+    };
+
+    window.docsPreview = function(id) {
+      var file = _docsData.find(function(f) { return f.id === id; });
+      if (!file) return;
+
+      var bg = document.getElementById('doc-preview-bg');
+      var content = document.getElementById('preview-content');
+      content.innerHTML = '<div class="ld-spin"></div>';
+      bg.classList.add('open');
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if (data.mimeType.indexOf('image/') === 0) {
+            content.innerHTML = '<img id="preview-img" src="' + data.viewUrl.replace('/view', '/thumbnail?sz=w1200') + '" alt="Preview">';
+            // Optional: also try iframe if thumbnail doesn't work well
+            // content.innerHTML = '<iframe id="preview-frame" src="' + data.viewUrl.replace('/view', '/preview') + '"></iframe>';
+          } else {
+            content.innerHTML = '<iframe id="preview-frame" src="' + data.viewUrl.replace('/view', '/preview') + '"></iframe>';
+          }
+        })
+        .withFailureHandler(function(err) {
+          alert("Failed to get preview: " + err);
+          docsPreviewClose();
+        })
+        .getDocPreview(id);
+    };
+
+    window.docsDownload = function(id) {
+      var file = _docsData.find(function(f) { return f.id === id; });
+      if (file && file.downloadUrl) {
+        window.open(file.downloadUrl, '_blank');
+      }
+    };
+
+    window.docsPreviewClose = function() {
+      document.getElementById('doc-preview-bg').classList.remove('open');
+      document.getElementById('preview-content').innerHTML = '';
+    };
+})();
+</script>
