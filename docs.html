@@ -287,11 +287,11 @@
       google.script.run
         .withSuccessHandler(function(data) {
           if (data.mimeType.indexOf('image/') === 0) {
-            content.innerHTML = '<img id="preview-img" src="' + data.viewUrl.replace('/view', '/thumbnail?sz=w1200') + '" alt="Preview">';
-            // Optional: also try iframe if thumbnail doesn't work well
-            // content.innerHTML = '<iframe id="preview-frame" src="' + data.viewUrl.replace('/view', '/preview') + '"></iframe>';
+            // Robust way to get thumbnail for Google Drive images
+            var thumbUrl = 'https://drive.google.com/thumbnail?id=' + data.id + '&sz=w1200';
+            content.innerHTML = '<img id="preview-img" src="' + thumbUrl + '" alt="Preview">';
           } else {
-            content.innerHTML = '<iframe id="preview-frame" src="' + data.viewUrl.replace('/view', '/preview') + '"></iframe>';
+            content.innerHTML = '<iframe id="preview-frame" src="' + data.viewUrl.replace(/\/view.*$/, '/preview') + '"></iframe>';
           }
         })
         .withFailureHandler(function(err) {

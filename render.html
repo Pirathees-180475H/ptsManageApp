@@ -2584,6 +2584,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 }
 .hl-search-input::placeholder{color:rgba(255,255,255,.22);}
 .hl-search-input:focus{border-color:rgba(99,102,241,.45);box-shadow:0 0 0 3px rgba(99,102,241,.1);}
+.hl-tx-toolbar{margin-bottom:12px;display:flex;gap:10px;align-items:center;}
 /* Pagination buttons — indigo hover matches rest of app */
 .hl-pag-btn{
   padding:6px 16px;border-radius:9px;
@@ -2953,6 +2954,13 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   #page-cse #p6 .ut-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .gold-top-row { flex-direction: column; }
   .gprice-grid { grid-template-columns: 1fr; }
+  .hl-kpi-row { grid-template-columns: repeat(2, 1fr) !important; }
+  .hl-chart-2x2 { grid-template-columns: 1fr !important; }
+}
+
+@media(max-width:500px){
+  .hl-kpi-row { grid-template-columns: 1fr !important; }
+  .hl-tx-toolbar { flex-direction: column; align-items: stretch; }
 }
 
 /* ═══════════════════════════════════════════
@@ -7985,11 +7993,11 @@ function renderHlExpData(res) {
     '<div class="hl-sec-lbl">📋 Transactions</div>' +
     '<div class="cbox">' +
       '<div class="ctitle">📋 Detailed Entries (' + entries.length + ')</div>' +
-      '<div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">' +
+      '<div class="hl-tx-toolbar">' +
         '<input type="text" id="hlSearchInput" class="hl-search-input" placeholder="Search entries…" oninput="hlFilterTable()">' +
         '<div id="hlPaginationInfo" style="font-size:.8em;color:rgba(255,255,255,.5);min-width:100px;">—</div>' +
       '</div>' +
-      '<div style="overflow-x:auto;"><table class="edm-table"><thead><tr>' +
+      '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table class="edm-table"><thead><tr>' +
         '<th style="min-width:120px;">Date</th><th>Group/Reference</th><th style="min-width:110px;">Income</th><th style="min-width:110px;">Expense</th><th style="min-width:110px;">Transfer</th>' +
       '</tr></thead><tbody id="hlTableBody">' +
       '</tbody></table></div>' +
