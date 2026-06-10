@@ -2950,6 +2950,9 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 @media(max-width:760px){
   #page-cse #p6 .ut-kpi-row{grid-template-columns:repeat(2,1fr);}
   #page-cse #p6 .ut-row-2,#page-cse #p6 .ut-row-3{grid-template-columns:1fr;}
+  #page-cse #p6 .ut-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .gold-top-row { flex-direction: column; }
+  .gprice-grid { grid-template-columns: 1fr; }
 }
 
 /* ═══════════════════════════════════════════
@@ -3207,6 +3210,11 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   #page-mf .plan-cards{grid-template-columns:repeat(2,1fr);}
   #page-mf .sic-row2{grid-template-columns:1fr;}
   #page-mf .sic-kpis{grid-template-columns:repeat(2,1fr);}
+}
+@media(max-width:500px){
+  #page-mf .mf-kpi-row{grid-template-columns:repeat(2,1fr);}
+  #page-mf .plan-cards{grid-template-columns:1fr;}
+  #page-mf .sic-kpis{grid-template-columns:1fr;}
 }
 
 /* ═══════════════════════════════════════════
@@ -8887,7 +8895,7 @@ function cseUTRender(){
   // Fund table
   h+='<div class="ut-row-full glass">';
   h+='<div class="card-hdr"><div class="card-dot" style="background:#ffd700"></div><span class="card-title">Fund Details</span><span style="font-size:.58em;color:rgba(255,255,255,.2);margin-left:auto">✏️ click to edit</span></div>';
-  h+='<table class="ut-table"><thead><tr><th>Fund</th><th>Invested</th><th>Units</th><th>Unit Price</th><th>Current Value</th><th>Earnings</th><th>Return</th><th></th></tr></thead><tbody>';
+  h+='<div class="ut-table-wrap"><table class="ut-table"><thead><tr><th>Fund</th><th>Invested</th><th>Units</th><th>Unit Price</th><th>Current Value</th><th>Earnings</th><th>Return</th><th></th></tr></thead><tbody>';
 
   funds.forEach(function(f,idx){
     var curVal=f.units*f.unitPrice;
@@ -8917,7 +8925,7 @@ function cseUTRender(){
     h+='</div></td></tr>';
   });
 
-  h+='</tbody></table></div>';
+  h+='</tbody></table></div></div>';
   document.getElementById('c6').innerHTML=h;
   setTimeout(function(){ cseUtRenderCharts(funds, companies, compMap); }, 80);
 }
