@@ -85,6 +85,28 @@ function deleteDoc(fileId) {
   }
 }
 
+function renameDoc(fileId, newName) {
+  var file = DriveApp.getFileById(fileId);
+  var folder = getMyDocsFolder();
+  
+  // Security check: ensure the file is in our myDocs folder
+  var parents = file.getParents();
+  var inFolder = false;
+  while (parents.hasNext()) {
+    if (parents.next().getId() === folder.getId()) {
+      inFolder = true;
+      break;
+    }
+  }
+  
+  if (inFolder) {
+    file.setName(newName);
+    return true;
+  } else {
+    throw new Error("File not found in myDocs folder");
+  }
+}
+
 function getDocPreview(fileId) {
   var file = DriveApp.getFileById(fileId);
   return {

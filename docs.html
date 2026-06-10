@@ -8,62 +8,104 @@
 #docs-modal-bg.open { display: flex; }
 #docs-modal {
   background: #0d1220; border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 26px; width: 95%; max-width: 900px; height: 85vh;
+  border-radius: 26px; width: 95%; max-width: 1100px; height: 85vh;
   display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,0.6);
   overflow: hidden; animation: docsModalIn 0.3s cubic-bezier(0.2,1,0.2,1);
   position: relative;
 }
-@media (max-width: 600px) {
+@media (max-width: 800px) {
   #docs-modal { width: 100%; height: 100%; border-radius: 0; border: none; }
 }
 @keyframes docsModalIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
 .docs-hdr {
-  padding: 18px 22px; display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid rgba(255,255,255,0.05); flex-shrink: 0;
   background: rgba(255,255,255,0.02);
 }
-.docs-title { font-size: 1em; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #fff; display: flex; align-items: center; gap: 10px; }
+.docs-title { font-size: 0.9em; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: rgba(255,255,255,0.9); display: flex; align-items: center; gap: 10px; }
 .docs-close { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.3);
               border-radius: 12px; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
 .docs-close:hover { background: rgba(255,77,109,0.2); color: #fff; border-color: rgba(255,77,109,0.3); }
 
-.docs-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; }
-.docs-toolbar { display: flex; gap: 12px; align-items: center; flex-shrink: 0; background: rgba(255,255,255,0.03); padding: 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.06); }
-@media (max-width: 500px) {
-  .docs-toolbar { flex-direction: column; align-items: stretch; }
+.docs-layout { flex: 1; display: flex; overflow: hidden; position: relative; }
+
+/* Sidebar */
+.docs-sidebar {
+  width: 280px; border-right: 1px solid rgba(255,255,255,0.05);
+  display: flex; flex-direction: column; background: rgba(0,0,0,0.2);
+  flex-shrink: 0;
 }
-.docs-search { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-               border-radius: 12px; padding: 10px 16px; color: #fff; font-size: 0.9em; font-family: inherit; outline: none; transition: all 0.2s; }
+@media (max-width: 800px) {
+  .docs-sidebar { width: 100%; }
+  .docs-layout.item-open .docs-sidebar { display: none; }
+}
+
+.docs-sidebar-hdr { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.docs-search-container { position: relative; }
+.docs-search { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+               border-radius: 14px; padding: 10px 14px 10px 36px; color: #fff; font-size: 0.85em; outline: none; transition: all 0.2s; box-sizing: border-box; }
 .docs-search:focus { border-color: var(--blue); background: rgba(255,255,255,0.08); }
-.docs-search::placeholder { color: rgba(255,255,255,0.25); }
+.docs-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); opacity: 0.3; font-size: 0.8em; }
 
-.docs-upload-btn { background: linear-gradient(135deg, var(--blue), #0099ff); color: #fff; border: none; border-radius: 12px; padding: 10px 22px;
-                 font-weight: 700; font-size: 0.85em; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
-.docs-upload-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,212,255,0.2); }
-.docs-upload-btn:active { transform: scale(0.96); }
-
-.docs-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-@media (max-width: 500px) {
-  .docs-list { grid-template-columns: 1fr; }
+.docs-sidebar-list { flex: 1; overflow-y: auto; padding: 10px; }
+.doc-nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px;
+  cursor: pointer; transition: all 0.2s; border: 1px solid transparent; margin-bottom: 4px;
 }
-.doc-item { background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 14px; transition: all 0.25s ease; position: relative; overflow: hidden; }
-.doc-item:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.15); }
-.doc-item::after { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 0 3px 3px 0; background: var(--blue); }
+.doc-nav-item:hover { background: rgba(255,255,255,0.03); }
+.doc-nav-item.active { background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.15); }
+.doc-nav-icon { width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,0.05);
+                display: flex; align-items: center; justify-content: center; font-size: 1.2em; flex-shrink: 0; }
+.doc-nav-info { flex: 1; min-width: 0; }
+.doc-nav-name { font-size: 0.82em; font-weight: 600; color: rgba(255,255,255,0.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-nav-meta { font-size: 0.65em; color: rgba(255,255,255,0.3); margin-top: 2px; }
 
-.doc-top { display: flex; align-items: center; gap: 12px; }
-.doc-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,0.05);
-          display: flex; align-items: center; justify-content: center; font-size: 1.5em; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.08); }
-.doc-info { flex: 1; min-width: 0; }
-.doc-name { font-size: 0.88em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; color: rgba(255,255,255,0.9); }
-.doc-meta { font-size: 0.65em; color: rgba(255,255,255,0.3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+/* Main Content Area */
+.docs-main { flex: 1; display: flex; flex-direction: column; background: #080b14; position: relative; }
+@media (max-width: 800px) {
+  .docs-main { display: none; }
+  .docs-layout.item-open .docs-main { display: flex; }
+}
 
-.doc-actions { display: flex; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 14px; }
-.doc-btn { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.4);
-         padding: 8px; border-radius: 10px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; font-size: 1em; }
-.doc-btn:hover { background: rgba(0,212,255,0.1); color: var(--blue); border-color: rgba(0,212,255,0.2); }
-.doc-btn.del:hover { background: rgba(255,77,109,0.15); color: var(--red); border-color: rgba(255,77,109,0.2); }
+.docs-main-hdr {
+  padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.1);
+}
+.docs-back-btn { display: none; background: none; border: none; color: #fff; font-size: 1.2em; cursor: pointer; padding-right: 15px; }
+@media (max-width: 800px) { .docs-back-btn { display: block; } }
+
+.docs-title-wrapper { flex: 1; display: flex; align-items: center; min-width: 0; background: rgba(255,255,255,0.03); border-radius: 12px; padding: 4px 8px; margin-right: 15px; border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s; }
+.docs-title-wrapper:focus-within { background: rgba(255,255,255,0.06); border-color: var(--blue); }
+.docs-main-title { font-size: 0.85em; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: none; border: none; outline: none; flex: 1; padding: 4px; }
+.docs-rename-btn { background: none; border: none; color: var(--blue); cursor: pointer; font-size: 0.7em; font-weight: 800; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; display: none; }
+.docs-rename-btn:hover { background: rgba(0,212,255,0.1); }
+.docs-main-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.docs-action-btn {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6);
+  padding: 8px 14px; border-radius: 10px; cursor: pointer; font-size: 0.8em; font-weight: 600; transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.docs-action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.docs-action-btn.del:hover { background: rgba(255,77,109,0.15); color: var(--red); border-color: rgba(255,77,109,0.2); }
+
+.docs-view-container { flex: 1; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.docs-view-empty { text-align: center; color: rgba(255,255,255,0.15); }
+.docs-view-empty i { font-size: 4em; display: block; margin-bottom: 15px; }
+
+#main-preview-frame { width: 100%; height: 100%; border: none; background: #fff; }
+#main-preview-img { max-width: 95%; max-height: 95%; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); object-fit: contain; }
+
+/* Floating Upload Button */
+.docs-fab {
+  position: absolute; bottom: 24px; right: 24px; width: 56px; height: 56px;
+  border-radius: 50%; background: linear-gradient(135deg, var(--blue), #0099ff);
+  color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 1.8em; box-shadow: 0 8px 25px rgba(0,212,255,0.4); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 100;
+}
+.docs-fab:hover { transform: scale(1.1) rotate(90deg); box-shadow: 0 12px 30px rgba(0,212,255,0.5); }
+.docs-fab:active { transform: scale(0.9); }
 
 .docs-empty { text-align: center; padding: 60px 20px; color: rgba(255,255,255,0.2); font-size: 0.9em; font-style: italic; grid-column: 1 / -1; }
 .docs-loading { text-align: center; padding: 60px; grid-column: 1 / -1; color: rgba(255,255,255,0.4); }
@@ -108,22 +150,50 @@
 <div id="docs-modal-bg">
   <div id="docs-modal">
     <div class="docs-hdr">
-      <span class="docs-title">📂 My Documents</span>
+      <span class="docs-title">📂 Document Vault</span>
       <button class="docs-close" onclick="docsToggle()">✕</button>
     </div>
-    <div class="docs-body">
-      <div class="docs-toolbar">
-        <input type="text" class="docs-search" id="docs-search-input" placeholder="Search documents..." oninput="docsLocalSearch()">
-        <button class="docs-upload-btn" onclick="document.getElementById('docs-file-input').click()">
-          <span>+</span> Upload
-        </button>
-        <input type="file" id="docs-file-input" style="display:none" onchange="docsHandleUpload(this)" accept="image/*,application/pdf">
-      </div>
-      <div id="docs-list-container" class="docs-list">
-        <div class="docs-loading">
-          <div class="ld-spin" style="margin: 0 auto;"></div>
+    
+    <div class="docs-layout" id="docs-layout">
+      <!-- Sidebar -->
+      <div class="docs-sidebar">
+        <div class="docs-sidebar-hdr">
+          <div class="docs-search-container">
+            <span class="docs-search-icon">🔍</span>
+            <input type="text" class="docs-search" id="docs-search-input" placeholder="Search..." oninput="docsLocalSearch()">
+          </div>
+        </div>
+        <div id="docs-sidebar-list" class="docs-sidebar-list">
+          <!-- List items here -->
         </div>
       </div>
+
+      <!-- Main Content -->
+      <div class="docs-main" id="docs-main-area">
+        <div class="docs-main-hdr" id="docs-detail-hdr" style="display:none">
+          <button class="docs-back-btn" onclick="docsBackToList()">←</button>
+          <div class="docs-title-wrapper">
+            <input type="text" class="docs-main-title" id="docs-selected-name" oninput="docsCheckRenameChange(this)" onkeydown="if(event.key==='Enter')docsRenameSave()">
+            <button class="docs-rename-btn" id="docs-btn-rename" onclick="docsRenameSave()">Save</button>
+          </div>
+          <div class="docs-main-actions">
+            <button class="docs-action-btn" id="docs-btn-download" title="Download">⬇️</button>
+            <button class="docs-action-btn del" id="docs-btn-delete" title="Delete">🗑️</button>
+          </div>
+        </div>
+        
+        <div class="docs-view-container" id="docs-view-pane">
+          <div class="docs-view-empty">
+            <div class="ld-spin" id="docs-main-loader" style="display:none; margin: 0 auto 15px;"></div>
+            <i id="docs-empty-icon">📂</i>
+            <p id="docs-empty-msg">Select a document to preview</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating Upload Button -->
+      <button class="docs-fab" onclick="document.getElementById('docs-file-input').click()" title="Upload Document">+</button>
+      <input type="file" id="docs-file-input" style="display:none" onchange="docsHandleUpload(this)" accept="image/*,application/pdf">
     </div>
   </div>
 </div>
@@ -140,16 +210,12 @@
   </div>
 </div>
 
-<!-- DOCUMENT PREVIEW -->
-<div id="doc-preview-bg" onclick="docsPreviewClose()">
-  <button class="preview-close">✕ Close</button>
-  <div id="preview-content" onclick="event.stopPropagation()"></div>
-</div>
 
 <script>
   (function() {
     var _docsData = [];
     var _deleteTargetId = null;
+    var _selectedId = null;
 
     window.docsToggle = function() {
     var modal = document.getElementById('docs-modal-bg');
@@ -166,8 +232,8 @@
   };
 
     window.docsLoadList = function() {
-      var container = document.getElementById('docs-list-container');
-      container.innerHTML = '<div class="docs-loading"><div class="ld-spin" style="margin: 0 auto;"></div><p style="font-size:12px;color:var(--muted);margin-top:10px">Fetching documents...</p></div>';
+      var sidebar = document.getElementById('docs-sidebar-list');
+      sidebar.innerHTML = '<div style="padding:40px; text-align:center"><div class="ld-spin" style="margin:0 auto"></div></div>';
 
       google.script.run
         .withSuccessHandler(function(files) {
@@ -175,15 +241,15 @@
           docsRenderList(files);
         })
         .withFailureHandler(function(err) {
-          container.innerHTML = '<div class="docs-empty" style="color:var(--red)">Failed to load: ' + (err.message || err) + '</div>';
+          sidebar.innerHTML = '<div style="padding:20px; color:var(--red); font-size:0.8em">' + (err.message || err) + '</div>';
         })
         .listMyDocs('');
     };
 
     window.docsRenderList = function(files) {
-      var container = document.getElementById('docs-list-container');
+      var sidebar = document.getElementById('docs-sidebar-list');
       if (!files || files.length === 0) {
-        container.innerHTML = '<div class="docs-empty">No documents found. Explore or upload new files.</div>';
+        sidebar.innerHTML = '<div style="padding:40px; text-align:center; opacity:0.3; font-size:0.8em">No documents</div>';
         return;
       }
 
@@ -193,59 +259,126 @@
         if (f.mimeType.indexOf('image/') === 0) icon = '🖼️';
         if (f.mimeType === 'application/pdf') icon = '📕';
         
-        var sizeStr = (f.size / 1024).toFixed(1) + ' KB';
-        if (f.size > 1024 * 1024) sizeStr = (f.size / (1024 * 1024)).toFixed(1) + ' MB';
-        var dateStr = new Date(f.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        var dateStr = new Date(f.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        var activeClass = (_selectedId === f.id) ? 'active' : '';
 
-        html += '<div class="doc-item">';
-        html += '  <div class="doc-top">';
-        html += '    <div class="doc-icon">' + icon + '</div>';
-        html += '    <div class="doc-info">';
-        html += '      <div class="doc-name" title="' + f.name + '">' + f.name + '</div>';
-        html += '      <div class="doc-meta">' + dateStr + ' • ' + sizeStr + '</div>';
-        html += '    </div>';
-        html += '  </div>';
-        html += '  <div class="doc-actions">';
-        html += '    <button class="doc-btn" onclick="docsPreview(\'' + f.id + '\')" title="Preview">👁️</button>';
-        html += '    <button class="doc-btn" onclick="docsDownload(\'' + f.id + '\')" title="Download">⬇️</button>';
-        html += '    <button class="doc-btn del" onclick="docsDeleteReq(\'' + f.id + '\', \'' + f.name.replace(/'/g, "\\'") + '\')" title="Delete">🗑️</button>';
+        html += '<div class="doc-nav-item ' + activeClass + '" onclick="docsSelectItem(\'' + f.id + '\')">';
+        html += '  <div class="doc-nav-icon">' + icon + '</div>';
+        html += '  <div class="doc-nav-info">';
+        html += '    <div class="doc-nav-name">' + f.name + '</div>';
+        html += '    <div class="doc-nav-meta">' + dateStr + '</div>';
         html += '  </div>';
         html += '</div>';
       });
-      container.innerHTML = html;
+      sidebar.innerHTML = html;
+    };
+
+    window.docsSelectItem = function(id) {
+      _selectedId = id;
+      var file = _docsData.find(function(f) { return f.id === id; });
+      if (!file) return;
+
+      // Update UI selection
+      document.querySelectorAll('.doc-nav-item').forEach(function(el, idx) {
+        el.classList.toggle('active', _docsData[idx] && _docsData[idx].id === id);
+      });
+
+      // Show detail view
+      document.getElementById('docs-layout').classList.add('item-open');
+      document.getElementById('docs-detail-hdr').style.display = 'flex';
+      var nameEl = document.getElementById('docs-selected-name');
+      nameEl.value = file.name;
+      nameEl.dataset.old = file.name;
+      document.getElementById('docs-btn-rename').style.display = 'none';
+      
+      // Update actions
+      document.getElementById('docs-btn-download').onclick = function() { docsDownload(file.id); };
+      document.getElementById('docs-btn-delete').onclick = function() { docsDeleteReq(file.id, file.name.replace(/'/g, "\\'")); };
+
+      // Load Preview
+      var pane = document.getElementById('docs-view-pane');
+      pane.innerHTML = '<div class="ld-spin"></div>';
+
+      google.script.run
+        .withSuccessHandler(function(data) {
+          if (data.mimeType.indexOf('image/') === 0) {
+            var thumbUrl = 'https://drive.google.com/thumbnail?id=' + data.id + '&sz=w1200';
+            pane.innerHTML = '<img id="main-preview-img" src="' + thumbUrl + '">';
+          } else {
+            pane.innerHTML = '<iframe id="main-preview-frame" src="' + data.viewUrl.replace(/\/view.*$/, '/preview') + '"></iframe>';
+          }
+        })
+        .withFailureHandler(function(err) {
+          pane.innerHTML = '<div style="color:var(--red)">Preview failed: ' + err + '</div>';
+        })
+        .getDocPreview(id);
+    };
+
+    window.docsBackToList = function() {
+      document.getElementById('docs-layout').classList.remove('item-open');
     };
 
     window.docsLocalSearch = function() {
       var query = document.getElementById('docs-search-input').value.toLowerCase();
-      if (!query) {
-        docsRenderList(_docsData);
-        return;
-      }
       var filtered = _docsData.filter(function(f) {
         return f.name.toLowerCase().indexOf(query) !== -1;
       });
       docsRenderList(filtered);
     };
 
+    window.docsCheckRenameChange = function(input) {
+      var btn = document.getElementById('docs-btn-rename');
+      var isChanged = input.value.trim() !== "" && input.value !== input.dataset.old;
+      btn.style.display = isChanged ? 'block' : 'none';
+    };
+
+    window.docsRenameSave = function() {
+      var input = document.getElementById('docs-selected-name');
+      var newName = input.value.trim();
+      var oldName = input.dataset.old;
+      if (!newName || newName === oldName) return;
+
+      var btn = document.getElementById('docs-btn-rename');
+      var oldBtnText = btn.innerText;
+      btn.innerText = '...';
+      btn.disabled = true;
+
+      google.script.run
+        .withSuccessHandler(function() {
+          input.dataset.old = newName;
+          btn.style.display = 'none';
+          btn.innerText = oldBtnText;
+          btn.disabled = false;
+          docsLoadList(); // Refresh list to show new name
+        })
+        .withFailureHandler(function(err) {
+          alert("Rename failed: " + err);
+          btn.innerText = oldBtnText;
+          btn.disabled = false;
+        })
+        .renameDoc(_selectedId, newName);
+    };
+
     window.docsHandleUpload = function(input) {
       var file = input.files[0];
       if (!file) return;
 
+      var pane = document.getElementById('docs-view-pane');
+      var oldContent = pane.innerHTML;
+      pane.innerHTML = '<div style="text-align:center"><div class="ld-spin" style="margin:0 auto 15px"></div><p style="font-size:0.8em; color:var(--blue)">Uploading ' + file.name + '...</p></div>';
+
       var reader = new FileReader();
       reader.onload = function(e) {
         var content = e.target.result.split(',')[1];
-        var container = document.getElementById('docs-list-container');
-        var oldHtml = container.innerHTML;
-        container.innerHTML = '<div class="docs-loading"><div class="ld-spin" style="margin: 0 auto;"></div><p style="font-size:12px;color:var(--muted);margin-top:10px">Uploading ' + file.name + '...</p></div>';
-
         google.script.run
           .withSuccessHandler(function() {
             input.value = '';
             docsLoadList();
+            pane.innerHTML = '<div class="docs-view-empty"><i>✅</i><p>Upload Successful</p></div>';
           })
           .withFailureHandler(function(err) {
             alert("Upload failed: " + err);
-            container.innerHTML = oldHtml;
+            pane.innerHTML = oldContent;
           })
           .uploadDoc(content, file.name, file.type || 'application/octet-stream');
       };
@@ -264,7 +397,10 @@
         google.script.run
           .withSuccessHandler(function() {
             _deleteTargetId = null;
+            _selectedId = null;
             docsLoadList();
+            document.getElementById('docs-detail-hdr').style.display = 'none';
+            document.getElementById('docs-view-pane').innerHTML = '<div class="docs-view-empty"><i>🗑️</i><p>Document Deleted</p></div>';
           })
           .withFailureHandler(function(err) {
             alert("Delete failed: " + err);
@@ -275,31 +411,6 @@
       }
     };
 
-    window.docsPreview = function(id) {
-      var file = _docsData.find(function(f) { return f.id === id; });
-      if (!file) return;
-
-      var bg = document.getElementById('doc-preview-bg');
-      var content = document.getElementById('preview-content');
-      content.innerHTML = '<div class="ld-spin"></div>';
-      bg.classList.add('open');
-
-      google.script.run
-        .withSuccessHandler(function(data) {
-          if (data.mimeType.indexOf('image/') === 0) {
-            // Robust way to get thumbnail for Google Drive images
-            var thumbUrl = 'https://drive.google.com/thumbnail?id=' + data.id + '&sz=w1200';
-            content.innerHTML = '<img id="preview-img" src="' + thumbUrl + '" alt="Preview">';
-          } else {
-            content.innerHTML = '<iframe id="preview-frame" src="' + data.viewUrl.replace(/\/view.*$/, '/preview') + '"></iframe>';
-          }
-        })
-        .withFailureHandler(function(err) {
-          alert("Failed to get preview: " + err);
-          docsPreviewClose();
-        })
-        .getDocPreview(id);
-    };
 
     window.docsDownload = function(id) {
       var file = _docsData.find(function(f) { return f.id === id; });
@@ -308,9 +419,5 @@
       }
     };
 
-    window.docsPreviewClose = function() {
-      document.getElementById('doc-preview-bg').classList.remove('open');
-      document.getElementById('preview-content').innerHTML = '';
-    };
 })();
 </script>
