@@ -46,6 +46,260 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .up{color:var(--green);} .dn{color:var(--red2);} .fl{color:var(--muted);}
 
 /* ═══════════════════════════════════════════
+   QUICK ADD (Ctrl+L)
+═══════════════════════════════════════════ */
+#qa-bg { position: fixed; inset: 0; z-index: 10001; background: rgba(0,0,0,0.7); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; padding: 20px; }
+#qa-bg.open { display: flex; }
+#qa-modal { background: #0d1220; border: 1px solid rgba(255,255,255,0.1); border-radius: 24px; width: 100%; max-width: 440px; box-shadow: 0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,212,255,0.03); overflow: hidden; animation: qaModalIn 0.25s ease; }
+@keyframes qaModalIn { from { opacity: 0; transform: scale(0.92) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.qa-modal-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(135deg, rgba(0,212,255,0.03), rgba(168,85,247,0.02));
+}
+.qa-modal-title {
+  font-size: 0.95em;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.qa-modal-close {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.5);
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  font-size: 0.9em;
+  font-weight: 700;
+}
+.qa-modal-close:hover {
+  background: rgba(255,80,80,0.15);
+  color: #ff6b85;
+  border-color: rgba(255,80,80,0.2);
+  transform: rotate(90deg);
+}
+.qa-modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.qa-fields-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.qa-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.qa-field-lbl { font-size: 0.6em; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(255,255,255,0.3); }
+.qa-field-inp, .qa-field-sel {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 0.85em;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: all 0.2s;
+}
+.qa-field-inp:hover, .qa-field-sel:hover {
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+}
+.qa-field-inp:focus, .qa-field-sel:focus {
+  border-color: var(--blue);
+  background: rgba(0,212,255,0.05);
+}
+
+/* Select dropdown - simple arrow */
+.qa-field-sel {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.5)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+  cursor: pointer;
+}
+.qa-field-sel:hover {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.7)'/%3E%3C/svg%3E");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+}
+.qa-field-sel:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300d4ff'/%3E%3C/svg%3E");
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+}
+.qa-field-sel option {
+  background: #161b26;
+  color: #fff;
+}
+
+/* Special elements for Quick Add */
+.qa-split {
+  display: flex;
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+  border-radius: 12px;
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,0.06);
+  gap: 2px;
+  transition: all 0.2s ease;
+}
+.qa-split:hover {
+  border-color: rgba(0,212,255,0.2);
+  background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+}
+.qa-split-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 9px;
+  font-size: 0.8em;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: rgba(255,255,255,0.4);
+  background: transparent;
+  border: none;
+  letter-spacing: 0.3px;
+}
+.qa-split-btn:hover {
+  color: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.04);
+}
+.qa-split-btn.active {
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,212,255,0.2);
+  transform: translateY(-1px);
+}
+.qa-split-amt-row {
+  display: none;
+  margin-top: 12px;
+  animation: qaFadeIn 0.3s ease;
+  flex-direction: column;
+  gap: 8px;
+}
+.qa-split-amt-row.open { display: flex; }
+.qa-existing {
+  background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,215,0,0.03));
+  border: 1px solid rgba(255,215,0,0.25);
+  border-radius: 12px;
+  padding: 12px;
+  display: none;
+  transition: all 0.2s ease;
+}
+.qa-existing.open {
+  display: block;
+  animation: qaFadeIn 0.3s ease;
+}
+.qa-existing-title {
+  font-size: 0.7em;
+  font-weight: 700;
+  color: #ffd700;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.qa-existing-val {
+  font-size: 0.85em;
+  color: rgba(255,255,255,0.8);
+  font-weight: 500;
+}
+@keyframes qaFadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+.qa-modal-footer {
+  display: flex;
+  gap: 12px;
+  padding: 18px 24px 24px;
+  background: linear-gradient(135deg, transparent, rgba(0,212,255,0.01));
+}
+.qa-modal-cancel {
+  flex: 1;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.6);
+  font-weight: 600;
+  font-size: 0.85em;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+.qa-modal-cancel:hover {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.8);
+  border-color: rgba(255,255,255,0.15);
+}
+.qa-modal-cancel:active {
+  transform: scale(0.98);
+}
+.qa-modal-submit {
+  flex: 2;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.85em;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,212,255,0.2);
+  font-family: inherit;
+  transition: all 0.2s ease;
+  letter-spacing: 0.3px;
+}
+.qa-modal-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(0,212,255,0.3);
+}
+.qa-modal-submit:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0,212,255,0.15);
+}
+.qa-modal-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Date picker styling */
+.qa-field-inp[type="date"] {
+  cursor: pointer;
+}
+.qa-field-inp[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.7;
+  cursor: pointer;
+}
+.qa-field-inp[type="date"]::-webkit-outer-spin-button,
+.qa-field-inp[type="date"]::-webkit-inner-spin-button {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════
    CMD PALETTE (Ctrl+K)
 ═══════════════════════════════════════════ */
 #cmd-palette-bg {
@@ -4060,6 +4314,73 @@ input[type=date].swae-input{color-scheme:dark;}
 </script>
 <?!= HtmlService.createHtmlOutputFromFile('docs').getContent(); ?>
 
+<!-- ── Quick Add Modal ── -->
+<div id="qa-bg" onclick="if(event.target===this)closeQuickAdd()">
+  <div id="qa-modal">
+    <div class="qa-modal-hdr">
+      <div class="qa-modal-title">🛒 Quick Add Expense</div>
+      <button class="qa-modal-close" onclick="closeQuickAdd()">✕</button>
+    </div>
+    <div class="qa-modal-body">
+      <div class="qa-fields-row">
+        <div class="qa-field">
+          <label class="qa-field-lbl">Date</label>
+          <input type="date" id="qa-date" class="qa-field-inp">
+        </div>
+        <div class="qa-field">
+          <label class="qa-field-lbl">Category</label>
+          <select id="qa-cat" class="qa-field-sel" onchange="qaFetchExisting()">
+            <option value="food">Food</option>
+            <option value="super">Supermarket</option>
+          </select>
+        </div>
+      </div>
+      
+      <div id="qa-existing-box" class="qa-existing">
+        <div class="qa-existing-title">Existing Data</div>
+        <div id="qa-existing-info" class="qa-existing-val"></div>
+      </div>
+
+      <div class="qa-field">
+        <label class="qa-field-lbl">Expense Amount / Formula</label>
+        <input type="text" id="qa-amt" class="qa-field-inp" placeholder="e.g. 1500 or =800+700">
+      </div>
+
+      <div class="qa-field">
+        <label class="qa-field-lbl">Reference</label>
+        <input type="text" id="qa-ref" class="qa-field-inp" placeholder="Optional description">
+      </div>
+
+      <div class="qa-field">
+        <label class="qa-field-lbl">Payment Card</label>
+        <select id="qa-card" class="qa-field-sel">
+          <option value="">None / Cash</option>
+          <option value="AF">AMEX (Expense AF)</option>
+          <option value="AH">NTB (Expense AH)</option>
+          <option value="AJ">Selan (Expense AJ)</option>
+        </select>
+      </div>
+
+      <div class="qa-field">
+        <label class="qa-field-lbl">Splitwise</label>
+        <div class="qa-split">
+          <div class="qa-split-btn active" data-val="none" onclick="setQaSplit('none')">None</div>
+          <div class="qa-split-btn" data-val="T" onclick="setQaSplit('T')">I Paid (T)</div>
+          <div class="qa-split-btn" data-val="U" onclick="setQaSplit('U')">Others (U)</div>
+        </div>
+        <div id="qa-split-amt-row" class="qa-split-amt-row">
+          <label class="qa-field-lbl" style="margin-top:8px">Splitwise Amount (if different)</label>
+          <input type="text" id="qa-split-amt" class="qa-field-inp" placeholder="Leave empty to use expense amount">
+        </div>
+      </div>
+    </div>
+    <div class="qa-modal-footer">
+      <button class="qa-modal-cancel" onclick="closeQuickAdd()">Cancel</button>
+      <button class="qa-modal-submit" id="qa-save-btn" onclick="saveQuickAdd()">Save Expense</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── CMD Palette Modal ── -->
 <div id="cmd-palette-bg" onclick="if(event.target===this)closeCmdPalette()">
   <div id="cmd-palette">
@@ -4972,7 +5293,192 @@ function reloadPage(name){
 window.onload = function(){ 
   showPage('exp'); 
   initCmdPalette();
+  initQuickAdd();
 };
+
+/* ═══════════════════════════════════════════
+   QUICK ADD LOGIC
+═══════════════════════════════════════════ */
+var _qaSplit = 'none';
+var _qaExisting = null;
+
+function initQuickAdd() {
+  window.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+      e.preventDefault();
+      openQuickAdd();
+    }
+    if (e.key === 'Escape' && document.getElementById('qa-bg').classList.contains('open')) {
+      closeQuickAdd();
+    }
+  });
+
+  // Set default date to today
+  var today = new Date();
+  var dateStr = today.getFullYear() + '-' + 
+                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(today.getDate()).padStart(2, '0');
+  document.getElementById('qa-date').value = dateStr;
+  
+  // Add change listener for category fetch
+  document.getElementById('qa-date').addEventListener('change', function() {
+    qaFetchExisting();
+  });
+}
+
+function openQuickAdd() {
+  var bg = document.getElementById('qa-bg');
+  bg.classList.add('open');
+  document.getElementById('qa-amt').value = '';
+  document.getElementById('qa-split-amt').value = '';
+  document.getElementById('qa-ref').value = '';
+  document.getElementById('qa-amt').focus();
+  qaFetchExisting();
+}
+
+function closeQuickAdd() {
+  document.getElementById('qa-bg').classList.remove('open');
+}
+
+function setQaSplit(val) {
+  _qaSplit = val;
+  document.querySelectorAll('.qa-split-btn').forEach(function(b) {
+    b.classList.toggle('active', b.dataset.val === val);
+  });
+  document.getElementById('qa-split-amt-row').classList.toggle('open', val !== 'none');
+}
+
+function qaFetchExisting() {
+  var date = document.getElementById('qa-date').value;
+  if (!date) return;
+  
+  var parts = date.split('-');
+  var dateKey = parseInt(parts[1]) + '-' + parseInt(parts[2]);
+  
+  // Show minimal loading in the existing box
+  var box = document.getElementById('qa-existing-box');
+  var info = document.getElementById('qa-existing-info');
+  box.classList.add('open');
+  info.innerHTML = '<span style="opacity:.5">Checking existing data...</span>';
+  
+  google.script.run
+    .withSuccessHandler(function(r) {
+      if (r && !r.error) {
+        _qaExisting = r;
+        qaUpdateExistingUI();
+      } else {
+        box.classList.remove('open');
+        _qaExisting = null;
+      }
+    })
+    .getExpenseRow(dateKey);
+}
+
+function qaUpdateExistingUI() {
+  var cat = document.getElementById('qa-cat').value;
+  var amtCol = (cat === 'food') ? 'C' : 'E';
+  var refCol = (cat === 'food') ? 'D' : 'F';
+  
+  var amt = _qaExisting[amtCol];
+  var ref = _qaExisting[refCol];
+  var box = document.getElementById('qa-existing-box');
+  var info = document.getElementById('qa-existing-info');
+  
+  if (amt || ref) {
+    box.classList.add('open');
+    info.innerHTML = '<b>' + (amt || '0') + '</b>' + (ref ? ' (' + ref + ')' : '') + '<br><span style="font-size:.8em;opacity:.6">New values will be added to these (e.g. =800+500)</span>';
+  } else {
+    box.classList.remove('open');
+  }
+}
+
+function saveQuickAdd() {
+  var date = document.getElementById('qa-date').value;
+  var cat  = document.getElementById('qa-cat').value;
+  var amt  = document.getElementById('qa-amt').value.trim();
+  var swAmt = document.getElementById('qa-split-amt').value.trim();
+  var ref  = document.getElementById('qa-ref').value.trim();
+  var card = document.getElementById('qa-card').value;
+  
+  if (!amt) { alert('Enter an amount'); return; }
+
+  var btn = document.getElementById('qa-save-btn');
+  btn.disabled = true;
+  btn.innerText = 'Saving...';
+
+  // Determine Columns
+  var amtCol = (cat === 'food') ? 'C' : 'E';
+  var refCol = (cat === 'food') ? 'D' : 'F';
+  
+  var cells = {};
+  
+  // Helper to merge amounts (if formula exists, append)
+  function mergeAmt(existing, newAmt) {
+    if (!newAmt) return existing;
+    if (!existing || existing == '0') return newAmt;
+    var e = String(existing).trim();
+    var n = String(newAmt).trim();
+    if (n.startsWith('=')) n = n.substring(1);
+    if (e.startsWith('=')) return e + '+' + n;
+    return '=' + e + '+' + n;
+  }
+  
+  function mergeRef(existing, newRef) {
+    if (!newRef) return existing;
+    if (!existing) return newRef;
+    return existing + ', ' + newRef;
+  }
+
+  var existingAmt = _qaExisting ? _qaExisting[amtCol] : '';
+  var existingRef = _qaExisting ? _qaExisting[refCol] : '';
+
+  cells[amtCol] = mergeAmt(existingAmt, amt);
+  if (ref) cells[refCol] = mergeRef(existingRef, ref);
+  
+  // Card - we don't necessarily want to merge card amounts if they are separate transactions,
+  // but for "Maintenance & Stabilization", merging is safer to avoid overriding.
+  if (card) {
+    var exCardAmt = _qaExisting ? _qaExisting[card] : '';
+    cells[card] = mergeAmt(exCardAmt, amt);
+    if (ref) {
+      var exCardRef = _qaExisting ? _qaExisting['AE'] : '';
+      cells['AE'] = mergeRef(exCardRef, ref);
+    }
+  }
+  
+  // Splitwise
+  if (_qaSplit !== 'none') {
+    var actualSwAmt = swAmt || amt;
+    var exSwAmt = _qaExisting ? _qaExisting[_qaSplit] : '';
+    cells[_qaSplit] = mergeAmt(exSwAmt, actualSwAmt);
+    if (ref) {
+      var exSwRef = _qaExisting ? _qaExisting['W'] : '';
+      cells['W'] = mergeRef(exSwRef, ref);
+    }
+  }
+
+  var parts = date.split('-');
+  var dateKey = parseInt(parts[1]) + '-' + parseInt(parts[2]);
+
+  google.script.run
+    .withSuccessHandler(function(r) {
+      btn.disabled = false;
+      btn.innerText = 'Save Expense';
+      if (r && r.error) {
+        alert('Error: ' + r.error);
+      } else {
+        PTS.toast('Expense Added!', 'ok');
+        closeQuickAdd();
+        if (_activePage === 'exp') reloadPage('exp');
+      }
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false;
+      btn.innerText = 'Save Expense';
+      alert('Fail: ' + e);
+    })
+    .updateExpenseCells({ dateKey: dateKey, cells: cells });
+}
 
 /* ═══════════════════════════════════════════
    CMD PALETTE LOGIC
