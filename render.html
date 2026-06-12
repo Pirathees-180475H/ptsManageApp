@@ -46,6 +46,44 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .up{color:var(--green);} .dn{color:var(--red2);} .fl{color:var(--muted);}
 
 /* ═══════════════════════════════════════════
+   CMD PALETTE (Ctrl+K)
+═══════════════════════════════════════════ */
+#cmd-palette-bg {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,.6); backdrop-filter: blur(8px);
+  display: none; align-items: flex-start; justify-content: center;
+  padding-top: 15vh;
+}
+#cmd-palette-bg.open { display: flex; }
+#cmd-palette {
+  width: 90%; max-width: 500px;
+  background: #0d1220; border: 1px solid rgba(255,255,255,.12);
+  border-radius: 18px; overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,.8);
+  animation: cmdIn .2s ease-out;
+}
+@keyframes cmdIn { from { opacity:0; transform: translateY(-20px) scale(.98); } to { opacity:1; transform: translateY(0) scale(1); } }
+#cmd-input {
+  width: 100%; padding: 18px 22px;
+  background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,.08);
+  color: #fff; font-size: 1.1em; font-family: inherit; outline: none;
+}
+#cmd-list { max-height: 350px; overflow-y: auto; padding: 8px 0; }
+.cmd-item {
+  padding: 12px 22px; display: flex; align-items: center; gap: 14px;
+  cursor: pointer; transition: background .15s;
+  user-select: none;
+}
+.cmd-item:hover, .cmd-item.selected { background: rgba(0,212,255,.1); }
+.cmd-icon { font-size: 1.2em; opacity: .8; width: 24px; text-align: center; }
+.cmd-info { flex: 1; }
+.cmd-name { font-size: .95em; font-weight: 500; color: #fff; }
+.cmd-desc { font-size: .75em; color: rgba(255,255,255,.4); margin-top: 2px; }
+.cmd-key { font-size: .7em; color: rgba(255,255,255,.3); background: rgba(255,255,255,.05); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,.08); }
+#cmd-palette-bg ::-webkit-scrollbar { width: 5px; }
+#cmd-palette-bg ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+/* ═══════════════════════════════════════════
    PIN MODAL (Summary tab only)
 ═══════════════════════════════════════════ */
 #pin-modal-bg{
@@ -4022,6 +4060,14 @@ input[type=date].swae-input{color-scheme:dark;}
 </script>
 <?!= HtmlService.createHtmlOutputFromFile('docs').getContent(); ?>
 
+<!-- ── CMD Palette Modal ── -->
+<div id="cmd-palette-bg" onclick="if(event.target===this)closeCmdPalette()">
+  <div id="cmd-palette">
+    <input type="text" id="cmd-input" placeholder="Search pages... (e.g. Stocks, Gold)" autocomplete="off">
+    <div id="cmd-list"></div>
+  </div>
+</div>
+
 <!-- ── PIN Modal (Summary tab) ── -->
 <div id="pin-modal-bg">
   <div id="pin-modal">
@@ -4923,7 +4969,140 @@ function reloadPage(name){
   else if(name==='sw')   { document.getElementById('sw-root').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px"><div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Splitwise…</div></div>'; swLoad(); _spaLoaded.sw=true; }
 }
 
-window.onload = function(){ showPage('exp'); };
+window.onload = function(){ 
+  showPage('exp'); 
+  initCmdPalette();
+};
+
+/* ═══════════════════════════════════════════
+   CMD PALETTE LOGIC
+═══════════════════════════════════════════ */
+var _cmdSelectedIdx = 0;
+var _cmdFiltered = [];
+var _cmdPages = [
+  { id: 'exp',  name: 'Expenses',   desc: 'Daily spending & cash flow', icon: '💸' },
+  { id: 'cc',   name: 'Credit Card',desc: 'CC statements & summaries',  icon: '💳' },
+  { id: 'mf',   name: 'Money Flow', desc: 'Investment & portfolio flow',icon: '🌊' },
+  { id: 'cse',  name: 'Investments',desc: 'Stocks, Gold & FDs',        icon: '📈' },
+  { id: 'sw',   name: 'Splitwise',  desc: 'Shared balances & debts',    icon: '🤝' },
+  { id: 'port', name: 'Portfolio',  desc: 'Net worth & asset summary',  icon: '📊' },
+  
+  // Subsections
+  { id: 'cse', tab: 0, name: 'Stocks',         desc: 'Investment Portfolio > Stocks',    icon: '📊' },
+  { id: 'cse', tab: 1, name: 'Gold',           desc: 'Investment Portfolio > Gold',      icon: '🏅' },
+  { id: 'cse', tab: 2, name: 'Dividends',      desc: 'Investment Portfolio > Dividends', icon: '💰' },
+  { id: 'cse', tab: 4, name: 'Fixed Deposits', desc: 'Investment Portfolio > FDs',       icon: '🏦' },
+  { id: 'cse', tab: 6, name: 'Unit Trust',     desc: 'Investment Portfolio > Unit Trust', icon: '💎' },
+  { id: 'cse', tab: 5, name: 'Performance',    desc: 'Investment Portfolio > Performance',icon: '📈' },
+  { id: 'cse', tab: 3, name: 'Insights',       desc: 'Investment Portfolio > Insights',   icon: '💡' },
+
+  // Tools & Actions
+  { action: 'docsToggle',  name: 'Document Vault', desc: 'Open shared documents & files', icon: '📂' },
+  { action: 'calcToggle',  name: 'Calculator',     desc: 'Open financial calculator',    icon: '🧮' },
+  { action: 'calToggle',   name: 'Calendar',       desc: 'Open investment calendar',    icon: '📅' },
+  { action: 'trackerToggle', name: 'Task Tracker',   desc: 'Open maintenance checklist',  icon: '📋' },
+  { action: 'moneyToggle', name: 'Currency Toggle', desc: 'Toggle LKR/USD visibility',    icon: '💵' }
+];
+
+function initCmdPalette() {
+  var input = document.getElementById('cmd-input');
+  var bg = document.getElementById('cmd-palette-bg');
+
+  window.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      toggleCmdPalette();
+    }
+    if (e.key === 'Escape' && bg.classList.contains('open')) {
+      closeCmdPalette();
+    }
+  });
+
+  input.addEventListener('input', function() {
+    renderCmdList(this.value);
+  });
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      _cmdSelectedIdx = (_cmdSelectedIdx + 1) % _cmdFiltered.length;
+      updateCmdSelection();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _cmdSelectedIdx = (_cmdSelectedIdx - 1 + _cmdFiltered.length) % _cmdFiltered.length;
+      updateCmdSelection();
+    } else if (e.key === 'Enter') {
+      var item = _cmdFiltered[_cmdSelectedIdx];
+      if (item) {
+        if (item.action) {
+          window[item.action]();
+        } else if (item.tab !== undefined) {
+          showPage(item.id);
+          switchTab(item.tab);
+        } else {
+          showPage(item.id);
+        }
+        closeCmdPalette();
+      }
+    }
+  });
+}
+
+function toggleCmdPalette() {
+  var bg = document.getElementById('cmd-palette-bg');
+  var input = document.getElementById('cmd-input');
+  if (bg.classList.contains('open')) {
+    closeCmdPalette();
+  } else {
+    bg.classList.add('open');
+    input.value = '';
+    _cmdSelectedIdx = 0;
+    renderCmdList('');
+    setTimeout(function() { input.focus(); }, 50);
+  }
+}
+
+function closeCmdPalette() {
+  document.getElementById('cmd-palette-bg').classList.remove('open');
+}
+
+function renderCmdList(query) {
+  query = query.toLowerCase().trim();
+  _cmdFiltered = _cmdPages.filter(function(p) {
+    return p.name.toLowerCase().includes(query) || p.desc.toLowerCase().includes(query);
+  });
+
+  var list = document.getElementById('cmd-list');
+  list.innerHTML = _cmdFiltered.map(function(p, i) {
+    var clickAction = '';
+    if (p.action) {
+      clickAction = 'window.' + p.action + '();closeCmdPalette()';
+    } else if (p.tab !== undefined) {
+      clickAction = 'showPage(\'' + p.id + '\');switchTab(' + p.tab + ');closeCmdPalette()';
+    } else {
+      clickAction = 'showPage(\'' + p.id + '\');closeCmdPalette()';
+    }
+      
+    return '<div class="cmd-item' + (i === 0 ? ' selected' : '') + '" onclick="' + clickAction + '">' +
+      '<div class="cmd-icon">' + p.icon + '</div>' +
+      '<div class="cmd-info">' +
+        '<div class="cmd-name">' + p.name + '</div>' +
+        '<div class="cmd-desc">' + p.desc + '</div>' +
+      '</div>' +
+      '<div class="cmd-key">↵</div>' +
+    '</div>';
+  }).join('');
+  
+  _cmdSelectedIdx = 0;
+}
+
+function updateCmdSelection() {
+  var items = document.querySelectorAll('.cmd-item');
+  items.forEach(function(el, i) {
+    el.classList.toggle('selected', i === _cmdSelectedIdx);
+    if (i === _cmdSelectedIdx) el.scrollIntoView({ block: 'nearest' });
+  });
+}
 
 /* ═══════════════════════════════════════════
    CSE / PORTFOLIO PAGE JS
