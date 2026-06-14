@@ -118,6 +118,10 @@ function getDocPreview(fileId) {
   };
 }
 
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
 function doGet(e) {
   var appUrl = ScriptApp.getService().getUrl();
   var template = HtmlService.createTemplateFromFile('render');
