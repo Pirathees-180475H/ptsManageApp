@@ -952,23 +952,132 @@ function getBankBalances() {
 
 function updateBankBalances(updates) {
   try {
+    Logger.log('[DEBUG_LOG] updateBankBalances called with ' + updates.length + ' updates.');
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = ss.getSheetByName('Portfolio');
     if (!sheet) throw new Error('Sheet "Portfolio" not found');
     
+    // Validate updates before applying
+    if (!Array.isArray(updates)) {
+      throw new Error('Expected an array of updates');
+    }
+
     updates.forEach(function(update) {
+      if (!update.row) {
+        Logger.log('[DEBUG_LOG] Skipping update without row: ' + JSON.stringify(update));
+        return;
+      }
+      
       if (update.source !== undefined) {
-        sheet.getRange(update.row, 8).setValue(update.source);
+        sheet.getRange(update.row, 8).setValue(String(update.source));
       }
       if (update.amount !== undefined) {
-        sheet.getRange(update.row, 9).setValue(update.amount);
+        sheet.getRange(update.row, 9).setValue(Number(update.amount));
       }
     });
     
     SpreadsheetApp.flush();
+    Logger.log('[DEBUG_LOG] Bank balances successfully updated.');
     return { success: true };
   } catch (e) {
+    Logger.log('[DEBUG_LOG] Error in updateBankBalances: ' + e.message);
     throw new Error('Failed to update bank balances: ' + e.message);
+  }
+}
+
+// ── Bank Transactions Logging ──
+function getBankTransactions() {
+  try {
+    Logger.log('[DEBUG_LOG] getBankTransactions called.');
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Transactions');
+    if (!sheet) {
+      Logger.log('[DEBUG_LOG] Transactions sheet not found in getBankTransactions.');
+      return [];
+    }
+    
+    var data = sheet.getDataRange().getValues();
+    Logger.log('[DEBUG_LOG] Found ' + data.length + ' rows in Transactions sheet (including header).');
+    if (data.length <= 1) return [];
+    
+    var txns = [];
+    for (var i = 1; i < data.length; i++) {
+      txns.push({
+        row: i + 1,
+        date: data[i][0] instanceof Date ? data[i][0].toISOString() : data[i][0],
+        source: data[i][1],
+        destination: data[i][2],
+        amount: parseFloat(data[i][3]) || 0,
+        reference: data[i][4]
+      });
+    }
+    Logger.log('[DEBUG_LOG] Returning ' + txns.length + ' transactions.');
+    return txns.reverse(); // Newest first
+  } catch (e) {
+    Logger.log('[DEBUG_LOG] Error in getBankTransactions: ' + e.message);
+    throw new Error('Failed to get transactions: ' + e.message);
+  }
+}
+
+function addBankTransaction(txn) {
+  try {
+    Logger.log('[DEBUG_LOG] addBankTransaction called with: ' + JSON.stringify(txn));
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Transactions');
+    if (!sheet) {
+      Logger.log('[DEBUG_LOG] Transactions sheet not found, creating it.');
+      sheet = ss.insertSheet('Transactions');
+      sheet.appendRow(['Date', 'Source', 'Destination', 'Amount', 'Reference']);
+      sheet.getRange("A1:E1").setFontWeight("bold").setBackground("#f3f3f3");
+    }
+    // Convert ISO string back to Date for better sheet formatting
+    var txnDate = txn.date ? new Date(txn.date) : new Date();
+    Logger.log('[DEBUG_LOG] Appending row to Transactions sheet.');
+    
+    // Explicitly mapping values to ensure appendRow doesn't fail due to unexpected object structure
+    var rowValues = [
+      txnDate, 
+      String(txn.source), 
+      String(txn.destination), 
+      Number(txn.amount), 
+      String(txn.reference || "")
+    ];
+    
+    sheet.appendRow(rowValues);
+    SpreadsheetApp.flush();
+    Logger.log('[DEBUG_LOG] Transaction successfully added.');
+    return { success: true };
+  } catch (e) {
+    Logger.log('[DEBUG_LOG] Error in addBankTransaction: ' + e.message);
+    throw new Error('Failed to add transaction: ' + e.message);
+  }
+}
+
+function updateBankTransaction(row, updates) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Transactions');
+    if (!sheet) throw new Error('Transactions sheet not found');
+    
+    if (updates.amount !== undefined) sheet.getRange(row, 4).setValue(updates.amount);
+    if (updates.reference !== undefined) sheet.getRange(row, 5).setValue(updates.reference);
+    
+    return { success: true };
+  } catch (e) {
+    throw new Error('Failed to update transaction: ' + e.message);
+  }
+}
+
+function deleteBankTransaction(row) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Transactions');
+    if (!sheet) throw new Error('Transactions sheet not found');
+    
+    sheet.deleteRow(row);
+    return { success: true };
+  } catch (e) {
+    throw new Error('Failed to delete transaction: ' + e.message);
   }
 }
 

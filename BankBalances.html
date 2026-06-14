@@ -190,12 +190,126 @@
 .bm-total-val{font-size:.80em;font-weight:800;color:rgba(255,255,255,.75);letter-spacing:0.5px;line-height:1.2;}
 .bm-total-usd{font-size:.62em;font-weight:600;color:rgba(16,185,129,.6);letter-spacing:.4px;margin-top:3px;}
 
+/* ── Transaction Table UI ── */
+#bm-txn-overlay{
+  position:absolute; top:0; left:0; width:100%; height:100%;
+  background:rgba(6,11,24,0.98); z-index:9000;
+  display:none; flex-direction:column;
+}
+#bm-txn-overlay.open{ display:flex; animation: fadeIn 0.2s ease; }
+.bm-txn-hdr{
+  padding:15px 22px; border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex; justify-content:space-between; align-items:center;
+}
+.bm-txn-body{ flex:1; overflow-y:auto; padding:0 22px; }
+.bm-txn-table{
+  width:100%; border-collapse:collapse; color:rgba(255,255,255,0.7);
+  font-size:0.75em; margin-top:10px;
+}
+.bm-txn-table th{
+  text-align:left; padding:12px 8px; border-bottom:1px solid rgba(255,255,255,0.1);
+  text-transform:uppercase; letter-spacing:1px; color:rgba(255,255,255,0.3); font-size:0.85em;
+}
+.bm-txn-table td{ padding:12px 8px; border-bottom:1px solid rgba(255,255,255,0.03); }
+.bm-txn-table tr:hover{ background:rgba(255,255,255,0.02); }
+.bm-txn-btn-sm{
+  background:none; border:none; cursor:pointer; padding:4px; border-radius:4px;
+  transition:all 0.2s; font-size:1.1em;
+}
+.bm-txn-btn-del:hover{ background:rgba(239,68,68,0.15); color:#ef4444; }
+.bm-txn-btn-edit:hover{ background:rgba(59,130,246,0.15); color:#3b82f6; }
+
 /* ── Bottom Row: Total + Converter ── */
-.bm-bottom-row{
+.bm-bottom-row-upper{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:16px;
   padding:20px 22px 0;
+}
+.bm-bottom-row-lower{
+  padding:16px 22px 0;
+}
+.bm-transfer{
+  background:rgba(255,255,255,.025);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;
+  padding:10px 14px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.bm-trans-title{
+  font-size:.52em;
+  font-weight:700;
+  letter-spacing:1.5px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.3);
+  margin-bottom:2px;
+}
+.bm-trans-row{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.bm-trans-group{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.bm-trans-field{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.bm-trans-lbl{
+  font-size:.52em;
+  font-weight:700;
+  letter-spacing:1.3px;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.35);
+}
+.bm-trans-input-wrap{
+  display:flex;
+  align-items:center;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:9px;
+  padding:0 8px;
+  height:30px;
+}
+.bm-trans-select, .bm-trans-input{
+  background:transparent;
+  border:none;
+  color:#fff;
+  font-family:'Inter',sans-serif;
+  font-size:.75em;
+  font-weight:600;
+  outline:none;
+  width:100%;
+}
+.bm-trans-select option{
+  background:#1a1f2b;
+  color:#fff;
+}
+.bm-trans-btn{
+  background:rgba(0,212,255,.1);
+  border:1px solid rgba(0,212,255,.2);
+  border-radius:9px;
+  color:rgba(0,212,255,.8);
+  font-family:'Inter',sans-serif;
+  font-size:.7em;
+  font-weight:700;
+  cursor:pointer;
+  padding:6px;
+  transition:all .2s;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.bm-trans-btn:disabled{opacity:0.5; cursor:wait;}
+.bm-trans-btn:hover:not(:disabled){
+  background:rgba(0,212,255,.2);
+  border-color:rgba(0,212,255,.4);
 }
 .bm-converter{
   background:rgba(255,255,255,.025);
@@ -311,7 +425,7 @@
 @media(max-width:750px){
   .bm-main-row{grid-template-columns:1fr;gap:16px;}
   .bm-list{grid-template-columns:repeat(2,1fr);}
-  .bm-bottom-row{grid-template-columns:1fr;gap:16px;}
+  .bm-bottom-row-upper{grid-template-columns:1fr;gap:12px;}
 }
 @media(max-width:500px){
   .bm-list{grid-template-columns:1fr;}
@@ -331,6 +445,29 @@
     </div>
   </div>
   <div class="bm-body">
+    <div id="bm-txn-overlay">
+      <div class="bm-txn-hdr">
+        <span class="bm-title">📋 Transactions</span>
+        <button class="bm-close" onclick="bmHideTransactions()">✕</button>
+      </div>
+      <div class="bm-txn-body">
+        <table class="bm-txn-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Source</th>
+              <th>Dest</th>
+              <th>Amount</th>
+              <th>Ref</th>
+              <th style="width:60px;"></th>
+            </tr>
+          </thead>
+          <tbody id="bm-txn-list">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">Loading transactions...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
     <div class="bm-main-row">
       <div class="bm-list" id="bmList">
         <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;">Loading bank data…</div>
@@ -343,7 +480,7 @@
     </div>
 
     <!-- Bottom Row: Total Balance + Converter -->
-    <div class="bm-bottom-row">
+    <div class="bm-bottom-row-upper">
       <div class="bm-total-box">
         <span class="bm-total-lbl">Total Liquid Balance</span>
         <span class="bm-total-val" id="bmTotal">₨ 0.00</span>
@@ -374,11 +511,52 @@
       </div>
     </div>
 
+    <!-- Next Line: Bank Transfers -->
+    <div class="bm-bottom-row-lower">
+      <div class="bm-transfer">
+        <div class="bm-trans-title">💸 Transfer</div>
+        <div class="bm-trans-row">
+          <div class="bm-trans-group">
+            <div class="bm-trans-field">
+              <label class="bm-trans-lbl">From</label>
+              <div class="bm-trans-input-wrap">
+                <select id="bm-trans-from" class="bm-trans-select"></select>
+              </div>
+            </div>
+            <div class="bm-trans-field">
+              <label class="bm-trans-lbl">To</label>
+              <div class="bm-trans-input-wrap">
+                <select id="bm-trans-to" class="bm-trans-select"></select>
+              </div>
+            </div>
+          </div>
+          <div class="bm-trans-group">
+            <div class="bm-trans-field">
+              <label class="bm-trans-lbl">Amount</label>
+              <div class="bm-trans-input-wrap">
+                <input type="number" id="bm-trans-amt" class="bm-trans-input" placeholder="0.00" step="any" min="0">
+              </div>
+            </div>
+            <div class="bm-trans-field">
+              <label class="bm-trans-lbl">Reference</label>
+              <div class="bm-trans-input-wrap">
+                <input type="text" id="bm-trans-ref" class="bm-trans-input" placeholder="Ref...">
+              </div>
+            </div>
+          </div>
+          <button class="bm-trans-btn" onclick="bmPerformTransfer()" style="margin-top:4px;">Transfer</button>
+        </div>
+      </div>
+    </div>
+
   </div>
-  <div class="bm-foot">
-    <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()" title="Save Changes">
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-    </button>
+  <div class="bm-foot" style="flex-direction:column; gap:12px;">
+    <button class="bm-btn" style="width:100%; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.5); border:1px solid rgba(255,255,255,0.1);" onclick="bmViewTransactions()">View Transactions</button>
+    <div style="display:flex; justify-content:flex-end; width:100%;">
+      <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()" title="Save Changes">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -542,6 +720,257 @@ function bmRender() {
   totalEl.textContent = '₨ ' + total.toLocaleString('en-IN', {minimumFractionDigits:2});
   bmUpdateTotalUsd(total);
   bmUpdateChart(total);
+  bmPopulateTransferSelects();
+}
+
+function bmPopulateTransferSelects() {
+  const fromSelect = document.getElementById('bm-trans-from');
+  const toSelect = document.getElementById('bm-trans-to');
+  if (!fromSelect || !toSelect) return;
+  
+  const fromVal = fromSelect.value;
+  const toVal = toSelect.value;
+  
+  let options = '<option value="">Select Bank</option>';
+  _bmData.forEach((item, i) => {
+    options += `<option value="${i}">${esc(item.source)}</option>`;
+  });
+  
+  fromSelect.innerHTML = options;
+  toSelect.innerHTML = options;
+  
+  if (fromVal && fromSelect.querySelector(`option[value="${fromVal}"]`)) fromSelect.value = fromVal;
+  if (toVal && toSelect.querySelector(`option[value="${toVal}"]`)) toSelect.value = toVal;
+}
+
+function bmPerformTransfer() {
+  const fromIdx = document.getElementById('bm-trans-from').value;
+  const toIdx = document.getElementById('bm-trans-to').value;
+  const amtInput = document.getElementById('bm-trans-amt');
+  const refInput = document.getElementById('bm-trans-ref');
+  const amount = parseFloat(amtInput.value) || 0;
+  const reference = (refInput.value || '').trim();
+  
+  if (fromIdx === "" || toIdx === "") {
+    alert("Please select both source and destination banks.");
+    return;
+  }
+  if (fromIdx === toIdx) {
+    alert("Source and destination banks must be different.");
+    return;
+  }
+  if (amount <= 0) {
+    alert("Please enter a valid transfer amount.");
+    return;
+  }
+  
+  const fromBank = _bmData[fromIdx];
+  const toBank = _bmData[toIdx];
+  
+  if (amount > fromBank.amount) {
+    if (!confirm(`Transfer amount (₨${amount}) exceeds source bank balance (₨${fromBank.amount}). Proceed anyway?`)) {
+      return;
+    }
+  }
+  
+  const btn = document.querySelector('.bm-trans-btn');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  const txn = {
+    date: new Date().toISOString(),
+    source: fromBank.source,
+    destination: toBank.source,
+    amount: amount,
+    reference: reference
+  };
+
+  console.log('[DEBUG_LOG] Performing transfer:', txn);
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      console.log('[DEBUG_LOG] Transaction logged successfully:', res);
+      // Perform local transfer update
+      fromBank.amount -= amount;
+      toBank.amount += amount;
+      
+      // Clear inputs
+      amtInput.value = "";
+      refInput.value = "";
+      
+      console.log('[DEBUG_LOG] Updating bank balances locally and on server.');
+      // Save updated balances to Portfolio sheet
+      google.script.run
+        .withSuccessHandler(function(res2) {
+          console.log('[DEBUG_LOG] Bank balances updated on server:', res2);
+          btn.disabled = false;
+          btn.textContent = oldText;
+          // Re-render
+          bmRender();
+        })
+        .withFailureHandler(function(err) {
+          console.error('[DEBUG_LOG] Failed to update bank balances:', err);
+          btn.disabled = false;
+          btn.textContent = oldText;
+          alert("Transaction logged, but failed to update bank balances: " + (err.message || err));
+          bmRender();
+        })
+        .updateBankBalances(_bmData);
+    })
+    .withFailureHandler(function(err) {
+      console.error('[DEBUG_LOG] Failed to log transaction:', err);
+      btn.disabled = false;
+      btn.textContent = oldText;
+      alert("Failed to log transaction: " + (err.message || err));
+    })
+    .addBankTransaction(txn);
+}
+
+var _bmTransactions = [];
+
+function bmViewTransactions() {
+  const overlay = document.getElementById('bm-txn-overlay');
+  overlay.classList.add('open');
+  bmFetchTransactions();
+}
+
+function bmHideTransactions() {
+  const overlay = document.getElementById('bm-txn-overlay');
+  overlay.classList.remove('open');
+}
+
+function bmFetchTransactions() {
+  const list = document.getElementById('bm-txn-list');
+  list.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;"><div class="ld-spin" style="margin:0 auto"></div></td></tr>';
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      _bmTransactions = data;
+      bmRenderTransactions();
+    })
+    .withFailureHandler(function(err) {
+      list.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444;">Failed to load: ' + err.message + '</td></tr>';
+    })
+    .getBankTransactions();
+}
+
+function bmRenderTransactions() {
+  console.log('[DEBUG_LOG] bmRenderTransactions called with:', _bmTransactions);
+  const list = document.getElementById('bm-txn-list');
+  if (!_bmTransactions || !_bmTransactions.length) {
+    list.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">No transactions found.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  _bmTransactions.forEach((t, i) => {
+    let dateStr = 'N/A';
+    try {
+      const dt = new Date(t.date);
+      if (!isNaN(dt.getTime())) {
+        dateStr = dt.toLocaleDateString('en-GB', {day:'2-digit', month:'short'});
+      } else {
+        dateStr = String(t.date).substring(0, 10);
+      }
+    } catch(e) {
+      console.error('[DEBUG_LOG] Error formatting date:', e, t.date);
+    }
+    
+    html += `
+      <tr>
+        <td>${dateStr}</td>
+        <td>${esc(t.source)}</td>
+        <td>${esc(t.destination)}</td>
+        <td style="font-weight:700;">₨ ${t.amount.toLocaleString()}</td>
+        <td style="color:rgba(255,255,255,0.4);">${esc(t.reference)}</td>
+        <td style="display:flex;gap:4px;justify-content:flex-end;">
+          <button class="bm-txn-btn-sm bm-txn-btn-edit" onclick="bmEditTxn(${i})" title="Edit">✎</button>
+          <button class="bm-txn-btn-sm bm-txn-btn-del" onclick="bmDeleteTxn(${i})" title="Delete">✕</button>
+        </td>
+      </tr>
+    `;
+  });
+  list.innerHTML = html;
+}
+
+function bmDeleteTxn(idx) {
+  if (!confirm('Are you sure you want to delete this transaction?')) return;
+  const txn = _bmTransactions[idx];
+  
+  google.script.run
+    .withSuccessHandler(function() {
+      // Revert bank balances
+      const sourceBank = _bmData.find(b => b.source === txn.source);
+      const destBank = _bmData.find(b => b.source === txn.destination);
+      if (sourceBank && destBank) {
+        sourceBank.amount += txn.amount;
+        destBank.amount -= txn.amount;
+        
+        // Save updated balances to Portfolio sheet
+        google.script.run
+          .withSuccessHandler(function() {
+            bmRender();
+          })
+          .withFailureHandler(function(err) {
+            alert("Transaction deleted, but failed to update bank balances: " + (err.message || err));
+            bmRender();
+          })
+          .updateBankBalances(_bmData);
+      }
+      
+      _bmTransactions.splice(idx, 1);
+      bmRenderTransactions();
+    })
+    .withFailureHandler(function(err) {
+      alert("Failed to delete: " + err.message);
+    })
+    .deleteBankTransaction(txn.row);
+}
+
+function bmEditTxn(idx) {
+  const txn = _bmTransactions[idx];
+  const newRef = prompt("Edit Reference:", txn.reference);
+  if (newRef === null) return;
+  const newAmtStr = prompt("Edit Amount:", txn.amount);
+  if (newAmtStr === null) return;
+  const newAmt = parseFloat(newAmtStr) || 0;
+
+  google.script.run
+    .withSuccessHandler(function() {
+      // Find and update local bank balance data
+      const sourceBank = _bmData.find(b => b.source === txn.source);
+      const destBank = _bmData.find(b => b.source === txn.destination);
+      
+      if (sourceBank && destBank) {
+        // Reverse old txn impact
+        sourceBank.amount += txn.amount;
+        destBank.amount -= txn.amount;
+        
+        // Apply new txn impact
+        sourceBank.amount -= newAmt;
+        destBank.amount += newAmt;
+        
+        // Save updated balances to Portfolio sheet
+        google.script.run
+          .withSuccessHandler(function() {
+            bmRender();
+          })
+          .withFailureHandler(function(err) {
+            alert("Transaction updated, but failed to update bank balances: " + (err.message || err));
+            bmRender();
+          })
+          .updateBankBalances(_bmData);
+      }
+
+      txn.reference = newRef;
+      txn.amount = newAmt;
+      bmRenderTransactions();
+    })
+    .withFailureHandler(function(err) {
+      alert("Failed to update: " + err.message);
+    })
+    .updateBankTransaction(txn.row, { reference: newRef, amount: newAmt });
 }
 
 function bmUpdateData(index, key, value) {
