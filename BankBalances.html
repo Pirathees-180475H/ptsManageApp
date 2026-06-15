@@ -219,6 +219,39 @@
 .bm-txn-btn-del:hover{ background:rgba(239,68,68,0.15); color:#ef4444; }
 .bm-txn-btn-edit:hover{ background:rgba(59,130,246,0.15); color:#3b82f6; }
 
+/* ── Custom Confirm Dialog ── */
+#bm-confirm-overlay {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.4); z-index: 10000;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+#bm-confirm-overlay.open { display: flex; }
+.bm-confirm-card {
+  background: #111827; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; width: 90%; max-width: 320px;
+  padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  text-align: center;
+}
+.bm-confirm-msg { color: rgba(255,255,255,0.85); font-size: 0.85em; margin-bottom: 20px; line-height: 1.5; }
+.bm-confirm-btns { display: flex; gap: 10px; justify-content: center; }
+.bm-confirm-btn {
+  padding: 8px 16px; border-radius: 6px; border: none; font-size: 0.75em;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.bm-confirm-btn-yes { background: #ef4444; color: #fff; }
+.bm-confirm-btn-yes:hover { background: #dc2626; }
+.bm-confirm-btn-no { background: rgba(255,255,255,0.1); color: #fff; }
+.bm-confirm-btn-no:hover { background: rgba(255,255,255,0.15); }
+
+/* Inline Edit Styles */
+.bm-txn-inline-input {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px; color: #fff; font-size: 1em; padding: 4px 6px; width: 100%;
+  font-family: inherit; outline: none;
+}
+.bm-txn-inline-input:focus { border-color: rgba(59,130,246,0.5); background: rgba(255,255,255,0.08); }
+
 /* ── Bottom Row: Total + Converter ── */
 .bm-bottom-row-upper{
   display:grid;
@@ -446,6 +479,16 @@
   </div>
   <div class="bm-body">
     <div id="bm-txn-overlay">
+      <!-- Custom Confirm Inside -->
+      <div id="bm-confirm-overlay">
+        <div class="bm-confirm-card">
+          <div class="bm-confirm-msg" id="bmConfirmMsg">Are you sure?</div>
+          <div class="bm-confirm-btns">
+            <button class="bm-confirm-btn bm-confirm-btn-no" onclick="bmConfirmClose(false)">Cancel</button>
+            <button class="bm-confirm-btn bm-confirm-btn-yes" id="bmConfirmYes" onclick="bmConfirmClose(true)">Confirm</button>
+          </div>
+        </div>
+      </div>
       <div class="bm-txn-hdr">
         <span class="bm-title">📋 Transactions</span>
         <button class="bm-close" onclick="bmHideTransactions()">✕</button>
@@ -550,13 +593,13 @@
     </div>
 
   </div>
-  <div class="bm-foot" style="flex-direction:column; gap:12px;">
-    <button class="bm-btn" style="width:100%; background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.5); border:1px solid rgba(255,255,255,0.1);" onclick="bmViewTransactions()">View Transactions</button>
-    <div style="display:flex; justify-content:flex-end; width:100%;">
-      <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()" title="Save Changes">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-      </button>
-    </div>
+  <div class="bm-foot" style="justify-content: flex-end; gap: 8px;">
+    <button class="bm-btn" style="background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.5); border:1px solid rgba(255,255,255,0.1); padding: 0 12px; height: 36px; display: flex; align-items: center; justify-content: center;" onclick="bmViewTransactions()" title="View Transactions">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+    </button>
+    <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()" title="Save Changes" style="height: 36px; width: auto; padding: 0 12px;">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+    </button>
   </div>
 </div>
 
@@ -573,6 +616,42 @@ function esc(str) {
 var _bmData = [];
 var _bmChart = null;
 var _positionedBank = false;
+var _bmTransactions = [];
+var _bmEditingIdx = -1;
+var _bmConfirmCallback = null;
+
+function bmConfirm(msg, callback, isAlert) {
+  _bmConfirmCallback = callback;
+  document.getElementById('bmConfirmMsg').textContent = msg;
+  const yesBtn = document.getElementById('bmConfirmYes');
+  const noBtn = document.querySelector('.bm-confirm-btn-no');
+  
+  if (isAlert) {
+    noBtn.style.display = 'none';
+    yesBtn.textContent = 'OK';
+    yesBtn.classList.remove('bm-confirm-btn-yes');
+    yesBtn.style.background = 'rgba(255,255,255,0.1)';
+  } else {
+    noBtn.style.display = 'block';
+    yesBtn.textContent = 'Confirm';
+    yesBtn.classList.add('bm-confirm-btn-yes');
+    yesBtn.style.background = '';
+  }
+  
+  document.getElementById('bm-confirm-overlay').classList.add('open');
+}
+
+function bmAlert(msg, callback) {
+  bmConfirm(msg, callback, true);
+}
+
+function bmConfirmClose(result) {
+  document.getElementById('bm-confirm-overlay').classList.remove('open');
+  if (_bmConfirmCallback) {
+    _bmConfirmCallback(result);
+    _bmConfirmCallback = null;
+  }
+}
 
 function moneyToggle() {
   const p = document.getElementById('bank-modal');
@@ -752,15 +831,15 @@ function bmPerformTransfer() {
   const reference = (refInput.value || '').trim();
   
   if (fromIdx === "" || toIdx === "") {
-    alert("Please select both source and destination banks.");
+    bmAlert("Please select both source and destination banks.");
     return;
   }
   if (fromIdx === toIdx) {
-    alert("Source and destination banks must be different.");
+    bmAlert("Source and destination banks must be different.");
     return;
   }
   if (amount <= 0) {
-    alert("Please enter a valid transfer amount.");
+    bmAlert("Please enter a valid transfer amount.");
     return;
   }
   
@@ -768,11 +847,15 @@ function bmPerformTransfer() {
   const toBank = _bmData[toIdx];
   
   if (amount > fromBank.amount) {
-    if (!confirm(`Transfer amount (₨${amount}) exceeds source bank balance (₨${fromBank.amount}). Proceed anyway?`)) {
-      return;
-    }
+    bmConfirm(`Transfer amount (₨${amount}) exceeds source bank balance (₨${fromBank.amount}). Proceed anyway?`, function(ok) {
+      if (ok) bmPerformTransferFinal(fromBank, toBank, amount, reference, amtInput, refInput);
+    });
+    return;
   }
-  
+  bmPerformTransferFinal(fromBank, toBank, amount, reference, amtInput, refInput);
+}
+
+function bmPerformTransferFinal(fromBank, toBank, amount, reference, amtInput, refInput) {
   const btn = document.querySelector('.bm-trans-btn');
   const oldText = btn.textContent;
   btn.disabled = true;
@@ -813,7 +896,7 @@ function bmPerformTransfer() {
           console.error('[DEBUG_LOG] Failed to update bank balances:', err);
           btn.disabled = false;
           btn.textContent = oldText;
-          alert("Transaction logged, but failed to update bank balances: " + (err.message || err));
+          bmAlert("Transaction logged, but failed to update bank balances: " + (err.message || err));
           bmRender();
         })
         .updateBankBalances(_bmData);
@@ -822,7 +905,7 @@ function bmPerformTransfer() {
       console.error('[DEBUG_LOG] Failed to log transaction:', err);
       btn.disabled = false;
       btn.textContent = oldText;
-      alert("Failed to log transaction: " + (err.message || err));
+      bmAlert("Failed to log transaction: " + (err.message || err));
     })
     .addBankTransaction(txn);
 }
@@ -877,64 +960,90 @@ function bmRenderTransactions() {
       console.error('[DEBUG_LOG] Error formatting date:', e, t.date);
     }
     
-    html += `
-      <tr>
-        <td>${dateStr}</td>
-        <td>${esc(t.source)}</td>
-        <td>${esc(t.destination)}</td>
-        <td style="font-weight:700;">₨ ${t.amount.toLocaleString()}</td>
-        <td style="color:rgba(255,255,255,0.4);">${esc(t.reference)}</td>
-        <td style="display:flex;gap:4px;justify-content:flex-end;">
-          <button class="bm-txn-btn-sm bm-txn-btn-edit" onclick="bmEditTxn(${i})" title="Edit">✎</button>
-          <button class="bm-txn-btn-sm bm-txn-btn-del" onclick="bmDeleteTxn(${i})" title="Delete">✕</button>
-        </td>
-      </tr>
-    `;
+    if (_bmEditingIdx === i) {
+      html += `
+        <tr class="bm-txn-editing">
+          <td>${dateStr}</td>
+          <td>${esc(t.source)}</td>
+          <td>${esc(t.destination)}</td>
+          <td><input type="number" id="bm-edit-amt-${i}" class="bm-txn-inline-input" value="${t.amount}" step="any"></td>
+          <td><input type="text" id="bm-edit-ref-${i}" class="bm-txn-inline-input" value="${esc(t.reference)}"></td>
+          <td style="display:flex;gap:4px;justify-content:flex-end;">
+            <button class="bm-txn-btn-sm" style="color:#10b981;" onclick="bmSaveInlineEdit(${i})" title="Save">✓</button>
+            <button class="bm-txn-btn-sm" style="color:#ef4444;" onclick="bmCancelEdit()" title="Cancel">✕</button>
+          </td>
+        </tr>
+      `;
+    } else {
+      html += `
+        <tr>
+          <td>${dateStr}</td>
+          <td>${esc(t.source)}</td>
+          <td>${esc(t.destination)}</td>
+          <td style="font-weight:700;">₨ ${t.amount.toLocaleString()}</td>
+          <td style="color:rgba(255,255,255,0.4);">${esc(t.reference)}</td>
+          <td style="display:flex;gap:4px;justify-content:flex-end;">
+            <button class="bm-txn-btn-sm" style="color:#fbbf24; border-color:rgba(251,191,36,0.2);" onclick="bmRollbackTxn(${i})" title="Rollback">↺</button>
+            <button class="bm-txn-btn-sm bm-txn-btn-edit" onclick="bmEditTxn(${i})" title="Edit">✎</button>
+            <button class="bm-txn-btn-sm bm-txn-btn-del" onclick="bmDeleteTxn(${i})" title="Delete">✕</button>
+          </td>
+        </tr>
+      `;
+    }
   });
   list.innerHTML = html;
 }
 
 function bmDeleteTxn(idx) {
-  if (!confirm('Are you sure you want to delete this transaction?')) return;
-  const txn = _bmTransactions[idx];
-  
-  google.script.run
-    .withSuccessHandler(function() {
-      // Revert bank balances
-      const sourceBank = _bmData.find(b => b.source === txn.source);
-      const destBank = _bmData.find(b => b.source === txn.destination);
-      if (sourceBank && destBank) {
-        sourceBank.amount += txn.amount;
-        destBank.amount -= txn.amount;
+  bmConfirm('Are you sure you want to delete this transaction?', function(ok) {
+    if (!ok) return;
+    const txn = _bmTransactions[idx];
+    
+    google.script.run
+      .withSuccessHandler(function() {
+        // Revert bank balances
+        const sourceBank = _bmData.find(b => b.source === txn.source);
+        const destBank = _bmData.find(b => b.source === txn.destination);
+        if (sourceBank && destBank) {
+          sourceBank.amount += txn.amount;
+          destBank.amount -= txn.amount;
+          
+          // Save updated balances to Portfolio sheet
+          google.script.run
+            .withSuccessHandler(function() {
+              bmRender();
+            })
+            .withFailureHandler(function(err) {
+              bmAlert("Transaction deleted, but failed to update bank balances: " + (err.message || err));
+              bmRender();
+            })
+            .updateBankBalances(_bmData);
+        }
         
-        // Save updated balances to Portfolio sheet
-        google.script.run
-          .withSuccessHandler(function() {
-            bmRender();
-          })
-          .withFailureHandler(function(err) {
-            alert("Transaction deleted, but failed to update bank balances: " + (err.message || err));
-            bmRender();
-          })
-          .updateBankBalances(_bmData);
-      }
-      
-      _bmTransactions.splice(idx, 1);
-      bmRenderTransactions();
-    })
-    .withFailureHandler(function(err) {
-      alert("Failed to delete: " + err.message);
-    })
-    .deleteBankTransaction(txn.row);
+        _bmTransactions.splice(idx, 1);
+        bmRenderTransactions();
+      })
+      .withFailureHandler(function(err) {
+        bmAlert("Failed to delete: " + err.message);
+      })
+      .deleteBankTransaction(txn.row);
+  });
 }
 
 function bmEditTxn(idx) {
+  _bmEditingIdx = idx;
+  bmRenderTransactions();
+}
+
+function bmCancelEdit() {
+  _bmEditingIdx = -1;
+  bmRenderTransactions();
+}
+
+function bmSaveInlineEdit(idx) {
   const txn = _bmTransactions[idx];
-  const newRef = prompt("Edit Reference:", txn.reference);
-  if (newRef === null) return;
-  const newAmtStr = prompt("Edit Amount:", txn.amount);
-  if (newAmtStr === null) return;
-  const newAmt = parseFloat(newAmtStr) || 0;
+  const newAmt = parseFloat(document.getElementById(`bm-edit-amt-${idx}`).value) || 0;
+  const newRef = document.getElementById(`bm-edit-ref-${idx}`).value;
 
   google.script.run
     .withSuccessHandler(function() {
@@ -957,7 +1066,7 @@ function bmEditTxn(idx) {
             bmRender();
           })
           .withFailureHandler(function(err) {
-            alert("Transaction updated, but failed to update bank balances: " + (err.message || err));
+            bmAlert("Transaction updated, but failed to update bank balances: " + (err.message || err));
             bmRender();
           })
           .updateBankBalances(_bmData);
@@ -965,12 +1074,53 @@ function bmEditTxn(idx) {
 
       txn.reference = newRef;
       txn.amount = newAmt;
+      _bmEditingIdx = -1;
       bmRenderTransactions();
     })
     .withFailureHandler(function(err) {
-      alert("Failed to update: " + err.message);
+      bmAlert("Failed to update: " + err.message);
     })
     .updateBankTransaction(txn.row, { reference: newRef, amount: newAmt });
+}
+
+function bmRollbackTxn(idx) {
+  const originalTxn = _bmTransactions[idx];
+  bmConfirm(`Rollback this transaction? This will create a new transaction swapping ${originalTxn.source} and ${originalTxn.destination}.`, function(ok) {
+    if (!ok) return;
+
+    const rollbackTxn = {
+      date: new Date().toISOString(),
+      source: originalTxn.destination,
+      destination: originalTxn.source,
+      amount: originalTxn.amount,
+      reference: (originalTxn.reference || '') + " - rollbacked"
+    };
+
+    google.script.run
+      .withSuccessHandler(function() {
+        // Update local balances
+        const sBank = _bmData.find(b => b.source === rollbackTxn.source);
+        const dBank = _bmData.find(b => b.source === rollbackTxn.destination);
+        if (sBank) sBank.amount -= rollbackTxn.amount;
+        if (dBank) dBank.amount += rollbackTxn.amount;
+
+        // Persist balance changes
+        google.script.run
+          .withSuccessHandler(function() {
+            bmRender();
+            bmFetchTransactions(); // Refresh list to see the new rollback entry
+          })
+          .withFailureHandler(function(err) {
+            bmAlert("Rollback logged, but failed to update balances: " + (err.message || err));
+            bmRender();
+          })
+          .updateBankBalances(_bmData);
+      })
+      .withFailureHandler(function(err) {
+        bmAlert("Rollback failed: " + (err.message || err));
+      })
+      .addBankTransaction(rollbackTxn);
+  });
 }
 
 function bmUpdateData(index, key, value) {
@@ -1089,7 +1239,7 @@ function bmSave() {
     .withFailureHandler(function(err) {
       btn.disabled = false;
       btn.innerHTML = oldHtml;
-      alert('Failed to save: ' + (err.message || err));
+      bmAlert('Failed to save: ' + (err.message || err));
     })
     .updateBankBalances(_bmData);
 }
