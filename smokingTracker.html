@@ -1,195 +1,298 @@
 <style>
+  :root {
+    --bg-dark: rgba(15, 23, 42, 0.4);
+    --card-bg: rgba(30, 41, 59, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --mint: #4ade80;
+    --mint-glow: rgba(74, 222, 128, 0.4);
+    --blue: #38bdf8;
+    --blue-glow: rgba(56, 189, 248, 0.4);
+    --purple: #c084fc;
+    --purple-glow: rgba(192, 132, 252, 0.4);
+    --cream: #f1f5f9;
+    --dim: #94a3b8;
+    --grad-mint: linear-gradient(135deg, #4ade80 0%, #2dd4bf 100%);
+    --grad-purple: linear-gradient(135deg, #c084fc 0%, #a855f7 100%);
+  }
+
   .smoke-container {
-    --mint: #7c9cf0;
-    --mint-deep: #5b7ce0;
-    --ember: #b794f4;
-    --ember-deep: #9f6fe8;
-    --cream: #eef0f8;
-    --dim: #97a0bd;
-    --line: rgba(255,255,255,0.14);
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: var(--cream);
     width: 100%;
-    max-width: 560px;
     margin: 0 auto;
-    overflow-x: hidden;
+    padding: 20px 16px;
+    background: transparent;
+    min-height: 100%;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--purple-glow) transparent;
   }
-  .smoke-container * { box-sizing: border-box; min-width: 0; }
 
-  /* ---------- Hero / breathing ring ---------- */
+  .smoke-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  .smoke-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .smoke-container::-webkit-scrollbar-thumb {
+    background-color: var(--glass-border);
+    border-radius: 20px;
+  }
+
+  @media (min-width: 768px) {
+    .smoke-container {
+      max-width: 800px;
+      padding: 40px 24px;
+    }
+    .smoke-stats-grid {
+      gap: 20px;
+    }
+    .breath-ring-wrap {
+      width: 280px;
+      height: 280px;
+    }
+    .breath-days {
+      font-size: 5rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .smoke-container {
+      padding: 12px 12px;
+    }
+    .smoke-stats-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .glass-card {
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 20px;
+    }
+    .breath-hero {
+      padding: 10px 0;
+    }
+    .smoke-eyebrow {
+      margin-bottom: 12px;
+      font-size: 0.7rem;
+    }
+    .breath-ring-wrap {
+      width: 180px;
+      height: 180px;
+    }
+    .breath-days {
+      font-size: 3rem;
+    }
+    .breath-label {
+      font-size: 0.7rem;
+    }
+    .breath-sub {
+      font-size: 0.8rem;
+      margin-top: 8px;
+    }
+    .smoke-savings-val {
+      font-size: 1.6rem;
+    }
+    .smoke-stat-val {
+      font-size: 1.4rem;
+    }
+    .smoke-stat-lbl {
+      font-size: 0.6rem;
+    }
+    .donut-section {
+      gap: 12px;
+    }
+    .donut-wrap {
+      width: 70px;
+      height: 70px;
+    }
+    .donut-text-title {
+      font-size: 0.95rem;
+    }
+    .donut-text-sub {
+      font-size: 0.75rem;
+    }
+    .life-card {
+      padding: 12px;
+      gap: 12px;
+    }
+    .life-icon {
+      width: 40px;
+      height: 40px;
+      font-size: 1.2rem;
+    }
+    .life-txt {
+      font-size: 0.85rem;
+    }
+  }
+
+  .smoke-container * { box-sizing: border-box; }
+
+  /* Animations */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-in { animation: fadeInUp 0.6s ease-out forwards; }
+
+  /* Glassmorphism Card Base */
+  .glass-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    margin-bottom: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  }
+
+  /* Hero Section */
   .breath-hero {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: clamp(16px, 6vw, 28px) 12px 8px;
+    padding: 20px 0;
+  }
+  .smoke-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 24px;
+    background: rgba(192, 132, 252, 0.1);
+    padding: 6px 16px;
+    border-radius: 100px;
   }
   .breath-ring-wrap {
     position: relative;
-    width: clamp(160px, 55vw, 220px);
-    height: clamp(160px, 55vw, 220px);
+    width: 240px;
+    height: 240px;
   }
-  .breath-ring-wrap svg { width: 100%; height: 100%; }
-  .breath-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; }
+  .breath-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 12; }
   .breath-fg {
-    fill: none; stroke: var(--mint); stroke-width: 8; stroke-linecap: round;
+    fill: none; stroke: url(#grad-mint); stroke-width: 12; stroke-linecap: round;
     transform: rotate(-90deg); transform-origin: 50% 50%;
-    filter: drop-shadow(0 0 6px rgba(94,234,212,0.5));
-    transition: stroke-dashoffset 1s ease-out;
-  }
-  .breath-pulse {
-    fill: none; stroke: var(--mint); stroke-width: 1; opacity: 0.35;
-    transform-origin: 50% 50%;
-    animation: breathe 5.5s ease-in-out infinite;
-  }
-  @keyframes breathe {
-    0%, 100% { r: 92; opacity: 0.05; }
-    50% { r: 100; opacity: 0.3; }
+    filter: drop-shadow(0 0 8px var(--mint-glow));
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .breath-center {
     position: absolute; inset: 0; display: flex; flex-direction: column;
     align-items: center; justify-content: center; text-align: center;
   }
   .breath-days {
-    font-family: 'Georgia', serif;
-    font-size: clamp(2em, 9vw, 3em); font-weight: 700; line-height: 1; color: var(--mint);
+    font-size: 4rem; font-weight: 800; line-height: 1; 
+    background: var(--grad-mint); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .breath-label {
-    font-size: 0.72em; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--dim); margin-top: 4px; text-align: center;
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--dim); margin-top: 4px;
   }
   .breath-sub {
-    font-size: 0.78em; color: var(--dim); margin-top: 10px; letter-spacing: 0.5px; text-align: center;
-  }
-  .smoke-eyebrow {
-    font-size: 0.7em; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--ember); margin-bottom: 4px; text-align: center;
-    padding: 0 8px;
+    font-size: 0.85rem; color: var(--mint); margin-top: 12px; font-weight: 500;
   }
 
-  /* ---------- Savings strip ---------- */
+  /* Savings Box */
   .smoke-savings-box {
-    margin: clamp(14px, 4vw, 22px) clamp(8px, 3vw, 14px) 16px;
-    background: rgba(94,234,212,0.08);
-    border-radius: 16px;
-    padding: clamp(14px, 4vw, 18px) clamp(14px, 4vw, 20px);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    border: 1px solid rgba(94,234,212,0.3);
+    background: linear-gradient(135deg, rgba(74, 222, 128, 0.05) 0%, rgba(56, 189, 248, 0.05) 100%);
   }
-  .smoke-savings-box .lbl {
-    font-size: 0.7em; letter-spacing: 1.5px; text-transform: uppercase;
-    color: var(--dim); margin-bottom: 4px;
-  }
-  .smoke-savings-val { font-size: clamp(1.4em, 6vw, 1.9em); font-weight: 700; font-family: 'Georgia', serif; color: var(--mint); word-break: break-word; }
-  .smoke-savings-sub { font-size: 0.78em; color: var(--dim); margin-top: 2px; }
+  .smoke-savings-box .lbl { font-size: 0.75rem; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; }
+  .smoke-savings-val { font-size: 2.2rem; font-weight: 800; color: var(--cream); margin: 4px 0; }
+  .smoke-savings-sub { font-size: 0.85rem; color: var(--dim); }
   .savings-icon {
-    width: 44px; height: 44px; border-radius: 50%;
-    background: rgba(94,234,212,0.15); color: var(--mint);
+    width: 56px; height: 56px; border-radius: 18px;
+    background: var(--grad-mint); color: #064e3b;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.3em; flex-shrink: 0;
-    border: 1px solid rgba(94,234,212,0.3);
+    font-size: 1.5rem; font-weight: 700;
+    box-shadow: 0 4px 15px var(--mint-glow);
   }
 
-  /* ---------- Stats grid ---------- */
+  /* Stats Grid */
   .smoke-stats-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    margin: 0 clamp(8px, 3vw, 14px) 18px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
   }
   .smoke-stat-card {
-    background: transparent;
-    border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 10px 4px;
+    background: rgba(30, 41, 59, 0.3);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 16px 8px;
     text-align: center;
+    transition: all 0.2s;
   }
-  .smoke-stat-val { display: block; font-size: clamp(1.1em, 5vw, 1.5em); font-weight: 700; font-family: 'Georgia', serif; }
-  .smoke-stat-lbl { font-size: 0.65em; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); }
-  .smoke-stat-val.green { color: var(--mint); }
-  .smoke-stat-val.blue  { color: #6cc8e8; }
-  .smoke-stat-val.orange{ color: var(--ember); }
+  .smoke-stat-card:hover { transform: translateY(-4px); }
+  .smoke-stat-val { display: block; font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; }
+  .smoke-stat-lbl { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: var(--dim); letter-spacing: 0.05em; }
+  .val-mint { color: var(--mint); }
+  .val-blue { color: var(--blue); }
+  .val-purple { color: var(--purple); }
 
-  /* ---------- Donut chart: cigarettes avoided ---------- */
+  /* Donut Section */
   .donut-section {
-    margin: 0 clamp(8px, 3vw, 14px) 20px;
-    background: transparent;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .donut-wrap { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+  .donut-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .donut-center {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem; font-weight: 800; color: var(--purple);
+  }
+  .donut-text-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: var(--cream); }
+  .donut-text-sub { font-size: 0.85rem; color: var(--dim); line-height: 1.5; }
+
+  /* Health Section */
+  .health-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--dim);
+  }
+  .health-header::after { content: ''; flex: 1; height: 1px; background: var(--glass-border); }
+  
+  .health-item { margin-bottom: 20px; }
+  .health-info { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
+  .h-label { font-size: 0.95rem; font-weight: 600; color: var(--cream); }
+  .h-desc { font-size: 0.8rem; color: var(--dim); display: block; }
+  .h-pct { font-size: 0.85rem; font-weight: 700; color: var(--mint); }
+  
+  .health-progress-bg { height: 8px; background: rgba(255,255,255,0.05); border-radius: 100px; overflow: hidden; }
+  .health-progress-fill {
+    height: 100%; border-radius: 100px; width: 0;
+    background: var(--grad-mint);
+    transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px var(--mint-glow);
+  }
+  .health-progress-fill.pending { background: #334155; box-shadow: none; }
+
+  /* Life Regained */
+  .life-card {
     display: flex;
     align-items: center;
     gap: 16px;
-    flex-wrap: wrap;
-  }
-  .donut-wrap { position: relative; width: 84px; height: 84px; flex-shrink: 0; }
-  .donut-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-  .donut-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 10; }
-  .donut-fg { fill: none; stroke: var(--ember); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 1.2s ease-out; }
-  .donut-center {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 0.9em; font-weight: 700; color: var(--ember);
-  }
-  .donut-text { flex: 1; min-width: 160px; }
-  .donut-text-title { font-size: 0.92em; font-weight: 600; margin-bottom: 4px; }
-  .donut-text-sub { font-size: 0.8em; color: var(--dim); line-height: 1.45; }
-
-  /* ---------- Health timeline ---------- */
-  .smoke-health-section { margin: 0 clamp(8px, 3vw, 14px) 10px; }
-  .smoke-health-title {
-    font-size: 0.78em; letter-spacing: 2px; text-transform: uppercase;
-    color: var(--dim); margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
-  }
-  .smoke-health-title::before {
-    content: ''; width: 14px; height: 1px; background: var(--mint); flex-shrink: 0;
-  }
-  .health-timeline { position: relative; padding-left: 20px; }
-  .health-timeline::before {
-    content: ''; position: absolute; left: 4px; top: 6px; bottom: 6px;
-    width: 1px; background: var(--line);
-  }
-  .health-item { position: relative; padding-bottom: 18px; }
-  .health-item:last-child { padding-bottom: 0; }
-  .health-dot {
-    position: absolute; left: -20px; top: 2px;
-    width: 10px; height: 10px; border-radius: 50%;
-    background: transparent; border: 2px solid var(--dim);
-  }
-  .health-dot.done { border-color: var(--mint); background: var(--mint); }
-  .health-info { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
-  .health-info .h-label { font-size: 0.88em; font-weight: 500; }
-  .health-info .h-desc { font-size: 0.74em; color: var(--dim); display: block; margin-top: 1px; }
-  .health-info .h-pct { font-size: 0.76em; color: var(--dim); font-family: 'Georgia', serif; flex-shrink: 0; }
-  .health-progress-bg { height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
-  .health-progress-fill {
-    height: 100%; border-radius: 4px; width: 0%;
-    background: var(--mint);
-    transition: width 1.2s ease-out;
-  }
-  .health-progress-fill.pending { background: var(--dim); opacity: 0.5; }
-
-  /* ---------- Life regained ---------- */
-  .life-card {
-    margin: clamp(16px, 4vw, 22px) clamp(8px, 3vw, 14px) 6px;
-    display: flex; align-items: center; gap: 14px;
-    background: transparent;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(192, 132, 252, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
   }
   .life-icon {
-    width: 36px; height: 36px; border-radius: 10px;
-    background: rgba(255,138,91,0.12); color: var(--ember);
-    display: flex; align-items: center; justify-content: center; font-size: 1.15em; flex-shrink: 0;
-    border: 1px solid rgba(255,138,91,0.3);
+    width: 48px; height: 48px; border-radius: 14px;
+    background: var(--grad-purple); color: #2e1065;
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;
   }
-  .life-card b { color: var(--ember); }
-  .life-txt { font-size: 0.86em; color: var(--dim); }
+  .life-txt { font-size: 0.95rem; line-height: 1.5; color: var(--dim); }
+  .life-txt b { color: var(--purple); font-weight: 700; }
 </style>
 
 <div class="smoke-container">
@@ -201,21 +304,20 @@
     const root = document.getElementById('smoke-content');
 
     if (!data || !data.success) {
-      root.innerHTML = '<div style="text-align:center;padding:40px 16px;color:#8fa3a0;">Could not load your data. ' + (data ? data.error : 'Failed to load data') + '</div>';
+      root.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--dim);">Could not load your data. ' + (data ? data.error : 'Failed to load data') + '</div>';
       return;
     }
 
     const lastSmoke = new Date(data.lastSmokeDate);
     if (isNaN(lastSmoke.getTime())) {
-      root.innerHTML = '<div style="text-align:center;padding:40px 16px;color:#8fa3a0;">Add a valid "Last smoke date" in cell A2 to start tracking.</div>';
+      root.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--dim);">Add a valid "Last smoke date" to start tracking.</div>';
       return;
     }
 
     const now = new Date();
     const diffMs = now - lastSmoke;
-
     if (diffMs < 0) {
-      root.innerHTML = '<div style="text-align:center;padding:40px 16px;color:#8fa3a0;">Your last smoke date is in the future — check cell A2.</div>';
+      root.innerHTML = '<div style="text-align:center;padding:40px 16px;color:var(--dim);">Your last smoke date is in the future.</div>';
       return;
     }
 
@@ -223,24 +325,14 @@
     const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
     const diffMins = Math.floor((diffMs / (1000 * 60)) % 60);
 
-    // Calendar-accurate years / months / days breakdown
     let y = now.getFullYear() - lastSmoke.getFullYear();
     let mo = now.getMonth() - lastSmoke.getMonth();
     let d = now.getDate() - lastSmoke.getDate();
-    if (d < 0) {
-      mo -= 1;
-      const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-      d += prevMonth.getDate();
-    }
-    if (mo < 0) {
-      y -= 1;
-      mo += 12;
-    }
+    if (d < 0) { mo -= 1; const pm = new Date(now.getFullYear(), now.getMonth(), 0); d += pm.getDate(); }
+    if (mo < 0) { y -= 1; mo += 12; }
 
     const totalCigsNotSmoked = diffDays * data.dailyCount;
     const moneySaved = totalCigsNotSmoked * data.piecePrice;
-
-    // Use a pack-a-month reference point for the donut so it always has visible motion early on
     const packReference = Math.max(data.dailyCount * 30, 30);
     const donutPct = Math.min(100, (totalCigsNotSmoked / packReference) * 100);
 
@@ -252,95 +344,79 @@
       { label: 'Nerve endings', time: 3, desc: 'starting to re-grow' },
       { label: 'Circulation', time: 14, desc: 'improves significantly' },
       { label: 'Lung function', time: 60, desc: 'increases up to 30%' },
-      { label: 'Coughing & breathlessness', time: 270, desc: 'noticeably decrease' }
+      { label: 'Coughing', time: 270, desc: 'noticeably decreases' }
     ];
 
-    // Ring progress relative to current milestone phase (caps visually at 100%)
-    const ringPct = Math.min(100, (diffDays / 270) * 100);
-    const R = 92, C = 2 * Math.PI * R;
+    const R = 90, C = 2 * Math.PI * R;
+    const ringPct = Math.min(100, (diffDays / 365) * 100); // 1 year goal for the big ring
     const ringOffset = C - (ringPct / 100) * C;
-
-    const donutR = 32, donutC = 2 * Math.PI * donutR;
+    const donutR = 36, donutC = 2 * Math.PI * donutR;
     const donutOffset = donutC - (donutPct / 100) * donutC;
 
-    let html = '';
+    let html = `
+      <svg style="width:0;height:0;position:absolute;">
+        <defs>
+          <linearGradient id="grad-mint" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#4ade80" />
+            <stop offset="100%" stop-color="#2dd4bf" />
+          </linearGradient>
+          <linearGradient id="grad-purple" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#c084fc" />
+            <stop offset="100%" stop-color="#a855f7" />
+          </linearGradient>
+        </defs>
+      </svg>
 
-    // Hero / breathing ring
-    html += '<div class="breath-hero">';
-    html += '  <div class="smoke-eyebrow">Smoke-free since ' + lastSmoke.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) + '</div>';
-    html += '  <div class="breath-ring-wrap">';
-    html += '    <svg viewBox="0 0 200 200">';
-    html += '      <circle class="breath-pulse" cx="100" cy="100" r="92"></circle>';
-    html += '      <circle class="breath-bg" cx="100" cy="100" r="' + R + '"></circle>';
-    html += '      <circle class="breath-fg" cx="100" cy="100" r="' + R + '" stroke-dasharray="' + C + '" stroke-dashoffset="' + ringOffset + '"></circle>';
-    html += '    </svg>';
-    html += '    <div class="breath-center">';
-    html += '      <div class="breath-days">' + diffDays + '</div>';
-    html += '      <div class="breath-label">' + (diffDays === 1 ? 'day smoke-free' : 'days smoke-free') + '</div>';
-    html += '      <div class="breath-sub">' + diffHours + 'h ' + diffMins + 'm into this one</div>';
-    html += '    </div>';
-    html += '  </div>';
-    html += '</div>';
+      <div class="breath-hero animate-in">
+        <div class="smoke-eyebrow">Smoke-free since ${lastSmoke.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+        <div class="breath-ring-wrap">
+          <svg viewBox="0 0 200 200">
+            <circle class="breath-bg" cx="100" cy="100" r="${R}"></circle>
+            <circle class="breath-fg" cx="100" cy="100" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="${ringOffset}"></circle>
+          </svg>
+          <div class="breath-center">
+            <div class="breath-days">${diffDays}</div>
+            <div class="breath-label">${diffDays === 1 ? 'day' : 'days'} clean</div>
+            <div class="breath-sub">${diffHours}h ${diffMins}m</div>
+          </div>
+        </div>
+      </div>
 
-    // Savings strip
-    html += '<div class="smoke-savings-box">';
-    html += '  <div>';
-    html += '    <div class="lbl">Total money saved</div>';
-    html += '    <div class="smoke-savings-val">\u20A8 ' + Math.round(moneySaved).toLocaleString() + '</div>';
-    html += '    <div class="smoke-savings-sub">' + totalCigsNotSmoked.toLocaleString() + ' cigarettes not smoked</div>';
-    html += '  </div>';
-    html += '  <div class="savings-icon">\u20A8</div>';
-    html += '</div>';
+      <div class="glass-card smoke-savings-box animate-in" style="animation-delay: 0.1s">
+        <div>
+          <div class="lbl">Money Saved</div>
+          <div class="smoke-savings-val">\u20A8 ${Math.round(moneySaved).toLocaleString()}</div>
+          <div class="smoke-savings-sub">${totalCigsNotSmoked.toLocaleString()} cigarettes skipped</div>
+        </div>
+        <div class="savings-icon">\u20A8</div>
+      </div>
 
-    // Stats grid
-    html += '<div class="smoke-stats-grid">';
-    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val green">' + y + '</span><span class="smoke-stat-lbl">' + (y === 1 ? 'Year' : 'Years') + '</span></div>';
-    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val blue">' + mo + '</span><span class="smoke-stat-lbl">' + (mo === 1 ? 'Month' : 'Months') + '</span></div>';
-    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val orange">' + d + '</span><span class="smoke-stat-lbl">' + (d === 1 ? 'Day' : 'Days') + '</span></div>';
-    html += '</div>';
+      <div class="smoke-stats-grid animate-in" style="animation-delay: 0.2s">
+        <div class="smoke-stat-card"><span class="smoke-stat-val val-mint">${y}</span><span class="smoke-stat-lbl">${y === 1 ? 'Year' : 'Years'}</span></div>
+        <div class="smoke-stat-card"><span class="smoke-stat-val val-blue">${mo}</span><span class="smoke-stat-lbl">${mo === 1 ? 'Month' : 'Months'}</span></div>
+        <div class="smoke-stat-card"><span class="smoke-stat-val val-purple">${d}</span><span class="smoke-stat-lbl">${d === 1 ? 'Day' : 'Days'}</span></div>
+      </div>
 
-    // Donut: cigarettes avoided vs a pack-a-month reference
-    html += '<div class="donut-section">';
-    html += '  <div class="donut-wrap">';
-    html += '    <svg viewBox="0 0 84 84">';
-    html += '      <circle class="donut-bg" cx="42" cy="42" r="' + donutR + '"></circle>';
-    html += '      <circle class="donut-fg" cx="42" cy="42" r="' + donutR + '" stroke-dasharray="' + donutC + '" stroke-dashoffset="' + donutOffset + '"></circle>';
-    html += '    </svg>';
-    html += '    <div class="donut-center">' + Math.round(donutPct) + '%</div>';
-    html += '  </div>';
-    html += '  <div class="donut-text">';
-    html += '    <div class="donut-text-title">Cigarettes avoided</div>';
-    html += '    <div class="donut-text-sub">' + totalCigsNotSmoked.toLocaleString() + ' cigarettes skipped at ' + data.dailyCount + ' a day &mdash; that\'s roughly ' + Math.round(totalCigsNotSmoked / 20) + ' packs left unbought.</div>';
-    html += '  </div>';
-    html += '</div>';
+      <div class="glass-card donut-section animate-in" style="animation-delay: 0.3s">
+        <div class="donut-wrap">
+          <svg viewBox="0 0 90 90">
+            <circle class="breath-bg" cx="45" cy="45" r="${donutR}" style="stroke-width:8"></circle>
+            <circle cx="45" cy="45" r="${donutR}" fill="none" stroke="url(#grad-purple)" stroke-width="8" stroke-linecap="round" 
+                    stroke-dasharray="${donutC}" stroke-dashoffset="${donutOffset}" style="transition: stroke-dashoffset 1.2s ease-out; transform: rotate(-90deg); transform-origin: 50% 50%;"></circle>
+          </svg>
+          <div class="donut-center">${Math.round(donutPct)}%</div>
+        </div>
+        <div class="donut-text">
+          <div class="donut-text-title">Pack Progress</div>
+          <div class="donut-text-sub">You've avoided ${Math.round(totalCigsNotSmoked / 20)} full packs. Keep it up!</div>
+        </div>
+      </div>
 
-    // Health timeline
-    html += '<div class="smoke-health-section">';
-    html += '  <div class="smoke-health-title">Recovery timeline</div>';
-    html += '  <div class="health-timeline">';
-    healthMilestones.forEach(m => {
-      const progress = Math.min(100, (diffDays / m.time) * 100);
-      const isDone = progress >= 100;
-      html += '<div class="health-item">';
-      html += '  <div class="health-dot' + (isDone ? ' done' : '') + '"></div>';
-      html += '  <div class="health-info">';
-      html += '    <span><span class="h-label">' + m.label + '</span><span class="h-desc">' + m.desc + '</span></span>';
-      html += '    <span class="h-pct">' + Math.floor(progress) + '%</span>';
-      html += '  </div>';
-      html += '  <div class="health-progress-bg"><div class="health-progress-fill' + (isDone ? '' : ' pending') + '" style="width:' + progress + '%"></div></div>';
-      html += '</div>';
-    });
-    html += '  </div>';
-    html += '</div>';
-
-    // Life regained (approx 11 mins per cig)
-    const lifeRegainedMins = totalCigsNotSmoked * 11;
-    const lifeRegainedDays = (lifeRegainedMins / (60 * 24)).toFixed(1);
-
-    html += '<div class="life-card">';
-    html += '  <div class="life-icon">&#x231B;</div>';
-    html += '  <div class="life-txt"><b>' + lifeRegainedDays + ' days</b> of life regained, at roughly 11 minutes per cigarette avoided.</div>';
-    html += '</div>';
+      <div class="glass-card life-card animate-in" style="animation-delay: 0.4s">
+        <div class="life-icon">⌛</div>
+        <div class="life-txt"><b>${(totalCigsNotSmoked * 11 / 1440).toFixed(1)} days</b> of life regained by staying clean.</div>
+      </div>
+    `;
 
     root.innerHTML = html;
   }
