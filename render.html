@@ -4590,6 +4590,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <button class="trk-tab"        id="trkTab-rot"  onclick="trackerSetTab('rot')">🔄 Rotations</button>
     <button class="trk-tab"        id="trkTab-loss" onclick="trackerSetTab('loss')">📉 Losses</button>
     <button class="trk-tab"        id="trkTab-inst" onclick="trackerSetTab('inst')">📋 Installments</button>
+    <button class="trk-tab"        id="trkTab-smoke" onclick="trackerSetTab('smoke')">🚭 Smoking</button>
   </div>
   <!-- ── Subscriptions pane ── -->
   <div class="trk-pane active" id="trk-pane-sub">
@@ -4679,6 +4680,10 @@ input[type=date].swae-input{color-scheme:dark;}
         Loading installments...
       </div>
     </div>
+  </div>
+  <!-- ── Smoking Tracker pane ── -->
+  <div class="trk-pane" id="trk-pane-smoke">
+    <?!= include('smokingTracker'); ?>
   </div>
 </div>
 
@@ -12468,7 +12473,7 @@ function trackerClose() {
 
 function trackerSetTab(tab) {
   _trackerActiveTab = tab;
-  ['sub','rot','loss','inst'].forEach(function(t) {
+  ['sub','rot','loss','inst','smoke'].forEach(function(t) {
     var btn  = document.getElementById('trkTab-' + t);
     var pane = document.getElementById('trk-pane-' + t);
     if (btn)  btn.classList.toggle('active',  t === tab);
@@ -12477,6 +12482,7 @@ function trackerSetTab(tab) {
   if (tab === 'sub'  && !_subscriptionsData)  loadSubscriptions();
   if ((tab === 'rot' || tab === 'loss') && !_notesData) loadNotesData();
   if (tab === 'inst' && !_installmentsData)   loadInstallments();
+  if (tab === 'smoke') loadSmokingData();
 }
 
 // Draggable tracker-modal (mouse + touch)
@@ -13052,6 +13058,30 @@ function loadInstallments() {
         '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error: ' + err.message + '</div>';
     })
     .getInstallments();
+}
+
+function loadSmokingData() {
+  var content = document.getElementById('smoke-content');
+  if (content) {
+    content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading Smoking Tracker...</div>';
+  }
+  
+  console.log("Requesting Smoking Data...");
+  google.script.run
+    .withSuccessHandler(function(data) {
+       console.log("Smoking Data Received:", data);
+       if (!data) {
+         console.error("Smoking Data is null or undefined");
+         if (content) content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">⚠️ Error: Received null data from server.</div>';
+         return;
+       }
+       renderSmokingTracker(data);
+    })
+    .withFailureHandler(function(err) {
+       console.error("Smoking Data Request Failed:", err);
+       if (content) content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);">⚠️ Error: ' + err.message + '</div>';
+    })
+    .getSmokingData();
 }
 
 function renderInstallments(data) {

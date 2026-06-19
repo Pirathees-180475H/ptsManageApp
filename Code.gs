@@ -3400,6 +3400,42 @@ function getSubscriptions() {
   }
 }
 
+function getSmokingData() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('Habbit');
+    Logger.log('getSmokingData: sheet="Habbit" exists=' + (!!sheet));
+    
+    if (!sheet) {
+      return { success: false, error: 'Sheet "Habbit" not found. Please create it.' };
+    }
+    
+    var range = sheet.getRange("A2:C2");
+    var values = range.getValues()[0];
+    Logger.log('getSmokingData: raw values=' + JSON.stringify(values));
+    
+    var lastSmokeDate = values[0];
+    var dailyCount = Number(values[1]) || 0;
+    var piecePrice = Number(values[2]) || 0;
+    
+    // Convert Date to ISO string to ensure clean serialization
+    var dateStr = (lastSmokeDate instanceof Date) ? lastSmokeDate.toISOString() : String(lastSmokeDate);
+    
+    var result = {
+      success: true,
+      lastSmokeDate: dateStr,
+      dailyCount: dailyCount,
+      piecePrice: piecePrice
+    };
+    
+    Logger.log('getSmokingData: returning=' + JSON.stringify(result));
+    return result;
+  } catch (e) {
+    Logger.log('getSmokingData: error=' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 function addSubscription(entry) {
   try {
     var ss = SpreadsheetApp.getActive();
