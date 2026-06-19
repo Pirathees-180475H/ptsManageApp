@@ -1,11 +1,11 @@
 <style>
   .smoke-container {
-    --mint: #5eead4;
-    --mint-deep: #0f8a72;
-    --ember: #ff8a5b;
-    --ember-deep: #c8602f;
-    --cream: #f3efe6;
-    --dim: #8fa3a0;
+    --mint: #7c9cf0;
+    --mint-deep: #5b7ce0;
+    --ember: #b794f4;
+    --ember-deep: #9f6fe8;
+    --cream: #eef0f8;
+    --dim: #97a0bd;
     --line: rgba(255,255,255,0.14);
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
     color: var(--cream);
@@ -112,7 +112,7 @@
   .smoke-stat-val { display: block; font-size: clamp(1.1em, 5vw, 1.5em); font-weight: 700; font-family: 'Georgia', serif; }
   .smoke-stat-lbl { font-size: 0.65em; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); }
   .smoke-stat-val.green { color: var(--mint); }
-  .smoke-stat-val.blue  { color: #7fb6e8; }
+  .smoke-stat-val.blue  { color: #6cc8e8; }
   .smoke-stat-val.orange{ color: var(--ember); }
 
   /* ---------- Donut chart: cigarettes avoided ---------- */
@@ -223,6 +223,20 @@
     const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
     const diffMins = Math.floor((diffMs / (1000 * 60)) % 60);
 
+    // Calendar-accurate years / months / days breakdown
+    let y = now.getFullYear() - lastSmoke.getFullYear();
+    let mo = now.getMonth() - lastSmoke.getMonth();
+    let d = now.getDate() - lastSmoke.getDate();
+    if (d < 0) {
+      mo -= 1;
+      const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      d += prevMonth.getDate();
+    }
+    if (mo < 0) {
+      y -= 1;
+      mo += 12;
+    }
+
     const totalCigsNotSmoked = diffDays * data.dailyCount;
     const moneySaved = totalCigsNotSmoked * data.piecePrice;
 
@@ -280,9 +294,9 @@
 
     // Stats grid
     html += '<div class="smoke-stats-grid">';
-    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val green">' + diffDays + '</span><span class="smoke-stat-lbl">Days</span></div>';
-    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val blue">' + diffHours + '</span><span class="smoke-stat-lbl">Hours</span></div>';
-    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val orange">' + diffMins + '</span><span class="smoke-stat-lbl">Minutes</span></div>';
+    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val green">' + y + '</span><span class="smoke-stat-lbl">' + (y === 1 ? 'Year' : 'Years') + '</span></div>';
+    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val blue">' + mo + '</span><span class="smoke-stat-lbl">' + (mo === 1 ? 'Month' : 'Months') + '</span></div>';
+    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val orange">' + d + '</span><span class="smoke-stat-lbl">' + (d === 1 ? 'Day' : 'Days') + '</span></div>';
     html += '</div>';
 
     // Donut: cigarettes avoided vs a pack-a-month reference
