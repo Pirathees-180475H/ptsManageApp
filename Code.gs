@@ -1002,11 +1002,17 @@ function getBankTransactions() {
     
     var txns = [];
     for (var i = 1; i < data.length; i++) {
+      var source = String(data[i][1] || "").trim();
+      var destination = String(data[i][2] || "").trim();
+      
+      // Skip row if both source and destination are empty (columns B and C)
+      if (!source && !destination) continue;
+
       txns.push({
         row: i + 1,
         date: data[i][0] instanceof Date ? data[i][0].toISOString() : data[i][0],
-        source: data[i][1],
-        destination: data[i][2],
+        source: source,
+        destination: destination,
         amount: parseFloat(data[i][3]) || 0,
         reference: data[i][4]
       });
@@ -1078,6 +1084,30 @@ function deleteBankTransaction(row) {
     return { success: true };
   } catch (e) {
     throw new Error('Failed to delete transaction: ' + e.message);
+  }
+}
+
+function getAdditionalDropdownValues() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Transactions');
+    if (!sheet) return [];
+    
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return [];
+    
+    var values = sheet.getRange(2, 10, lastRow - 1, 1).getValues();
+    var result = [];
+    for (var i = 0; i < values.length; i++) {
+      var val = String(values[i][0]).trim();
+      if (val && result.indexOf(val) === -1) {
+        result.push(val);
+      }
+    }
+    return result;
+  } catch (e) {
+    Logger.log('[DEBUG_LOG] Error in getAdditionalDropdownValues: ' + e.message);
+    return [];
   }
 }
 
