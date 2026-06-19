@@ -41,88 +41,99 @@
 
   @media (min-width: 768px) {
     .smoke-container {
-      max-width: 800px;
-      padding: 40px 24px;
+      max-width: 700px;
+      padding: 30px 20px;
     }
     .smoke-stats-grid {
-      gap: 20px;
+      gap: 16px;
     }
     .breath-ring-wrap {
-      width: 280px;
-      height: 280px;
+      width: 240px;
+      height: 240px;
     }
     .breath-days {
-      font-size: 5rem;
+      font-size: 4rem;
     }
   }
 
   @media (max-width: 480px) {
     .smoke-container {
-      padding: 12px 12px;
+      padding: 10px 10px;
     }
     .smoke-stats-grid {
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
+      gap: 6px;
     }
     .glass-card {
-      padding: 16px;
-      margin-bottom: 12px;
-      border-radius: 20px;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 18px;
     }
     .breath-hero {
-      padding: 10px 0;
+      padding: 5px 0;
     }
     .smoke-eyebrow {
-      margin-bottom: 12px;
-      font-size: 0.7rem;
+      margin-bottom: 8px;
+      font-size: 0.65rem;
+      padding: 4px 12px;
     }
     .breath-ring-wrap {
-      width: 180px;
-      height: 180px;
+      width: 150px;
+      height: 150px;
     }
     .breath-days {
-      font-size: 3rem;
+      font-size: 2.5rem;
     }
     .breath-label {
-      font-size: 0.7rem;
+      font-size: 0.65rem;
     }
     .breath-sub {
-      font-size: 0.8rem;
-      margin-top: 8px;
+      font-size: 0.75rem;
+      margin-top: 4px;
     }
     .smoke-savings-val {
-      font-size: 1.6rem;
-    }
-    .smoke-stat-val {
       font-size: 1.4rem;
     }
-    .smoke-stat-lbl {
-      font-size: 0.6rem;
-    }
-    .donut-section {
-      gap: 12px;
-    }
-    .donut-wrap {
-      width: 70px;
-      height: 70px;
-    }
-    .donut-text-title {
-      font-size: 0.95rem;
-    }
-    .donut-text-sub {
+    .smoke-savings-sub {
       font-size: 0.75rem;
     }
-    .life-card {
-      padding: 12px;
-      gap: 12px;
+    .savings-icon {
+      width: 44px;
+      height: 44px;
+      font-size: 1.2rem;
+      border-radius: 12px;
     }
-    .life-icon {
-      width: 40px;
-      height: 40px;
+    .smoke-stat-val {
       font-size: 1.2rem;
     }
-    .life-txt {
+    .smoke-stat-lbl {
+      font-size: 0.55rem;
+    }
+    .donut-section {
+      gap: 10px;
+    }
+    .donut-wrap {
+      width: 60px;
+      height: 60px;
+    }
+    .donut-text-title {
       font-size: 0.85rem;
+    }
+    .donut-text-sub {
+      font-size: 0.7rem;
+    }
+    .life-card {
+      padding: 10px;
+      gap: 10px;
+    }
+    .life-icon {
+      width: 36px;
+      height: 36px;
+      font-size: 1rem;
+      border-radius: 10px;
+    }
+    .life-txt {
+      font-size: 0.8rem;
     }
   }
 
@@ -141,9 +152,9 @@
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    margin-bottom: 20px;
-    padding: 24px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+    padding: 20px;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
   }
 
@@ -155,20 +166,20 @@
     padding: 20px 0;
   }
   .smoke-eyebrow {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--purple);
-    margin-bottom: 24px;
+    margin-bottom: 16px;
     background: rgba(192, 132, 252, 0.1);
-    padding: 6px 16px;
+    padding: 5px 14px;
     border-radius: 100px;
   }
   .breath-ring-wrap {
     position: relative;
-    width: 240px;
-    height: 240px;
+    width: 200px;
+    height: 200px;
   }
   .breath-bg { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 12; }
   .breath-fg {
@@ -182,7 +193,7 @@
     align-items: center; justify-content: center; text-align: center;
   }
   .breath-days {
-    font-size: 4rem; font-weight: 800; line-height: 1; 
+    font-size: 3.2rem; font-weight: 800; line-height: 1; 
     background: var(--grad-mint); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   }
   .breath-label {
@@ -201,13 +212,13 @@
     background: linear-gradient(135deg, rgba(74, 222, 128, 0.05) 0%, rgba(56, 189, 248, 0.05) 100%);
   }
   .smoke-savings-box .lbl { font-size: 0.75rem; font-weight: 600; color: var(--dim); text-transform: uppercase; letter-spacing: 0.05em; }
-  .smoke-savings-val { font-size: 2.2rem; font-weight: 800; color: var(--cream); margin: 4px 0; }
-  .smoke-savings-sub { font-size: 0.85rem; color: var(--dim); }
+  .smoke-savings-val { font-size: 1.8rem; font-weight: 800; color: var(--cream); margin: 2px 0; }
+  .smoke-savings-sub { font-size: 0.8rem; color: var(--dim); }
   .savings-icon {
-    width: 56px; height: 56px; border-radius: 18px;
+    width: 48px; height: 48px; border-radius: 14px;
     background: var(--grad-mint); color: #064e3b;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.5rem; font-weight: 700;
+    font-size: 1.3rem; font-weight: 700;
     box-shadow: 0 4px 15px var(--mint-glow);
   }
 
@@ -223,13 +234,13 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    padding: 16px 8px;
+    border-radius: 16px;
+    padding: 12px 6px;
     text-align: center;
     transition: all 0.2s;
   }
   .smoke-stat-card:hover { transform: translateY(-4px); }
-  .smoke-stat-val { display: block; font-size: 1.8rem; font-weight: 800; margin-bottom: 4px; }
+  .smoke-stat-val { display: block; font-size: 1.5rem; font-weight: 800; margin-bottom: 2px; }
   .smoke-stat-lbl { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: var(--dim); letter-spacing: 0.05em; }
   .val-mint { color: var(--mint); }
   .val-blue { color: var(--blue); }
@@ -241,14 +252,14 @@
     align-items: center;
     gap: 20px;
   }
-  .donut-wrap { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+  .donut-wrap { position: relative; width: 70px; height: 70px; flex-shrink: 0; }
   .donut-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
   .donut-center {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 1.1rem; font-weight: 800; color: var(--purple);
+    font-size: 0.95rem; font-weight: 800; color: var(--purple);
   }
-  .donut-text-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; color: var(--cream); }
-  .donut-text-sub { font-size: 0.85rem; color: var(--dim); line-height: 1.5; }
+  .donut-text-title { font-size: 1rem; font-weight: 700; margin-bottom: 4px; color: var(--cream); }
+  .donut-text-sub { font-size: 0.8rem; color: var(--dim); line-height: 1.4; }
 
   /* Health Section */
   .health-header {
@@ -287,11 +298,11 @@
     background: linear-gradient(135deg, rgba(192, 132, 252, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
   }
   .life-icon {
-    width: 48px; height: 48px; border-radius: 14px;
+    width: 44px; height: 44px; border-radius: 12px;
     background: var(--grad-purple); color: #2e1065;
-    display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;
   }
-  .life-txt { font-size: 0.95rem; line-height: 1.5; color: var(--dim); }
+  .life-txt { font-size: 0.85rem; line-height: 1.4; color: var(--dim); }
   .life-txt b { color: var(--purple); font-weight: 700; }
 </style>
 
