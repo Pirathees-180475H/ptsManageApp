@@ -1,0 +1,333 @@
+<style>
+  .smoke-container {
+    --mint: #5eead4;
+    --mint-deep: #0f8a72;
+    --ember: #ff8a5b;
+    --ember-deep: #c8602f;
+    --cream: #f3efe6;
+    --dim: #8fa3a0;
+    --line: rgba(255,255,255,0.14);
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    color: var(--cream);
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .smoke-container * { box-sizing: border-box; min-width: 0; }
+
+  /* ---------- Hero / breathing ring ---------- */
+  .breath-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: clamp(16px, 6vw, 28px) 12px 8px;
+  }
+  .breath-ring-wrap {
+    position: relative;
+    width: clamp(160px, 55vw, 220px);
+    height: clamp(160px, 55vw, 220px);
+  }
+  .breath-ring-wrap svg { width: 100%; height: 100%; }
+  .breath-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; }
+  .breath-fg {
+    fill: none; stroke: var(--mint); stroke-width: 8; stroke-linecap: round;
+    transform: rotate(-90deg); transform-origin: 50% 50%;
+    filter: drop-shadow(0 0 6px rgba(94,234,212,0.5));
+    transition: stroke-dashoffset 1s ease-out;
+  }
+  .breath-pulse {
+    fill: none; stroke: var(--mint); stroke-width: 1; opacity: 0.35;
+    transform-origin: 50% 50%;
+    animation: breathe 5.5s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { r: 92; opacity: 0.05; }
+    50% { r: 100; opacity: 0.3; }
+  }
+  .breath-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center;
+  }
+  .breath-days {
+    font-family: 'Georgia', serif;
+    font-size: clamp(2em, 9vw, 3em); font-weight: 700; line-height: 1; color: var(--mint);
+  }
+  .breath-label {
+    font-size: 0.72em; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--dim); margin-top: 4px; text-align: center;
+  }
+  .breath-sub {
+    font-size: 0.78em; color: var(--dim); margin-top: 10px; letter-spacing: 0.5px; text-align: center;
+  }
+  .smoke-eyebrow {
+    font-size: 0.7em; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ember); margin-bottom: 4px; text-align: center;
+    padding: 0 8px;
+  }
+
+  /* ---------- Savings strip ---------- */
+  .smoke-savings-box {
+    margin: clamp(14px, 4vw, 22px) clamp(8px, 3vw, 14px) 16px;
+    background: rgba(94,234,212,0.08);
+    border-radius: 16px;
+    padding: clamp(14px, 4vw, 18px) clamp(14px, 4vw, 20px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    border: 1px solid rgba(94,234,212,0.3);
+  }
+  .smoke-savings-box .lbl {
+    font-size: 0.7em; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--dim); margin-bottom: 4px;
+  }
+  .smoke-savings-val { font-size: clamp(1.4em, 6vw, 1.9em); font-weight: 700; font-family: 'Georgia', serif; color: var(--mint); word-break: break-word; }
+  .smoke-savings-sub { font-size: 0.78em; color: var(--dim); margin-top: 2px; }
+  .savings-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: rgba(94,234,212,0.15); color: var(--mint);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3em; flex-shrink: 0;
+    border: 1px solid rgba(94,234,212,0.3);
+  }
+
+  /* ---------- Stats grid ---------- */
+  .smoke-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 0 clamp(8px, 3vw, 14px) 18px;
+  }
+  .smoke-stat-card {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 4px;
+    text-align: center;
+  }
+  .smoke-stat-val { display: block; font-size: clamp(1.1em, 5vw, 1.5em); font-weight: 700; font-family: 'Georgia', serif; }
+  .smoke-stat-lbl { font-size: 0.65em; letter-spacing: 1px; text-transform: uppercase; color: var(--dim); }
+  .smoke-stat-val.green { color: var(--mint); }
+  .smoke-stat-val.blue  { color: #7fb6e8; }
+  .smoke-stat-val.orange{ color: var(--ember); }
+
+  /* ---------- Donut chart: cigarettes avoided ---------- */
+  .donut-section {
+    margin: 0 clamp(8px, 3vw, 14px) 20px;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .donut-wrap { position: relative; width: 84px; height: 84px; flex-shrink: 0; }
+  .donut-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .donut-bg { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 10; }
+  .donut-fg { fill: none; stroke: var(--ember); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 1.2s ease-out; }
+  .donut-center {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 0.9em; font-weight: 700; color: var(--ember);
+  }
+  .donut-text { flex: 1; min-width: 160px; }
+  .donut-text-title { font-size: 0.92em; font-weight: 600; margin-bottom: 4px; }
+  .donut-text-sub { font-size: 0.8em; color: var(--dim); line-height: 1.45; }
+
+  /* ---------- Health timeline ---------- */
+  .smoke-health-section { margin: 0 clamp(8px, 3vw, 14px) 10px; }
+  .smoke-health-title {
+    font-size: 0.78em; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--dim); margin: 0 0 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .smoke-health-title::before {
+    content: ''; width: 14px; height: 1px; background: var(--mint); flex-shrink: 0;
+  }
+  .health-timeline { position: relative; padding-left: 20px; }
+  .health-timeline::before {
+    content: ''; position: absolute; left: 4px; top: 6px; bottom: 6px;
+    width: 1px; background: var(--line);
+  }
+  .health-item { position: relative; padding-bottom: 18px; }
+  .health-item:last-child { padding-bottom: 0; }
+  .health-dot {
+    position: absolute; left: -20px; top: 2px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: transparent; border: 2px solid var(--dim);
+  }
+  .health-dot.done { border-color: var(--mint); background: var(--mint); }
+  .health-info { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+  .health-info .h-label { font-size: 0.88em; font-weight: 500; }
+  .health-info .h-desc { font-size: 0.74em; color: var(--dim); display: block; margin-top: 1px; }
+  .health-info .h-pct { font-size: 0.76em; color: var(--dim); font-family: 'Georgia', serif; flex-shrink: 0; }
+  .health-progress-bg { height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+  .health-progress-fill {
+    height: 100%; border-radius: 4px; width: 0%;
+    background: var(--mint);
+    transition: width 1.2s ease-out;
+  }
+  .health-progress-fill.pending { background: var(--dim); opacity: 0.5; }
+
+  /* ---------- Life regained ---------- */
+  .life-card {
+    margin: clamp(16px, 4vw, 22px) clamp(8px, 3vw, 14px) 6px;
+    display: flex; align-items: center; gap: 14px;
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .life-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,138,91,0.12); color: var(--ember);
+    display: flex; align-items: center; justify-content: center; font-size: 1.15em; flex-shrink: 0;
+    border: 1px solid rgba(255,138,91,0.3);
+  }
+  .life-card b { color: var(--ember); }
+  .life-txt { font-size: 0.86em; color: var(--dim); }
+</style>
+
+<div class="smoke-container">
+  <div id="smoke-content"></div>
+</div>
+
+<script>
+  function renderSmokingTracker(data) {
+    const root = document.getElementById('smoke-content');
+
+    if (!data || !data.success) {
+      root.innerHTML = '<div style="text-align:center;padding:40px 16px;color:#8fa3a0;">Could not load your data. ' + (data ? data.error : 'Failed to load data') + '</div>';
+      return;
+    }
+
+    const lastSmoke = new Date(data.lastSmokeDate);
+    if (isNaN(lastSmoke.getTime())) {
+      root.innerHTML = '<div style="text-align:center;padding:40px 16px;color:#8fa3a0;">Add a valid "Last smoke date" in cell A2 to start tracking.</div>';
+      return;
+    }
+
+    const now = new Date();
+    const diffMs = now - lastSmoke;
+
+    if (diffMs < 0) {
+      root.innerHTML = '<div style="text-align:center;padding:40px 16px;color:#8fa3a0;">Your last smoke date is in the future — check cell A2.</div>';
+      return;
+    }
+
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs / (1000 * 60 * 60)) % 24);
+    const diffMins = Math.floor((diffMs / (1000 * 60)) % 60);
+
+    const totalCigsNotSmoked = diffDays * data.dailyCount;
+    const moneySaved = totalCigsNotSmoked * data.piecePrice;
+
+    // Use a pack-a-month reference point for the donut so it always has visible motion early on
+    const packReference = Math.max(data.dailyCount * 30, 30);
+    const donutPct = Math.min(100, (totalCigsNotSmoked / packReference) * 100);
+
+    const healthMilestones = [
+      { label: 'Blood pressure', time: 20 / (24 * 60), desc: 'returns to normal' },
+      { label: 'Oxygen level', time: 8 / 24, desc: 'returns to normal' },
+      { label: 'Carbon monoxide', time: 1, desc: 'levels in blood drop' },
+      { label: 'Heart attack risk', time: 2, desc: 'starts to decrease' },
+      { label: 'Nerve endings', time: 3, desc: 'starting to re-grow' },
+      { label: 'Circulation', time: 14, desc: 'improves significantly' },
+      { label: 'Lung function', time: 60, desc: 'increases up to 30%' },
+      { label: 'Coughing & breathlessness', time: 270, desc: 'noticeably decrease' }
+    ];
+
+    // Ring progress relative to current milestone phase (caps visually at 100%)
+    const ringPct = Math.min(100, (diffDays / 270) * 100);
+    const R = 92, C = 2 * Math.PI * R;
+    const ringOffset = C - (ringPct / 100) * C;
+
+    const donutR = 32, donutC = 2 * Math.PI * donutR;
+    const donutOffset = donutC - (donutPct / 100) * donutC;
+
+    let html = '';
+
+    // Hero / breathing ring
+    html += '<div class="breath-hero">';
+    html += '  <div class="smoke-eyebrow">Smoke-free since ' + lastSmoke.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) + '</div>';
+    html += '  <div class="breath-ring-wrap">';
+    html += '    <svg viewBox="0 0 200 200">';
+    html += '      <circle class="breath-pulse" cx="100" cy="100" r="92"></circle>';
+    html += '      <circle class="breath-bg" cx="100" cy="100" r="' + R + '"></circle>';
+    html += '      <circle class="breath-fg" cx="100" cy="100" r="' + R + '" stroke-dasharray="' + C + '" stroke-dashoffset="' + ringOffset + '"></circle>';
+    html += '    </svg>';
+    html += '    <div class="breath-center">';
+    html += '      <div class="breath-days">' + diffDays + '</div>';
+    html += '      <div class="breath-label">' + (diffDays === 1 ? 'day smoke-free' : 'days smoke-free') + '</div>';
+    html += '      <div class="breath-sub">' + diffHours + 'h ' + diffMins + 'm into this one</div>';
+    html += '    </div>';
+    html += '  </div>';
+    html += '</div>';
+
+    // Savings strip
+    html += '<div class="smoke-savings-box">';
+    html += '  <div>';
+    html += '    <div class="lbl">Total money saved</div>';
+    html += '    <div class="smoke-savings-val">\u20A8 ' + Math.round(moneySaved).toLocaleString() + '</div>';
+    html += '    <div class="smoke-savings-sub">' + totalCigsNotSmoked.toLocaleString() + ' cigarettes not smoked</div>';
+    html += '  </div>';
+    html += '  <div class="savings-icon">\u20A8</div>';
+    html += '</div>';
+
+    // Stats grid
+    html += '<div class="smoke-stats-grid">';
+    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val green">' + diffDays + '</span><span class="smoke-stat-lbl">Days</span></div>';
+    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val blue">' + diffHours + '</span><span class="smoke-stat-lbl">Hours</span></div>';
+    html += '  <div class="smoke-stat-card"><span class="smoke-stat-val orange">' + diffMins + '</span><span class="smoke-stat-lbl">Minutes</span></div>';
+    html += '</div>';
+
+    // Donut: cigarettes avoided vs a pack-a-month reference
+    html += '<div class="donut-section">';
+    html += '  <div class="donut-wrap">';
+    html += '    <svg viewBox="0 0 84 84">';
+    html += '      <circle class="donut-bg" cx="42" cy="42" r="' + donutR + '"></circle>';
+    html += '      <circle class="donut-fg" cx="42" cy="42" r="' + donutR + '" stroke-dasharray="' + donutC + '" stroke-dashoffset="' + donutOffset + '"></circle>';
+    html += '    </svg>';
+    html += '    <div class="donut-center">' + Math.round(donutPct) + '%</div>';
+    html += '  </div>';
+    html += '  <div class="donut-text">';
+    html += '    <div class="donut-text-title">Cigarettes avoided</div>';
+    html += '    <div class="donut-text-sub">' + totalCigsNotSmoked.toLocaleString() + ' cigarettes skipped at ' + data.dailyCount + ' a day &mdash; that\'s roughly ' + Math.round(totalCigsNotSmoked / 20) + ' packs left unbought.</div>';
+    html += '  </div>';
+    html += '</div>';
+
+    // Health timeline
+    html += '<div class="smoke-health-section">';
+    html += '  <div class="smoke-health-title">Recovery timeline</div>';
+    html += '  <div class="health-timeline">';
+    healthMilestones.forEach(m => {
+      const progress = Math.min(100, (diffDays / m.time) * 100);
+      const isDone = progress >= 100;
+      html += '<div class="health-item">';
+      html += '  <div class="health-dot' + (isDone ? ' done' : '') + '"></div>';
+      html += '  <div class="health-info">';
+      html += '    <span><span class="h-label">' + m.label + '</span><span class="h-desc">' + m.desc + '</span></span>';
+      html += '    <span class="h-pct">' + Math.floor(progress) + '%</span>';
+      html += '  </div>';
+      html += '  <div class="health-progress-bg"><div class="health-progress-fill' + (isDone ? '' : ' pending') + '" style="width:' + progress + '%"></div></div>';
+      html += '</div>';
+    });
+    html += '  </div>';
+    html += '</div>';
+
+    // Life regained (approx 11 mins per cig)
+    const lifeRegainedMins = totalCigsNotSmoked * 11;
+    const lifeRegainedDays = (lifeRegainedMins / (60 * 24)).toFixed(1);
+
+    html += '<div class="life-card">';
+    html += '  <div class="life-icon">&#x231B;</div>';
+    html += '  <div class="life-txt"><b>' + lifeRegainedDays + ' days</b> of life regained, at roughly 11 minutes per cigarette avoided.</div>';
+    html += '</div>';
+
+    root.innerHTML = html;
+  }
+</script>
