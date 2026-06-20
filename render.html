@@ -4018,6 +4018,7 @@ input[type=date].swae-input{color-scheme:dark;}
 </script>
 <?!= HtmlService.createHtmlOutputFromFile('docs').getContent(); ?>
 <?!= HtmlService.createHtmlOutputFromFile('BankBalances').getContent(); ?>
+<?!= include('notification'); ?>
 
 <!-- ── Quick Add Modal ── -->
 <div id="qa-bg" onclick="if(event.target===this)closeQuickAdd()">
@@ -4941,6 +4942,9 @@ window.onload = function(){
   showPage('exp'); 
   initCmdPalette();
   initQuickAdd();
+  if (typeof checkNotifications === 'function') {
+    checkNotifications();
+  }
 };
 
 /* ═══════════════════════════════════════════
@@ -6775,6 +6779,7 @@ function ccGetAlertHTML(paymentAfterStatement,lastStatementBalance,id){
 function toggleStatus(i){
   var badge=document.getElementById('status-badge-'+i);
   var saveBtn=document.getElementById('save-status-btn-'+i);
+  if(!badge) return;
   var isSettled=badge.classList.contains('settled');
   badge.classList.toggle('settled',!isSettled);badge.classList.toggle('pending',isSettled);
   badge.innerHTML=!isSettled?'✓ Settled':'⚠ Pending';

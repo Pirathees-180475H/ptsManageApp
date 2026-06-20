@@ -290,6 +290,7 @@ function getAlertHTML(paymentAfterStatement, lastStatementBalance, id) {
 function toggleStatus(i) {
   const badge = document.getElementById(`status-badge-${i}`);
   const saveBtn = document.getElementById(`save-status-btn-${i}`);
+  if (!badge) return;
   const isSettled = badge.classList.contains('settled');
   badge.classList.toggle('settled', !isSettled);
   badge.classList.toggle('pending', isSettled);

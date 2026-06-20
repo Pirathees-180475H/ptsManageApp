@@ -3449,7 +3449,7 @@ function getNotesData() {
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return { success: true, data: [], categories: [] };
 
-    var values = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    var values = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
     var notes = [];
     var categories = new Set();
 
@@ -3472,7 +3472,10 @@ function getNotesData() {
         yearly: row[1] === true || row[1] === 'TRUE',
         reference: row[2] || '',
         calendar: row[3] === true || row[3] === 'TRUE',
-        category: category
+        category: category,
+        weeklyNotified: row[5] === true || row[5] === 'TRUE',
+        monthlyNotified: row[6] === true || row[6] === 'TRUE',
+        actionDone: row[7] === true || row[7] === 'TRUE'
       });
     }
 
@@ -3497,11 +3500,14 @@ function saveNote(note) {
       note.yearly || false,
       note.reference || '',
       note.calendar || false,
-      note.category || ''
+      note.category || '',
+      note.weeklyNotified || false,
+      note.monthlyNotified || false,
+      note.actionDone || false
     ];
 
     if (note.row && note.row >= 2) {
-      sheet.getRange(note.row, 1, 1, 5).setValues([rowData]);
+      sheet.getRange(note.row, 1, 1, 8).setValues([rowData]);
     } else {
       sheet.appendRow(rowData);
     }
@@ -3524,6 +3530,28 @@ function deleteNote(row) {
     return { success: false, error: 'Invalid row index' };
   } catch (e) {
     return { success: false, error: e.message };
+  }
+}
+
+function updateNoteStatus(row, field, value) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('note');
+    if (!sheet) return { success: false, error: 'Sheet "note" not found.' };
+    
+    var col;
+    if (field === 'weeklyNotified') col = 6;
+    else if (field === 'monthlyNotified') col = 7;
+    else if (field === 'actionDone') col = 8;
+    else return { success: false, error: 'Invalid field: ' + field };
+    
+    // Validate row
+    if (!row || row < 2) return { success: false, error: 'Invalid row index: ' + row };
+    
+    sheet.getRange(row, col).setValue(value);
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.toString() };
   }
 }
 

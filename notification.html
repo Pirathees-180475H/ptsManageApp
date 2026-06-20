@@ -1,0 +1,231 @@
+<style>
+  /* Toast Notification Container */
+  #notif-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10005;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+    max-width: 400px;
+  }
+
+  .notif-toast {
+    background: #0d1220;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: auto;
+    animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    backdrop-filter: blur(10px);
+    border-left: 4px solid var(--purple);
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(50px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(50px); }
+  }
+
+  .notif-toast.closing {
+    animation: toastOut 0.2s forwards;
+  }
+
+  .notif-toast-msg {
+    flex: 1;
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.9);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .notif-toast-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    font-size: 1.1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+
+  .notif-toast-close:hover {
+    color: #ff4d6d;
+  }
+
+  .notif-toast-btn {
+    font-size: 0.7em;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .notif-toast-btn.danger {
+    background: rgba(255, 77, 109, 0.15);
+    border-color: rgba(255, 77, 109, 0.3);
+    color: #ff4d6d;
+  }
+  .notif-toast-btn.danger:hover {
+    background: rgba(255, 77, 109, 0.25);
+    transform: translateY(-1px);
+  }
+  .notif-toast-btn.success {
+    background: rgba(0, 230, 118, 0.15);
+    border-color: rgba(0, 230, 118, 0.3);
+    color: #00e676;
+  }
+  .notif-toast-btn.success:hover {
+    background: rgba(0, 230, 118, 0.25);
+    transform: translateY(-1px);
+  }
+</style>
+
+<div id="notif-container"></div>
+
+<script>
+  function renderNotifications(notes) {
+    var now = new Date();
+    var container = document.getElementById('notif-container');
+    
+    // Clear existing to avoid duplicates if re-called (though checkNotifications handles it)
+    // container.innerHTML = ''; 
+
+    // Filter notes
+    var toNotify = notes.filter(function(n) {
+      var noteDate = new Date(n.date.replace(/-/g, '/'));
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var target = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
+      
+      var diffDays = (target - today) / (1000 * 60 * 60 * 24);
+      
+      // If within 7 days and weeklyNotified is false, show it
+      if (diffDays <= 7 && !n.weeklyNotified) return true;
+      
+      // If within 30 days and monthlyNotified is false, show it
+      if (diffDays <= 30 && !n.monthlyNotified) return true;
+      
+      return false;
+    });
+
+    toNotify.forEach(function(n) {
+      createToast(n);
+    });
+  }
+
+  function createToast(n) {
+    var container = document.getElementById('notif-container');
+    
+    // Check if toast for this row already exists
+    if (document.querySelector('[data-row="' + n.row + '"]')) return;
+
+    var toast = document.createElement('div');
+    toast.className = 'notif-toast';
+    toast.dataset.row = n.row;
+    
+    var msg = n.date + ': ' + n.reference;
+    
+    var wClass = n.weeklyNotified ? 'success' : 'danger';
+    var mClass = n.monthlyNotified ? 'success' : 'danger';
+    
+    toast.innerHTML = 
+      '<div class="notif-toast-msg" title="' + n.reference + '">' + msg + '</div>' +
+      '<div style="display:flex;gap:6px;">' +
+        '<button class="notif-toast-btn ' + wClass + '" onclick="notifToggleStatus(' + n.row + ', \'weeklyNotified\', this)">w-notification</button>' +
+        '<button class="notif-toast-btn ' + mClass + '" onclick="notifToggleStatus(' + n.row + ', \'monthlyNotified\', this)">m-notification</button>' +
+      '</div>' +
+      '<button class="notif-toast-close" onclick="closeToast(this)">✕</button>';
+      
+    container.appendChild(toast);
+  }
+
+  function closeToast(btn) {
+    if (!btn) return;
+    var toast = btn.closest('.notif-toast');
+    if (!toast) return;
+    
+    if (toast.classList.contains('closing')) return;
+    
+    toast.classList.add('closing');
+    setTimeout(function() {
+      if (toast && toast.parentNode) {
+        toast.remove();
+      }
+    }, 200);
+  }
+
+  function notifToggleStatus(row, field, btn) {
+    if (!btn || !btn.classList) return;
+    var isCurrentlyDone = btn.classList.contains('success');
+    var newValue = !isCurrentlyDone;
+    
+    // Disable buttons to prevent double-clicks
+    var parent = btn.parentElement;
+    if (!parent) return;
+    
+    var buttons = parent.querySelectorAll('button');
+    buttons.forEach(function(b) { b.disabled = true; b.style.opacity = '0.5'; });
+    
+    var originalText = btn.innerText;
+    btn.innerText = 'Updating...';
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        // Safe check after async call
+        if (!btn || !btn.classList) return;
+
+        if (res.success) {
+          btn.innerText = 'notified...';
+          btn.classList.remove('danger');
+          btn.classList.add('success');
+          
+          setTimeout(function() {
+            closeToast(btn);
+          }, 1000);
+        } else {
+          btn.innerText = originalText;
+          if (btn.parentElement) {
+            var btns = btn.parentElement.querySelectorAll('button');
+            btns.forEach(function(b) { b.disabled = false; b.style.opacity = '1'; });
+          }
+          console.error('Update failed:', res.error);
+          alert('Failed to update status: ' + res.error);
+        }
+      })
+      .withFailureHandler(function(err) {
+        if (!btn) return;
+        btn.innerText = originalText;
+        if (btn.parentElement) {
+          var btns = btn.parentElement.querySelectorAll('button');
+          btns.forEach(function(b) { b.disabled = false; b.style.opacity = '1'; });
+        }
+        console.error('Script error:', err);
+        alert('Script error: ' + err);
+      })
+      .updateNoteStatus(row, field, newValue);
+  }
+
+  function checkNotifications() {
+     google.script.run.withSuccessHandler(function(res) {
+      if (res.success) {
+        renderNotifications(res.data);
+      }
+    }).getNotesData();
+  }
+</script>
