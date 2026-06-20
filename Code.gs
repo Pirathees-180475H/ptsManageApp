@@ -3436,6 +3436,97 @@ function getSmokingData() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// NOTES TRACKER
+// ═══════════════════════════════════════════════════════════════
+
+function getNotesData() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('note');
+    if (!sheet) return { success: false, error: 'Sheet "note" not found.' };
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { success: true, data: [], categories: [] };
+
+    var values = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    var notes = [];
+    var categories = new Set();
+
+    for (var i = 0; i < values.length; i++) {
+      var row = values[i];
+      var date = row[0];
+      var dateStr = '';
+      if (date instanceof Date) {
+        dateStr = Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      } else {
+        dateStr = String(date);
+      }
+      
+      var category = (row[4] || '').toString().trim();
+      if (category) categories.add(category);
+
+      notes.push({
+        row: i + 2,
+        date: dateStr,
+        yearly: row[1] === true || row[1] === 'TRUE',
+        reference: row[2] || '',
+        calendar: row[3] === true || row[3] === 'TRUE',
+        category: category
+      });
+    }
+
+    return {
+      success: true,
+      data: notes,
+      categories: Array.from(categories).sort()
+    };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function saveNote(note) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('note');
+    if (!sheet) return { success: false, error: 'Sheet "note" not found.' };
+
+    var rowData = [
+      note.date ? new Date(note.date.replace(/-/g, '/')) : new Date(),
+      note.yearly || false,
+      note.reference || '',
+      note.calendar || false,
+      note.category || ''
+    ];
+
+    if (note.row && note.row >= 2) {
+      sheet.getRange(note.row, 1, 1, 5).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function deleteNote(row) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('note');
+    if (!sheet) return { success: false, error: 'Sheet "note" not found.' };
+
+    if (row && row >= 2) {
+      sheet.deleteRow(row);
+      return { success: true };
+    }
+    return { success: false, error: 'Invalid row index' };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
 function addSubscription(entry) {
   try {
     var ss = SpreadsheetApp.getActive();

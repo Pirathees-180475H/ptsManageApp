@@ -4591,6 +4591,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <button class="trk-tab"        id="trkTab-loss" onclick="trackerSetTab('loss')">📉 Losses</button>
     <button class="trk-tab"        id="trkTab-inst" onclick="trackerSetTab('inst')">📋 Installments</button>
     <button class="trk-tab"        id="trkTab-smoke" onclick="trackerSetTab('smoke')">🚭 Smoking</button>
+    <button class="trk-tab"        id="trkTab-notes" onclick="trackerSetTab('notes')">📝 Notes</button>
   </div>
   <!-- ── Subscriptions pane ── -->
   <div class="trk-pane active" id="trk-pane-sub">
@@ -4684,6 +4685,10 @@ input[type=date].swae-input{color-scheme:dark;}
   <!-- ── Smoking Tracker pane ── -->
   <div class="trk-pane" id="trk-pane-smoke">
     <?!= include('smokingTracker'); ?>
+  </div>
+  <!-- ── Notes Tracker pane ── -->
+  <div class="trk-pane" id="trk-pane-notes">
+    <?!= include('notesTracker'); ?>
   </div>
 </div>
 
@@ -12473,16 +12478,17 @@ function trackerClose() {
 
 function trackerSetTab(tab) {
   _trackerActiveTab = tab;
-  ['sub','rot','loss','inst','smoke'].forEach(function(t) {
+  ['sub','rot','loss','inst','smoke','notes'].forEach(function(t) {
     var btn  = document.getElementById('trkTab-' + t);
     var pane = document.getElementById('trk-pane-' + t);
     if (btn)  btn.classList.toggle('active',  t === tab);
     if (pane) pane.classList.toggle('active', t === tab);
   });
   if (tab === 'sub'  && !_subscriptionsData)  loadSubscriptions();
-  if ((tab === 'rot' || tab === 'loss') && !_notesData) loadNotesData();
+  if ((tab === 'rot' || tab === 'loss') && !_notesData) loadRotationAndLossData();
   if (tab === 'inst' && !_installmentsData)   loadInstallments();
   if (tab === 'smoke') loadSmokingData();
+  if (tab === 'notes') loadNotesData();
 }
 
 // Draggable tracker-modal (mouse + touch)
@@ -13281,7 +13287,7 @@ function switchNotesTab(tabName) { trackerSetTab(tabName === 'losses' ? 'loss' :
 function notesToggle() { trackerToggle('rot'); }
 function notesClose()  { trackerClose(); }
 
-function loadNotesData() {
+function loadRotationAndLossData() {
   document.getElementById('notes-tab-rotations').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading rotations...</div>';
   document.getElementById('notes-tab-losses').innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading losses...</div>';
 
@@ -13619,7 +13625,7 @@ function saveLossEntry() {
     saveBtn.innerText = 'Save Entry';
     if (res && res.success) {
       closeLossForm();
-      loadNotesData(); // Refresh both tabs
+      loadRotationAndLossData(); // Refresh both tabs
     } else {
       alert('Error: ' + (res ? res.error : 'Unknown error'));
     }
@@ -13648,7 +13654,7 @@ function deleteLossRequest(rowIndex) {
   google.script.run
     .withSuccessHandler(function(res) {
       if (res && res.success) {
-        loadNotesData();
+        loadRotationAndLossData();
       } else {
         alert('Error: ' + (res ? res.error : 'Unknown error'));
       }
