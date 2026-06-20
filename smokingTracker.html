@@ -32,19 +32,12 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px 16px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--purple-glow) transparent;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* IE and Edge */
   }
 
   .smoke-scroll-area::-webkit-scrollbar {
-    width: 6px;
-  }
-  .smoke-scroll-area::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .smoke-scroll-area::-webkit-scrollbar-thumb {
-    background-color: var(--glass-border);
-    border-radius: 20px;
+    display: none;
   }
 
   /* Toolbar (Consistent with other trackers) */
