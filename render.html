@@ -753,6 +753,47 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   border-radius:50% !important;
   box-shadow:0 0 5px rgba(255,77,109,.65) !important;
 }
+
+/* note custom class */
+#cal-pikaday-container .is-note .pika-button {
+  color:#4ade80 !important;
+  background:rgba(74,222,128,.1) !important;
+  box-shadow:inset 0 0 0 1px rgba(74,222,128,.22) !important;
+  position:relative !important;
+}
+#cal-pikaday-container .is-note .pika-button::before {
+  content:'' !important;
+  position:absolute !important;
+  bottom:3px !important; left:3px !important;
+  width:4px !important; height:4px !important;
+  background:#4ade80 !important;
+  border-radius:50% !important;
+  box-shadow:0 0 4px rgba(74,222,128,.65) !important;
+}
+
+/* note card style */
+.cal-note-card{
+  display:flex;align-items:center;gap:9px;
+  padding:6px 8px;
+  border-radius:9px;
+  background:transparent;
+  border:1px solid transparent;
+  transition:background .12s,border-color .12s;
+}
+.cal-note-card:hover{
+  background:rgba(74,222,128,.06);
+  border-color:rgba(74,222,128,.14);
+}
+.cal-note-card .cal-hol-date{
+  background:rgba(74,222,128,.1);
+  border:1px solid rgba(74,222,128,.18);
+}
+.cal-note-card .cal-hol-day{
+  color:#4ade80;
+}
+.cal-note-card .cal-hol-month{
+  color:rgba(74,222,128,.5);
+}
 /* today + holiday */
 #cal-pikaday-container .is-today.is-holiday .pika-button {
   background:linear-gradient(135deg,#0ea5e9,#2563eb) !important;
@@ -11959,12 +12000,15 @@ function swaeSubmit(){
   // --- CALENDAR LOGIC (Pikaday) ---
   var _positionedCal  = false;
   var _cachedHolidays = {};
+  var _cachedNotes    = null; // null means not loaded, [] means empty
   var _pikaCal        = null;
 
-  function _calBuildHolidayMap(holidays, year) {
+  function _calBuildEventMap(holidays, notes, year) {
     var map = {};
     var monthNames = ['January','February','March','April','May','June',
                       'July','August','September','October','November','December'];
+
+    // Add Holidays
     (holidays || []).forEach(function(h) {
       if (!h || !h.date) return;
       var dateStr = h.date.toString();
@@ -11974,15 +12018,32 @@ function swaeSubmit(){
           if (match) {
             var d = parseInt(match[1], 10);
             var key = year + '-' + String(mi + 1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-            map[key] = h.desc;
+            if (!map[key]) map[key] = [];
+            map[key].push({ type: 'holiday', desc: h.desc });
           }
         }
       });
     });
+
+    // Add Notes
+    (notes || []).forEach(function(n) {
+      if (!n.calendar || !n.date) return;
+      var nDate = new Date(n.date.replace(/-/g, '/'));
+      var nYear = nDate.getFullYear();
+      var nMonth = nDate.getMonth() + 1;
+      var nDay = nDate.getDate();
+
+      if (n.yearly || nYear === year) {
+        var key = year + '-' + String(nMonth).padStart(2,'0') + '-' + String(nDay).padStart(2,'0');
+        if (!map[key]) map[key] = [];
+        map[key].push({ type: 'note', desc: n.reference });
+      }
+    });
+
     return map;
   }
 
-  function _calRenderHolidayList(year, month, map) {
+  function _calRenderEventList(year, month, map) {
     var shortMonths = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     map = map || {};
     var cardsHtml = '', count = 0;
@@ -11992,18 +12053,24 @@ function swaeSubmit(){
       var m = parseInt(parts[1], 10) - 1;
       var d = parseInt(parts[2], 10);
       if (y === year && m === month) {
-        cardsHtml += '<div class="cal-hol-card">';
-        cardsHtml += '<div class="cal-hol-date"><div class="cal-hol-day">' + d + '</div>';
-        cardsHtml += '<div class="cal-hol-month">' + shortMonths[m] + '</div></div>';
-        cardsHtml += '<div class="cal-hol-name">' + map[key] + '</div>';
-        cardsHtml += '</div>';
-        count++;
+        var events = map[key];
+        events.forEach(function(ev) {
+          var isHol = ev.type === 'holiday';
+          var cls = isHol ? 'cal-hol-card' : 'cal-note-card';
+          var icon = isHol ? '' : '📝 ';
+          cardsHtml += '<div class="' + cls + '">';
+          cardsHtml += '<div class="cal-hol-date"><div class="cal-hol-day">' + d + '</div>';
+          cardsHtml += '<div class="cal-hol-month">' + shortMonths[m] + '</div></div>';
+          cardsHtml += '<div class="cal-hol-name">' + icon + ev.desc + '</div>';
+          cardsHtml += '</div>';
+          count++;
+        });
       }
     });
-    var html = '<div class="cal-holidays-title">Bank Holidays</div>';
+    var html = '<div class="cal-holidays-title">Events & Holidays</div>';
     html += count > 0
       ? '<div class="cal-holidays-scroll">' + cardsHtml + '</div>'
-      : '<div class="cal-no-holidays">✨ No bank holidays this month</div>';
+      : '<div class="cal-no-holidays">✨ No events this month</div>';
     var sec = document.getElementById('cal-holidays-section');
     if (sec) sec.innerHTML = html;
   }
@@ -12032,9 +12099,9 @@ function swaeSubmit(){
           if (!inst || !inst.calendars) return;
           var year  = inst.calendars[0].year;
           var month = inst.calendars[0].month;
-          var map   = inst._holidayMap || {};
+          var map   = inst._eventMap || {};
 
-          // Mark holiday TD cells
+          // Mark event TD cells
           var cells = document.querySelectorAll('#cal-pikaday-container td[data-day]');
           cells.forEach(function(td) {
             var btn = td.querySelector('.pika-button');
@@ -12045,33 +12112,48 @@ function swaeSubmit(){
             if (isNaN(d) || isNaN(m) || isNaN(y)) return;
             var key = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
             if (map[key]) {
-              td.classList.add('is-holiday');
-              td.title = map[key];
+              var hasNote = map[key].some(function(e){ return e.type==='note'; });
+              var hasHol  = map[key].some(function(e){ return e.type==='holiday'; });
+              
+              if (hasHol) td.classList.add('is-holiday');
+              else td.classList.remove('is-holiday');
+
+              if (hasNote) td.classList.add('is-note');
+              else td.classList.remove('is-note');
+
+              td.title = map[key].map(function(e){ return e.desc; }).join(' | ');
             } else {
-              td.classList.remove('is-holiday');
+              td.classList.remove('is-holiday', 'is-note');
               td.removeAttribute('title');
             }
           });
 
-          // Render holiday list
-          _calRenderHolidayList(year, month, map);
+          // Render event list
+          _calRenderEventList(year, month, map);
 
-          // Fetch holidays for this year if not yet loaded (won't loop: after load _cachedHolidays[year] exists)
+          // Clear map list and show loading if year changed
+          var sec = document.getElementById('cal-holidays-section');
           if (!_cachedHolidays[year]) {
-            var sec = document.getElementById('cal-holidays-section');
-            if (sec) sec.innerHTML = '<div class="cal-holidays-title">Bank Holidays</div>'
+            if (sec) sec.innerHTML = '<div class="cal-holidays-title">Events & Holidays</div>'
               + '<div style="text-align:center;color:var(--muted);font-size:.7em;padding:8px 0">Loading…</div>';
             google.script.run
               .withSuccessHandler(function(data) {
                 _cachedHolidays[year] = data || [];
-                inst._holidayMap = _calBuildHolidayMap(_cachedHolidays[year], year);
+                inst._eventMap = _calBuildEventMap(_cachedHolidays[year], _cachedNotes, year);
                 if (inst._v) inst.draw();
               })
-              .withFailureHandler(function() {
-                _cachedHolidays[year] = [];
-                _calRenderHolidayList(year, month, {});
-              })
               .getBankHolidays(year);
+          }
+
+          // Fetch notes if not yet loaded
+          if (_cachedNotes === null) {
+            google.script.run
+              .withSuccessHandler(function(res) {
+                _cachedNotes = (res && res.success) ? res.data : [];
+                inst._eventMap = _calBuildEventMap(_cachedHolidays[year], _cachedNotes, year);
+                if (inst._v) inst.draw();
+              })
+              .getNotesData();
           }
         }
       });
