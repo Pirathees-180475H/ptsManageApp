@@ -1,0 +1,471 @@
+<style>
+  /* ═══════════════════════════════════════════
+     NOTES TRACKER STYLES (Glassmorphism & List)
+     ═══════════════════════════════════════════ */
+  .notes-container {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #fff;
+    padding: 16px;
+    width: 100%;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  /* Toolbar */
+  .notes-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .notes-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(56, 189, 248, 0.1));
+    border: 1px solid rgba(168, 85, 247, 0.4);
+    color: #c084fc;
+    font-size: 0.75em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .notes-add-btn:hover {
+    background: rgba(168, 85, 247, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(168, 85, 247, 0.2);
+  }
+
+  /* Form */
+  .notes-form-card {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 16px;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  .notes-form-card.open { display: flex; }
+  .notes-form-title { font-size: 0.7em; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #c084fc; }
+  .notes-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .notes-field { display: flex; flex-direction: column; gap: 4px; }
+  .notes-label { font-size: 0.6em; font-weight: 700; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); letter-spacing: 0.5px; }
+  .notes-input, .notes-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 0.8em;
+    outline: none;
+    appearance: none;
+  }
+  .notes-select {
+    padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.5)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+  }
+  .notes-select option {
+    background: #0f172a;
+    color: #fff;
+  }
+  .notes-check-row { display: flex; gap: 16px; margin-top: 4px; }
+  .notes-check-item { display: flex; align-items: center; gap: 6px; font-size: 0.75em; color: rgba(255, 255, 255, 0.7); cursor: pointer; }
+  .notes-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+  .notes-btn-save { background: #a855f7; border: none; color: #fff; padding: 7px 16px; border-radius: 8px; font-size: 0.75em; font-weight: 700; cursor: pointer; }
+  .notes-btn-cancel { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.6); padding: 7px 16px; border-radius: 8px; font-size: 0.75em; cursor: pointer; }
+
+  /* Summary Section */
+  .notes-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+  .notes-sum-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .notes-sum-lbl { font-size: 0.6em; font-weight: 700; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); margin-bottom: 4px; }
+  .notes-sum-val { font-size: 1.4em; font-weight: 800; color: #fff; }
+
+  /* Insights / Chart */
+  .notes-chart-section {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .notes-chart-wrap { width: 100px; height: 100px; flex-shrink: 0; }
+  .notes-legend { flex: 1; display: flex; flex-direction: column; gap: 6px; }
+  .notes-legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.65em; }
+  .notes-legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* List Section */
+  .notes-section-hdr { font-size: 0.7em; font-weight: 800; text-transform: uppercase; color: rgba(255, 255, 255, 0.4); margin-top: 8px; letter-spacing: 1px; }
+  .notes-list { display: flex; flex-direction: column; gap: 10px; }
+  .note-card {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s;
+  }
+  .note-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  }
+  .note-card:hover { border-color: rgba(255,255,255,0.14); background: rgba(255, 255, 255, 0.05); }
+  
+  .note-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .note-date-tag {
+    font-size: 0.6em; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+    background: rgba(168, 85, 247, 0.15); color: #c084fc;
+  }
+  .note-cat-tag {
+    font-size: 0.6em; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+    background: rgba(56, 189, 248, 0.1); color: #38bdf8;
+  }
+  .note-body { font-size: 0.85em; color: #eee; line-height: 1.4; margin-bottom: 10px; }
+  .note-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; }
+  .note-flags { display: flex; gap: 8px; }
+  .note-flag { font-size: 0.6em; font-weight: 700; color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 3px; }
+  .note-flag.active { color: #4ade80; }
+  
+  .note-actions { display: flex; gap: 8px; }
+  .note-act-btn {
+    background: none; border: none; cursor: pointer; padding: 4px; border-radius: 4px;
+    transition: all 0.2s; color: rgba(255,255,255,0.3); font-size: 0.9em;
+  }
+  .note-act-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .note-act-btn.del:hover { background: rgba(255,80,80,0.1); color: #ff5050; }
+
+  @media (max-width: 480px) {
+    .notes-form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="notes-container">
+  <!-- Toolbar -->
+  <div class="notes-toolbar">
+    <button class="notes-add-btn" onclick="toggleNoteForm()"><span>+</span> Add Note</button>
+  </div>
+
+  <!-- Form -->
+  <div class="notes-form-card" id="notes-form-card">
+    <div class="notes-form-title" id="notes-form-title">New Note</div>
+    <input type="hidden" id="n-row">
+    
+    <div class="notes-form-grid">
+      <div class="notes-field">
+        <label class="notes-label">Date</label>
+        <input type="date" id="n-date" class="notes-input">
+      </div>
+      <div class="notes-field">
+        <label class="notes-label">Category</label>
+        <div style="display:flex; gap:6px;">
+          <select id="n-cat-sel" class="notes-select" style="flex:1;" onchange="handleCatChange()">
+            <option value="">Select...</option>
+            <option value="NEW">+ New</option>
+          </select>
+          <input type="text" id="n-cat-new" class="notes-input" style="display:none; flex:1;" placeholder="New category...">
+        </div>
+      </div>
+    </div>
+
+    <div class="notes-field">
+      <label class="notes-label">Note / Reference</label>
+      <textarea id="n-ref" class="notes-input" style="min-height:70px; resize:vertical;"></textarea>
+    </div>
+
+    <div class="notes-check-row">
+      <label class="notes-check-item">
+        <input type="checkbox" id="n-yearly"> 🔄 Yearly
+      </label>
+      <label class="notes-check-item">
+        <input type="checkbox" id="n-calendar"> 📅 Calendar
+      </label>
+    </div>
+
+    <div class="notes-form-actions">
+      <button class="notes-btn-cancel" onclick="toggleNoteForm(false)">Cancel</button>
+      <button class="notes-btn-save" id="n-save-btn" onclick="saveNote()">Save Note</button>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="notes-summary">
+    <div class="notes-sum-card">
+      <div class="notes-sum-lbl">Total Notes</div>
+      <div class="notes-sum-val" id="n-stat-total">0</div>
+    </div>
+    <div class="notes-sum-card">
+      <div class="notes-sum-lbl">Categories</div>
+      <div class="notes-sum-val" id="n-stat-cats">0</div>
+    </div>
+  </div>
+
+  <!-- Chart Insight -->
+  <div class="notes-chart-section" id="n-chart-section" style="display:none;">
+    <div class="notes-chart-wrap">
+      <canvas id="n-chart-canvas"></canvas>
+    </div>
+    <div class="notes-legend" id="n-chart-legend"></div>
+  </div>
+
+  <!-- List Header -->
+  <div class="notes-section-hdr">📝 Recent Notes</div>
+
+  <!-- List -->
+  <div class="notes-list" id="notes-list-root">
+    <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">
+      <div style="font-size:1.5em;margin-bottom:8px;">⏳</div>
+      Loading your notes...
+    </div>
+  </div>
+</div>
+
+<script>
+  var _notesData = [];
+  var _notesCats = [];
+  var _notesChart = null;
+
+  function loadNotesData() {
+    console.log('loadNotesData called in notesTracker.html');
+    google.script.run.withSuccessHandler(function(res) {
+      if (res.success) {
+        _notesData = res.data;
+        _notesCats = res.categories;
+        renderNotesUI();
+      } else {
+        document.getElementById('notes-list-root').innerHTML = '<div style="padding:20px;color:#ff4d6d;">' + res.error + '</div>';
+      }
+    }).getNotesData();
+  }
+
+  function renderNotesUI() {
+    // 1. Stats
+    document.getElementById('n-stat-total').innerText = _notesData.length;
+    document.getElementById('n-stat-cats').innerText = _notesCats.length;
+
+    // 2. Dropdown
+    var sel = document.getElementById('n-cat-sel');
+    var html = '<option value="">Select...</option><option value="NEW">+ New</option>';
+    _notesCats.forEach(function(c) { html += '<option value="' + c + '">' + c + '</option>'; });
+    sel.innerHTML = html;
+
+    // 3. Chart
+    renderNotesChart();
+
+    // 4. List
+    var list = document.getElementById('notes-list-root');
+    if (!_notesData.length) {
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">No notes found</div>';
+      return;
+    }
+
+    var sorted = _notesData.slice().sort(function(a, b) {
+      return new Date(b.date.replace(/-/g, '/')) - new Date(a.date.replace(/-/g, '/'));
+    });
+
+    var itemsHtml = '';
+    sorted.forEach(function(n) {
+      var d = new Date(n.date.replace(/-/g, '/'));
+      var dateStr = d.toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'});
+      
+      itemsHtml += '<div class="note-card">'
+        + '<div class="note-top">'
+        + '  <div class="note-date-tag">' + dateStr + '</div>'
+        + (n.category ? '  <div class="note-cat-tag">' + n.category + '</div>' : '')
+        + '</div>'
+        + '<div class="note-body">' + linkify(escHtml(n.reference)) + '</div>'
+        + '<div class="note-footer">'
+        + '  <div class="note-flags">'
+        + '    <div class="note-flag ' + (n.yearly ? 'active' : '') + '">🔄 Yearly</div>'
+        + '    <div class="note-flag ' + (n.calendar ? 'active' : '') + '">📅 Calendar</div>'
+        + '  </div>'
+        + '  <div class="note-actions">'
+        + '    <button class="note-act-btn" onclick="editNote(' + n.row + ')" title="Edit">✏️</button>'
+        + '    <button class="note-act-btn del" onclick="deleteNote(' + n.row + ')" title="Delete">🗑️</button>'
+        + '  </div>'
+        + '</div>'
+        + '</div>';
+    });
+    list.innerHTML = itemsHtml;
+  }
+
+  function renderNotesChart() {
+    if (!_notesData.length) {
+      document.getElementById('n-chart-section').style.display = 'none';
+      return;
+    }
+    document.getElementById('n-chart-section').style.display = 'flex';
+
+    var catCounts = {};
+    _notesData.forEach(function(n) {
+      var c = n.category || 'Uncategorized';
+      catCounts[c] = (catCounts[c] || 0) + 1;
+    });
+
+    var labels = Object.keys(catCounts);
+    var values = Object.values(catCounts);
+    var colors = ['#a855f7', '#38bdf8', '#4ade80', '#fb923c', '#ff4d6d', '#ffd700', '#2dd4bf'];
+
+    var ctx = document.getElementById('n-chart-canvas').getContext('2d');
+    if (_notesChart) _notesChart.destroy();
+
+    _notesChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: values,
+          backgroundColor: colors,
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        cutout: '70%'
+      }
+    });
+
+    var legendHtml = '';
+    labels.forEach(function(l, i) {
+      legendHtml += '<div class="notes-legend-item">'
+        + '<div class="notes-legend-dot" style="background:' + colors[i % colors.length] + '"></div>'
+        + '<div style="flex:1">' + l + '</div>'
+        + '<div style="font-weight:700">' + values[i] + '</div>'
+        + '</div>';
+    });
+    document.getElementById('n-chart-legend').innerHTML = legendHtml;
+  }
+
+  function toggleNoteForm(show) {
+    var card = document.getElementById('notes-form-card');
+    if (show === undefined) show = !card.classList.contains('open');
+    
+    if (show) {
+      card.classList.add('open');
+      if (!document.getElementById('n-row').value) {
+        document.getElementById('notes-form-title').innerText = 'New Note';
+        document.getElementById('n-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('n-cat-sel').value = '';
+        document.getElementById('n-cat-new').value = '';
+        document.getElementById('n-cat-new').style.display = 'none';
+        document.getElementById('n-ref').value = '';
+        document.getElementById('n-yearly').checked = false;
+        document.getElementById('n-calendar').checked = false;
+      }
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      card.classList.remove('open');
+      document.getElementById('n-row').value = '';
+    }
+  }
+
+  function handleCatChange() {
+    var sel = document.getElementById('n-cat-sel');
+    var inp = document.getElementById('n-cat-new');
+    if (sel.value === 'NEW') {
+      inp.style.display = 'block';
+      inp.focus();
+    } else {
+      inp.style.display = 'none';
+    }
+  }
+
+  function saveNote() {
+    var ref = document.getElementById('n-ref').value.trim();
+    if (!ref) { alert('Please enter a note / reference'); return; }
+
+    var selCat = document.getElementById('n-cat-sel').value;
+    var newCat = document.getElementById('n-cat-new').value.trim();
+    var category = (selCat === 'NEW' ? newCat : selCat);
+
+    var note = {
+      row: parseInt(document.getElementById('n-row').value) || null,
+      date: document.getElementById('n-date').value,
+      category: category,
+      reference: ref,
+      yearly: document.getElementById('n-yearly').checked,
+      calendar: document.getElementById('n-calendar').checked
+    };
+
+    var btn = document.getElementById('n-save-btn');
+    btn.disabled = true;
+    btn.innerText = 'Saving...';
+
+    google.script.run.withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.innerText = 'Save Note';
+      if (res.success) {
+        toggleNoteForm(false);
+        loadNotesData();
+      } else {
+        alert('Error: ' + res.error);
+      }
+    }).saveNote(note);
+  }
+
+  function editNote(rowIdx) {
+    var n = _notesData.find(function(x) { return x.row === rowIdx; });
+    if (!n) return;
+
+    document.getElementById('n-row').value = n.row;
+    document.getElementById('notes-form-title').innerText = 'Edit Note';
+    document.getElementById('n-date').value = n.date;
+    
+    var sel = document.getElementById('n-cat-sel');
+    var inp = document.getElementById('n-cat-new');
+    
+    if (_notesCats.indexOf(n.category) > -1 || !n.category) {
+      sel.value = n.category || '';
+      inp.style.display = 'none';
+    } else {
+      sel.value = 'NEW';
+      inp.value = n.category;
+      inp.style.display = 'block';
+    }
+    
+    document.getElementById('n-ref').value = n.reference;
+    document.getElementById('n-yearly').checked = n.yearly;
+    document.getElementById('n-calendar').checked = n.calendar;
+    
+    toggleNoteForm(true);
+  }
+
+  function deleteNote(rowIdx) {
+    if (!confirm('Delete this note permanently?')) return;
+    google.script.run.withSuccessHandler(function(res) {
+      if (res.success) loadNotesData();
+      else alert('Error: ' + res.error);
+    }).deleteNote(rowIdx);
+  }
+
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function linkify(text) {
+    var urlRegex =/(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+    return text.replace(urlRegex, function(url) {
+      return '<a href="' + url + '" target="_blank" style="color:#38bdf8;text-decoration:none;">' + url + '</a>';
+    });
+  }
+</script>
