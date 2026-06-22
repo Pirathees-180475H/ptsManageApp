@@ -47,7 +47,19 @@
     color: rgba(255, 255, 255, 0.9);
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis;
+    position: relative;
+    height: 1.2em; /* Ensure consistent height */
+  }
+
+  .notif-marquee {
+    display: inline-block;
+    padding-left: 100%;
+    animation: marquee 15s linear infinite;
+  }
+
+  @keyframes marquee {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-100%, 0); }
   }
 
   .notif-toast-close {
@@ -145,7 +157,7 @@
     var mClass = n.monthlyNotified ? 'success' : 'danger';
     
     toast.innerHTML = 
-      '<div class="notif-toast-msg" title="' + n.reference + '">' + msg + '</div>' +
+      '<div class="notif-toast-msg" title="' + n.reference + '"><span class="notif-marquee">' + msg + '</span></div>' +
       '<div style="display:flex;gap:6px;">' +
         '<button class="notif-toast-btn ' + wClass + '" onclick="notifToggleStatus(' + n.row + ', \'weeklyNotified\', this)">w-notification</button>' +
         '<button class="notif-toast-btn ' + mClass + '" onclick="notifToggleStatus(' + n.row + ', \'monthlyNotified\', this)">m-notification</button>' +
