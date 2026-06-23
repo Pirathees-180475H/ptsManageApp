@@ -3437,6 +3437,103 @@ function getSmokingData() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// BUDGET TRACKER
+// ═══════════════════════════════════════════════════════════════
+
+function getBudgetData() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('Budget');
+    if (!sheet) return { success: false, error: 'Sheet "Budget" not found.' };
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { success: true, data: [], parents: [], types: [] };
+
+    var values = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    var budgetData = [];
+    var parentsMap = {}; // { parentName: budget }
+    var types = new Set();
+
+    for (var i = 0; i < values.length; i++) {
+      var row = values[i];
+      var parent = row[0] || '';
+      var type = row[1] || '';
+      var budget = parseFloat(row[2]) || 0;
+      
+      budgetData.push({
+        row: i + 2,
+        parent: parent,
+        type: type,
+        budget: budget,
+        expenseDesc: row[3] || '',
+        expenseAmount: parseFloat(row[4]) || 0
+      });
+
+      if (parent) {
+        parentsMap[parent] = budget;
+      }
+      if (type) {
+        types.add(type);
+      }
+    }
+
+    var parents = Object.keys(parentsMap).map(function(p) {
+      return { name: p, budget: parentsMap[p] };
+    }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+    return { 
+      success: true, 
+      data: budgetData, 
+      parents: parents,
+      types: Array.from(types).sort()
+    };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function saveBudgetEntry(entry) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('Budget');
+    if (!sheet) return { success: false, error: 'Sheet "Budget" not found.' };
+
+    var rowData = [
+      entry.parent || '',
+      entry.type || '',
+      entry.budget || 0,
+      entry.expenseDesc || '',
+      entry.expenseAmount || 0
+    ];
+
+    if (entry.row && entry.row >= 2) {
+      sheet.getRange(entry.row, 1, 1, 5).setValues([rowData]);
+    } else {
+      sheet.appendRow(rowData);
+    }
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function deleteBudgetEntry(row) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('Budget');
+    if (!sheet) return { success: false, error: 'Sheet "Budget" not found.' };
+
+    if (row && row >= 2) {
+      sheet.deleteRow(row);
+      return { success: true };
+    }
+    return { success: false, error: 'Invalid row index' };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // NOTES TRACKER
 // ═══════════════════════════════════════════════════════════════
 

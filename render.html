@@ -4632,6 +4632,7 @@ input[type=date].swae-input{color-scheme:dark;}
     <button class="trk-tab"        id="trkTab-rot"  onclick="trackerSetTab('rot')">🔄 Rotations</button>
     <button class="trk-tab"        id="trkTab-loss" onclick="trackerSetTab('loss')">📉 Losses</button>
     <button class="trk-tab"        id="trkTab-inst" onclick="trackerSetTab('inst')">📋 Installments</button>
+    <button class="trk-tab"        id="trkTab-budget" onclick="trackerSetTab('budget')">💰 Budget</button>
     <button class="trk-tab"        id="trkTab-smoke" onclick="trackerSetTab('smoke')">🚭 Smoking</button>
     <button class="trk-tab"        id="trkTab-notes" onclick="trackerSetTab('notes')">📝 Notes</button>
   </div>
@@ -4723,6 +4724,10 @@ input[type=date].swae-input{color-scheme:dark;}
         Loading installments...
       </div>
     </div>
+  </div>
+  <!-- ── Budget Tracker pane ── -->
+  <div class="trk-pane" id="trk-pane-budget">
+    <?!= include('budgetTracker'); ?>
   </div>
   <!-- ── Smoking Tracker pane ── -->
   <div class="trk-pane" id="trk-pane-smoke">
@@ -12565,7 +12570,7 @@ function trackerClose() {
 
 function trackerSetTab(tab) {
   _trackerActiveTab = tab;
-  ['sub','rot','loss','inst','smoke','notes'].forEach(function(t) {
+  ['sub','rot','loss','inst','budget','smoke','notes'].forEach(function(t) {
     var btn  = document.getElementById('trkTab-' + t);
     var pane = document.getElementById('trk-pane-' + t);
     if (btn)  btn.classList.toggle('active',  t === tab);
@@ -12574,6 +12579,7 @@ function trackerSetTab(tab) {
   if (tab === 'sub'  && !_subscriptionsData)  loadSubscriptions();
   if ((tab === 'rot' || tab === 'loss') && !_notesData) loadRotationAndLossData();
   if (tab === 'inst' && !_installmentsData)   loadInstallments();
+  if (tab === 'budget') loadBudgetData();
   if (tab === 'smoke') loadSmokingData();
   if (tab === 'notes') loadNotesData();
 }

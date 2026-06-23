@@ -1,0 +1,567 @@
+<style>
+  /* ═══════════════════════════════════════════
+     BUDGET TRACKER STYLES
+     ═══════════════════════════════════════════ */
+  .budget-container {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #fff;
+    padding: 16px;
+    width: 100%;
+    margin: 0 auto;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+
+  /* Toolbar */
+  .budget-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+  .budget-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(56, 189, 248, 0.1));
+    border: 1px solid rgba(34, 197, 94, 0.4);
+    color: #4ade80;
+    font-size: 0.75em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .budget-add-btn:hover {
+    background: rgba(34, 197, 94, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+  }
+
+  /* Form */
+  .budget-form-card {
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 20px;
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+  }
+  .budget-form-card.open { display: flex; }
+  .budget-form-title { font-size: 0.8em; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: #4ade80; margin-bottom: 4px; }
+  .budget-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .budget-field { display: flex; flex-direction: column; gap: 6px; }
+  .budget-label { font-size: 0.65em; font-weight: 700; text-transform: uppercase; color: rgba(255, 255, 255, 0.5); letter-spacing: 0.8px; }
+  
+  .budget-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .budget-input, .budget-select {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 0.8em;
+    outline: none;
+    appearance: none;
+  }
+  .budget-select {
+    padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='rgba(255,255,255,0.5)'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+  }
+  .budget-select option {
+    background: #0f172a;
+    color: #fff;
+  }
+
+  .budget-form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+  .budget-btn-save { background: #22c55e; border: none; color: #fff; padding: 7px 16px; border-radius: 8px; font-size: 0.75em; font-weight: 700; cursor: pointer; }
+  .budget-btn-cancel { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.6); padding: 7px 16px; border-radius: 8px; font-size: 0.75em; cursor: pointer; }
+
+  /* Summary Section */
+  .budget-sum-val { font-size: 1.2em; font-weight: 800; color: #fff; }
+
+  /* Group Card */
+  .budget-group-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    margin-top: 24px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+
+  .budget-group-hdr {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .budget-group-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .budget-group-title-area {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .budget-group-title { 
+    font-size: 1em; 
+    font-weight: 800; 
+    color: #fff;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .budget-group-icon {
+    width: 32px;
+    height: 32px;
+    background: rgba(74, 222, 128, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1em;
+  }
+
+  .budget-group-type-tag {
+    font-size: 0.65em;
+    font-weight: 700;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    background: rgba(56, 189, 248, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    width: fit-content;
+  }
+
+  .budget-group-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat-label {
+    font-size: 0.6em;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+
+  .stat-value {
+    font-size: 0.85em;
+    font-weight: 700;
+  }
+
+  /* Progress Bar (Remaining Chart) */
+  .budget-progress-container {
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    width: 100%;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .budget-progress-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease-out;
+    background: linear-gradient(90deg, #4ade80, #22c55e);
+  }
+
+  .progress-warning { background: linear-gradient(90deg, #facc15, #eab308); }
+  .progress-danger { background: linear-gradient(90deg, #f87171, #ef4444); }
+
+  /* List Section */
+  .budget-list { display: flex; flex-direction: column; background: rgba(0,0,0,0.1); }
+  .budget-item-card {
+    border-top: 1px solid rgba(255, 255, 255, 0.03);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+  }
+  .budget-item-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
+  
+  .budget-item-info { display: flex; flex-direction: column; gap: 2px; }
+  .budget-item-desc { font-size: 0.85em; color: #eee; }
+  .budget-item-type { font-size: 0.65em; font-weight: 700; color: #38bdf8; text-transform: uppercase; }
+  
+  .budget-item-right { display: flex; align-items: center; gap: 16px; }
+  .budget-item-amt { font-size: 0.9em; font-weight: 700; color: #fff; }
+  
+  .budget-item-actions { display: flex; gap: 4px; }
+  .budget-act-btn {
+    background: none; border: none; cursor: pointer; padding: 6px; border-radius: 4px;
+    color: rgba(255,255,255,0.2); font-size: 0.8em; transition: all 0.2s;
+  }
+  .budget-act-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+  .budget-act-btn.del:hover { background: rgba(255,80,80,0.1); color: #ff5050; }
+
+  .remaining-positive { color: #4ade80; }
+  .remaining-negative { color: #ff4d6d; }
+
+  @media (max-width: 480px) {
+    .budget-form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="budget-container">
+  <!-- Toolbar -->
+  <div class="budget-toolbar">
+    <button class="budget-add-btn" onclick="toggleBudgetForm()"><span>+</span> Add Budget Entry</button>
+  </div>
+
+  <!-- Form -->
+  <div class="budget-form-card" id="budget-form-card">
+    <div class="budget-form-title" id="budget-form-title">New Budget Entry</div>
+    <input type="hidden" id="b-row">
+    
+    <div class="budget-form-grid">
+      <div class="budget-field">
+        <label class="budget-label">Parent Description</label>
+        <div class="budget-input-group">
+          <select id="b-parent-sel" class="budget-select" onchange="handleBudgetParentChange()">
+            <option value="">Select...</option>
+            <option value="NEW">+ New</option>
+          </select>
+          <input type="text" id="b-parent-new" class="budget-input" style="display:none;" placeholder="Enter new parent description...">
+        </div>
+      </div>
+      <div class="budget-field">
+        <label class="budget-label">Type</label>
+        <div class="budget-input-group">
+          <select id="b-type-sel" class="budget-select" onchange="handleBudgetTypeChange()">
+            <option value="">Select...</option>
+            <option value="NEW">+ New</option>
+          </select>
+          <input type="text" id="b-type-new" class="budget-input" style="display:none;" placeholder="Enter new type...">
+        </div>
+      </div>
+      <div class="budget-field">
+        <label class="budget-label">Overall Budget (₨)</label>
+        <input type="number" id="b-budget" class="budget-input" placeholder="0">
+      </div>
+    </div>
+
+    <div class="budget-form-grid">
+      <div class="budget-field">
+        <label class="budget-label">Expense Description</label>
+        <input type="text" id="b-exp-desc" class="budget-input" placeholder="e.g. Flight Ticket">
+      </div>
+      <div class="budget-field">
+        <label class="budget-label">Expense Amount (₨)</label>
+        <input type="number" id="b-exp-amt" class="budget-input" placeholder="0">
+      </div>
+    </div>
+
+    <div class="budget-form-actions">
+      <button class="budget-btn-cancel" onclick="toggleBudgetForm(false)">Cancel</button>
+      <button class="budget-btn-save" id="b-save-btn" onclick="saveBudgetEntry()">Save Entry</button>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <!-- KPI cards removed per issue description -->
+
+  <!-- List -->
+  <div id="budget-list-root">
+    <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">
+      <div style="font-size:1.5em;margin-bottom:8px;">⏳</div>
+      Loading budget data...
+    </div>
+  </div>
+</div>
+
+<script>
+  var _budgetData = [];
+  var _budgetParents = [];
+  var _budgetTypes = [];
+
+  function loadBudgetData() {
+    google.script.run.withSuccessHandler(function(res) {
+      if (res.success) {
+        _budgetData = res.data;
+        _budgetParents = res.parents;
+        _budgetTypes = res.types;
+        renderBudgetUI();
+      } else {
+        document.getElementById('budget-list-root').innerHTML = '<div style="padding:20px;color:#ff4d6d;">' + res.error + '</div>';
+      }
+    }).getBudgetData();
+  }
+
+  function renderBudgetUI() {
+    // 1. Group by Parent Description
+    var groups = {};
+    _budgetData.forEach(function(item) {
+      var p = item.parent || 'Uncategorized';
+      if (!groups[p]) {
+        groups[p] = {
+          items: [],
+          budget: item.budget || 0,
+          type: item.type || '',
+          spent: 0
+        };
+      }
+      groups[p].items.push(item);
+      groups[p].spent += (item.expenseAmount || 0);
+    });
+
+    // 2. Update Dropdowns
+    var pSel = document.getElementById('b-parent-sel');
+    var phtml = '<option value="">Select...</option><option value="NEW">+ New</option>';
+    _budgetParents.forEach(function(p) { phtml += '<option value="' + p.name + '">' + p.name + '</option>'; });
+    pSel.innerHTML = phtml;
+
+    var tSel = document.getElementById('b-type-sel');
+    var thtml = '<option value="">Select...</option><option value="NEW">+ New</option>';
+    _budgetTypes.forEach(function(t) { thtml += '<option value="' + t + '">' + t + '</option>'; });
+    tSel.innerHTML = thtml;
+
+    // 3. Render List
+    var root = document.getElementById('budget-list-root');
+    if (!_budgetData.length) {
+      root.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">No budget entries found</div>';
+      return;
+    }
+
+    var html = '';
+    Object.keys(groups).sort().forEach(function(p) {
+      var g = groups[p];
+      var gRem = g.budget - g.spent;
+      var usagePct = g.budget > 0 ? Math.min(100, (g.spent / g.budget) * 100) : 0;
+      var progressClass = '';
+      if (usagePct > 90) progressClass = 'progress-danger';
+      else if (usagePct > 70) progressClass = 'progress-warning';
+
+      // Pick an icon based on type or parent (simple mapping)
+      var icon = '💰';
+      var pLow = p.toLowerCase();
+      var tLow = g.type.toLowerCase();
+      if (pLow.includes('trip') || pLow.includes('travel') || tLow.includes('trip')) icon = '✈️';
+      else if (pLow.includes('food') || pLow.includes('dining')) icon = '🍕';
+      else if (pLow.includes('home') || pLow.includes('rent')) icon = '🏠';
+      else if (pLow.includes('car') || pLow.includes('fuel')) icon = '🚗';
+      else if (pLow.includes('health') || pLow.includes('med')) icon = '🏥';
+
+      html += '<div class="budget-group-card">'
+        + '  <div class="budget-group-hdr">'
+        + '    <div class="budget-group-header-top">'
+        + '      <div class="budget-group-title-area">'
+        + '        <div class="budget-group-title">'
+        + '           <div class="budget-group-icon">' + icon + '</div>'
+        +             p
+        + '        </div>'
+        + '        <div class="budget-group-type-tag">' + (g.type || 'General') + '</div>'
+        + '      </div>'
+        + '      <div class="budget-sum-val ' + (gRem >= 0 ? 'remaining-positive' : 'remaining-negative') + '" style="font-size:1.1em; text-align:right;">'
+        + '        <div style="font-size:0.5em; color:rgba(255,255,255,0.4); text-transform:uppercase; font-weight:700;">' + (gRem >= 0 ? 'Remaining' : 'Overspent') + '</div>'
+        +          '₨ ' + Math.abs(gRem).toLocaleString()
+        + '      </div>'
+        + '    </div>'
+        + '    <div class="budget-group-stats">'
+        + '      <div class="stat-item"><span class="stat-label">Budget</span><span class="stat-value">₨ ' + g.budget.toLocaleString() + '</span></div>'
+        + '      <div class="stat-item"><span class="stat-label">Spent</span><span class="stat-value">₨ ' + g.spent.toLocaleString() + '</span></div>'
+        + '      <div class="stat-item" style="text-align:right;"><span class="stat-label">Usage</span><span class="stat-value">' + Math.round(usagePct) + '%</span></div>'
+        + '    </div>'
+        + '    <div class="budget-progress-container">'
+        + '      <div class="budget-progress-bar ' + progressClass + '" style="width: ' + usagePct + '%"></div>'
+        + '    </div>'
+        + '  </div>';
+      
+      html += '<div class="budget-list">';
+      g.items.forEach(function(item) {
+        html += '<div class="budget-item-card">'
+          + '  <div class="budget-item-info">'
+          + '    <div class="budget-item-desc">' + (item.expenseDesc || '---') + '</div>'
+          + '  </div>'
+          + '  <div class="budget-item-right">'
+          + '    <div class="budget-item-amt">₨ ' + (item.expenseAmount || 0).toLocaleString() + '</div>'
+          + '    <div class="budget-item-actions">'
+          + '      <button class="budget-act-btn" onclick="editBudgetEntry(' + item.row + ')" title="Edit">✏️</button>'
+          + '      <button class="budget-act-btn del" onclick="deleteBudgetEntry(' + item.row + ')" title="Delete">🗑️</button>'
+          + '    </div>'
+          + '  </div>'
+          + '</div>';
+      });
+      html += '</div></div>';
+    });
+    root.innerHTML = html;
+  }
+
+  function handleBudgetParentChange() {
+    var sel = document.getElementById('b-parent-sel');
+    var inp = document.getElementById('b-parent-new');
+    var budgetInp = document.getElementById('b-budget');
+    var typeSel = document.getElementById('b-type-sel');
+    var typeInp = document.getElementById('b-type-new');
+
+    if (sel.value === 'NEW') {
+      inp.style.display = 'block';
+      inp.focus();
+      budgetInp.value = '';
+    } else {
+      inp.style.display = 'none';
+      // Auto-fill budget and type if parent exists
+      var found = _budgetParents.find(function(p) { return p.name === sel.value; });
+      if (found) {
+        budgetInp.value = found.budget;
+        // Also try to find the type from existing data
+        var entry = _budgetData.find(function(d) { return d.parent === sel.value; });
+        if (entry) {
+          typeSel.value = entry.type;
+          typeInp.style.display = 'none';
+        }
+      }
+    }
+  }
+
+  function handleBudgetTypeChange() {
+    var sel = document.getElementById('b-type-sel');
+    var inp = document.getElementById('b-type-new');
+    if (sel.value === 'NEW') {
+      inp.style.display = 'block';
+      inp.focus();
+    } else {
+      inp.style.display = 'none';
+    }
+  }
+
+  function toggleBudgetForm(show) {
+    var card = document.getElementById('budget-form-card');
+    if (show === undefined) show = !card.classList.contains('open');
+    
+    if (show) {
+      card.classList.add('open');
+      if (!document.getElementById('b-row').value) {
+        document.getElementById('budget-form-title').innerText = 'New Budget Entry';
+        document.getElementById('b-parent-sel').value = '';
+        document.getElementById('b-parent-new').value = '';
+        document.getElementById('b-parent-new').style.display = 'none';
+        document.getElementById('b-type-sel').value = '';
+        document.getElementById('b-type-new').value = '';
+        document.getElementById('b-type-new').style.display = 'none';
+        document.getElementById('b-budget').value = '';
+        document.getElementById('b-exp-desc').value = '';
+        document.getElementById('b-exp-amt').value = '';
+      }
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      card.classList.remove('open');
+      document.getElementById('b-row').value = '';
+    }
+  }
+
+  function saveBudgetEntry() {
+    var selParent = document.getElementById('b-parent-sel').value;
+    var newParent = document.getElementById('b-parent-new').value.trim();
+    var parent = (selParent === 'NEW' ? newParent : selParent);
+    
+    if (!parent) { alert('Please select or enter a parent description'); return; }
+
+    var selType = document.getElementById('b-type-sel').value;
+    var newType = document.getElementById('b-type-new').value.trim();
+    var type = (selType === 'NEW' ? newType : selType);
+
+    var entry = {
+      row: parseInt(document.getElementById('b-row').value) || null,
+      parent: parent,
+      type: type,
+      budget: parseFloat(document.getElementById('b-budget').value) || 0,
+      expenseDesc: document.getElementById('b-exp-desc').value.trim(),
+      expenseAmount: parseFloat(document.getElementById('b-exp-amt').value) || 0
+    };
+
+    var btn = document.getElementById('b-save-btn');
+    btn.disabled = true;
+    btn.innerText = 'Saving...';
+
+    google.script.run.withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.innerText = 'Save Entry';
+      if (res.success) {
+        toggleBudgetForm(false);
+        loadBudgetData();
+      } else {
+        alert('Error: ' + res.error);
+      }
+    }).saveBudgetEntry(entry);
+  }
+
+  function editBudgetEntry(rowIdx) {
+    var item = _budgetData.find(function(x) { return x.row === rowIdx; });
+    if (!item) return;
+
+    document.getElementById('b-row').value = item.row;
+    document.getElementById('budget-form-title').innerText = 'Edit Budget Entry';
+    
+    var pSel = document.getElementById('b-parent-sel');
+    var pInp = document.getElementById('b-parent-new');
+    if (_budgetParents.some(function(p){ return p.name === item.parent; })) {
+      pSel.value = item.parent;
+      pInp.style.display = 'none';
+    } else {
+      pSel.value = 'NEW';
+      pInp.value = item.parent || '';
+      pInp.style.display = 'block';
+    }
+
+    var tSel = document.getElementById('b-type-sel');
+    var tInp = document.getElementById('b-type-new');
+    if (_budgetTypes.indexOf(item.type) > -1) {
+      tSel.value = item.type;
+      tInp.style.display = 'none';
+    } else {
+      tSel.value = 'NEW';
+      tInp.value = item.type || '';
+      tInp.style.display = 'block';
+    }
+
+    document.getElementById('b-budget').value = item.budget || 0;
+    document.getElementById('b-exp-desc').value = item.expenseDesc || '';
+    document.getElementById('b-exp-amt').value = item.expenseAmount || 0;
+    
+    toggleBudgetForm(true);
+  }
+
+  function deleteBudgetEntry(rowIdx) {
+    if (!confirm('Delete this entry permanently?')) return;
+    google.script.run.withSuccessHandler(function(res) {
+      if (res.success) loadBudgetData();
+      else alert('Error: ' + res.error);
+    }).deleteBudgetEntry(rowIdx);
+  }
+</script>
