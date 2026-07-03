@@ -1096,7 +1096,7 @@ function getAdditionalDropdownValues() {
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return [];
     
-    var values = sheet.getRange(2, 10, lastRow - 1, 1).getValues();
+    var values = sheet.getRange(2, 1, 11, 1).getValues();
     var result = [];
     for (var i = 0; i < values.length; i++) {
       var val = String(values[i][0]).trim();
