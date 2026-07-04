@@ -3586,12 +3586,33 @@ function getNotesData() {
   }
 }
 
-function saveNote(note) {
+function saveNote(notes, isMultiDay) {
   try {
     var ss = SpreadsheetApp.getActive();
     var sheet = ss.getSheetByName('note');
     if (!sheet) return { success: false, error: 'Sheet "note" not found.' };
 
+    // If isMultiDay is true, notes is an array — append a row for each date
+    if (isMultiDay) {
+      // If editing a single row in multi-day mode is not supported; treat as new entries
+      var rows = notes.map(function(n) {
+        return [
+          n.date ? new Date(n.date.replace(/-/g, '/')) : new Date(),
+          n.yearly || false,
+          n.reference || '',
+          n.calendar || false,
+          n.category || '',
+          false, // weeklyNotified
+          false, // monthlyNotified
+          false  // actionDone
+        ];
+      });
+      sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
+      return { success: true };
+    }
+
+    // Legacy single-note path (also handles the single date when multi-day is off)
+    var note = notes;
     var rowData = [
       note.date ? new Date(note.date.replace(/-/g, '/')) : new Date(),
       note.yearly || false,
@@ -3625,6 +3646,21 @@ function deleteNote(row) {
       return { success: true };
     }
     return { success: false, error: 'Invalid row index' };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function deleteNotes(rows) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('note');
+    if (!sheet) return { success: false, error: 'Sheet "note" not found.' };
+
+    // Sort descending to avoid index shifting
+    var sorted = rows.filter(function(r) { return r >= 2; }).sort(function(a, b) { return b - a; });
+    sorted.forEach(function(r) { sheet.deleteRow(r); });
+    return { success: true };
   } catch (e) {
     return { success: false, error: e.message };
   }

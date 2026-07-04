@@ -198,6 +198,16 @@
       <label class="notes-check-item">
         <input type="checkbox" id="n-calendar"> 📅 Calendar
       </label>
+      <label class="notes-check-item">
+        <input type="checkbox" id="n-multiday" onchange="toggleMultiDay()"> 📆 Multi-Day
+      </label>
+    </div>
+
+    <div class="notes-form-grid" id="n-multiday-fields" style="display:none;">
+      <div class="notes-field">
+        <label class="notes-label">Up To Date</label>
+        <input type="date" id="n-date-upto" class="notes-input">
+      </div>
     </div>
 
     <div class="notes-form-actions">
@@ -270,40 +280,72 @@
     // 3. Chart
     renderNotesChart();
 
-    // 4. List
+    // 4. List — group consecutive same-reference notes
     var list = document.getElementById('notes-list-root');
     if (!_notesData.length) {
       list.innerHTML = '<div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">No notes found</div>';
       return;
     }
 
+    // Sort ascending by date for grouping
     var sorted = _notesData.slice().sort(function(a, b) {
-      return new Date(b.date.replace(/-/g, '/')) - new Date(a.date.replace(/-/g, '/'));
+      return new Date(a.date.replace(/-/g, '/')) - new Date(b.date.replace(/-/g, '/'));
     });
 
-    var itemsHtml = '';
+    // Group consecutive notes with the same reference
+    var groups = [];
     sorted.forEach(function(n) {
-      var d = new Date(n.date.replace(/-/g, '/'));
-      var dateStr = d.toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'});
+      var last = groups[groups.length - 1];
+      if (last && last.reference === n.reference) {
+        var lastDate = new Date(last.dates[last.dates.length - 1].replace(/-/g, '/'));
+        var curDate = new Date(n.date.replace(/-/g, '/'));
+        var diff = (curDate - lastDate) / (1000 * 60 * 60 * 24);
+        if (diff === 1) {
+          last.dates.push(n.date);
+          last.rows.push(n.row);
+          last.note = n; // keep the latest note's meta
+          return;
+        }
+      }
+      groups.push({ reference: n.reference, dates: [n.date], rows: [n.row], note: n });
+    });
+
+    // Render groups in reverse (most recent first)
+    var itemsHtml = '';
+    for (var gi = groups.length - 1; gi >= 0; gi--) {
+      var g = groups[gi];
+      var gStart = new Date(g.dates[0].replace(/-/g, '/'));
+      var gEnd = new Date(g.dates[g.dates.length - 1].replace(/-/g, '/'));
       
+      var dateStr;
+      if (g.dates.length === 1) {
+        dateStr = gStart.toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'});
+      } else {
+        var s = gStart.toLocaleDateString(undefined, {day:'numeric', month:'short'});
+        var e = gEnd.toLocaleDateString(undefined, {day:'numeric', month:'short', year:'numeric'});
+        dateStr = s + ' → ' + e;
+      }
+
+      var rowIds = g.rows.join(',');
+      var countBadge = g.dates.length > 1 ? '<span style="font-size:0.6em;background:rgba(168,85,247,0.2);color:#c084fc;padding:2px 8px;border-radius:6px;margin-left:8px;">' + g.dates.length + ' entries</span>' : '';
+
       itemsHtml += '<div class="note-card">'
         + '<div class="note-top">'
-        + '  <div class="note-date-tag">' + dateStr + '</div>'
-        + (n.category ? '  <div class="note-cat-tag">' + n.category + '</div>' : '')
+        + '  <div class="note-date-tag">' + dateStr + countBadge + '</div>'
+        + (g.note.category ? '  <div class="note-cat-tag">' + g.note.category + '</div>' : '')
         + '</div>'
-        + '<div class="note-body">' + linkify(escHtml(n.reference)) + '</div>'
+        + '<div class="note-body">' + linkify(escHtml(g.reference)) + '</div>'
         + '<div class="note-footer">'
         + '  <div class="note-flags">'
-        + '    <div class="note-flag ' + (n.yearly ? 'active' : '') + '">🔄 Yearly</div>'
-        + '    <div class="note-flag ' + (n.calendar ? 'active' : '') + '">📅 Calendar</div>'
+        + '    <div class="note-flag ' + (g.note.yearly ? 'active' : '') + '">🔄 Yearly</div>'
+        + '    <div class="note-flag ' + (g.note.calendar ? 'active' : '') + '">📅 Calendar</div>'
         + '  </div>'
         + '  <div class="note-actions">'
-        + '    <button class="note-act-btn" onclick="editNote(' + n.row + ')" title="Edit">✏️</button>'
-        + '    <button class="note-act-btn del" onclick="deleteNote(' + n.row + ')" title="Delete">🗑️</button>'
+        + '    <button class="note-act-btn" onclick="deleteGroup(\'' + rowIds + '\')" title="Delete all">🗑️</button>'
         + '  </div>'
         + '</div>'
         + '</div>';
-    });
+    }
     list.innerHTML = itemsHtml;
   }
 
@@ -372,12 +414,20 @@
         document.getElementById('n-ref').value = '';
         document.getElementById('n-yearly').checked = false;
         document.getElementById('n-calendar').checked = false;
+        document.getElementById('n-multiday').checked = false;
+        document.getElementById('n-multiday-fields').style.display = 'none';
+        document.getElementById('n-date-upto').value = '';
       }
       card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       card.classList.remove('open');
       document.getElementById('n-row').value = '';
     }
+  }
+
+  function toggleMultiDay() {
+    var checked = document.getElementById('n-multiday').checked;
+    document.getElementById('n-multiday-fields').style.display = checked ? 'grid' : 'none';
   }
 
   function handleCatChange() {
@@ -399,14 +449,39 @@
     var newCat = document.getElementById('n-cat-new').value.trim();
     var category = (selCat === 'NEW' ? newCat : selCat);
 
-    var note = {
-      row: parseInt(document.getElementById('n-row').value) || null,
-      date: document.getElementById('n-date').value,
-      category: category,
-      reference: ref,
-      yearly: document.getElementById('n-yearly').checked,
-      calendar: document.getElementById('n-calendar').checked
-    };
+    var fromDate = document.getElementById('n-date').value;
+    var isMultiDay = document.getElementById('n-multiday').checked;
+    var upToDate = document.getElementById('n-date-upto').value;
+    var row = parseInt(document.getElementById('n-row').value) || null;
+
+    // Generate list of dates
+    var dates = [];
+    if (isMultiDay && upToDate) {
+      if (new Date(upToDate) < new Date(fromDate)) {
+        alert('"Up To" date must be after the "From" date.');
+        return;
+      }
+      var d = new Date(fromDate + 'T00:00:00');
+      var end = new Date(upToDate + 'T00:00:00');
+      while (d <= end) {
+        dates.push(d.toISOString().split('T')[0]);
+        d.setDate(d.getDate() + 1);
+      }
+    } else {
+      dates.push(fromDate);
+    }
+
+    // Build notes array (one per date)
+    var notes = dates.map(function(date) {
+      return {
+        row: row, // only used for edit (single row)
+        date: date,
+        category: category,
+        reference: ref,
+        yearly: document.getElementById('n-yearly').checked,
+        calendar: document.getElementById('n-calendar').checked
+      };
+    });
 
     var btn = document.getElementById('n-save-btn');
     btn.disabled = true;
@@ -421,7 +496,7 @@
       } else {
         alert('Error: ' + res.error);
       }
-    }).saveNote(note);
+    }).saveNote(notes, isMultiDay);
   }
 
   function editNote(rowIdx) {
@@ -447,6 +522,9 @@
     document.getElementById('n-ref').value = n.reference;
     document.getElementById('n-yearly').checked = n.yearly;
     document.getElementById('n-calendar').checked = n.calendar;
+    document.getElementById('n-multiday').checked = false;
+    document.getElementById('n-multiday-fields').style.display = 'none';
+    document.getElementById('n-date-upto').value = '';
     
     toggleNoteForm(true);
   }
@@ -457,6 +535,15 @@
       if (res.success) loadNotesData();
       else alert('Error: ' + res.error);
     }).deleteNote(rowIdx);
+  }
+
+  function deleteGroup(rowIdsStr) {
+    var ids = rowIdsStr.split(',').map(Number);
+    if (!confirm('Delete all ' + ids.length + ' notes in this group?')) return;
+    google.script.run.withSuccessHandler(function(res) {
+      if (res.success) loadNotesData();
+      else alert('Error: ' + res.error);
+    }).deleteNotes(ids);
   }
 
   function escHtml(s) {

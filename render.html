@@ -790,6 +790,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 }
 .cal-note-card .cal-hol-day{
   color:#4ade80;
+  font-size:.7em;
 }
 .cal-note-card .cal-hol-month{
   color:rgba(74,222,128,.5);
@@ -12097,26 +12098,75 @@ function swaeSubmit(){
     var shortMonths = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
     map = map || {};
     var cardsHtml = '', count = 0;
+
+    // Separate holidays and notes
+    var holidays = [];
+    var notesByDesc = {};
+
     Object.keys(map).sort().forEach(function(key) {
       var parts = key.split('-');
       var y = parseInt(parts[0], 10);
       var m = parseInt(parts[1], 10) - 1;
       var d = parseInt(parts[2], 10);
       if (y === year && m === month) {
-        var events = map[key];
-        events.forEach(function(ev) {
-          var isHol = ev.type === 'holiday';
-          var cls = isHol ? 'cal-hol-card' : 'cal-note-card';
-          var icon = isHol ? '' : '📝 ';
-          cardsHtml += '<div class="' + cls + '">';
-          cardsHtml += '<div class="cal-hol-date"><div class="cal-hol-day">' + d + '</div>';
-          cardsHtml += '<div class="cal-hol-month">' + shortMonths[m] + '</div></div>';
-          cardsHtml += '<div class="cal-hol-name">' + icon + ev.desc + '</div>';
-          cardsHtml += '</div>';
-          count++;
+        map[key].forEach(function(ev) {
+          if (ev.type === 'holiday') {
+            holidays.push({ day: d, ev: ev });
+          } else {
+            if (!notesByDesc[ev.desc]) notesByDesc[ev.desc] = [];
+            notesByDesc[ev.desc].push({ day: d });
+          }
         });
       }
     });
+
+    // Build day-range segments for a sorted list of days
+    function buildRangeSegments(days) {
+      var sorted = days.slice().sort(function(a, b) { return a.day - b.day; });
+      var segments = [];
+      var start = sorted[0].day, end = sorted[0].day;
+      for (var k = 1; k < sorted.length; k++) {
+        if (sorted[k].day === end + 1) {
+          end = sorted[k].day;
+        } else {
+          segments.push({ start: start, end: end });
+          start = sorted[k].day;
+          end = sorted[k].day;
+        }
+      }
+      segments.push({ start: start, end: end });
+      return segments;
+    }
+
+    function formatSegments(segs) {
+      return segs.map(function(s) {
+        return s.start === s.end ? '' + s.start : s.start + '\u2013' + s.end;
+      }).join(', ');
+    }
+
+    // Render holidays (each on its own card)
+    holidays.forEach(function(item) {
+      cardsHtml += '<div class="cal-hol-card">';
+      cardsHtml += '<div class="cal-hol-date"><div class="cal-hol-day">' + item.day + '</div>';
+      cardsHtml += '<div class="cal-hol-month">' + shortMonths[month] + '</div></div>';
+      cardsHtml += '<div class="cal-hol-name">' + item.ev.desc + '</div>';
+      cardsHtml += '</div>';
+      count++;
+    });
+
+    // Render notes — one card per description, showing all day ranges
+    var noteDescs = Object.keys(notesByDesc).sort();
+    noteDescs.forEach(function(desc) {
+      var segments = buildRangeSegments(notesByDesc[desc]);
+      var dayHtml = '<div class="cal-hol-day">' + formatSegments(segments) + '</div>';
+      cardsHtml += '<div class="cal-note-card">';
+      cardsHtml += '<div class="cal-hol-date">' + dayHtml;
+      cardsHtml += '<div class="cal-hol-month">' + shortMonths[month] + '</div></div>';
+      cardsHtml += '<div class="cal-hol-name">📝 ' + desc + '</div>';
+      cardsHtml += '</div>';
+      count++;
+    });
+
     var html = '<div class="cal-holidays-title">Events & Holidays</div>';
     html += count > 0
       ? '<div class="cal-holidays-scroll">' + cardsHtml + '</div>'
