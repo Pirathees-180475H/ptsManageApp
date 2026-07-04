@@ -2828,6 +2828,10 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-port .port-kpi-card.lkr .port-kpi-glow{background:#ffd700;}
 #page-port .port-kpi-card.usd .port-kpi-glow{background:#00ff88;}
 #page-port .port-kpi-card.epf .port-kpi-glow{background:#a855f7;}
+#page-port .epf-sync-btn{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:8px;border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.12);color:#c084fc;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .25s ease;z-index:2;line-height:1;}
+#page-port .epf-sync-btn:hover{background:rgba(168,85,247,.25);border-color:rgba(168,85,247,.5);transform:scale(1.1);box-shadow:0 0 16px rgba(168,85,247,.2);}
+#page-port .epf-sync-btn.syncing{animation:epfSyncSpin .7s linear infinite;pointer-events:none;opacity:.6;}
+@keyframes epfSyncSpin{to{transform:rotate(360deg);}}
 /* chart switcher dropdown */
 #page-port .port-chart-sel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;
   color:rgba(255,255,255,.75);font-family:'Inter',sans-serif;font-size:.68em;font-weight:600;
@@ -8968,6 +8972,31 @@ function portShowToast(msg,type){
   setTimeout(function(){t.classList.remove('show');},3400);
 }
 
+function portSyncEPF(){
+  var btn=document.getElementById('epfSyncBtn');
+  if(!btn||btn.classList.contains('syncing'))return;
+  btn.classList.add('syncing');
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.classList.remove('syncing');
+      if(res&&res.success){
+        portShowToast('✅ '+res.message,'success');
+        // Reload portfolio to reflect updated total
+        google.script.run
+          .withSuccessHandler(portDisplayPortfolio)
+          .withFailureHandler(function(err){portShowToast('⚠️ Reload failed: '+(err.message||err),'error');})
+          .getPortfolioData();
+      } else {
+        portShowToast('⚠️ '+(res&&res.message||'Sync failed'),'error');
+      }
+    })
+    .withFailureHandler(function(err){
+      btn.classList.remove('syncing');
+      portShowToast('⚠️ '+(err.message||err),'error');
+    })
+    .syncEPFetf();
+}
+
 function portStartLog(){
   var wrap=document.getElementById('portLogNoteWrap');if(!wrap)return;
   wrap.classList.toggle('open');
@@ -9121,7 +9150,7 @@ function portDisplayPortfolio(data){
       '<div class="port-kpi-col">'+
         '<div class="port-kpi-card lkr"><div class="port-kpi-glow"></div><span class="port-kpi-icon">🏦</span><div class="port-kpi-body"><div class="port-kpi-label">Total Portfolio · LKR</div><div class="port-kpi-amount" id="portLkrCounter">'+portFmt(totalLKR)+'</div></div></div>'+
         '<div class="port-kpi-card usd"><div class="port-kpi-glow"></div><span class="port-kpi-icon">💵</span><div class="port-kpi-body"><div class="port-kpi-label">Total Portfolio · USD</div><div class="port-kpi-amount" id="portUsdCounter">'+portFmt(totalUSD,'USD')+'</div></div></div>'+
-        '<div class="port-kpi-card epf"><div class="port-kpi-glow"></div><span class="port-kpi-icon">📊</span><div class="port-kpi-body"><div class="port-kpi-label">EPF + ETF</div><div class="port-kpi-amount">'+portFmt(epfEtf)+'</div></div></div>'+
+        '<div class="port-kpi-card epf"><div class="port-kpi-glow"></div><span class="port-kpi-icon">📊</span><div class="port-kpi-body"><div class="port-kpi-label">EPF + ETF</div><div class="port-kpi-amount">'+portFmt(epfEtf)+'</div></div><button class="epf-sync-btn" id="epfSyncBtn" onclick="portSyncEPF()" title="Auto-sync missing months">⟳</button></div>'+
       '</div>'+
       /* MIDDLE: switchable charts */
       '<div class="glass-card" style="display:flex;flex-direction:column;justify-content:center;">'+

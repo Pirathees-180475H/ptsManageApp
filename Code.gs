@@ -827,17 +827,16 @@ function getPortfolioData() {
       Logger.log('Growth data read failed: ' + eg.message);
     }
 
-    // ── EPF + ETF total: find "TOTAL" row in col A, read col F ──────
+    // ── EPF + ETF total: sum column F (all rows after header) ──
     var epfEtf = 0;
     try {
       var epfSheet = ss.getSheetByName('EPF ETF');
       if (epfSheet) {
         var epfLastRow = epfSheet.getLastRow();
-        var epfColA = epfSheet.getRange(1, 1, epfLastRow, 1).getValues();
-        for (var ei = 0; ei < epfColA.length; ei++) {
-          if ((epfColA[ei][0] + '').trim().toLowerCase() === 'total') {
-            epfEtf = parseFloat(epfSheet.getRange(ei + 1, 6).getValue()) || 0;
-            break;
+        if (epfLastRow >= 2) {
+          var fVals = epfSheet.getRange(2, 6, epfLastRow - 1, 1).getValues();
+          for (var fi = 0; fi < fVals.length; fi++) {
+            epfEtf += parseFloat(fVals[fi][0]) || 0;
           }
         }
       }
@@ -875,6 +874,96 @@ function getPortfolioData() {
     return { assets: assets, growth: growth, epfEtf: epfEtf, aims: aims, aimsTotal: aimsTotal };
   } catch (error) {
     throw new Error('Failed to load data: ' + error.message);
+  }
+}
+
+
+// ── EPF ETF Auto-Sync: fill missing months up to current, replicate last values ──
+function syncEPFetf() {
+  try {
+    Logger.log('[EPF_SYNC] start');
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('EPF ETF');
+    if (!sheet) return { success: false, message: 'Sheet "EPF ETF" not found.' };
+
+    var lastRow = sheet.getLastRow();
+    Logger.log('[EPF_SYNC] lastRow=' + lastRow);
+    if (lastRow < 2) return { success: false, message: 'EPF ETF sheet has no data rows.' };
+
+    // Read col A to find existing months
+    var colA = sheet.getRange(1, 1, lastRow, 1).getValues();
+    Logger.log('[EPF_SYNC] colA read, rows=' + colA.length);
+
+    var tz = Session.getScriptTimeZone();
+
+    function toMonthLabel(val) {
+      if (val instanceof Date) return Utilities.formatDate(val, tz, 'yyyy-MM');
+      var s = (val + '').trim();
+      if (/^\d{4}-\d{2}$/.test(s)) return s;
+      var d = new Date(s);
+      if (!isNaN(d.getTime())) return Utilities.formatDate(d, tz, 'yyyy-MM');
+      return s;
+    }
+
+    // Collect all existing months, find the latest
+    var allMonths = {};
+    var lastMonthIdx = -1, lastMonthStr = '';
+    for (var ci = 1; ci < colA.length; ci++) {
+      var raw = colA[ci][0];
+      if (!raw) continue;
+      var lbl = toMonthLabel(raw);
+      if (!lbl || lbl === '') continue;
+      allMonths[lbl] = true;
+      lastMonthIdx = ci;
+      lastMonthStr = lbl;
+    }
+
+    Logger.log('[EPF_SYNC] allMonths=' + JSON.stringify(Object.keys(allMonths)));
+    Logger.log('[EPF_SYNC] lastMonth=' + lastMonthStr);
+
+    if (lastMonthIdx < 0) return { success: false, message: 'No month entries found.' };
+
+    var lastParts = lastMonthStr.split('-');
+    if (lastParts.length < 2) return { success: false, message: 'Bad month format: ' + lastMonthStr };
+    var lastY = parseInt(lastParts[0], 10), lastM = parseInt(lastParts[1], 10);
+    if (isNaN(lastY) || isNaN(lastM)) return { success: false, message: 'Bad month: ' + lastMonthStr };
+
+    var curMonthStr = Utilities.formatDate(new Date(), tz, 'yyyy-MM');
+    var curParts = curMonthStr.split('-');
+    var curY = parseInt(curParts[0], 10), curM = parseInt(curParts[1], 10);
+    Logger.log('[EPF_SYNC] cur=' + curMonthStr);
+
+    // Missing months (skip already-existing ones)
+    var missing = [];
+    var cy = lastY, cm = lastM;
+    while (true) {
+      cm++; if (cm > 12) { cm = 1; cy++; }
+      if (cy > curY || (cy === curY && cm > curM)) break;
+      var mm = cy + '-' + String(cm).padStart(2, '0');
+      if (!allMonths[mm]) missing.push(mm);
+    }
+    Logger.log('[EPF_SYNC] missing=' + JSON.stringify(missing));
+    if (missing.length === 0) return { success: true, message: 'EPF ETF up to date (last: ' + lastMonthStr + ').', added: 0 };
+
+    // Read last row values to replicate
+    var lastVals = sheet.getRange(lastMonthIdx + 1, 1, 1, 6).getValues()[0];
+    var epfEmp = parseFloat(lastVals[1]) || 0, epfEmpr = parseFloat(lastVals[2]) || 0, etf = parseFloat(lastVals[3]) || 0;
+    var ttl = epfEmp + epfEmpr + etf;
+    Logger.log('[EPF_SYNC] vals B=' + epfEmp + ' C=' + epfEmpr + ' D=' + etf + ' F=' + ttl);
+
+    // Append to the end (no TOTAL row)
+    var insertAt = lastRow + 1;
+    var n = missing.length;
+    var rows = missing.map(function(m) { return [m, epfEmp, epfEmpr, etf, '', ttl]; });
+    Logger.log('[EPF_SYNC] appending ' + n + ' rows at ' + insertAt);
+    sheet.getRange(insertAt, 1, n, 6).setValues(rows);
+    Logger.log('[EPF_SYNC] done');
+
+    var msg = 'Synced ' + n + ' month' + (n > 1 ? 's' : '') + ' (' + missing.join(', ') + ').';
+    return { success: true, message: msg, added: n, months: missing };
+  } catch (err) {
+    Logger.log('[EPF_SYNC] ERROR: ' + err.message);
+    return { success: false, message: 'EPF ETF sync failed: ' + err.message };
   }
 }
 
