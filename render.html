@@ -2934,6 +2934,8 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-cse #p5 .kpi.blue.pf-asset-kpi .pf-ak-earn{color:var(--blue);text-shadow:0 0 18px rgba(0,212,255,.3);}
 #page-cse #p5 .kpi.green.pf-asset-kpi .pf-ak-earn{color:var(--green);}
 #page-cse #p5 .kpi.gold.pf-asset-kpi .pf-ak-earn{color:var(--gold);}
+#page-cse #p5 .kpi.orange.pf-asset-kpi .pf-ak-earn{color:var(--orange);}
+#page-cse #p5 .kpi.pink.pf-asset-kpi .pf-ak-earn{color:#f472b6;}
 #page-cse #p5 .kpi.purple.pf-asset-kpi .pf-ak-earn{color:var(--purple);}
 #page-cse #p5 .pf-ak-inv{font-size:.62em;color:rgba(255,255,255,.3);margin-bottom:4px;}
 #page-cse #p5 .pf-ak-roi-line{display:flex;align-items:baseline;gap:6px;margin-bottom:4px;}
@@ -9527,8 +9529,10 @@ function csePerfRender(rows){
   var utInv=rows.map(function(r){return +r[4];});
   var stkInv=rows.map(function(r){return +r[5];});
   var gldInv=rows.map(function(r){return +r[6];});
+  var bankInt=rows.map(function(r){return +r[7];});
+  var divEarn=rows.map(function(r){return +r[8];});
   var latest=rows[rows.length-1], prev=rows.length>1?rows[rows.length-2]:latest;
-  var totEarn=rows.map(function(_,i){return utEarn[i]+stkEarn[i]+gldEarn[i];});
+  var totEarn=rows.map(function(_,i){return utEarn[i]+stkEarn[i]+gldEarn[i]+bankInt[i]+divEarn[i];});
   var totInv=rows.map(function(_,i){return utInv[i]+stkInv[i]+gldInv[i];});
   var roiUT=rows.map(function(_,i){return csePfPct(utEarn[i],utInv[i]);});
   var roiStk=rows.map(function(_,i){return csePfPct(stkEarn[i],stkInv[i]);});
@@ -9536,11 +9540,12 @@ function csePerfRender(rows){
   var deltaEarn=rows.map(function(_,i){return i===0?0:totEarn[i]-totEarn[i-1];});
   var allUtEarn=+latest[1],allStkEarn=+latest[2],allGldEarn=+latest[3];
   var allUtInv=+latest[4],allStkInv=+latest[5],allGldInv=+latest[6];
-  var allTotEarn=allUtEarn+allStkEarn+allGldEarn;
+  var allBankInt=+latest[7], allDivEarn=+latest[8];
+  var allTotEarn=allUtEarn+allStkEarn+allGldEarn+allBankInt+allDivEarn;
   var allTotInv=allUtInv+allStkInv+allGldInv;
   var overallROI=csePfPct(allTotEarn,allTotInv);
   var bestEarnIdx=totEarn.indexOf(Math.max.apply(null,totEarn));
-  var dUT=+latest[1]-+prev[1], dStk=+latest[2]-+prev[2], dGld=+latest[3]-+prev[3], dTot=dUT+dStk+dGld;
+  var dUT=+latest[1]-+prev[1], dStk=+latest[2]-+prev[2], dGld=+latest[3]-+prev[3], dBank=+latest[7]-+prev[7], dDiv=+latest[8]-+prev[8], dTot=dUT+dStk+dGld+dBank+dDiv;
   function dCls(v){return v>0?'delta-up':v<0?'delta-down':'delta-flat';}
   function dStr(v){return v>0?'▲ '+csePfFmt(v):v<0?'▼ '+csePfFmt(Math.abs(v)):'— no change';}
 
@@ -9562,9 +9567,11 @@ function csePerfRender(rows){
   }
   var roiDCls=parseFloat(overallROI)>0?'delta-up':parseFloat(overallROI)<0?'delta-down':'delta-flat';
   h+='<div class="pf-kpi-row">'+
-     assetKpi('🔵','Unit Trust','cpf-kpi-ut', allUtInv,  dCls(dUT), dStr(dUT),   'blue')+
-     assetKpi('📈','Stocks',    'cpf-kpi-stk',allStkInv, dCls(dStk),dStr(dStk),  'green')+
-     assetKpi('🥇','Gold',      'cpf-kpi-gld',allGldInv, dCls(dGld),dStr(dGld),  'gold')+
+     assetKpi('🔵','Unit Trust',    'cpf-kpi-ut',  allUtInv,  dCls(dUT),   dStr(dUT),    'blue')+
+     assetKpi('📈','Stocks',        'cpf-kpi-stk', allStkInv, dCls(dStk),  dStr(dStk),   'green')+
+     assetKpi('🥇','Gold',          'cpf-kpi-gld', allGldInv, dCls(dGld),  dStr(dGld),   'gold')+
+     assetKpi('🏦','Bank Interest',  'cpf-kpi-int', 0,         dCls(dBank), dStr(dBank),  'orange')+
+     assetKpi('💵','Stock Dividend','cpf-kpi-div', 0,         dCls(dDiv),  dStr(dDiv),   'pink')+
      '<div class="kpi pf-asset-kpi purple fade-in"><div class="kpi-glow"></div>'+
      '<div class="pf-ak-top"><span class="pf-ak-icon">💰</span><span class="pf-ak-label">Total Earnings</span></div>'+
      '<div class="pf-ak-roi-line"><span class="pf-ak-roi-amt" id="cpf-kpi-tot">₨0</span><span class="pf-ak-roi-sep">·</span><span class="pf-ak-roi-pct" id="cpf-kpi-roi">0%</span></div>'+
@@ -9623,6 +9630,8 @@ function csePerfRender(rows){
       {id:'cpf-kpi-ut', v:allUtEarn},
       {id:'cpf-kpi-stk',v:allStkEarn},
       {id:'cpf-kpi-gld',v:allGldEarn},
+      {id:'cpf-kpi-int',v:allBankInt},
+      {id:'cpf-kpi-div',v:allDivEarn},
       {id:'cpf-kpi-tot',v:allTotEarn}
     ];
     els.forEach(function(k){
@@ -9638,6 +9647,8 @@ function csePerfRender(rows){
     {label:'UT',data:utEarn,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.12)',tension:.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#3b82f6',pointRadius:4,pointHoverRadius:7},
     {label:'Stock',data:stkEarn,borderColor:'#00e676',backgroundColor:'rgba(0,230,118,0.1)',tension:.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#00e676',pointRadius:4,pointHoverRadius:7},
     {label:'Gold',data:gldEarn,borderColor:'#ffd700',backgroundColor:'rgba(255,215,0,0.1)',tension:.4,fill:true,borderWidth:2.5,pointBackgroundColor:'#ffd700',pointRadius:4,pointHoverRadius:7},
+    {label:'Bank Int.',data:bankInt,borderColor:'#fb923c',backgroundColor:'rgba(251,146,60,0.1)',tension:.4,fill:true,borderWidth:2,pointBackgroundColor:'#fb923c',pointRadius:3,pointHoverRadius:6},
+    {label:'Stock Div.',data:divEarn,borderColor:'#f472b6',backgroundColor:'rgba(244,114,182,0.1)',tension:.4,fill:true,borderWidth:2,pointBackgroundColor:'#f472b6',pointRadius:3,pointHoverRadius:6},
     {label:'Total',data:totEarn,borderColor:'#a855f7',backgroundColor:'rgba(168,85,247,0.06)',tension:.4,fill:false,borderWidth:2,pointBackgroundColor:'#a855f7',pointRadius:3,pointHoverRadius:6}
   ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1200},
     plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},
@@ -9729,7 +9740,7 @@ function csePerfRender(rows){
   var annualUT=roiUT_now*(12/uniqueMonths), annualStk=roiStk_now*(12/uniqueMonths), annualGld=roiGld_now*(12/uniqueMonths);
   var allMROI=rows.map(function(_,i){return totInv[i]>0?totEarn[i]/totInv[i]*100:0;});
   var avgMROI=allMROI.reduce(function(s,v){return s+v;},0)/allMROI.length;
-  var prevTotEarn=+prev[1]+ +prev[2]+ +prev[3], prevTotInv=+prev[4]+ +prev[5]+ +prev[6];
+  var prevTotEarn=+prev[1]+ +prev[2]+ +prev[3]+ +prev[7]+ +prev[8], prevTotInv=+prev[4]+ +prev[5]+ +prev[6];
   var gainPct=prevTotInv>0?((allTotEarn-prevTotEarn)/prevTotInv*100):0;
   var insData=[
     {icon:'🎯',label:'Overall ROI',        value:overallROI+'%',  sub:csePfFmt(allTotEarn)+' earned · '+csePfFmt(allTotInv)+' invested'},
@@ -9739,7 +9750,9 @@ function csePerfRender(rows){
     {icon:'🔵',label:'UT Return · Annual', value:roiUT_now.toFixed(2)+'%', sub:'~'+annualUT.toFixed(1)+'% p.a. · '+csePfFmt(allUtEarn)+' on '+csePfFmt(allUtInv)},
     {icon:'📈',label:'Stock Return · Annual',value:roiStk_now.toFixed(2)+'%',sub:'~'+annualStk.toFixed(1)+'% p.a. · '+csePfFmt(allStkEarn)+' on '+csePfFmt(allStkInv)},
     {icon:'🥇',label:'Gold Return · Annual',value:roiGld_now.toFixed(2)+'%', sub:'~'+annualGld.toFixed(1)+'% p.a. · '+csePfFmt(allGldEarn)+' on '+csePfFmt(allGldInv)},
-    {icon:'🏆',label:'Best Earning Point',  value:months[bestEarnIdx],       sub:csePfFmt(totEarn[bestEarnIdx])+' total · '+(totInv[bestEarnIdx]>0?(totEarn[bestEarnIdx]/totInv[bestEarnIdx]*100).toFixed(1)+'% ROI':'')}
+    {icon:'�',label:'Bank Interest',        value:csePfFmt(allBankInt),        sub:'cumulative · '+csePfFmt(dBank)+' this month'},
+    {icon:'💵',label:'Stock Dividend',       value:csePfFmt(allDivEarn),        sub:'cumulative · '+csePfFmt(dDiv)+' this month'},
+    {icon:'�🏆',label:'Best Earning Point',  value:months[bestEarnIdx],       sub:csePfFmt(totEarn[bestEarnIdx])+' total · '+(totInv[bestEarnIdx]>0?(totEarn[bestEarnIdx]/totInv[bestEarnIdx]*100).toFixed(1)+'% ROI':'')}
   ];
   var insEl=document.getElementById('cpfInsights');
   if(insEl) insEl.innerHTML=insData.map(function(i){

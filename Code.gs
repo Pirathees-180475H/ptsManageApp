@@ -1604,12 +1604,14 @@ function logMonthlyEarnings() {
   const utInvest  = Number(sheet.getRange("F1").getValue());
   const stockInvest = Number(sheet.getRange("I1").getValue());
   const goldInvest  = Number(sheet.getRange("C2").getValue());
+  const bankInterest = Number(sheet.getRange("L1").getValue());
+  const stockDividend = Number(sheet.getRange("L2").getValue());
 
   const startRow = 46;
   const lastRow  = sheet.getLastRow();
 
   const existing = lastRow >= startRow
-    ? sheet.getRange(startRow, 1, lastRow - startRow + 1, 7).getValues().filter(r => r.some(c => c !== ""))
+    ? sheet.getRange(startRow, 1, lastRow - startRow + 1, 9).getValues().filter(r => r.some(c => c !== ""))
     : [];
 
   // ── Duplicate check: compare current values against the last logged row ──
@@ -1621,8 +1623,10 @@ function logMonthlyEarnings() {
     const sameInvested  = Number(last[4]) === utInvest  &&
                           Number(last[5]) === stockInvest &&
                           Number(last[6]) === goldInvest;
+    const sameExtra     = Number(last[7]) === bankInterest &&
+                          Number(last[8]) === stockDividend;
 
-    if (sameEarnings && sameInvested) {
+    if (sameEarnings && sameInvested && sameExtra) {
       return {
         logged:  false,
         reason:  'duplicate',
@@ -1631,8 +1635,8 @@ function logMonthlyEarnings() {
     }
   }
 
-  existing.push([month, utEarn, stockEarn, goldEarn, utInvest, stockInvest, goldInvest]);
-  sheet.getRange(startRow, 1, existing.length, 7).setValues(existing);
+  existing.push([month, utEarn, stockEarn, goldEarn, utInvest, stockInvest, goldInvest, bankInterest, stockDividend]);
+  sheet.getRange(startRow, 1, existing.length, 9).setValues(existing);
 
   return {
     logged:  true,
@@ -2393,7 +2397,7 @@ function getInvestmentData() {
   const lastRow = sheet.getLastRow();
   if (lastRow < startRow) return [];
 
-  const raw = sheet.getRange(startRow, 1, lastRow - startRow + 1, 7).getValues();
+  const raw = sheet.getRange(startRow, 1, lastRow - startRow + 1, 9).getValues();
 
   return raw
     .filter(r => r[0])
@@ -2404,7 +2408,9 @@ function getInvestmentData() {
       Number(r[3]) || 0,
       Number(r[4]) || 0,
       Number(r[5]) || 0,
-      Number(r[6]) || 0
+      Number(r[6]) || 0,
+      Number(r[7]) || 0,
+      Number(r[8]) || 0
     ]);
 }
 
