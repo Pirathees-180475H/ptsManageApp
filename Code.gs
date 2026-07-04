@@ -1421,9 +1421,9 @@ function getFriendBalances() {
     const balanceData = [];
     const totals = {};
 
-    friends.forEach(friend => {
+    friends.forEach(function(friend) {
       const fullName = (friend.first_name + ' ' + (friend.last_name || '')).trim();
-      friend.balance.forEach(bal => {
+      friend.balance.forEach(function(bal) {
         const amount = parseFloat(bal.amount);
         const currency = bal.currency_code;
         balanceData.push({
@@ -1862,7 +1862,10 @@ function getCategoryAllTimeExpenses(categoryName) {
       var amt = typeof rawAmt === 'number' ? rawAmt : (parseFloat(String(rawAmt).replace(/[^0-9.+-]/g, '')) || 0);
       if (isNaN(amt) || amt <= 0) continue;
 
-      var ref = cat.refCol > 0 ? String(row[cat.refCol - 1] || '').trim() : '';
+      var ref = '';
+      if (cat.refCol > 0) {
+        ref = String(row[cat.refCol - 1] || '').trim();
+      }
 
       entries.push({
         day:       rowDay,
@@ -1917,7 +1920,7 @@ function getCurrentMonthExpensesList(reqMonth, reqYear) {
       { name: 'Movies & Outing',    amtCol: 10, refCol: 9  },  // J / I
       { name: 'Other',              amtCol: 12, refCol: 11 },  // L / K
       { name: 'Bus Fair',           amtCol: 13, refCol: 0  },  // M
-      { name: 'Party', amtCol: 15, refCol: 14 },  // O / N
+      { name: 'Party',              amtCol: 15, refCol: 14 },  // O / N
       { name: 'Dress & Appearance',              amtCol: 17, refCol: 16 },  // Q / P
       { name: 'Rent',               amtCol: 18, refCol: 0  }   // R
     ];
@@ -4460,5 +4463,73 @@ function updateInstallmentStatus(instName, entryNum, newStatus, entryMonth, entr
   } catch (e) {
     Logger.log('updateInstallmentStatus error: ' + e.message);
     return { success: false, error: e.message };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   getDailyExpensesForYear
+   Returns daily expense totals for a given year, used for calendar heatmap.
+   Each entry: { date: "YYYY-MM-DD", total: number }
+───────────────────────────────────────────────────────────────── */
+function getDailyExpensesForYear(reqYear) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var year  = (reqYear && reqYear >= 2000) ? parseInt(reqYear, 10) : new Date().getFullYear();
+
+    // Column definitions (1-based) — same categories as getCurrentMonthExpensesList
+    var CATS = [
+      { amtCol: 3  }, { amtCol: 5  }, { amtCol: 7  }, { amtCol: 8  },
+      { amtCol: 10 }, { amtCol: 12 }, { amtCol: 13 }, { amtCol: 15 },
+      { amtCol: 17 }, { amtCol: 18 }
+    ];
+
+    var lastRow = sheet.getLastRow();
+    var numCols = 19; // columns A through S (enough for all expense columns)
+    if (numCols > sheet.getLastColumn()) numCols = sheet.getLastColumn();
+    var allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+
+    var dailyMap = {};
+
+    for (var r = 0; r < allData.length; r++) {
+      var row  = allData[r];
+      var dateKey = _cellStr(row[0], true).trim();
+      if (!dateKey) continue;
+
+      var parts = dateKey.match(/^(\d{1,2})-(\d{1,2})$/);
+      if (!parts) continue;
+      var rowMonth = parseInt(parts[1], 10);
+      var rowDay   = parseInt(parts[2], 10);
+
+      // Check year from Date object
+      if (row[0] instanceof Date && !isNaN(row[0])) {
+        var rowYear = parseInt(Utilities.formatDate(row[0], ss.getSpreadsheetTimeZone(), 'yyyy'), 10);
+        if (rowYear !== year) continue;
+      }
+
+      var dayTotal = 0;
+      CATS.forEach(function(cat) {
+        var rawAmt = row[cat.amtCol - 1];
+        var amt = 0;
+        if (typeof rawAmt === 'number') {
+          amt = rawAmt;
+        } else {
+          amt = parseFloat(String(rawAmt).replace(/[^0-9.+-]/g, '')) || 0;
+        }
+        if (!isNaN(amt) && amt > 0) dayTotal += amt;
+      });
+
+      if (dayTotal > 0) {
+        var key = year + '-' + String(rowMonth).padStart(2,'0') + '-' + String(rowDay).padStart(2,'0');
+        dailyMap[key] = Math.round(dayTotal * 100) / 100;
+      }
+    }
+
+    return { success: true, data: dailyMap };
+
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 }

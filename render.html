@@ -571,6 +571,55 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   font-size:.68em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
   color:rgba(255,255,255,.65);display:flex;align-items:center;gap:7px;
 }
+.cal-hm-toggle{
+  font-size:1.1em;cursor:pointer;opacity:.35;transition:opacity .2s,transform .2s;
+  display:inline-flex;align-items:center;justify-content:center;
+  line-height:1;user-select:none;
+}
+.cal-hm-toggle:hover{opacity:.7;transform:scale(1.12);}
+.cal-hm-toggle.active{opacity:1;animation:hmPulse 1.2s ease-in-out infinite;filter:drop-shadow(0 0 6px rgba(255,100,50,.5));}
+@keyframes hmPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+
+/* ── Calendar Heatmap Levels ── */
+#cal-pikaday-container .cal-hm-l0 .pika-button{background:rgba(0,230,118,.07)!important;color:rgba(74,222,128,.7)!important;}
+#cal-pikaday-container .cal-hm-l1 .pika-button{background:rgba(255,200,50,.14)!important;color:rgba(255,220,100,.85)!important;box-shadow:inset 0 0 0 1px rgba(255,200,50,.2)!important;}
+#cal-pikaday-container .cal-hm-l2 .pika-button{background:rgba(255,160,50,.2)!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(255,160,50,.25)!important;}
+#cal-pikaday-container .cal-hm-l3 .pika-button{background:rgba(255,100,50,.3)!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(255,100,50,.3)!important;}
+#cal-pikaday-container .cal-hm-l4 .pika-button{background:rgba(255,50,50,.4)!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(255,50,50,.35)!important;}
+#cal-pikaday-container .cal-hm-l5 .pika-button{background:rgba(200,0,0,.55)!important;color:#fff!important;box-shadow:inset 0 0 0 1px rgba(200,0,0,.4),0 0 12px rgba(255,50,50,.2)!important;}
+/* today override for heatmap */
+#cal-pikaday-container .cal-hm-l0.is-today .pika-button,
+#cal-pikaday-container .cal-hm-l1.is-today .pika-button,
+#cal-pikaday-container .cal-hm-l2.is-today .pika-button,
+#cal-pikaday-container .cal-hm-l3.is-today .pika-button,
+#cal-pikaday-container .cal-hm-l4.is-today .pika-button,
+#cal-pikaday-container .cal-hm-l5.is-today .pika-button{
+  background:linear-gradient(135deg,#0ea5e9,#2563eb)!important;
+  color:#fff!important;
+  box-shadow:0 4px 14px rgba(14,165,233,.4)!important;
+}
+
+/* ── Heatmap Legend ── */
+.cal-hm-legend{
+  display:none;align-items:center;gap:6px;
+  padding:4px 14px 10px;flex-shrink:0;
+  justify-content:center;
+}
+.cal-hm-legend.open{display:flex;}
+.cal-hm-legend-lbl{font-size:.5em;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-right:4px;}
+.cal-hm-legend-bar{display:flex;align-items:center;gap:2px;}
+.cal-hm-legend-step{
+  width:14px;height:14px;border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.45em;font-weight:700;
+}
+.cal-hm-legend-step.hm-l0{background:rgba(0,230,118,.14);color:rgba(74,222,128,.7);}
+.cal-hm-legend-step.hm-l1{background:rgba(255,200,50,.18);color:rgba(255,220,100,.8);}
+.cal-hm-legend-step.hm-l2{background:rgba(255,160,50,.24);color:#fff;}
+.cal-hm-legend-step.hm-l3{background:rgba(255,100,50,.34);color:#fff;}
+.cal-hm-legend-step.hm-l4{background:rgba(255,50,50,.44);color:#fff;}
+.cal-hm-legend-step.hm-l5{background:rgba(200,0,0,.58);color:#fff;}
+.cal-hm-legend-max{font-size:.5em;font-weight:700;color:rgba(255,255,255,.25);margin-left:2px;}
 .cal-title-icon{
   width:24px;height:24px;border-radius:7px;
   background:linear-gradient(135deg,#00d4ff 0%,#3b82f6 100%);
@@ -4611,11 +4660,12 @@ input[type=date].swae-input{color-scheme:dark;}
 <!-- CALENDAR PANEL -->
 <div id="cal-panel">
   <div class="cal-topbar">
-    <span class="cal-title"><span class="cal-title-icon">📅</span>Calendar</span>
+    <span class="cal-title"><span class="cal-title-icon">📅</span>Calendar <span class="cal-hm-toggle" id="cal-hm-toggle" onclick="event.stopPropagation();_toggleHeatmap()" title="Toggle Expense Heatmap">🔥</span></span>
     <button class="cal-close" onclick="calClose()">✕</button>
   </div>
   <div id="cal-pikaday-container"></div>
   <div class="cal-sep"></div>
+  <div class="cal-hm-legend" id="cal-hm-legend"><span class="cal-hm-legend-lbl">Low</span><div class="cal-hm-legend-bar"><div class="cal-hm-legend-step hm-l0">0</div><div class="cal-hm-legend-step hm-l1"></div><div class="cal-hm-legend-step hm-l2"></div><div class="cal-hm-legend-step hm-l3"></div><div class="cal-hm-legend-step hm-l4"></div><div class="cal-hm-legend-step hm-l5"></div></div><span class="cal-hm-legend-max">High</span></div>
   <div class="cal-holidays-section" id="cal-holidays-section"></div>
 </div>
 
@@ -12066,6 +12116,8 @@ function swaeSubmit(){
   var _cachedHolidays = {};
   var _cachedNotes    = null; // null means not loaded, [] means empty
   var _pikaCal        = null;
+  var _calHeatmapOn   = false; // expense heatmap toggle state
+  var _cachedDailyExpenses = {}; // { year: { 'YYYY-MM-DD': total, ... } }
 
   function _calBuildEventMap(holidays, notes, year) {
     var map = {};
@@ -12188,6 +12240,89 @@ function swaeSubmit(){
     if (sec) sec.innerHTML = html;
   }
 
+  // ── Expense Calendar Heatmap ──
+  function _getHeatmapLevel(total, maxExp) {
+    if (total === 0) return 0;
+    var ratio = total / maxExp;
+    if (ratio <= 0.1)  return 1;
+    if (ratio <= 0.25) return 2;
+    if (ratio <= 0.45) return 3;
+    if (ratio <= 0.7)  return 4;
+    return 5;
+  }
+
+  function _applyHeatmapColors() {
+    var pika = _pikaCal;
+    if (!pika || !pika.calendars) return;
+    var year  = pika.calendars[0].year;
+    var month = pika.calendars[0].month;
+    var expMap = _cachedDailyExpenses[year] || {};
+
+    var maxExp = 0;
+    Object.keys(expMap).forEach(function(k) {
+      var parts = k.split('-');
+      var ky = parseInt(parts[0], 10);
+      var km = parseInt(parts[1], 10) - 1;
+      if (ky === year && km === month) {
+        if (expMap[k] > maxExp) maxExp = expMap[k];
+      }
+    });
+
+    var cells = document.querySelectorAll('#cal-pikaday-container td[data-day]');
+    cells.forEach(function(td) {
+      var btn = td.querySelector('.pika-button');
+      if (!btn) return;
+      var d = parseInt(btn.getAttribute('data-pika-day'),   10);
+      var m = parseInt(btn.getAttribute('data-pika-month'), 10);
+      var y = parseInt(btn.getAttribute('data-pika-year'),  10);
+      if (isNaN(d) || isNaN(m) || isNaN(y)) return;
+      var key = y + '-' + String(m+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+
+      td.classList.remove('cal-hm-l0','cal-hm-l1','cal-hm-l2','cal-hm-l3','cal-hm-l4','cal-hm-l5');
+
+      if (_calHeatmapOn) {
+        var expTotal = expMap[key] || 0;
+        var level = _getHeatmapLevel(expTotal, maxExp || 1);
+        td.classList.add('cal-hm-l' + level);
+        td.title = expTotal > 0 ? 'Rs. ' + expTotal.toLocaleString(undefined, {minimumFractionDigits:2}) : '';
+      }
+    });
+  }
+
+  function _loadDailyExpenses(year, callback) {
+    if (_cachedDailyExpenses[year]) {
+      if (callback) callback();
+      return;
+    }
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _cachedDailyExpenses[year] = (res && res.success) ? (res.data || {}) : {};
+        if (callback) callback();
+      })
+      .withFailureHandler(function() {
+        _cachedDailyExpenses[year] = {};
+        if (callback) callback();
+      })
+      .getDailyExpensesForYear(year);
+  }
+
+  window._toggleHeatmap = function() {
+    _calHeatmapOn = !_calHeatmapOn;
+    var toggle = document.getElementById('cal-hm-toggle');
+    var legend = document.getElementById('cal-hm-legend');
+    if (toggle) toggle.classList.toggle('active', _calHeatmapOn);
+    if (legend) legend.classList.toggle('open', _calHeatmapOn);
+
+    if (_calHeatmapOn && _pikaCal) {
+      var year = _pikaCal.calendars[0].year;
+      _loadDailyExpenses(year, function() {
+        _applyHeatmapColors();
+      });
+    } else if (_pikaCal) {
+      if (_pikaCal._v) _pikaCal.draw();
+    }
+  };
+
   window.calToggle = function() {
     var p = document.getElementById('cal-panel');
     var opening = !p.classList.contains('open');
@@ -12243,6 +12378,17 @@ function swaeSubmit(){
 
           // Render event list
           _calRenderEventList(year, month, map);
+
+          // Apply heatmap colors if active
+          if (_calHeatmapOn) {
+            if (!_cachedDailyExpenses[year]) {
+              _loadDailyExpenses(year, function() {
+                _applyHeatmapColors();
+              });
+            } else {
+              _applyHeatmapColors();
+            }
+          }
 
           // Clear map list and show loading if year changed
           var sec = document.getElementById('cal-holidays-section');
