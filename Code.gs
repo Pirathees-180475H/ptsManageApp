@@ -894,7 +894,7 @@ function syncEPFetf() {
     var colA = sheet.getRange(1, 1, lastRow, 1).getValues();
     Logger.log('[EPF_SYNC] colA read, rows=' + colA.length);
 
-    var tz = Session.getScriptTimeZone();
+    var tz = ss.getSpreadsheetTimeZone();
 
     function toMonthLabel(val) {
       if (val instanceof Date) return Utilities.formatDate(val, tz, 'yyyy-MM');
@@ -945,6 +945,24 @@ function syncEPFetf() {
     Logger.log('[EPF_SYNC] missing=' + JSON.stringify(missing));
     if (missing.length === 0) return { success: true, message: 'EPF ETF up to date (last: ' + lastMonthStr + ').', added: 0 };
 
+    // ── Flush and re-check to prevent any duplicate insertion ──
+    // Forces sheet write buffer to flush, then re-reads col A fresh
+    SpreadsheetApp.flush();
+    var reLastRow = sheet.getLastRow();
+    if (reLastRow !== lastRow) {
+      Logger.log('[EPF_SYNC] sheet grew since initial read (was ' + lastRow + ', now ' + reLastRow + '), re-checking...');
+      lastRow = reLastRow;
+    }
+    var reColA = sheet.getRange(1, 1, lastRow, 1).getValues();
+    var reMonths = {};
+    for (var ri = 1; ri < reColA.length; ri++) {
+      var rv = reColA[ri][0];
+      if (rv) { var rl = toMonthLabel(rv); if (rl) reMonths[rl] = true; }
+    }
+    missing = missing.filter(function(m) { return !reMonths[m]; });
+    Logger.log('[EPF_SYNC] after re-check, missing=' + JSON.stringify(missing));
+    if (missing.length === 0) return { success: true, message: 'EPF ETF up to date (last: ' + lastMonthStr + ').', added: 0 };
+
     // Read last row values to replicate
     var lastVals = sheet.getRange(lastMonthIdx + 1, 1, 1, 6).getValues()[0];
     var epfEmp = parseFloat(lastVals[1]) || 0, epfEmpr = parseFloat(lastVals[2]) || 0, etf = parseFloat(lastVals[3]) || 0;
@@ -954,9 +972,14 @@ function syncEPFetf() {
     // Append to the end (no TOTAL row)
     var insertAt = lastRow + 1;
     var n = missing.length;
-    var rows = missing.map(function(m) { return [m, epfEmp, epfEmpr, etf, '', ttl]; });
+    var rows = missing.map(function(m) {
+      // Create date using Utilities.parseDate with sheet timezone for consistency
+      var monthDate = Utilities.parseDate(m + '-01', tz, 'yyyy-MM-dd');
+      return [monthDate, epfEmp, epfEmpr, etf, '', ttl];
+    });
     Logger.log('[EPF_SYNC] appending ' + n + ' rows at ' + insertAt);
     sheet.getRange(insertAt, 1, n, 6).setValues(rows);
+    SpreadsheetApp.flush();
     Logger.log('[EPF_SYNC] done');
 
     var msg = 'Synced ' + n + ' month' + (n > 1 ? 's' : '') + ' (' + missing.join(', ') + ').';
