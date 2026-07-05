@@ -877,6 +877,34 @@ function getPortfolioData() {
   }
 }
 
+// ── Get EPF ETF data for compounding calculator ──
+function getEPFetfData() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('EPF ETF');
+    if (!sheet) return { success: false, error: 'EPF ETF sheet not found.' };
+    var lr = sheet.getLastRow();
+    if (lr < 2) return { success: false, error: 'No data rows.' };
+    var all = sheet.getRange(1, 1, lr, 6).getValues();
+    var tz = ss.getSpreadsheetTimeZone();
+    var rows = [];
+    for (var i = 1; i < all.length; i++) {
+      var raw = all[i][0];
+      if (!raw) continue;
+      var lbl = raw instanceof Date ? Utilities.formatDate(raw, tz, 'yyyy-MM') : String(raw).trim();
+      if (!lbl || lbl === '') continue;
+      var epfEmp = parseFloat(all[i][1]) || 0;
+      var epfEmpr = parseFloat(all[i][2]) || 0;
+      var etfEmp = parseFloat(all[i][3]) || 0;
+      var total = parseFloat(all[i][5]) || 0;
+      if (total === 0) continue;
+      rows.push({ month: lbl, epfEmployee: epfEmp, epfEmployer: epfEmpr, etf: etfEmp, total: total });
+    }
+    return { success: true, rows: rows };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
 
 // ── EPF ETF Auto-Sync: fill missing months up to current, replicate last values ──
 function syncEPFetf() {
