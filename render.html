@@ -2834,42 +2834,6 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 @keyframes epfSyncSpin{to{transform:rotate(360deg);}}
 #page-port .epf-calc-btn{position:absolute;top:10px;right:44px;width:28px;height:28px;border-radius:8px;border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.12);color:#c084fc;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .25s ease;z-index:2;line-height:1;}
 #page-port .epf-calc-btn:hover{background:rgba(168,85,247,.25);border-color:rgba(168,85,247,.5);transform:scale(1.1);box-shadow:0 0 16px rgba(168,85,247,.2);}
-/* ── EPF Compounding Modal ── */
-#epf-calc-overlay{display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.85);backdrop-filter:blur(18px);align-items:center;justify-content:center;padding:16px;}
-#epf-calc-overlay.open{display:flex;}
-#epf-calc-modal{background:#0a0e1c;border:1px solid rgba(255,255,255,.1);border-radius:22px;width:100%;max-width:960px;height:min(92vh,880px);display:flex;flex-direction:column;box-shadow:0 32px 90px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.07);animation:edmIn .25s ease;position:relative;overflow:hidden;}
-#epf-calc-modal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:2;pointer-events:none;background:linear-gradient(90deg,transparent 5%,rgba(168,85,247,.7) 35%,rgba(56,189,248,.6) 65%,transparent 95%);}
-#epf-calc-modal .ecm-hdr{padding:18px 22px 14px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;background:linear-gradient(180deg,rgba(168,85,247,.07) 0%,transparent 100%);display:flex;justify-content:space-between;align-items:center;}
-#epf-calc-modal .ecm-title{font-size:.98em;font-weight:800;letter-spacing:-.2px;background:linear-gradient(135deg,#fff 0%,#a5b4fc 55%,#c084fc 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-#epf-calc-modal .ecm-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:rgba(255,255,255,.5);width:32px;height:32px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
-#epf-calc-modal .ecm-close:hover{background:rgba(255,255,255,.12);color:#fff;}
-#epf-calc-modal .ecm-body{flex:1;overflow-y:auto;padding:16px 22px 20px;}
-#epf-calc-modal .ecm-body::-webkit-scrollbar{width:4px;}
-#epf-calc-modal .ecm-body::-webkit-scrollbar-thumb{background:rgba(168,85,247,.3);border-radius:4px;}
-#epf-calc-modal .ecm-row{display:flex;gap:14px;margin-bottom:14px;}
-#epf-calc-modal .ecm-col{flex:1;display:flex;flex-direction:column;gap:8px;}
-#epf-calc-modal label{font-size:.65em;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;}
-#epf-calc-modal input[type=number]{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 12px;color:#fff;font-size:.88em;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;width:100%;box-sizing:border-box;}
-#epf-calc-modal input[type=number]:focus{border-color:rgba(168,85,247,.5);}
-#epf-calc-modal input[type=number]::placeholder{color:rgba(255,255,255,.2);}
-#epf-calc-modal .ecm-select{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 12px;color:#fff;font-size:.82em;font-family:'Inter',sans-serif;outline:none;cursor:pointer;transition:border-color .2s;width:100%;box-sizing:border-box;}
-#epf-calc-modal .ecm-select:focus{border-color:rgba(168,85,247,.5);}
-#epf-calc-modal .ecm-select option{background:#0d1424;color:rgba(255,255,255,.82);}
-#epf-calc-modal .ecm-btn{background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(56,189,248,.1));border:1px solid rgba(168,85,247,.35);border-radius:12px;color:#c084fc;padding:9px 20px;font-size:.78em;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;transition:all .25s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
-#epf-calc-modal .ecm-btn:hover{background:linear-gradient(135deg,rgba(168,85,247,.35),rgba(56,189,248,.2));border-color:rgba(168,85,247,.55);transform:translateY(-1px);box-shadow:0 4px 20px rgba(168,85,247,.15);}
-#epf-calc-modal .ecm-rate-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
-#epf-calc-modal .ecm-rate-row .ecm-rate-item{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:6px 12px;}
-#epf-calc-modal .ecm-rate-row .ecm-rate-item label{font-size:.6em;text-transform:none;letter-spacing:normal;color:rgba(255,255,255,.5);white-space:nowrap;}
-#epf-calc-modal .ecm-rate-row .ecm-rate-item input{width:68px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 8px;color:#fff;font-size:.8em;font-family:'Inter',sans-serif;outline:none;}
-#epf-calc-modal .ecm-rate-row .ecm-rate-item input:focus{border-color:rgba(168,85,247,.5);}
-#epf-calc-modal .ecm-result{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;}
-#epf-calc-modal .ecm-result .ecm-stat{flex:1;min-width:120px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:12px 14px;text-align:center;}
-#epf-calc-modal .ecm-result .ecm-stat .ecm-stat-val{font-size:1.2em;font-weight:800;color:#c084fc;letter-spacing:-.5px;}
-#epf-calc-modal .ecm-result .ecm-stat .ecm-stat-lbl{font-size:.6em;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
-#epf-calc-modal .ecm-chart-wrap{position:relative;width:100%;height:240px;margin-top:10px;}
-#epf-calc-modal .ecm-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:40px;color:rgba(255,255,255,.3);}
-#epf-calc-modal .ecm-loading .ecm-spin{width:28px;height:28px;border:2px solid rgba(168,85,247,.2);border-top-color:#a855f7;border-radius:50%;animation:edmSpin .6s linear infinite;}
-@keyframes edmSpin{to{transform:rotate(360deg);}}
 /* chart switcher dropdown */
 #page-port .port-chart-sel{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;
   color:rgba(255,255,255,.75);font-family:'Inter',sans-serif;font-size:.68em;font-weight:600;
@@ -4148,6 +4112,7 @@ input[type=date].swae-input{color-scheme:dark;}
 </script>
 <?!= HtmlService.createHtmlOutputFromFile('docs').getContent(); ?>
 <?!= HtmlService.createHtmlOutputFromFile('BankBalances').getContent(); ?>
+<?!= HtmlService.createHtmlOutputFromFile('ETFCalc').getContent(); ?>
 <?!= include('notification'); ?>
 
 <!-- ── Quick Add Modal ── -->
@@ -9002,131 +8967,6 @@ function portGetClass(cat){
   if(c.includes('due')||c.includes('splitwise')||c.includes('loan')||c.includes('borrow'))return 'negative';
   return 'neutral';
 }
-
-/* ═══════════════════════════════════════════
-   EPF ETF COMPOUNDING CALCULATOR
-═══════════════════════════════════════════ */
-function portEPFCalcOpen(){
-  document.getElementById('epf-calc-overlay').classList.add('open');
-  document.getElementById('epf-calc-body').innerHTML='<div class="ecm-loading"><div class="ecm-spin"></div><span>Loading EPF/ETF data…</span></div>';
-  google.script.run
-    .withSuccessHandler(portEPFCalcRender)
-    .withFailureHandler(function(err){document.getElementById('epf-calc-body').innerHTML='<div class="exp-err">⚠️ Error: '+(err.message||String(err))+'</div>';})
-    .getEPFetfData();
-}
-function portEPFCalcClose(){
-  document.getElementById('epf-calc-overlay').classList.remove('open');
-}
-function portEPFCalcRender(res){
-  var fn=function(v){return Math.round(v).toLocaleString('en-IN');};
-  if(!res||!res.success){
-    document.getElementById('epf-calc-body').innerHTML='<div class="exp-err">⚠️ '+(res?res.error:'Failed to load')+'</div>';
-    return;
-  }
-  var rows=res.rows;
-  // Group by year
-  var yearly={},yOrder=[];
-  rows.forEach(function(r){
-    var y=r.month.split('-')[0];
-    if(!yearly[y]){yearly[y]={year:y,contrib:0};yOrder.push(y);}
-    yearly[y].contrib+=r.total;
-  });
-  var years=yOrder.sort(function(a,b){return parseInt(a)-parseInt(b);});
-  var totalContrib=years.reduce(function(s,y){return s+yearly[y].contrib;},0);
-  var lastBal=rows.length?rows[rows.length-1].total:0;
-  var lastYear=years[years.length-1];
-  var defTarget=parseInt(lastYear)+5;
-  var yearInputs=years.map(function(y){return '<div class="ecm-rate-item"><label>'+y+':</label><input type="number" class="ecm-year-rate" data-year="'+y+'" value="8" step="0.5" min="0" max="100" disabled></div>';}).join('');
-
-  var html=
-    '<div class="ecm-result">'+
-      '<div class="ecm-stat"><div class="ecm-stat-val">'+fn(lastBal)+'</div><div class="ecm-stat-lbl">Current Balance</div></div>'+
-      '<div class="ecm-stat"><div class="ecm-stat-val">'+fn(totalContrib)+'</div><div class="ecm-stat-lbl">Total Contrib</div></div>'+
-      '<div class="ecm-stat"><div class="ecm-stat-val" id="ecmFinalVal">—</div><div class="ecm-stat-lbl">Projected Final</div></div>'+
-      '<div class="ecm-stat"><div class="ecm-stat-val" id="ecmInterestVal">—</div><div class="ecm-stat-lbl">Interest Earned</div></div>'+
-    '</div>'+
-    '<div class="ecm-row" style="align-items:center;gap:12px;flex-wrap:wrap;">'+
-      '<label style="flex:none;">Annual Rate:</label>'+
-      '<input type="number" id="ecmGlobalRate" value="8" step="0.5" min="0" max="100" style="width:80px;" oninput="portEPFCalcSyncRates()">'+
-      '<label style="flex:none;">%</label>'+
-      '<label style="flex:none;margin-left:12px;"><input type="checkbox" id="ecmSameRate" checked onchange="portEPFCalcToggleRates()"> Same for all</label>'+
-      '<label style="flex:none;margin-left:12px;">Project to:</label>'+
-      '<input type="number" id="ecmTargetYear" value="'+defTarget+'" min="'+(parseInt(lastYear)+1)+'" max="2060" style="width:80px;">'+
-    '</div>'+
-    '<div class="ecm-rate-row" id="ecmRateRow">'+yearInputs+'</div>'+
-    '<div style="margin-top:10px;"><button class="ecm-btn" onclick="portEPFCalcRun()">📊 Calculate Compounding</button></div>'+
-    '<div class="ecm-chart-wrap" id="ecmChartWrap"><canvas id="ecmChart"></canvas></div>';
-  document.getElementById('epf-calc-body').innerHTML=html;
-  window._epfCalcData={years:years,yearly:yearly,totalContrib:totalContrib,lastBal:lastBal};
-  portEPFCalcRun();
-}
-function portEPFCalcSyncRates(){
-  var global=parseFloat(document.getElementById('ecmGlobalRate').value)||0;
-  document.querySelectorAll('.ecm-year-rate').forEach(function(el){el.value=global;});
-}
-function portEPFCalcToggleRates(){
-  var same=document.getElementById('ecmSameRate').checked;
-  document.querySelectorAll('.ecm-year-rate').forEach(function(el){el.disabled=same;});
-  if(same)portEPFCalcSyncRates();
-}
-function portEPFCalcRun(){
-  var data=window._epfCalcData;
-  if(!data)return;
-  var years=data.years,yearly=data.yearly,targetY=parseInt(document.getElementById('ecmTargetYear').value)||(parseInt(years[years.length-1])+5);
-  // Collect per-year rates
-  var rates={};
-  document.querySelectorAll('.ecm-year-rate').forEach(function(el){rates[el.getAttribute('data-year')]=parseFloat(el.value)||0;});
-  // Build contribution array year->amount (actual data years)
-  var contrib={};
-  years.forEach(function(y){contrib[y]=yearly[y].contrib;});
-  // For projection years beyond data, assume last contribution (or zero)
-  var lastContrib=contrib[years[years.length-1]]||0;
-  // Compounding simulation
-  var balance=0;
-  var chartData=[]; // {year, balance, contrib}
-  var firstYear=parseInt(years[0]);
-  for(var y=firstYear;y<=targetY;y++){
-    var sy=String(y);
-    var addContrib=contrib[sy]||(y>parseInt(years[years.length-1])?lastContrib:0);
-    balance+=addContrib; // Add contribution first
-    var rate=rates[sy]||(rates[years[0]]||0);
-    if(rate>0)balance=balance*(1+rate/100); // Then apply growth
-    chartData.push({year:sy,balance:Math.round(balance*100)/100,contrib:Math.round((chartData.length?chartData[chartData.length-1].contrib:0)+addContrib)});
-  }
-  var finalBal=chartData.length?chartData[chartData.length-1].balance:0;
-  var finalContrib=chartData.length?chartData[chartData.length-1].contrib:0;
-  var nfn=function(v){return Math.round(v).toLocaleString('en-IN');};
-  document.getElementById('ecmFinalVal').textContent=nfn(finalBal);
-  document.getElementById('ecmInterestVal').textContent=nfn(finalBal-finalContrib);
-  // Render chart
-  var ctx=document.getElementById('ecmChart');
-  if(!ctx)return;
-  if(window._epfCalcChart){window._epfCalcChart.destroy();}
-  var labels=chartData.map(function(d){return d.year;});
-  var balData=chartData.map(function(d){return d.balance;});
-  var contribData=chartData.map(function(d){return d.contrib;});
-  window._epfCalcChart=new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels:labels,
-      datasets:[
-        {label:'Projected Balance',data:balData,backgroundColor:'rgba(168,85,247,.6)',borderColor:'#a855f7',borderWidth:1,borderRadius:3},
-        {label:'Total Contributions',data:contribData,backgroundColor:'rgba(56,189,248,.4)',borderColor:'#38bdf8',borderWidth:1,borderRadius:3}
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'rgba(255,255,255,.6)',font:{size:10,family:'Inter'}},position:'top'}},
-      scales:{
-        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.35)',font:{size:9}}},
-        y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.35)',font:{size:9},callback:function(v){return Math.round(v).toLocaleString('en-IN');}}}
-      }
-    }
-  });
-}
-/* ═══════════════════════════════════════════
-   END EPF CALC
-═══════════════════════════════════════════ */
 
 function portShowToast(msg,type){
   var t=document.getElementById('portToast');if(!t)return;
@@ -14470,21 +14310,6 @@ function submitAddFD(){
   } else { init(); }
 })();
 </script>
-
-<!-- ═══════════════════════════════════════════
-     EPF ETF COMPOUNDING CALCULATOR MODAL
-═══════════════════════════════════════════ -->
-<div id="epf-calc-overlay" onclick="if(event.target===this)portEPFCalcClose()">
-  <div id="epf-calc-modal">
-    <div class="ecm-hdr">
-      <div class="ecm-title">🧮 ETF Compounding Calculator</div>
-      <button class="ecm-close" onclick="portEPFCalcClose()">✕</button>
-    </div>
-    <div class="ecm-body" id="epf-calc-body">
-      <div class="ecm-loading"><div class="ecm-spin"></div><span>Loading EPF/ETF data…</span></div>
-    </div>
-  </div>
-</div>
 
 </body>
 </html>
