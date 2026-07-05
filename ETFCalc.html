@@ -38,7 +38,7 @@
 #epf-calc-modal .ecm-btn:hover{background:rgba(168,85,247,.25);border-color:rgba(168,85,247,.5);transform:translateY(-2px);box-shadow:0 8px 24px rgba(168,85,247,.2);}
 
 /* ── stat cards ── */
-#epf-calc-modal .ecm-result{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+#epf-calc-modal .ecm-result{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
 #epf-calc-modal .ecm-result .ecm-stat{background:rgba(255,255,255,.032);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px;transition:all .28s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:8px;}
 #epf-calc-modal .ecm-result .ecm-stat:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,.4);background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);}
 #epf-calc-modal .ecm-result .ecm-stat::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#a855f7;box-shadow:2px 0 10px #a855f7;opacity:.7;}
@@ -71,7 +71,7 @@
 @media(max-width:920px){#epf-calc-modal{left:2.5%;}}
 @media(max-width:768px){
   #epf-calc-modal{top:4vh;left:2.5%;width:95%;max-width:95%;max-height:92vh;}
-  #epf-calc-modal .ecm-result{grid-template-columns:repeat(2,1fr);gap:10px;}
+  #epf-calc-modal .ecm-result{grid-template-columns:repeat(3,1fr);gap:10px;}
   #epf-calc-modal .ecm-body{padding:14px 14px;gap:12px;max-height:72vh;}
   #epf-calc-modal .ecm-chart-wrap{height:180px;padding:10px;}
   #epf-calc-modal .ecm-result .ecm-stat{padding:12px 14px;}
@@ -193,6 +193,7 @@ function portEPFCalcRender(res){
     '<div class="ecm-result">'+
       '<div class="ecm-stat"><div class="ecm-stat-val">'+fn(lastBal)+'</div><div class="ecm-stat-lbl">Current Balance</div></div>'+
       '<div class="ecm-stat"><div class="ecm-stat-val">'+fn(totalContrib)+'</div><div class="ecm-stat-lbl">Total Contrib</div></div>'+
+      '<div class="ecm-stat"><div class="ecm-stat-val" id="ecmProjContrib">—</div><div class="ecm-stat-lbl">Projected Contrib</div></div>'+
       '<div class="ecm-stat"><div class="ecm-stat-val" id="ecmFinalVal">—</div><div class="ecm-stat-lbl">Projected Final</div></div>'+
       '<div class="ecm-stat"><div class="ecm-stat-val" id="ecmInterestVal">—</div><div class="ecm-stat-lbl">Interest Earned</div></div>'+
     '</div>'+
@@ -240,6 +241,7 @@ function portEPFCalcRun(){
   var finalBal=chartData.length?chartData[chartData.length-1].balance:0;
   var finalContrib=chartData.length?chartData[chartData.length-1].contrib:0;
   var nfn=function(v){return Math.round(v).toLocaleString('en-IN');};
+  document.getElementById('ecmProjContrib').textContent=nfn(finalContrib);
   document.getElementById('ecmFinalVal').textContent=nfn(finalBal);
   document.getElementById('ecmInterestVal').textContent=nfn(finalBal-finalContrib);
   var ctx=document.getElementById('ecmChart');
