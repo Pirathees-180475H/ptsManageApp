@@ -2776,6 +2776,15 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .edm-claimed-row .edm-claim-toggle{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:var(--green);}
 .edm-claimed-row .edm-claim-toggle:hover{background:rgba(0,230,118,.22);}
 .edm-claim-toggle:disabled{opacity:.45;cursor:not-allowed;}
+/* junk toggle */
+.edm-junk-row td{background:rgba(255,170,0,.06)!important;}
+.edm-junk-row td:first-child{border-left:3px solid #f59e0b;}
+.edm-ref-junk{color:#f59e0b!important;font-weight:600;}
+.edm-junk-toggle{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:5px;font-size:.58em;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s;vertical-align:middle;line-height:1.6;background:rgba(255,170,0,.1);border:1px solid rgba(255,170,0,.3);color:#f59e0b;}
+.edm-junk-toggle:hover{background:rgba(255,170,0,.22);}
+.edm-junk-toggle.on{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:var(--green);}
+.edm-junk-toggle.on:hover{background:rgba(0,230,118,.22);}
+.edm-junk-toggle:disabled{opacity:.45;cursor:not-allowed;}
 /* expense popup donut charts */
 .edm-charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
 .edm-chart-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:10px 10px 8px;}
@@ -7871,7 +7880,10 @@ function expDetailRender(data) {
     var _isClaimed = e.reference && /\bclaimed\b/i.test(e.reference);
     var _isClaim   = e.reference && !_isClaimed && /\bclaim\b|pick\s*me/i.test(e.reference);
     var _hasToggle = _isClaim || _isClaimed;
-    var _rowCls    = _isClaimed ? 'edm-claimed-row' : _isClaim ? 'edm-claim-row' : '';
+    // ── Junk detection for Food items ──
+    var _isFood = e.category === 'Food';
+    var _isJunk = _isFood && e.reference && /\bjunk\b/i.test(e.reference);
+    var _rowCls    = (_isClaimed ? 'edm-claimed-row' : _isClaim ? 'edm-claim-row' : '') + (_isJunk ? ' edm-junk-row' : '');
     var _refCls    = _isClaimed ? 'edm-ref edm-ref-claimed' : _isClaim ? 'edm-ref edm-ref-claim' : 'edm-ref';
     var _toggleBtn = _hasToggle
       ? ' <button class="edm-claim-toggle" onclick="edmToggleClaim(this)"'
@@ -7880,9 +7892,15 @@ function expDetailRender(data) {
         + ' data-ref="' + (e.reference || '').replace(/"/g, '&quot;') + '">'
         + (_isClaimed ? '✓ Claimed' : '→ Claim') + '</button>'
       : '';
+    var _junkBtn = _isFood
+      ? ' <button class="edm-junk-toggle' + (_isJunk ? ' on' : '') + '" onclick="edmToggleJunk(this)"'
+        + ' data-month="' + data.month + '" data-year="' + data.year + '" data-day="' + e.day + '"'
+        + ' data-ref="' + (e.reference || '').replace(/"/g, '&quot;') + '">'
+        + (_isJunk ? '🍔 Junk' : '🥗 Junk') + '</button>'
+      : '';
     var ref = e.reference
-      ? '<span class="' + _refCls + '" title="' + e.reference + '">' + e.reference + '</span>' + _toggleBtn
-      : '<span class="edm-ref" style="color:rgba(255,255,255,.18)">—</span>';
+      ? '<span class="' + _refCls + '" title="' + e.reference + '">' + e.reference + '</span>' + _toggleBtn + _junkBtn
+      : '<span class="edm-ref" style="color:rgba(255,255,255,.18)">—</span>' + _junkBtn;
     html += '<tr class="' + _rowCls + '"><td><span class="edm-day">' + e.day + '</span><span class="edm-dayname">' + _dayName + '</span></td>'
           + '<td>' + ref + '</td>'
           + '<td>₨ ' + Math.round(e.amount).toLocaleString('en-IN') + '</td></tr>';
@@ -8128,6 +8146,50 @@ function edmToggleClaim(btn) {
       btn.disabled = false;
     })
     .updateClaimStatus(month, year, day, cat, curRef);
+}
+
+/* ── Junk toggle for Food items ── */
+function edmToggleJunk(btn) {
+  var month   = parseInt(btn.getAttribute('data-month'), 10);
+  var year    = parseInt(btn.getAttribute('data-year'),  10);
+  var day     = parseInt(btn.getAttribute('data-day'),   10);
+  var curRef  = btn.getAttribute('data-ref');
+  var tr      = btn.closest('tr');
+  var refEl   = tr ? tr.querySelector('.edm-ref') : null;
+
+  btn.disabled    = true;
+  btn.textContent = '…';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.success) {
+        var nowJunk = /\bjunk\b/i.test(res.newRef);
+        if (tr) {
+          var cls = tr.className.replace(/\s*edm-junk-row\s*/g, ' ');
+          if (nowJunk) cls += ' edm-junk-row';
+          tr.className = cls.trim();
+        }
+        if (refEl) {
+          refEl.textContent = res.newRef;
+          refEl.title = res.newRef;
+        }
+        btn.setAttribute('data-ref', res.newRef);
+        btn.className = 'edm-junk-toggle' + (nowJunk ? ' on' : '');
+        btn.textContent = nowJunk ? '🍔 Junk' : '🥗 Junk';
+        btn.disabled = false;
+        // Invalidate cache
+        var cKey = year + '-' + month;
+        if (_edmCache[cKey]) delete _edmCache[cKey];
+      } else {
+        btn.textContent = '⚠ Failed';
+        btn.disabled = false;
+      }
+    })
+    .withFailureHandler(function(err) {
+      btn.textContent = '⚠ Error';
+      btn.disabled = false;
+    })
+    .updateFoodJunkStatus(month, year, day, curRef);
 }
 
 function expShowErr(m){

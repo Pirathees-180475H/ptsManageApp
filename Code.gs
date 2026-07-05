@@ -2346,6 +2346,46 @@ function updateClaimStatus(month, year, day, category, currentRef) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   updateFoodJunkStatus
+   Toggles "JUNK" tag in the Food reference column.
+   month/year/day identify the row (col A = "M-D").
+───────────────────────────────────────────────────────────────── */
+function updateFoodJunkStatus(month, year, day, currentRef) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    // Food reference column = D (col 4)
+    var refCol = 4;
+
+    // Find the row
+    var dateKey  = parseInt(month, 10) + '-' + parseInt(day, 10);
+    var lastRow  = sheet.getLastRow();
+    var colAVals = sheet.getRange(1, 1, lastRow, 1).getValues();
+    var targetRow = -1;
+    for (var r = 0; r < colAVals.length; r++) {
+      if (_cellStr(colAVals[r][0], true).trim() === dateKey) { targetRow = r + 1; break; }
+    }
+    if (targetRow < 0) return { success: false, error: 'Row not found for ' + dateKey };
+
+    // Read current value and toggle JUNK
+    var cell    = sheet.getRange(targetRow, refCol);
+    var val     = String(cell.getValue() || '').trim();
+    var hasJunk = /\bjunk\b/i.test(val);
+    var newRef  = hasJunk
+      ? val.replace(/\bjunk\b/gi, '').replace(/\s+/g, ' ').trim()
+      : (val ? val + ' - JUNK' : 'JUNK');
+
+    cell.setValue(newRef);
+    SpreadsheetApp.flush();
+    return { success: true, newRef: newRef };
+  } catch(err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
    getHighLevelData
    Returns detailed entries and aggregated data for High Level Income (X), 
    High Level Expense (Y), and Transfers (Z) from Jan 2026.
