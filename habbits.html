@@ -1,0 +1,273 @@
+<!-- ═══════════════════════════════════
+     HABBITS TRACKER
+     Junk Food & Drink monthly heatmap
+═══════════════════════════════════════ -->
+<style>
+:root {
+  --hb-bg: transparent;
+  --hb-card: rgba(255,255,255,.033);
+  --hb-bdr: rgba(255,255,255,.07);
+  --hb-mint: #4ade80;
+  --hb-amber: #f59e0b;
+  --hb-red: #ff4d6d;
+  --hb-blue: #38bdf8;
+  --hb-purple: #c084fc;
+  --hb-cream: #f1f5f9;
+  --hb-dim: #94a3b8;
+}
+.hb-wrap{font-family:'Inter',sans-serif;color:var(--hb-cream);width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;padding:0;}
+
+/* ── HEADER ── */
+.hb-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--hb-bdr);flex-shrink:0;background:rgba(15,23,42,.5);backdrop-filter:blur(8px);}
+.hb-hdr-l{display:flex;align-items:center;gap:10px;}
+.hb-hdr-icon{font-size:1.3em;}
+.hb-hdr-title{font-size:.75em;font-weight:800;letter-spacing:2px;text-transform:uppercase;background:linear-gradient(135deg,#f59e0b,#4ade80);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hb-hdr-sub{font-size:.55em;color:var(--hb-dim);font-weight:500;margin-left:4px;}
+.hb-nav{display:flex;align-items:center;gap:6px;}
+.hb-nav-btn{background:rgba(255,255,255,.06);border:1px solid var(--hb-bdr);border-radius:8px;color:var(--hb-dim);width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;font-size:.7em;}
+.hb-nav-btn:hover{background:rgba(255,255,255,.12);color:#fff;}
+.hb-nav-lbl{font-size:.68em;font-weight:700;color:rgba(255,255,255,.6);min-width:90px;text-align:center;}
+
+/* ── SCROLL AREA ── */
+.hb-scroll{flex:1;overflow-y:auto;padding:16px 16px 8px;scrollbar-width:none;-ms-overflow-style:none;}
+.hb-scroll::-webkit-scrollbar{display:none;}
+
+/* ── STAT BAR ── */
+.hb-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.hb-stat{background:var(--hb-card);border:1px solid var(--hb-bdr);border-radius:14px;padding:12px 10px;display:flex;flex-direction:column;gap:4px;transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden;}
+.hb-stat:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.35);}
+.hb-stat::after{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;border-radius:0 3px 3px 0;}
+.hb-stat.junk::after{background:#f59e0b;box-shadow:0 0 10px #f59e0b;}
+.hb-stat.drink::after{background:#38bdf8;box-shadow:0 0 10px #38bdf8;}
+.hb-stat.days::after{background:#4ade80;box-shadow:0 0 10px #4ade80;}
+.hb-stat.streak::after{background:#c084fc;box-shadow:0 0 10px #c084fc;}
+.hb-stat-val{font-size:1.3em;font-weight:900;letter-spacing:-.5px;line-height:1.1;}
+.hb-stat .junk .hb-stat-val{color:#f59e0b;}
+.hb-stat-lbl{font-size:.5em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--hb-dim);}
+.hb-stat-emoji{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:1.8em;opacity:.15;pointer-events:none;}
+
+/* ── HEATMAP ── */
+.hb-heatmap{background:var(--hb-card);border:1px solid var(--hb-bdr);border-radius:16px;padding:16px;margin-bottom:14px;}
+.hb-heatmap-title{font-size:.6em;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--hb-dim);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.hb-heatmap-title span{font-size:1.3em;}
+.hm-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.hm-day-label{font-size:.48em;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.2);text-align:center;padding:2px 0;letter-spacing:.5px;}
+.hm-cell{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.6em;font-weight:600;transition:all .2s;position:relative;min-height:32px;border:1px solid transparent;}
+.hm-cell.empty{background:transparent;border-color:transparent;}
+.hm-cell.day{background:rgba(255,255,255,.03);border-color:var(--hb-bdr);color:rgba(255,255,255,.35);}
+.hm-cell.hb-junk{background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.35);color:#fbbf24;box-shadow:0 0 12px rgba(245,158,11,.12);}
+.hm-cell.hb-drink{background:rgba(56,189,248,.18);border-color:rgba(56,189,248,.35);color:#7dd3fc;box-shadow:0 0 12px rgba(56,189,248,.12);}
+.hm-cell.hb-both{background:linear-gradient(135deg,rgba(245,158,11,.2),rgba(56,189,248,.2));border-color:rgba(168,85,247,.35);color:#c084fc;box-shadow:0 0 12px rgba(168,85,247,.15);}
+.hm-cell.today{box-shadow:0 0 0 2px rgba(255,255,255,.3) !important;}
+.hm-cell .hm-ico{font-size:.7em;line-height:1;pointer-events:none;}
+.hm-cell .hm-num{font-size:.55em;opacity:.5;line-height:1;pointer-events:none;}
+
+/* ── DAILY BREAKDOWN ── */
+.hb-list{background:var(--hb-card);border:1px solid var(--hb-bdr);border-radius:16px;padding:14px 16px;margin-bottom:12px;}
+.hb-list-title{font-size:.6em;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--hb-dim);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.hb-list-empty{text-align:center;padding:20px;color:var(--hb-dim);font-size:.7em;}
+.hb-list-item{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:10px;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.04);}
+.hb-list-item:last-child{border-bottom:none;}
+.hb-list-item:hover{background:rgba(255,255,255,.03);}
+.hb-li-day{font-size:.7em;font-weight:700;color:rgba(255,255,255,.5);min-width:28px;text-align:center;}
+.hb-li-ico{font-size:1em;}
+.hb-li-label{font-size:.68em;font-weight:600;color:rgba(255,255,255,.7);flex:1;}
+.hb-li-amt{font-size:.65em;font-weight:700;color:var(--hb-dim);}
+
+/* ── LEGEND ── */
+.hb-legend{display:flex;gap:14px;flex-wrap:wrap;padding:4px 0 6px;justify-content:center;}
+.hb-leg-item{display:flex;align-items:center;gap:6px;font-size:.55em;font-weight:600;color:var(--hb-dim);}
+.hb-leg-dot{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .hb-stats{grid-template-columns:repeat(2,1fr);gap:6px;}
+  .hb-stat{padding:10px 8px;}
+  .hb-stat-val{font-size:1.1em;}
+  .hb-hdr{padding:10px 12px;}
+  .hb-heatmap{padding:12px;}
+  .hm-cell{min-height:28px;font-size:.5em;border-radius:6px;}
+  .hb-scroll{padding:12px 10px 4px;}
+  .hb-list{padding:10px 12px;}
+}
+@media(max-width:400px){
+  .hm-cell{min-height:24px;font-size:.45em;gap:3px;}
+  .hm-grid{gap:3px;}
+  .hb-nav-lbl{min-width:70px;font-size:.6em;}
+}
+</style>
+
+<div class="hb-wrap">
+  <div class="hb-hdr">
+    <div class="hb-hdr-l">
+      <span class="hb-hdr-icon">🎯</span>
+      <span class="hb-hdr-title">Habit Tracker</span>
+      <span class="hb-hdr-sub">Junk Food · Drinks</span>
+    </div>
+    <div class="hb-nav">
+      <button class="hb-nav-btn" onclick="hbNav(-1)">◀</button>
+      <span class="hb-nav-lbl" id="hbMonthLbl">—</span>
+      <button class="hb-nav-btn" onclick="hbNav(1)">▶</button>
+    </div>
+  </div>
+  <div class="hb-scroll" id="hbScroll">
+    <div class="hb-loading" style="text-align:center;padding:36px;color:var(--hb-dim);font-size:.75em;">
+      <div style="font-size:2em;margin-bottom:8px;">⏳</div>
+      Loading habits…
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── State ── */
+var _hbMonth = new Date().getMonth() + 1;
+var _hbYear  = new Date().getFullYear();
+var _hbData  = null;
+var _dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var _monthNames = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+/* ── Navigation ── */
+function hbNav(dir){
+  _hbMonth += dir;
+  if(_hbMonth < 1){_hbMonth = 12; _hbYear--;}
+  if(_hbMonth > 12){_hbMonth = 1; _hbYear++;}
+  hbLoad();
+}
+
+/* ── Load data ── */
+function hbLoad(){
+  document.getElementById('hbMonthLbl').textContent = _monthNames[_hbMonth] + ' ' + _hbYear;
+  document.getElementById('hbScroll').innerHTML = '<div class="hb-loading" style="text-align:center;padding:36px;color:var(--hb-dim);font-size:.75em;"><div style="font-size:2em;margin-bottom:8px;">⏳</div>Loading habits…</div>';
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(res && res.success){
+        _hbData = res;
+        hbRender(res);
+      } else {
+        document.getElementById('hbScroll').innerHTML = '<div style="text-align:center;padding:36px;color:var(--hb-red);font-size:.75em;">⚠ '+(res?res.error:'Failed')+'</div>';
+      }
+    })
+    .withFailureHandler(function(e){
+      document.getElementById('hbScroll').innerHTML = '<div style="text-align:center;padding:36px;color:#ff4d6d;font-size:.75em;">⚠ Error loading</div>';
+    })
+    .getHabbitsData(_hbMonth, _hbYear);
+}
+
+/* ── Render ── */
+function hbRender(d){
+  var month = d.month, year = d.year;
+  var junkDays = d.junkDays || [];
+  var drinkDays = d.drinkDays || [];
+
+  // Build lookup maps
+  var junkMap = {}, drinkMap = {};
+  junkDays.forEach(function(e){ junkMap[e.day] = (junkMap[e.day]||0) + e.amount; });
+  drinkDays.forEach(function(e){ drinkMap[e.day] = (drinkMap[e.day]||0) + e.amount; });
+
+  var daysInMonth = new Date(year, month, 0).getDate();
+  var firstDow = new Date(year, month - 1, 1).getDay(); // 0=Sun
+  var today = new Date();
+  var todayD = (today.getMonth()+1 === month && today.getFullYear() === year) ? today.getDate() : 0;
+
+  // Stats
+  var junkCount = junkDays.length;
+  var drinkCount = drinkDays.length;
+  var totalJunkAmt = junkDays.reduce(function(s,e){return s+e.amount;},0);
+  var totalDrinkAmt = drinkDays.reduce(function(s,e){return s+e.amount;},0);
+  var junkDaysSet = {};
+  junkDays.forEach(function(e){ junkDaysSet[e.day]=true; });
+  var bothCount = 0;
+  Object.keys(junkDaysSet).forEach(function(dd){
+    if(drinkMap[parseInt(dd)]) bothCount++;
+  });
+
+  var streak = 0, maxStreak = 0;
+  var allHabitDays = {};
+  junkDays.forEach(function(e){ allHabitDays[e.day]=true; });
+  drinkDays.forEach(function(e){ allHabitDays[e.day]=true; });
+  var sortedDays = Object.keys(allHabitDays).map(Number).sort(function(a,b){return a-b;});
+  for(var i=0;i<sortedDays.length;i++){
+    if(i===0 || sortedDays[i]===sortedDays[i-1]+1){ streak++; } else { streak=1; }
+    if(streak>maxStreak) maxStreak=streak;
+  }
+
+  var html = '';
+
+  // ── Stats ──
+  html += '<div class="hb-stats">'+
+    '<div class="hb-stat junk"><div class="hb-stat-val" style="color:#f59e0b;">'+junkCount+'</div><div class="hb-stat-lbl">🍔 Junk Days</div><span class="hb-stat-emoji">🍔</span></div>'+
+    '<div class="hb-stat drink"><div class="hb-stat-val" style="color:#38bdf8;">'+drinkCount+'</div><div class="hb-stat-lbl">🍺 Drink Days</div><span class="hb-stat-emoji">🍺</span></div>'+
+    '<div class="hb-stat days"><div class="hb-stat-val" style="color:#4ade80;">'+daysInMonth+'</div><div class="hb-stat-lbl">📅 Days in Month</div><span class="hb-stat-emoji">📅</span></div>'+
+    '<div class="hb-stat streak"><div class="hb-stat-val" style="color:#c084fc;">'+maxStreak+'</div><div class="hb-stat-lbl">🔥 Best Streak</div><span class="hb-stat-emoji">🔥</span></div>'+
+    '</div>';
+
+  // ── Heatmap ──
+  html += '<div class="hb-heatmap"><div class="hb-heatmap-title"><span>📊</span>Monthly Habit Calendar</div><div class="hm-grid">';
+
+  // Day labels
+  for(var w=0;w<7;w++) html += '<div class="hm-day-label">'+_dayNames[w].substring(0,2)+'</div>';
+
+  // Empty cells before first day
+  for(var e=0;e<firstDow;e++) html += '<div class="hm-cell empty"></div>';
+
+  // Day cells
+  for(var d=1;d<=daysInMonth;d++){
+    var isJunk = !!junkMap[d];
+    var isDrink = !!drinkMap[d];
+    var isToday = (d === todayD);
+    var cls = 'hm-cell day';
+    var ico = '';
+    if(isJunk && isDrink){ cls += ' hb-both'; ico = '🍔🍺'; }
+    else if(isJunk){ cls += ' hb-junk'; ico = '🍔'; }
+    else if(isDrink){ cls += ' hb-drink'; ico = '🍺'; }
+    if(isToday) cls += ' today';
+    html += '<div class="'+cls+'"><span class="hm-ico">'+ico+'</span><span class="hm-num">'+d+'</span></div>';
+  }
+
+  html += '</div>';
+
+  // ── Legend ──
+  html += '<div class="hb-legend">'+
+    '<div class="hb-leg-item"><span class="hb-leg-dot" style="background:rgba(245,158,11,.4);border:1px solid rgba(245,158,11,.5)"></span>Junk Food</div>'+
+    '<div class="hb-leg-item"><span class="hb-leg-dot" style="background:rgba(56,189,248,.4);border:1px solid rgba(56,189,248,.5)"></span>Drink</div>'+
+    '<div class="hb-leg-item"><span class="hb-leg-dot" style="background:linear-gradient(135deg,rgba(245,158,11,.3),rgba(56,189,248,.3));border:1px solid rgba(168,85,247,.4)"></span>Both</div>'+
+    '</div>';
+
+  html += '</div>'; // end heatmap
+
+  // ── Daily list (Junk) ──
+  if(junkDays.length){
+    var jSorted = junkDays.slice().sort(function(a,b){return a.day-b.day;});
+    html += '<div class="hb-list"><div class="hb-list-title"><span>🍔</span>Junk Food Days</div>';
+    jSorted.forEach(function(e){
+      html += '<div class="hb-list-item">'+
+        '<span class="hb-li-day">'+e.day+'</span>'+
+        '<span class="hb-li-ico">🍔</span>'+
+        '<span class="hb-li-label">Junk Food</span>'+
+        '<span class="hb-li-amt">₨ '+Math.round(e.amount).toLocaleString('en-IN')+'</span>'+
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  // ── Daily list (Drink) ──
+  if(drinkDays.length){
+    var dSorted = drinkDays.slice().sort(function(a,b){return a.day-b.day;});
+    html += '<div class="hb-list"><div class="hb-list-title"><span>🍺</span>Drink Days</div>';
+    dSorted.forEach(function(e){
+      html += '<div class="hb-list-item">'+
+        '<span class="hb-li-day">'+e.day+'</span>'+
+        '<span class="hb-li-ico">🍺</span>'+
+        '<span class="hb-li-label">Drink</span>'+
+        '<span class="hb-li-amt">₨ '+Math.round(e.amount).toLocaleString('en-IN')+'</span>'+
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('hbScroll').innerHTML = html;
+}
+
+/* ── Auto-load on include ── */
+(function(){ hbLoad(); })();
+</script>

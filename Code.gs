@@ -4713,3 +4713,79 @@ function getDailyExpensesForYear(reqYear) {
     return { success: false, error: error.message };
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   getHabbitsData
+   Returns daily junk-food and drink counts for a given month/year.
+   Junk food  → Food category entries whose reference contains "JUNK"
+   Drink      → Supermarket entries whose reference contains "beer"
+══════════════════════════════════════════════════════════════════ */
+function getHabbitsData(reqMonth, reqYear) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var tz       = ss.getSpreadsheetTimeZone();
+    var now      = new Date();
+    var curMonth = (reqMonth && reqMonth >= 1 && reqMonth <= 12) ? parseInt(reqMonth, 10) : parseInt(Utilities.formatDate(now, tz, 'M'), 10);
+    var curYear  = (reqYear  && reqYear  >= 2000) ? parseInt(reqYear, 10)  : parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
+
+    // Food: amtCol=3 (C), refCol=4 (D)
+    // Supermarket: amtCol=5 (E), refCol=6 (F)
+    var lastRow = sheet.getLastRow();
+    var numCols = 35;
+    if (numCols > sheet.getLastColumn()) numCols = sheet.getLastColumn();
+    var allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+
+    var junkDays = [];   // {day, amt}
+    var drinkDays = [];  // {day, amt}
+
+    for (var r = 0; r < allData.length; r++) {
+      var row  = allData[r];
+      var dateKey = _cellStr(row[0], true).trim();
+      if (!dateKey) continue;
+
+      var parts = dateKey.match(/^(\d{1,2})-(\d{1,2})$/);
+      if (!parts) continue;
+      var rowMonth = parseInt(parts[1], 10);
+      var rowDay   = parseInt(parts[2], 10);
+      if (rowMonth !== curMonth) continue;
+
+      // Year check
+      if (row[0] instanceof Date && !isNaN(row[0])) {
+        var rowYear = parseInt(Utilities.formatDate(row[0], tz, 'yyyy'), 10);
+        if (rowYear !== curYear) continue;
+      }
+
+      // ── Junk Food (Food refCol D=4) ──
+      var foodAmt = typeof row[2] === 'number' ? row[2] : 0;
+      if (foodAmt > 0) {
+        var foodRef = String(row[3] || '').trim().toLowerCase();
+        if (/\bjunk\b/.test(foodRef)) {
+          junkDays.push({ day: rowDay, amount: foodAmt });
+        }
+      }
+
+      // ── Drink (Supermarket refCol F=6) ──
+      var supAmt = typeof row[4] === 'number' ? row[4] : 0;
+      if (supAmt > 0) {
+        var supRef = String(row[5] || '').trim().toLowerCase();
+        if (/\bbeer\b/.test(supRef)) {
+          drinkDays.push({ day: rowDay, amount: supAmt });
+        }
+      }
+    }
+
+    return {
+      success: true,
+      month: curMonth,
+      year: curYear,
+      junkDays: junkDays,
+      drinkDays: drinkDays
+    };
+
+  } catch(err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
