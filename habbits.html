@@ -67,7 +67,7 @@
 .hb-stat.junk::before{background:linear-gradient(135deg,#f59e0b,#fbbf24);}
 .hb-stat.drink::before{background:linear-gradient(135deg,#ff4d6d,#ff6b8a);}
 .hb-stat.days::before{background:linear-gradient(135deg,#4ade80,#2dd4bf);}
-.hb-stat.streak::before{background:linear-gradient(135deg,#c084fc,#a855f7);}
+.hb-stat.clean::before{background:linear-gradient(135deg,#38bdf8,#818cf8);}
 .hb-stat-val{font-size:1.25em;font-weight:900;letter-spacing:-.5px;line-height:1.2;}
 .hb-stat-lbl{font-size:.48em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
   color:rgba(255,255,255,.35);}
@@ -279,16 +279,11 @@ function hbRender(d){
   Object.keys(junkDaysSet).forEach(function(dd){
     if(drinkMap[parseInt(dd)]) bothCount++;
   });
-
-  var streak = 0, maxStreak = 0;
-  var allHabitDays = {};
-  junkDays.forEach(function(e){ allHabitDays[e.day]=true; });
-  drinkDays.forEach(function(e){ allHabitDays[e.day]=true; });
-  var sortedDays = Object.keys(allHabitDays).map(Number).sort(function(a,b){return a-b;});
-  for(var i=0;i<sortedDays.length;i++){
-    if(i===0 || sortedDays[i]===sortedDays[i-1]+1){ streak++; } else { streak=1; }
-    if(streak>maxStreak) maxStreak=streak;
-  }
+  // Clean days = days in month minus any day that has junk OR drink
+  var allHabitSet = {};
+  junkDays.forEach(function(e){ allHabitSet[e.day]=true; });
+  drinkDays.forEach(function(e){ allHabitSet[e.day]=true; });
+  var cleanCount = daysInMonth - Object.keys(allHabitSet).length;
 
   var html = '';
 
@@ -297,7 +292,7 @@ function hbRender(d){
     '<div class="hb-stat junk"><div class="hb-stat-val" style="color:#f59e0b;">'+junkCount+'</div><div class="hb-stat-lbl">🍔 Junk Days</div><span class="hb-stat-emoji">🍔</span></div>'+
     '<div class="hb-stat drink"><div class="hb-stat-val" style="color:#ff4d6d;">'+drinkCount+'</div><div class="hb-stat-lbl">🍺 Drink Days</div><span class="hb-stat-emoji">🍺</span></div>'+
     '<div class="hb-stat days"><div class="hb-stat-val" style="color:#4ade80;">'+daysInMonth+'</div><div class="hb-stat-lbl">📅 Month Days</div><span class="hb-stat-emoji">📅</span></div>'+
-    '<div class="hb-stat streak"><div class="hb-stat-val" style="color:#c084fc;">'+maxStreak+'</div><div class="hb-stat-lbl">🔥 Best Streak</div><span class="hb-stat-emoji">🔥</span></div>'+
+    '<div class="hb-stat clean"><div class="hb-stat-val" style="color:#38bdf8;">'+cleanCount+'</div><div class="hb-stat-lbl">✨ Clean Days</div><span class="hb-stat-emoji">✨</span></div>'+
     '</div></div>';
 
   // ── Heatmap ──
@@ -342,7 +337,7 @@ function hbRender(d){
       html += '<div class="hb-list-item">'+
         '<span class="hb-li-day">'+e.day+'</span>'+
         '<span class="hb-li-ico">🍔</span>'+
-        '<span class="hb-li-label">Junk Food</span>'+
+        '<span class="hb-li-label">'+(e.ref||'Junk Food')+'</span>'+
         '<span class="hb-li-amt">₨ '+Math.round(e.amount).toLocaleString()+'</span>'+
         '</div>';
     });
@@ -357,7 +352,7 @@ function hbRender(d){
       html += '<div class="hb-list-item">'+
         '<span class="hb-li-day">'+e.day+'</span>'+
         '<span class="hb-li-ico">🍺</span>'+
-        '<span class="hb-li-label">Drink</span>'+
+        '<span class="hb-li-label">'+(e.ref||'Drink')+'</span>'+
         '<span class="hb-li-amt">₨ '+Math.round(e.amount).toLocaleString()+'</span>'+
         '</div>';
     });

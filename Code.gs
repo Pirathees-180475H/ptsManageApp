@@ -4761,18 +4761,18 @@ function getHabbitsData(reqMonth, reqYear) {
       // ── Junk Food (Food refCol D=4) ──
       var foodAmt = typeof row[2] === 'number' ? row[2] : 0;
       if (foodAmt > 0) {
-        var foodRef = String(row[3] || '').trim().toLowerCase();
-        if (/\bjunk\b/.test(foodRef)) {
-          junkDays.push({ day: rowDay, amount: foodAmt });
+        var foodRef = String(row[3] || '').trim();
+        if (/\bjunk\b/i.test(foodRef)) {
+          junkDays.push({ day: rowDay, amount: foodAmt, ref: foodRef });
         }
       }
 
       // ── Drink (Supermarket refCol F=6) ──
       var supAmt = typeof row[4] === 'number' ? row[4] : 0;
       if (supAmt > 0) {
-        var supRef = String(row[5] || '').trim().toLowerCase();
-        if (/\bbeer\b/.test(supRef)) {
-          drinkDays.push({ day: rowDay, amount: supAmt });
+        var supRef = String(row[5] || '').trim();
+        if (/\bbeer\b/i.test(supRef)) {
+          drinkDays.push({ day: rowDay, amount: supAmt, ref: supRef });
         }
       }
     }
