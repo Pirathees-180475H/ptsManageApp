@@ -4742,6 +4742,7 @@ input[type=date].swae-input{color-scheme:dark;}
       <button class="trk-tab"        id="trkTab-smoke" onclick="trackerSetTab('smoke')"><span>🚭</span> <label>Smoking</label></button>
       <button class="trk-tab"        id="trkTab-notes" onclick="trackerSetTab('notes')"><span>📝</span> <label>Notes</label></button>
       <button class="trk-tab"        id="trkTab-habbit" onclick="trackerSetTab('habbit')"><span>🎯</span> <label>Habbits</label></button>
+      <button class="trk-tab"        id="trkTab-health" onclick="trackerSetTab('health')"><span>💎</span> <label>Health Score</label></button>
     </div>
     <div class="tracker-content">
       <!-- ── Subscriptions pane ── -->
@@ -4848,6 +4849,10 @@ input[type=date].swae-input{color-scheme:dark;}
       <!-- ── Habbits Tracker pane ── -->
       <div class="trk-pane" id="trk-pane-habbit">
         <?!= include('habbits'); ?>
+      </div>
+      <!-- ── Financial Health pane ── -->
+      <div class="trk-pane" id="trk-pane-health">
+        <?!= include('financialHealth'); ?>
       </div>
     </div>
   </div>
@@ -12918,7 +12923,7 @@ function trackerClose() {
 
 function trackerSetTab(tab) {
   _trackerActiveTab = tab;
-  var tabs = ['sub','rot','loss','inst','budget','smoke','notes','habbit'];
+  var tabs = ['sub','rot','loss','inst','budget','smoke','notes','habbit','health'];
   tabs.forEach(function(t) {
     var btn  = document.getElementById('trkTab-' + t);
     var pane = document.getElementById('trk-pane-' + t);

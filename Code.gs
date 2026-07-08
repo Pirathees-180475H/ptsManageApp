@@ -4767,25 +4767,193 @@ function getHabbitsData(reqMonth, reqYear) {
         }
       }
 
-      // ── Drink (Supermarket refCol F=6) ──
-      var supAmt = typeof row[4] === 'number' ? row[4] : 0;
-      if (supAmt > 0) {
-        var supRef = String(row[5] || '').trim();
-        if (/\bbeer\b/i.test(supRef)) {
-          drinkDays.push({ day: rowDay, amount: supAmt, ref: supRef });
-        }
-      }
-    }
-
-    return {
-      success: true,
-      month: curMonth,
-      year: curYear,
-      junkDays: junkDays,
       drinkDays: drinkDays
     };
 
   } catch(err) {
     return { success: false, error: err.message || String(err) };
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FINANCIAL HEALTH SCORE
+   Computes a 0–100 health score from 5 weighted categories
+═══════════════════════════════════════════════════════════════ */
+function getFinancialHealthData() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var categories = [];
+  var totalScore = 0;
+  var maxTotal = 100;
+  var prevMonthScore = null;
+
+  function clamp(v) { return Math.min(100, Math.max(0, Math.round(v))); }
+
+  // ── 1. SAVINGS RATE (30 pts) ─────────────────────────────────
+  try {
+    var mfSheet = ss.getSheetByName('Money Flow and invest');
+    var mfLR = mfSheet.getLastRow();
+    var mfRows = mfSheet.getRange(2, 1, mfLR - 1, 11).getValues().filter(function(r) { return r[0]; });
+    if (mfRows.length > 0) {
+      var latestMf = mfRows[mfRows.length - 1];
+      var savingPct = Number(latestMf[10]) || 0;
+      var savingsScore = 0;
+      if (savingPct >= 40) savingsScore = 30;
+      else if (savingPct >= 30) savingsScore = 24 + (savingPct - 30) / 10 * 6;
+      else if (savingPct >= 20) savingsScore = 16 + (savingPct - 20) / 10 * 8;
+      else if (savingPct >= 10) savingsScore = 8 + (savingPct - 10) / 10 * 8;
+      else savingsScore = savingPct / 10 * 8;
+      var savingsGrade = savingPct >= 40 ? 'excellent' : savingPct >= 25 ? 'good' : savingPct >= 15 ? 'fair' : 'poor';
+      var savingsTip = savingPct < 15 ? 'Try to save at least 20% of your income. Track discretionary spending.' :
+                        savingPct < 30 ? 'Great start! Aim for 30%+ by automating investments.' :
+                        'Excellent! You\'re building wealth effectively.';
+      categories.push({
+        key:'savings', name:'Savings Rate', icon:'💰', score:clamp(savingsScore), max:30,
+        value:savingPct, unit:'%', grade:savingsGrade, tip:savingsTip, color:'#00d4ff'
+      });
+      totalScore += clamp(savingsScore);
+    }
+  } catch(e) {}
+
+  // ── 2. INVESTMENT DIVERSIFICATION (20 pts) ───────────────────
+  try {
+    var portSheet = ss.getSheetByName('Portfolio');
+    var assets = portSheet.getRange('A2:B17').getValues();
+    var activeCats = 0;
+    var checks = ['UT','CRYPTO','ETF','EPF','FD','GOLD','STOCK','TREASURY','BOND','ESOP'];
+    for (var ai = 0; ai < assets.length; ai++) {
+      var aName = String(assets[ai][0] || '').trim().toUpperCase();
+      var aVal = Number(assets[ai][1]) || 0;
+      if (aVal > 0) {
+        for (var ci = 0; ci < checks.length; ci++) {
+          if (aName.indexOf(checks[ci]) >= 0) { activeCats++; break; }
+        }
+      }
+    }
+    var divScore = Math.min(20, activeCats * 5);
+    var divTip = activeCats < 3 ? 'Diversify into 3+ asset types (e.g., UT, Gold, FD).' : activeCats < 5 ? 'Good! Consider REITs or international exposure.' : 'Excellent across ' + activeCats + ' types!';
+    categories.push({
+      key:'diversity', name:'Diversification', icon:'🛡️', score:clamp(divScore), max:20,
+      value:activeCats, unit:' types', grade:activeCats>=5?'excellent':activeCats>=3?'good':activeCats>=2?'fair':'poor',
+      tip:divTip, color:'#a855f7'
+    });
+    totalScore += clamp(divScore);
+  } catch(e) {}
+
+  // ── 3. DEBT RATIO (20 pts) ───────────────────────────────────
+  try {
+    var ccSheet = ss.getSheetByName('CC_SW_CL_INST');
+    var ccVals = ccSheet.getRange('A4:H6').getValues();
+    var totalBal = 0;
+    ccVals.forEach(function(row){ var b=Number(row[2])||0; if(b>0) totalBal+=b; });
+    var income = 0;
+    try {
+      var mf2 = ss.getSheetByName('Money Flow and invest');
+      var mf2R = mf2.getRange(2,1,mf2.getLastRow()-1,11).getValues().filter(function(r){return r[0];});
+      if (mf2R.length > 0) income = Number(mf2R[mf2R.length-1][9]) || 0;
+    } catch(e2) {}
+    var debtRatio = income > 0 ? (totalBal/income)*100 : 0;
+    var debtScore = 0;
+    if (debtRatio <= 0) debtScore = 20;
+    else if (debtRatio <= 15) debtScore = 18 - (debtRatio/15)*3;
+    else if (debtRatio <= 30) debtScore = 15 - ((debtRatio-15)/15)*5;
+    else if (debtRatio <= 50) debtScore = 10 - ((debtRatio-30)/20)*5;
+    else if (debtRatio <= 75) debtScore = 5 - ((debtRatio-50)/25)*4;
+    else debtScore = 1;
+    categories.push({
+      key:'debt', name:'Debt Ratio', icon:'💳', score:clamp(debtScore), max:20,
+      value:Math.round(debtRatio*10)/10, unit:'% of income',
+      grade:debtRatio<=15?'excellent':debtRatio<=30?'good':debtRatio<=50?'fair':'poor',
+      tip:debtRatio>50?'High CC balance! Pay down debt before new investments.':debtRatio>30?'Pay down cards more aggressively.':'Healthy debt level. Keep under 30%.',
+      color:'#ff4d6d'
+    });
+    totalScore += clamp(debtScore);
+  } catch(e) {}
+
+  // ── 4. CLEAN DAYS RATIO (15 pts) ────────────────────────────
+  try {
+    var now = new Date();
+    var tz = ss.getSpreadsheetTimeZone();
+    var curMonth = parseInt(Utilities.formatDate(now, tz, 'M'), 10);
+    var curYear = parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
+    var habData = getHabbitsData(curMonth, curYear);
+    if (habData && habData.success) {
+      var junkD = habData.junkDays || [];
+      var drinkD = habData.drinkDays || [];
+      var dim = new Date(curYear, curMonth, 0).getDate();
+      var hSet = {};
+      junkD.forEach(function(e){ hSet[e.day]=true; });
+      drinkD.forEach(function(e){ hSet[e.day]=true; });
+      var cleanDays = dim - Object.keys(hSet).length;
+      var cleanRatio = dim > 0 ? (cleanDays/dim)*100 : 0;
+      var cleanScore = 0;
+      if (cleanRatio >= 90) cleanScore = 15;
+      else if (cleanRatio >= 75) cleanScore = 10 + (cleanRatio-75)/15*5;
+      else if (cleanRatio >= 50) cleanScore = 5 + (cleanRatio-50)/25*5;
+      else cleanScore = cleanRatio/50*5;
+      categories.push({
+        key:'cleanDays', name:'Clean Days', icon:'✨', score:clamp(cleanScore), max:15,
+        value:Math.round(cleanRatio*10)/10, unit:'% clean',
+        grade:cleanRatio>=90?'excellent':cleanRatio>=75?'good':cleanRatio>=50?'fair':'poor',
+        tip:cleanRatio<50?'Reduce junk food & drinks! Your wallet will thank you.':cleanRatio<75?'Good! Aim for 75%+ clean days.':'Amazing discipline!',
+        color:'#00e676'
+      });
+      totalScore += clamp(cleanScore);
+    }
+  } catch(e) {}
+
+  // ── 5. PORTFOLIO GROWTH (15 pts) ─────────────────────────────
+  try {
+    var pSheet = ss.getSheetByName('Portfolio');
+    var pLR = pSheet.getLastRow();
+    var pMC = pSheet.getLastColumn();
+    var growth = [];
+    if (pLR >= 3 && pMC >= 17) {
+      var gVals = pSheet.getRange(3,16,pLR-2,3).getValues();
+      gVals.forEach(function(row){ if(row[0]&&row[1]) growth.push(Number(row[1])||0); });
+    }
+    var growthScore = 0;
+    var pctChange = 0;
+    if (growth.length >= 2) {
+      var recent = growth.slice(-3);
+      pctChange = recent[0]>0 ? ((recent[recent.length-1]-recent[0])/recent[0])*100 : 0;
+      if (pctChange > 10) growthScore = 15;
+      else if (pctChange > 5) growthScore = 12;
+      else if (pctChange > 0) growthScore = 9;
+      else if (pctChange > -5) growthScore = 6;
+      else growthScore = 3;
+    } else if (growth.length === 1) { growthScore = 7; } else { growthScore = 5; }
+    categories.push({
+      key:'growth', name:'Portfolio Growth', icon:'📈', score:clamp(growthScore), max:15,
+      value:Math.round(pctChange*10)/10, unit:'% change',
+      grade:growthScore>=12?'excellent':growthScore>=9?'good':growthScore>=6?'fair':'poor',
+      tip:pctChange<=0?'Portfolio declined. Review allocations.':pctChange<5?'Modest growth. Increase contributions.':'Strong growth! Stay the course.',
+      color:'#ffd700'
+    });
+    totalScore += clamp(growthScore);
+  } catch(e) {}
+
+  // ── Month-over-month change (from savings rate trend) ───────
+  try {
+    var mf3 = ss.getSheetByName('Money Flow and invest');
+    var mf3R = mf3.getRange(2,1,mf3.getLastRow()-1,11).getValues().filter(function(r){return r[0];});
+    if (mf3R.length >= 2) prevMonthScore = Number(mf3R[mf3R.length-2][10]) || 0;
+  } catch(e) {}
+
+  var overallScore = Math.min(100, Math.max(0, Math.round(totalScore)));
+  var changeVal = prevMonthScore !== null ? Math.round((Number(categories[0]&&categories[0].value)||0) - prevMonthScore) : 0;
+  var overallGrade = overallScore >= 85 ? 'excellent' : overallScore >= 65 ? 'good' : overallScore >= 45 ? 'fair' : overallScore >= 25 ? 'poor' : 'critical';
+  var overallEmoji = overallScore >= 85 ? '👑' : overallScore >= 65 ? '💪' : overallScore >= 45 ? '👍' : overallScore >= 25 ? '⚠️' : '🚨';
+  var overallTip = overallScore >= 85 ? 'Exceptional financial health! Keep it up.' : overallScore >= 65 ? 'Doing well! Focus on weaknesses to level up.' : overallScore >= 45 ? 'Room for improvement. Tackle low categories first.' : 'Time to take action! Small consistent steps.';
+
+  return {
+    success: true,
+    overallScore: overallScore,
+    maxScore: 100,
+    grade: overallGrade,
+    emoji: overallEmoji,
+    change: changeVal,
+    tip: overallTip,
+    categories: categories,
+    updatedAt: new Date().toISOString()
+  };
 }
