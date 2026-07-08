@@ -4796,6 +4796,12 @@ function getFinancialHealthData() {
     if (mfRows.length > 0) {
       var latestMf = mfRows[mfRows.length - 1];
       var savingPct = Number(latestMf[10]) || 0;
+      var income = Number(latestMf[9]) || 0;
+      var totalInvested = Number(latestMf[8]) || 0;
+      var sentHome = Number(latestMf[1]) || 0;
+      var monthLabel = latestMf[0] instanceof Date
+        ? Utilities.formatDate(latestMf[0], Session.getScriptTimeZone(), 'MMM/yyyy')
+        : (latestMf[0] || '').toString().trim();
       var savingsScore = 0;
       if (savingPct >= 40) savingsScore = 30;
       else if (savingPct >= 30) savingsScore = 24 + (savingPct - 30) / 10 * 6;
@@ -4808,7 +4814,16 @@ function getFinancialHealthData() {
                         'Excellent! You\'re building wealth effectively.';
       categories.push({
         key:'savings', name:'Savings Rate', icon:'💰', score:clamp(savingsScore), max:30,
-        value:savingPct, unit:'%', grade:savingsGrade, tip:savingsTip, color:'#00d4ff'
+        value:savingPct, unit:'%', grade:savingsGrade, tip:savingsTip, color:'#00d4ff',
+        details:[
+          {label:'Month', value:monthLabel},
+          {label:'Income', value:'₨ ' + Math.round(income).toLocaleString()},
+          {label:'Total Invested', value:'₨ ' + Math.round(totalInvested).toLocaleString()},
+          {label:'Sent Home', value:'₨ ' + Math.round(sentHome).toLocaleString()},
+          {label:'Savings Rate', value:savingPct + '%'},
+          {label:'Score Weight', value:'30 pts max'},
+          {label:'Scoring', value:savingPct+'% → '+clamp(savingsScore)+'/30 pts'}
+        ]
       });
       totalScore += clamp(savingsScore);
     }
@@ -4819,13 +4834,14 @@ function getFinancialHealthData() {
     var portSheet = ss.getSheetByName('Portfolio');
     var assets = portSheet.getRange('A2:B17').getValues();
     var activeCats = 0;
+    var activeList = [];
     var checks = ['UT','CRYPTO','ETF','EPF','FD','GOLD','STOCK','TREASURY','BOND','ESOP'];
     for (var ai = 0; ai < assets.length; ai++) {
       var aName = String(assets[ai][0] || '').trim().toUpperCase();
       var aVal = Number(assets[ai][1]) || 0;
       if (aVal > 0) {
         for (var ci = 0; ci < checks.length; ci++) {
-          if (aName.indexOf(checks[ci]) >= 0) { activeCats++; break; }
+          if (aName.indexOf(checks[ci]) >= 0) { activeCats++; activeList.push(aName); break; }
         }
       }
     }
@@ -4834,7 +4850,14 @@ function getFinancialHealthData() {
     categories.push({
       key:'diversity', name:'Diversification', icon:'🛡️', score:clamp(divScore), max:20,
       value:activeCats, unit:' types', grade:activeCats>=5?'excellent':activeCats>=3?'good':activeCats>=2?'fair':'poor',
-      tip:divTip, color:'#a855f7'
+      tip:divTip, color:'#a855f7',
+      details:[
+        {label:'Active Asset Types', value:activeCats + ' types'},
+        {label:'Assets Found', value:activeList.length > 0 ? activeList.join(', ') : 'None'},
+        {label:'Target Types', value:'5+ for max score'},
+        {label:'Score Weight', value:'20 pts max'},
+        {label:'Scoring', value:activeCats+' types × 5 = '+clamp(divScore)+'/20 pts'}
+      ]
     });
     totalScore += clamp(divScore);
   } catch(e) {}
@@ -4844,7 +4867,12 @@ function getFinancialHealthData() {
     var ccSheet = ss.getSheetByName('CC_SW_CL_INST');
     var ccVals = ccSheet.getRange('A4:H6').getValues();
     var totalBal = 0;
-    ccVals.forEach(function(row){ var b=Number(row[2])||0; if(b>0) totalBal+=b; });
+    var cardDetails = [];
+    ccVals.forEach(function(row){
+      var name = (row[0]||'').toString().trim();
+      var b = Number(row[2])||0;
+      if (name && b > 0) { totalBal += b; cardDetails.push({card:name, bal:b}); }
+    });
     var income = 0;
     try {
       var mf2 = ss.getSheetByName('Money Flow and invest');
@@ -4859,12 +4887,21 @@ function getFinancialHealthData() {
     else if (debtRatio <= 50) debtScore = 10 - ((debtRatio-30)/20)*5;
     else if (debtRatio <= 75) debtScore = 5 - ((debtRatio-50)/25)*4;
     else debtScore = 1;
+    var cardList = cardDetails.map(function(c){ return c.card + ': ₨ ' + Math.round(c.bal).toLocaleString(); }).join(', ');
     categories.push({
       key:'debt', name:'Debt Ratio', icon:'💳', score:clamp(debtScore), max:20,
       value:Math.round(debtRatio*10)/10, unit:'% of income',
       grade:debtRatio<=15?'excellent':debtRatio<=30?'good':debtRatio<=50?'fair':'poor',
       tip:debtRatio>50?'High CC balance! Pay down debt before new investments.':debtRatio>30?'Pay down cards more aggressively.':'Healthy debt level. Keep under 30%.',
-      color:'#ff4d6d'
+      color:'#ff4d6d',
+      details:[
+        {label:'Monthly Income', value:'₨ ' + Math.round(income).toLocaleString()},
+        {label:'Total CC Balance', value:'₨ ' + Math.round(totalBal).toLocaleString()},
+        {label:'Cards Breakdown', value:cardList || 'None'},
+        {label:'Debt-to-Income', value:Math.round(debtRatio*10)/10 + '%'},
+        {label:'Score Weight', value:'20 pts max'},
+        {label:'Scoring', value:debtRatio+'% DTI → '+clamp(debtScore)+'/20 pts'}
+      ]
     });
     totalScore += clamp(debtScore);
   } catch(e) {}
@@ -4895,7 +4932,17 @@ function getFinancialHealthData() {
         value:Math.round(cleanRatio*10)/10, unit:'% clean',
         grade:cleanRatio>=90?'excellent':cleanRatio>=75?'good':cleanRatio>=50?'fair':'poor',
         tip:cleanRatio<50?'Reduce junk food & drinks! Your wallet will thank you.':cleanRatio<75?'Good! Aim for 75%+ clean days.':'Amazing discipline!',
-        color:'#00e676'
+        color:'#00e676',
+        details:[
+          {label:'Month', value:['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][curMonth] + ' ' + curYear},
+          {label:'Days in Month', value:dim},
+          {label:'Junk Food Days', value:junkD.length},
+          {label:'Drink Days', value:drinkD.length},
+          {label:'Clean Days', value:cleanDays},
+          {label:'Clean Ratio', value:Math.round(cleanRatio*10)/10 + '%'},
+          {label:'Score Weight', value:'15 pts max'},
+          {label:'Scoring', value:cleanRatio+'% clean → '+clamp(cleanScore)+'/15 pts'}
+        ]
       });
       totalScore += clamp(cleanScore);
     }
@@ -4907,12 +4954,20 @@ function getFinancialHealthData() {
     var pLR = pSheet.getLastRow();
     var pMC = pSheet.getLastColumn();
     var growth = [];
+    var growthLabels = [];
     if (pLR >= 3 && pMC >= 17) {
       var gVals = pSheet.getRange(3,16,pLR-2,3).getValues();
-      gVals.forEach(function(row){ if(row[0]&&row[1]) growth.push(Number(row[1])||0); });
+      gVals.forEach(function(row){
+        if(row[0]&&row[1]) {
+          growth.push(Number(row[1])||0);
+          var lbl = row[0] instanceof Date ? Utilities.formatDate(row[0], Session.getScriptTimeZone(), 'MMM/yy') : String(row[0]||'');
+          growthLabels.push(lbl);
+        }
+      });
     }
     var growthScore = 0;
     var pctChange = 0;
+    var recentStr = '';
     if (growth.length >= 2) {
       var recent = growth.slice(-3);
       pctChange = recent[0]>0 ? ((recent[recent.length-1]-recent[0])/recent[0])*100 : 0;
@@ -4921,13 +4976,25 @@ function getFinancialHealthData() {
       else if (pctChange > 0) growthScore = 9;
       else if (pctChange > -5) growthScore = 6;
       else growthScore = 3;
+      recentStr = growthLabels.slice(-3).join(' → ');
     } else if (growth.length === 1) { growthScore = 7; } else { growthScore = 5; }
+    var latestVal = growth.length > 0 ? '₨ ' + Math.round(growth[growth.length-1]).toLocaleString() : 'N/A';
+    var firstVal = growth.length > 0 ? '₨ ' + Math.round(growth[0]).toLocaleString() : 'N/A';
     categories.push({
       key:'growth', name:'Portfolio Growth', icon:'📈', score:clamp(growthScore), max:15,
       value:Math.round(pctChange*10)/10, unit:'% change',
       grade:growthScore>=12?'excellent':growthScore>=9?'good':growthScore>=6?'fair':'poor',
       tip:pctChange<=0?'Portfolio declined. Review allocations.':pctChange<5?'Modest growth. Increase contributions.':'Strong growth! Stay the course.',
-      color:'#ffd700'
+      color:'#ffd700',
+      details:[
+        {label:'Latest Value', value:latestVal},
+        {label:'Earliest Recorded', value:firstVal},
+        {label:'Data Points', value:growth.length},
+        {label:'Recent Trend', value:recentStr || 'Insufficient data'},
+        {label:'% Change', value:Math.round(pctChange*10)/10 + '%'},
+        {label:'Score Weight', value:'15 pts max'},
+        {label:'Scoring', value:pctChange+'% change → '+clamp(growthScore)+'/15 pts'}
+      ]
     });
     totalScore += clamp(growthScore);
   } catch(e) {}

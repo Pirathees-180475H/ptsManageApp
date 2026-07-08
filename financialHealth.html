@@ -135,6 +135,20 @@
 .fh-meter-tip{font-size:.6em;font-weight:500;color:rgba(255,255,255,.4);margin-top:7px;
   padding-top:7px;border-top:1px solid rgba(255,255,255,.04);line-height:1.5;}
 
+/* ── Detail expandable panels ── */
+.fh-detail{max-height:0;overflow:hidden;transition:max-height .45s cubic-bezier(.4,0,.2,1),opacity .3s ease;
+  opacity:0;pointer-events:none;}
+.fh-detail.open{max-height:500px;opacity:1;pointer-events:auto;}
+.fh-detail-inner{padding:10px 0 2px;border-top:1px solid rgba(255,255,255,.05);margin-top:9px;}
+.fh-detail-row{display:flex;align-items:center;justify-content:space-between;padding:4.5px 0;font-size:.65em;}
+.fh-detail-label{color:rgba(255,255,255,.4);font-weight:500;}
+.fh-detail-value{color:rgba(255,255,255,.75);font-weight:700;text-align:right;max-width:65%;word-break:break-word;}
+.fh-detail-row+.fh-detail-row{border-top:1px solid rgba(255,255,255,.03);}
+.fh-meter{cursor:pointer;user-select:none;}
+.fh-toggle-icon{font-size:.55em;color:rgba(255,255,255,.25);transition:transform .35s ease;flex-shrink:0;
+  display:inline-flex;align-items:center;margin-left:6px;}
+.fh-toggle-icon.open{transform:rotate(180deg);}
+
 /* ═══════════════════════════════════════════
    LOADING / ERROR
 ═══════════════════════════════════════════ */
@@ -315,11 +329,13 @@ function fhRender(d){
                         cat.grade === 'good' ? '#00e676' :
                         cat.grade === 'fair' ? '#00d4ff' : '#ff4d6d';
 
-      html += '<div class="fh-meter" id="fhMeter' + i + '" style="opacity:0;transform:translateY(10px);">';
+      html += '<div class="fh-meter" id="fhMeter' + i + '" onclick="fhToggleDetail(' + i + ')" style="opacity:0;transform:translateY(10px);">';
       html += '<div class="fh-meter-hdr">';
       html += '<div class="fh-meter-l"><span class="fh-meter-icon">' + cat.icon + '</span><span class="fh-meter-name">' + cat.name + '</span></div>';
-      html += '<div><span class="fh-meter-score" style="color:' + cat.color + ';">' + cat.score + '</span><span class="fh-meter-max">/ ' + cat.max + '</span></div>';
-      html += '</div>';
+      html += '<div style="display:flex;align-items:center;">';
+      html += '<span class="fh-meter-score" style="color:' + cat.color + ';">' + cat.score + '</span><span class="fh-meter-max">/ ' + cat.max + '</span>';
+      html += '<span class="fh-toggle-icon" id="fhToggle' + i + '">▼</span>';
+      html += '</div></div>';
 
       html += '<div class="fh-bar-track"><div class="fh-bar-fill" id="fhBar' + i + '" style="background:' + cat.color + ';width:0%;"></div></div>';
 
@@ -331,6 +347,21 @@ function fhRender(d){
       if(cat.tip){
         html += '<div class="fh-meter-tip">💡 ' + cat.tip + '</div>';
       }
+
+      // Detail expandable panel
+      html += '<div class="fh-detail" id="fhDetail' + i + '">';
+      html += '<div class="fh-detail-inner">';
+      if(cat.details && cat.details.length){
+        cat.details.forEach(function(d){
+          html += '<div class="fh-detail-row">';
+          html += '<span class="fh-detail-label">' + d.label + '</span>';
+          html += '<span class="fh-detail-value">' + d.value + '</span>';
+          html += '</div>';
+        });
+      } else {
+        html += '<div class="fh-detail-row"><span class="fh-detail-label" style="color:rgba(255,255,255,.3);">No breakdown data available</span></div>';
+      }
+      html += '</div></div>';
 
       html += '</div>';
     });
@@ -381,6 +412,21 @@ function fhRender(d){
       }, i * 100 + 200);
     });
   });
+}
+
+/* ── Toggle detail panel ── */
+function fhToggleDetail(i){
+  var detail = document.getElementById('fhDetail' + i);
+  var toggle = document.getElementById('fhToggle' + i);
+  if(!detail) return;
+  var isOpen = detail.classList.contains('open');
+  if(isOpen){
+    detail.classList.remove('open');
+    if(toggle) toggle.classList.remove('open');
+  } else {
+    detail.classList.add('open');
+    if(toggle) toggle.classList.add('open');
+  }
 }
 
 /* ── Auto-load on include ── */
