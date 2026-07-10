@@ -2647,6 +2647,40 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 }
 #hl-exp-modal .port-chart-sel:hover{border-color:rgba(255,255,255,.25);}
 #hl-exp-modal .port-chart-sel option{background:#0d1424;color:rgba(255,255,255,.82);}
+
+/* ── Expense Heatmap Modal ── */
+#hm-exp-overlay{
+  display:none;position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(18px);
+  align-items:center;justify-content:center;padding:16px;
+}
+#hm-exp-overlay.open{display:flex;}
+#hm-exp-modal{
+  background:#0a0e1c;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:22px;width:100%;max-width:1100px;
+  height:min(94vh,900px);display:flex;flex-direction:column;
+  box-shadow:0 32px 90px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.07);
+  animation:edmIn .25s ease;position:relative;overflow:hidden;
+}
+#hm-exp-modal::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:2;pointer-events:none;
+  background:linear-gradient(90deg,transparent 5%,rgba(99,102,241,.7) 35%,rgba(168,85,247,.6) 65%,transparent 95%);
+}
+#hm-exp-modal .edm-hdr{
+  padding:16px 20px 14px;
+  border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;
+  background:linear-gradient(180deg,rgba(99,102,241,.07) 0%,transparent 100%);
+}
+#hm-exp-modal .edm-title{
+  font-size:.95em;font-weight:800;letter-spacing:-.2px;
+  background:linear-gradient(135deg,#fff 0%,#a5b4fc 55%,#c084fc 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+#hm-exp-modal .edm-sub{font-size:.68em;color:rgba(255,255,255,.3);margin-top:3px;}
+#hm-exp-modal .edm-body{padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;}
+#hm-exp-modal .edm-body .hm-wrap{border-radius:0;}
+
 /* Trigger button */
 .hl-exp-btn{
   background:linear-gradient(135deg,#10b981,#059669);
@@ -2656,6 +2690,15 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:4px;
 }
 .hl-exp-btn:hover{transform:translateY(-1px);box-shadow:0 0 15px rgba(16,185,129,.6);}
+/* Heatmap trigger button — indigo glow */
+.hm-exp-btn{
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);
+  border:none;padding:4px 12px;border-radius:20px;
+  color:#fff;font-size:11px;font-weight:700;
+  cursor:pointer;box-shadow:0 0 10px rgba(99,102,241,.4);
+  transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:4px;
+}
+.hm-exp-btn:hover{transform:translateY(-1px);box-shadow:0 0 15px rgba(99,102,241,.6);}
 /* Grid layouts */
 .hl-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:4px;}
 .hl-chart-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;}
@@ -4666,6 +4709,26 @@ input[type=date].swae-input{color-scheme:dark;}
     </div>
     <div class="edm-body" id="hl-exp-body">
       <div class="edm-loading"><div class="edm-spin"></div>Fetching data…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     EXPENSE HEATMAP POPUP
+═══════════════════════════════════════════ -->
+<div id="hm-exp-overlay" onclick="if(event.target===this)hmExpModalClose()">
+  <div id="hm-exp-modal">
+    <div class="edm-hdr">
+      <div>
+        <div class="edm-title">🔥 Expense Heatmap</div>
+        <div class="edm-sub">Full year daily spend · Click any day for category breakdown</div>
+      </div>
+      <div class="edm-nav-row">
+        <button class="edm-close" onclick="hmExpModalClose()">✕</button>
+      </div>
+    </div>
+    <div class="edm-body" id="hm-exp-body">
+      <?!= include('expenseHeatmap'); ?>
     </div>
   </div>
 </div>
@@ -8251,7 +8314,7 @@ function expBuild(D){
 
   var root=document.getElementById('exp-root');
   root.innerHTML=
-    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><button class="hl-exp-btn" onclick="hlExpModalOpen()">📈 High Level</button><div class="exp-badge" id="exp-badge">–</div></div></div>'+
+    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><button class="hl-exp-btn" onclick="hlExpModalOpen()">📈 High Level</button><button class="hm-exp-btn" onclick="hmExpModalOpen()">🔥 Heatmap</button><div class="exp-badge" id="exp-badge">–</div></div></div>'+
     '<div class="sec-lbl">Overall</div>'+
     '<div class="kpi-strip">'+
       '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div><button class="kpi-detail-btn" onclick="expDetailOpen()">📋 View Details</button></div>'+
@@ -8434,6 +8497,14 @@ function hlExpModalOpen() {
 
 function hlExpModalClose() {
   document.getElementById('hl-exp-overlay').classList.remove('open');
+}
+
+/* ── Expense Heatmap Modal ── */
+function hmExpModalOpen() {
+  document.getElementById('hm-exp-overlay').classList.add('open');
+}
+function hmExpModalClose() {
+  document.getElementById('hm-exp-overlay').classList.remove('open');
 }
 
 function renderHlExpData(res) {

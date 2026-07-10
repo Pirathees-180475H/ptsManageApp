@@ -5069,3 +5069,114 @@ function getFinancialHealthData() {
     updatedAt: new Date().toISOString()
   };
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   getExpenseHeatmapData
+   Returns per-day category-level expense data for a full year,
+   used by the Full-Year Financial Heatmap.
+   Returns: {
+     success: bool,
+     year: int,
+     daysInMonths: [31,28,...],
+     data: { "YYYY-MM-DD": { total: number, cats: { "CatName": number } } },
+     categories: [{ name, color }],
+     monthlyTotals: [total per month],
+     yearTotal: number
+   }
+══════════════════════════════════════════════════════════════════ */
+function getExpenseHeatmapData(reqYear) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var year  = (reqYear && reqYear >= 2000) ? parseInt(reqYear, 10) : new Date().getFullYear();
+
+    // Category definitions matching expense dashboard
+    var CATS = [
+      { name: 'Food',               amtCol: 3,  color: '#f59e0b' },
+      { name: 'Supermarket',        amtCol: 5,  color: '#10b981' },
+      { name: 'Uber',               amtCol: 7,  color: '#6366f1' },
+      { name: 'Uber Work',          amtCol: 8,  color: '#8b5cf6' },
+      { name: 'Movies & Outing',    amtCol: 10, color: '#ec4899' },
+      { name: 'Other',              amtCol: 12, color: '#f97316' },
+      { name: 'Bus Fair',           amtCol: 13, color: '#06b6d4' },
+      { name: 'Party',              amtCol: 15, color: '#ef4444' },
+      { name: 'Dress & Appearance', amtCol: 17, color: '#84cc16' },
+      { name: 'Rent',               amtCol: 18, color: '#64748b' }
+    ];
+
+    var lastRow = sheet.getLastRow();
+    var numCols = 20;
+    if (numCols > sheet.getLastColumn()) numCols = sheet.getLastColumn();
+    var allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+
+    var dailyMap    = {};
+    var monthTotals = [0,0,0,0,0,0,0,0,0,0,0,0];
+
+    for (var r = 0; r < allData.length; r++) {
+      var row  = allData[r];
+      var dateKey = _cellStr(row[0], true).trim();
+      if (!dateKey) continue;
+
+      var parts = dateKey.match(/^(\d{1,2})-(\d{1,2})$/);
+      if (!parts) continue;
+      var rowMonth = parseInt(parts[1], 10);
+      var rowDay   = parseInt(parts[2], 10);
+
+      if (row[0] instanceof Date && !isNaN(row[0])) {
+        var rowYear = parseInt(Utilities.formatDate(row[0], ss.getSpreadsheetTimeZone(), 'yyyy'), 10);
+        if (rowYear !== year) continue;
+      }
+
+      var key = year + '-' + String(rowMonth).padStart(2,'0') + '-' + String(rowDay).padStart(2,'0');
+      if (!dailyMap[key]) dailyMap[key] = { total: 0, cats: {} };
+      var dayEntry = dailyMap[key];
+
+      CATS.forEach(function(cat) {
+        var rawAmt = row[cat.amtCol - 1];
+        var amt = 0;
+        if (typeof rawAmt === 'number') {
+          amt = rawAmt;
+        } else {
+          amt = parseFloat(String(rawAmt).replace(/[^0-9.+-]/g, '')) || 0;
+        }
+        if (!isNaN(amt) && amt > 0) {
+          amt = Math.round(amt * 100) / 100;
+          dayEntry.total += amt;
+          dayEntry.cats[cat.name] = (dayEntry.cats[cat.name] || 0) + amt;
+        }
+      });
+
+      if (dayEntry.total > 0) {
+        dayEntry.total = Math.round(dayEntry.total * 100) / 100;
+        monthTotals[rowMonth - 1] += dayEntry.total;
+      }
+    }
+
+    for (var mi = 0; mi < 12; mi++) {
+      monthTotals[mi] = Math.round(monthTotals[mi] * 100) / 100;
+    }
+
+    var daysInMonths = [];
+    for (var m = 1; m <= 12; m++) {
+      daysInMonths.push(new Date(year, m, 0).getDate());
+    }
+
+    var categories = CATS.map(function(c) { return { name: c.name, color: c.color }; });
+    var yearTotal = monthTotals.reduce(function(a,b){ return a + b; }, 0);
+
+    return {
+      success: true,
+      year: year,
+      daysInMonths: daysInMonths,
+      data: dailyMap,
+      categories: categories,
+      monthlyTotals: monthTotals,
+      yearTotal: Math.round(yearTotal * 100) / 100
+    };
+
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
