@@ -2681,24 +2681,35 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #hm-exp-modal .edm-body{padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;}
 #hm-exp-modal .edm-body .hm-wrap{border-radius:0;}
 
-/* Trigger button */
-.hl-exp-btn{
-  background:linear-gradient(135deg,#10b981,#059669);
-  border:none;padding:4px 12px;border-radius:20px;
-  color:#fff;font-size:11px;font-weight:700;
-  cursor:pointer;box-shadow:0 0 10px rgba(16,185,129,.4);
-  transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:4px;
-}
-.hl-exp-btn:hover{transform:translateY(-1px);box-shadow:0 0 15px rgba(16,185,129,.6);}
-/* Heatmap trigger button — indigo glow */
-.hm-exp-btn{
+/* ── Analyze button (Heatmap + High Level toggle) ── */
+.analyze-exp-btn{
   background:linear-gradient(135deg,#6366f1,#8b5cf6);
-  border:none;padding:4px 12px;border-radius:20px;
+  border:none;padding:4px 14px;border-radius:20px;
   color:#fff;font-size:11px;font-weight:700;
   cursor:pointer;box-shadow:0 0 10px rgba(99,102,241,.4);
-  transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:4px;
+  transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:5px;
 }
-.hm-exp-btn:hover{transform:translateY(-1px);box-shadow:0 0 15px rgba(99,102,241,.6);}
+.analyze-exp-btn:hover{transform:translateY(-1px);box-shadow:0 0 18px rgba(99,102,241,.65);}
+.analyze-exp-btn .aeb-icon{font-size:1.1em;}
+.analyze-exp-btn .aeb-arrow{font-size:.65em;opacity:.6;transition:transform .2s;}
+.analyze-exp-btn:hover .aeb-arrow{transform:rotate(90deg);}
+
+/* Toggle bar inside modal header */
+.analyze-toggle{display:flex;background:rgba(0,0,0,.35);border-radius:10px;padding:3px;
+  border:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.analyze-toggle-btn{padding:5px 14px;border-radius:8px;font-size:.6em;font-weight:700;
+  letter-spacing:.3px;cursor:pointer;transition:all .2s;color:rgba(255,255,255,.35);
+  border:none;background:transparent;text-transform:uppercase;white-space:nowrap;}
+.analyze-toggle-btn.active{background:rgba(99,102,241,.25);color:#a5b4fc;
+  box-shadow:0 0 12px rgba(99,102,241,.12);}
+.analyze-toggle-btn:hover:not(.active){color:rgba(255,255,255,.6);}
+
+/* High level content area inside analyze modal */
+#analyze-hl-body{display:none;flex-direction:column;overflow-y:auto;flex:1;padding:18px;}
+#analyze-hl-body.open{display:flex;}
+#analyze-hm-body{display:none;flex-direction:column;overflow:hidden;flex:1;}
+#analyze-hm-body.open{display:flex;}
+
 /* Grid layouts */
 .hl-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:4px;}
 .hl-chart-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;}
@@ -4714,21 +4725,30 @@ input[type=date].swae-input{color-scheme:dark;}
 </div>
 
 <!-- ═══════════════════════════════════════════
-     EXPENSE HEATMAP POPUP
+     ANALYZE MODAL (Heatmap default + High Level toggle)
 ═══════════════════════════════════════════ -->
-<div id="hm-exp-overlay" onclick="if(event.target===this)hmExpModalClose()">
+<div id="hm-exp-overlay" onclick="if(event.target===this)analyzeExpModalClose()">
   <div id="hm-exp-modal">
-    <div class="edm-hdr">
+    <div class="edm-hdr" style="display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <div class="edm-title">🔥 Expense Heatmap</div>
-        <div class="edm-sub">Full year daily spend · Click any day for category breakdown</div>
+        <div class="edm-title" id="analyze-title">🔥 Expense Heatmap</div>
+        <div class="edm-sub" id="analyze-sub">Full year daily spend · Click any day for category breakdown</div>
       </div>
-      <div class="edm-nav-row">
-        <button class="edm-close" onclick="hmExpModalClose()">✕</button>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div class="analyze-toggle">
+          <button class="analyze-toggle-btn active" id="analyze-tog-hm" onclick="analyzeSwitchView('heatmap')">🔥 Heatmap</button>
+          <button class="analyze-toggle-btn" id="analyze-tog-hl" onclick="analyzeSwitchView('highlevel')">📈 High Level</button>
+        </div>
+        <button class="edm-close" onclick="analyzeExpModalClose()">✕</button>
       </div>
     </div>
-    <div class="edm-body" id="hm-exp-body">
-      <?!= include('expenseHeatmap'); ?>
+    <div class="edm-body" style="position:relative;">
+      <div id="analyze-hm-body" style="padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;">
+        <?!= include('expenseHeatmap'); ?>
+      </div>
+      <div id="analyze-hl-body">
+        <div class="edm-loading"><div class="edm-spin"></div>Fetching data…</div>
+      </div>
     </div>
   </div>
 </div>
@@ -8314,7 +8334,7 @@ function expBuild(D){
 
   var root=document.getElementById('exp-root');
   root.innerHTML=
-    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><button class="hl-exp-btn" onclick="hlExpModalOpen()">📈 High Level</button><button class="hm-exp-btn" onclick="hmExpModalOpen()">🔥 Heatmap</button><div class="exp-badge" id="exp-badge">–</div></div></div>'+
+    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><button class="analyze-exp-btn" onclick="analyzeExpModalOpen()"><span class="aeb-icon">🔥</span>Analyze<span class="aeb-arrow">▾</span></button><div class="exp-badge" id="exp-badge">–</div></div></div>'+
     '<div class="sec-lbl">Overall</div>'+
     '<div class="kpi-strip">'+
       '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div><button class="kpi-detail-btn" onclick="expDetailOpen()">📋 View Details</button></div>'+
@@ -8499,20 +8519,78 @@ function hlExpModalClose() {
   document.getElementById('hl-exp-overlay').classList.remove('open');
 }
 
-/* ── Expense Heatmap Modal ── */
-function hmExpModalOpen() {
+/* ── Analyze Modal ── */
+function analyzeExpModalOpen() {
   document.getElementById('hm-exp-overlay').classList.add('open');
+  // Default to heatmap view
+  analyzeSwitchView('heatmap');
 }
-function hmExpModalClose() {
+function analyzeExpModalClose() {
   document.getElementById('hm-exp-overlay').classList.remove('open');
 }
 
-function renderHlExpData(res) {
+var _analyzeView = 'heatmap';
+function analyzeSwitchView(view) {
+  _analyzeView = view;
+  var hmBody = document.getElementById('analyze-hm-body');
+  var hlBody = document.getElementById('analyze-hl-body');
+  var title = document.getElementById('analyze-title');
+  var sub = document.getElementById('analyze-sub');
+  var togHm = document.getElementById('analyze-tog-hm');
+  var togHl = document.getElementById('analyze-tog-hl');
+
+  if(view === 'heatmap'){
+    hmBody.style.display = 'flex';
+    hlBody.style.display = 'none';
+    title.textContent = '🔥 Expense Heatmap';
+    sub.textContent = 'Full year daily spend · Click any day for category breakdown';
+    togHm.classList.add('active');
+    togHl.classList.remove('active');
+    // Re-trigger heatmap load if needed
+    if(typeof hmLoad === 'function') hmLoad();
+  } else {
+    hmBody.style.display = 'none';
+    hlBody.style.display = 'flex';
+    title.textContent = '📈 High Level Overview';
+    sub.textContent = 'Income, Expenses, and Transfers (Since Jan 2026)';
+    togHm.classList.remove('active');
+    togHl.classList.add('active');
+    // Load high level content
+    analyzeLoadHighLevel();
+  }
+}
+
+function analyzeLoadHighLevel() {
+  var hlBody = document.getElementById('analyze-hl-body');
+  // Only load if content hasn't been loaded yet
+  if(hlBody.querySelector('.edm-loading') || hlBody.querySelector('.exp-err') || hlBody.children.length <= 1) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        renderHlExpData(res);
+      })
+      .withFailureHandler(function(err) {
+        hlBody.innerHTML = '<div class="exp-err">⚠️ Error: ' + (err.message || String(err)) + '</div>';
+      })
+      .getHighLevelData();
+  }
+}
+
+/* Override renderHlExpData to render into #analyze-hl-body when analyze view is active */
+renderHlExpData = function(res) {
+  // Determine which body to render into
+  var body = document.getElementById('analyze-hl-body');
+  if(!body || body.style.display === 'none') {
+    body = document.getElementById('hl-exp-body');
+  }
+  // If called from analyze view, render there
+  if(_analyzeView === 'highlevel' && document.getElementById('analyze-hl-body').style.display !== 'none') {
+    body = document.getElementById('analyze-hl-body');
+  }
+  
   var entries = res.entries;
   var groupedData = res.groupedData;
   var totals = res.totals;
   var prevYear = res.prevYear || { income: 0, expense: 0 };
-  var body = document.getElementById('hl-exp-body');
   
   if (!entries || entries.length === 0) {
     body.innerHTML = '<div class="exp-err">No data found from Jan 2026 onwards.</div>';
