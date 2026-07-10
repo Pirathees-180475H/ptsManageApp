@@ -4767,6 +4767,24 @@ function getHabbitsData(reqMonth, reqYear) {
         }
       }
 
+      // ── Drink / Beer (Supermarket amtCol=5 (E), refCol=6 (F)) ──
+      var supAmt = typeof row[4] === 'number' ? row[4] : 0;
+      if (supAmt > 0) {
+        var supRef = String(row[5] || '').trim();
+        if (/\bbeer\b/i.test(supRef)) {
+          drinkDays.push({ day: rowDay, amount: supAmt, ref: supRef });
+        }
+      }
+    }
+
+    var daysInMonth = new Date(curYear, curMonth, 0).getDate();
+
+    return {
+      success: true,
+      month: curMonth,
+      year: curYear,
+      daysInMonth: daysInMonth,
+      junkDays: junkDays,
       drinkDays: drinkDays
     };
 
