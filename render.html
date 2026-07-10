@@ -4166,6 +4166,123 @@ input[type=date].swae-input{color-scheme:dark;}
   .pts-toast{transition:none;}
   .pts-skel-active::after{animation:none;}
 }
+
+/* ═══════════════════════════════════════════
+   HL EXPENSE → HEATMAP CONSISTENCY
+   KPIs match hm-kpi design, table matches hmm-table
+═══════════════════════════════════════════ */
+#hl-exp-body .hl-kpi-row,
+#analyze-hl-body .hl-kpi-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;
+}
+#hl-exp-body .kpi,
+#analyze-hl-body .kpi{
+  background:rgba(6,11,24,.72);border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:16px;
+  position:relative;overflow:hidden;
+  transition:all .28s cubic-bezier(.4,0,.2,1);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+#hl-exp-body .kpi:hover,
+#analyze-hl-body .kpi:hover{
+  transform:translateY(-2px);box-shadow:0 12px 36px rgba(0,0,0,.4);
+  background:rgba(6,11,24,.82);border-color:rgba(255,255,255,.1);
+}
+#hl-exp-body .kpi::after,
+#analyze-hl-body .kpi::after{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;opacity:.9;
+}
+#hl-exp-body .kpi::before,
+#analyze-hl-body .kpi::before{display:none;}
+#hl-exp-body .kpi.c0::after,
+#analyze-hl-body .kpi.c0::after{background:#10b981;box-shadow:2px 0 12px #10b981;}
+#hl-exp-body .kpi.c5::after,
+#analyze-hl-body .kpi.c5::after{background:#ef4444;box-shadow:2px 0 12px #ef4444;}
+#hl-exp-body .kpi.c1::after,
+#analyze-hl-body .kpi.c1::after{background:#8b5cf6;box-shadow:2px 0 12px #8b5cf6;}
+#hl-exp-body .kpi.c3::after,
+#analyze-hl-body .kpi.c3::after{background:#10b981;box-shadow:2px 0 12px #10b981;}
+#hl-exp-body .kpi-lbl,
+#analyze-hl-body .kpi-lbl{
+  font-size:.46em;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);margin-top:2px;margin-bottom:0;
+}
+#hl-exp-body .kpi-val,
+#analyze-hl-body .kpi-val{
+  font-size:1.1em;font-weight:800;letter-spacing:-.5px;line-height:1.2;
+}
+#hl-exp-body .kpi-sub,
+#analyze-hl-body .kpi-sub{
+  font-size:.5em;color:rgba(255,255,255,.3);margin-top:4px;font-weight:600;
+}
+/* Table — heatmap modal style */
+#hl-exp-body .hl-table-wrap,
+#analyze-hl-body .hl-table-wrap{
+  background:rgba(6,11,24,.72);border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.2);position:relative;overflow:hidden;
+}
+#hl-exp-body .hl-table-wrap::before,
+#analyze-hl-body .hl-table-wrap::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
+  pointer-events:none;
+}
+#hl-exp-body .hmm-table,
+#analyze-hl-body .hmm-table{width:100%;border-collapse:collapse;font-size:10px;}
+#hl-exp-body .hmm-table th,
+#analyze-hl-body .hmm-table th{
+  font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);padding:10px 10px;
+  border-bottom:1px solid rgba(255,255,255,.07);text-align:left;
+  background:rgba(6,11,24,.72);z-index:1;
+}
+#hl-exp-body .hmm-table th:last-child,
+#analyze-hl-body .hmm-table th:last-child{text-align:right;}
+#hl-exp-body .hmm-table td,
+#analyze-hl-body .hmm-table td{
+  padding:10px 10px;font-size:.75em;
+  border-bottom:1px solid rgba(255,255,255,.04);
+  vertical-align:middle;color:rgba(255,255,255,.6);
+}
+#hl-exp-body .hmm-table tr:hover td,
+#analyze-hl-body .hmm-table tr:hover td{background:rgba(6,11,24,.25);}
+#hl-exp-body .hmm-table .hmm-date,
+#analyze-hl-body .hmm-table .hmm-date{font-weight:600;color:rgba(255,255,255,.5);white-space:nowrap;}
+#hl-exp-body .hmm-table .hmm-ref,
+#analyze-hl-body .hmm-table .hmm-ref{color:rgba(255,255,255,.4);font-size:.92em;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#hl-exp-body .hmm-table .hmm-amt-inc,
+#analyze-hl-body .hmm-table .hmm-amt-inc{font-weight:700;text-align:right;color:#10b981;white-space:nowrap;}
+#hl-exp-body .hmm-table .hmm-amt-exp,
+#analyze-hl-body .hmm-table .hmm-amt-exp{font-weight:700;text-align:right;color:#ef4444;white-space:nowrap;}
+#hl-exp-body .hmm-table .hmm-amt-trf,
+#analyze-hl-body .hmm-table .hmm-amt-trf{font-weight:700;text-align:right;color:#a855f7;white-space:nowrap;}
+#hl-exp-body .hmm-table .hmm-amt-dash,
+#analyze-hl-body .hmm-table .hmm-amt-dash{font-weight:400;text-align:right;color:rgba(255,255,255,.15);white-space:nowrap;}
+/* Search & pagination — match heatmap modal */
+#hl-exp-body .hmm-search,
+#analyze-hl-body .hmm-search{
+  width:100%;padding:8px 12px;border-radius:8px;
+  background:rgba(6,11,24,.72);border:1px solid rgba(255,255,255,.08);
+  color:#fff;font-size:.75em;outline:none;transition:border-color .15s;
+  box-sizing:border-box;font-family:'Inter',system-ui,sans-serif;
+}
+#hl-exp-body .hmm-search:focus,
+#analyze-hl-body .hmm-search:focus{border-color:rgba(99,102,241,.6);}
+#hl-exp-body .hmm-search::placeholder,
+#analyze-hl-body .hmm-search::placeholder{color:rgba(255,255,255,.25);}
+#hl-exp-body .hmm-pag-btn,
+#analyze-hl-body .hmm-pag-btn{
+  background:rgba(6,11,24,.72);border:1px solid rgba(255,255,255,.08);
+  color:rgba(255,255,255,.55);border-radius:6px;padding:5px 12px;cursor:pointer;
+  font-size:.7em;font-weight:600;transition:all .12s;font-family:'Inter',system-ui,sans-serif;
+}
+#hl-exp-body .hmm-pag-btn:hover,
+#analyze-hl-body .hmm-pag-btn:hover{color:#fff;background:rgba(6,11,24,.82);border-color:rgba(255,255,255,.15);}
+#hl-exp-body .hmm-pag-btn:disabled,
+#analyze-hl-body .hmm-pag-btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
+#hl-exp-body .hmm-pag-num,
+#analyze-hl-body .hmm-pag-num{font-size:.7em;font-weight:700;color:rgba(255,255,255,.5);min-width:60px;text-align:center;}
 </style>
 </head>
 <body>
@@ -8605,492 +8722,59 @@ renderHlExpData = function(res) {
   var kpiHtml = 
     '<div class="hl-kpi-row">' +
       '<div class="kpi c0">' +
-        '<div class="kpi-lbl">Total Income</div>' +
-        '<div class="kpi-val" style="color:var(--green)">' + expFr(totalIncomeAll) + '</div>' +
-        '<div class="kpi-sub">2026: ' + expFr(totals.income) + ' <span style="color:rgba(255,165,0,.7);">[Prev: ' + expFr(prevYear.income) + ']</span></div>' +
+        '<div class="kpi-val">' + expFr(totalIncomeAll) + '</div>' +
+        '<div class="kpi-lbl">💰 Total Income</div>' +
+        '<div class="kpi-sub">2026: ' + expFr(totals.income) + ' · Prev: ' + expFr(prevYear.income) + '</div>' +
       '</div>' +
       '<div class="kpi c5">' +
-        '<div class="kpi-lbl">Total Expense</div>' +
-        '<div class="kpi-val" style="color:var(--red)">' + expFr(totalExpenseAll) + '</div>' +
-        '<div class="kpi-sub">2026: ' + expFr(totals.expense) + ' <span style="color:rgba(255,165,0,.7);">[Prev: ' + expFr(prevYear.expense) + ']</span></div>' +
+        '<div class="kpi-val">' + expFr(totalExpenseAll) + '</div>' +
+        '<div class="kpi-lbl">💳 Total Expense</div>' +
+        '<div class="kpi-sub">2026: ' + expFr(totals.expense) + ' · Prev: ' + expFr(prevYear.expense) + '</div>' +
       '</div>' +
       '<div class="kpi c1">' +
-        '<div class="kpi-lbl">Total Transfers</div>' +
-        '<div class="kpi-val" style="color:var(--purple)">' + expFr(totals.transfers) + '</div>' +
+        '<div class="kpi-val">' + expFr(totals.transfers) + '</div>' +
+        '<div class="kpi-lbl">🔄 Total Transfers</div>' +
         '<div class="kpi-sub">Net Savings: ' + expFr(totalNet) + '</div>' +
       '</div>' +
       '<div class="kpi c3">' +
-        '<div class="kpi-lbl">IDEAL Balance</div>' +
-        '<div class="kpi-val" style="color:#10b981;">' + expFr(idealBalance) + '</div>' +
+        '<div class="kpi-val">' + expFr(idealBalance) + '</div>' +
+        '<div class="kpi-lbl">⚖️ Ideal Balance</div>' +
         '<div class="kpi-sub">Income − Expense − Transfer</div>' +
       '</div>' +
     '</div>';
 
-  // Remove separate prevYearHtml - now integrated into KPIs
-  var prevYearHtml = '';
-
-  // Build group dropdown options
-  var groupOptions = groupedData.map(function(g) { return g.group; }).sort();
-
-  var chartHtml =
-    '<div class="hl-sec-lbl">📊 Analysis</div>' +
-    '<div class="hl-chart-2x2">' +
-      // ── top-left: Totals by Group bar chart ──
-      '<div class="cbox"><div class="ctitle">📊 Totals by Group</div><div class="cwrap tall"><canvas id="hlGroupChart"></canvas></div></div>' +
-      // ── top-right: Cumulative Net Cash Flow ──
-      '<div class="cbox"><div class="ctitle">📈 Cumulative Cash Flow</div><div class="csub">Running total: Income − Expense over time</div><div class="cwrap tall"><canvas id="hlCumulChart"></canvas></div></div>' +
-      // ── bottom-left: Group Details with dropdown ──
-      '<div class="cbox"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div class="ctitle" style="margin:0;">📈 Group Details</div>' +
-        '<div class="port-chart-sel-wrap" style="position:relative;display:inline-block;min-width:140px;">' +
-        '<select id="hlGroupSelect" class="port-chart-sel" onchange="hlRenderGroupChart()">' +
-        groupOptions.map(function(g) { return '<option value="' + g + '">' + g + '</option>'; }).join('') +
-        '</select>' +
-        '</div>' +
-      '</div><div class="cwrap tall"><canvas id="hlDetailChart"></canvas></div></div>' +
-      // ── bottom-right: Top 5 Expense Groups horizontal bar ──
-      '<div class="cbox"><div class="ctitle">🏆 Top 5 Expense Groups</div><div class="csub">Biggest spends across all time</div><div class="cwrap tall"><canvas id="hlTop5Chart"></canvas></div></div>' +
-    '</div>';
-
+  // Table — heatmap modal style with hmm-table classes
   var tableHtml =
-    '<div class="hl-sec-lbl">📋 Transactions</div>' +
-    '<div class="cbox">' +
-      '<div class="ctitle">📋 Detailed Entries (' + entries.length + ')</div>' +
-      '<div class="hl-tx-toolbar">' +
-        '<input type="text" id="hlSearchInput" class="hl-search-input" placeholder="Search entries…" oninput="hlFilterTable()">' +
-        '<div id="hlPaginationInfo" style="font-size:.8em;color:rgba(255,255,255,.5);min-width:100px;">—</div>' +
+    '<div class="hl-table-wrap">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+        '<div style="font-size:.55em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.2);display:flex;align-items:center;gap:10px;">📋 Detailed Entries (' + entries.length + ')</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<input type="text" id="hlSearchInput" class="hmm-search" style="width:180px;padding:6px 10px;font-size:.7em;" placeholder="🔍 Search entries…" oninput="hlFilterTable()">' +
+          '<span id="hlPaginationInfo" style="font-size:.65em;color:rgba(255,255,255,.3);">—</span>' +
+        '</div>' +
       '</div>' +
-      '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;"><table class="edm-table"><thead><tr>' +
-        '<th style="min-width:120px;">Date</th><th>Group/Reference</th><th style="min-width:110px;">Income</th><th style="min-width:110px;">Expense</th><th style="min-width:110px;">Transfer</th>' +
-      '</tr></thead><tbody id="hlTableBody">' +
-      '</tbody></table></div>' +
-      '<div style="margin-top:14px;display:flex;gap:8px;justify-content:center;align-items:center;">' +
-        '<button class="hl-pag-btn" onclick="hlPrevPage()" id="hlPrevBtn">◀ Prev</button>' +
-        '<div id="hlPageInfo" style="font-size:.85em;color:rgba(255,255,255,.6);min-width:80px;text-align:center;">Page 1</div>' +
-        '<button class="hl-pag-btn" onclick="hlNextPage()" id="hlNextBtn">Next ▶</button>' +
+      '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
+        '<table class="hmm-table"><thead><tr>' +
+          '<th>Date</th><th>Group/Reference</th><th style="text-align:right">Income</th><th style="text-align:right">Expense</th><th style="text-align:right">Transfer</th>' +
+        '</tr></thead><tbody id="hlTableBody">' +
+        '</tbody></table>' +
+      '</div>' +
+      '<div style="margin-top:12px;display:flex;gap:8px;justify-content:center;align-items:center;">' +
+        '<button class="hmm-pag-btn" onclick="hlPrevPage()" id="hlPrevBtn">◀ Prev</button>' +
+        '<span class="hmm-pag-num" id="hlPageInfo" style="font-size:.7em;">Page 1</span>' +
+        '<button class="hmm-pag-btn" onclick="hlNextPage()" id="hlNextBtn">Next ▶</button>' +
       '</div>' +
     '</div>';
 
-  body.innerHTML = kpiHtml + prevYearHtml + chartHtml + tableHtml;
+  body.innerHTML = kpiHtml + tableHtml;
 
   // Initialize pagination variables
   window._hlAllEntries = entries;
   window._hlCurrentPage = 1;
   window._hlPageSize = 10;
   window._hlFilteredEntries = entries;
-  window._hlGroupedData = groupedData;
 
   hlFilterTable();
-
-  // Render Charts
-  setTimeout(function() {
-    var gLabels = groupedData.map(function(g) { return g.group; });
-    var gLabelsAbbr = gLabels.map(function(label) {
-      return label.length > 12 ? label.substring(0, 12) + '…' : label;
-    });
-    var gInc = groupedData.map(function(g) { return g.income; });
-    var gExp = groupedData.map(function(g) { return g.expense; });
-    var gTrf = groupedData.map(function(g) { return g.transfers; });
-
-    var ctx = document.getElementById('hlGroupChart');
-    if (ctx) {
-      ctx.addEventListener('mousemove', function(e) {
-        var chart = Chart.getChart(ctx);
-        if (chart) {
-          var canvasPosition = Chart.helpers.getRelativePosition(e, chart);
-          var dataX = chart.scales.x.getValueForPixel(canvasPosition.x);
-          var dataIndex = Math.round(dataX);
-          if (dataIndex >= 0 && dataIndex < gLabels.length) {
-            ctx.title = gLabels[dataIndex];
-          }
-        }
-      });
-    }
-
-    new Chart(document.getElementById('hlGroupChart'), {
-      type: 'bar',
-      data: {
-        labels: gLabelsAbbr,
-        datasets: [
-          { 
-            label: 'Income', 
-            data: gInc, 
-            backgroundColor: 'rgba(16,185,129,0.85)',
-            borderColor: 'rgba(34,197,94,1)',
-            borderWidth: 2,
-            borderRadius: 8,
-            hoverBackgroundColor: 'rgba(34,197,94,1)',
-            shadowColor: 'rgba(16,185,129,0.3)',
-            shadowBlur: 8
-          },
-          { 
-            label: 'Expense', 
-            data: gExp, 
-            backgroundColor: 'rgba(239,68,68,0.85)',
-            borderColor: 'rgba(220,38,38,1)',
-            borderWidth: 2,
-            borderRadius: 8,
-            hoverBackgroundColor: 'rgba(220,38,38,1)',
-            shadowColor: 'rgba(239,68,68,0.3)',
-            shadowBlur: 8
-          },
-          { 
-            label: 'Transfers', 
-            data: gTrf, 
-            backgroundColor: 'rgba(168,85,247,0.85)',
-            borderColor: 'rgba(147,51,234,1)',
-            borderWidth: 2,
-            borderRadius: 8,
-            hoverBackgroundColor: 'rgba(147,51,234,1)',
-            shadowColor: 'rgba(168,85,247,0.3)',
-            shadowBlur: 8
-          }
-        ]
-      },
-      options: { 
-        responsive: true, 
-        maintainAspectRatio: false,
-        interaction: { intersect: false, mode: 'index' },
-        plugins: { 
-          legend: {
-            ...EXP_LEG,
-            labels: {
-              ...EXP_LEG.labels,
-              font: { weight: '700', size: 12 },
-              padding: 16,
-              usePointStyle: true
-            }
-          },
-          tooltip: {
-            backgroundColor: 'rgba(0,0,0,0.9)',
-            titleFont: { weight: 700, size: 13 },
-            bodyFont: { weight: 600, size: 12 },
-            padding: 12,
-            borderColor: 'rgba(255,255,255,0.2)',
-            borderWidth: 1,
-            displayColors: true,
-            boxPadding: 10,
-            callbacks: {
-              title: function(context) {
-                if (context && context.length > 0) {
-                  var idx = context[0].dataIndex;
-                  return gLabels[idx] || '';
-                }
-                return '';
-              },
-              label: function(context) {
-                var label = context.dataset.label || '';
-                var value = Math.round(context.parsed.y).toLocaleString('en-IN');
-                return label + ': ₨ ' + value;
-              }
-            }
-          }
-        }, 
-        scales: {
-          ...expSc(),
-          y: {
-            ...expSc().y,
-            ticks: {
-              ...expSc().y.ticks,
-              callback: function(value) {
-                return '₨ ' + (value / 1000).toFixed(0) + 'K';
-              }
-            }
-          }
-        }
-      }
-    });
-
-    // ── Chart 3: Cumulative Net Cash Flow (B) ───────────────────────────
-    (function() {
-      var MON_ORDER = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      var monthMap = {};
-      entries.forEach(function(e) {
-        var parts = e.date ? e.date.replace(',','').split(/\s+/) : [];
-        var key = parts.length >= 3 ? parts[1] + ' ' + parts[2] : (parts[1] || 'Unknown');
-        if (!monthMap[key]) monthMap[key] = { net: 0 };
-        monthMap[key].net += (e.income || 0) - (e.expense || 0);
-      });
-      var mKeys = Object.keys(monthMap).sort(function(a, b) {
-        var ap = a.split(' '), bp = b.split(' ');
-        var ay = parseInt(ap[1]||0), by = parseInt(bp[1]||0);
-        if (ay !== by) return ay - by;
-        return MON_ORDER.indexOf(ap[0]) - MON_ORDER.indexOf(bp[0]);
-      });
-      // Build cumulative running total
-      var cumul = [];
-      var running = 0;
-      mKeys.forEach(function(k) { running += monthMap[k].net; cumul.push(running); });
-      var monthlyNet = mKeys.map(function(k){ return monthMap[k].net; });
-      var ctxC = document.getElementById('hlCumulChart');
-      if (!ctxC) return;
-      // Colour each point green (positive cumul) or red (negative cumul)
-      var pointColors = cumul.map(function(v){ return v >= 0 ? 'rgba(34,197,94,1)' : 'rgba(239,68,68,1)'; });
-      var gradFill = (function() {
-        var g = ctxC.getContext('2d').createLinearGradient(0, 0, 0, 260);
-        g.addColorStop(0,   'rgba(99,102,241,0.35)');
-        g.addColorStop(1,   'rgba(99,102,241,0.02)');
-        return g;
-      })();
-      new Chart(ctxC, {
-        type: 'line',
-        data: {
-          labels: mKeys,
-          datasets: [
-            {
-              label: 'Cumulative Net',
-              data: cumul,
-              borderColor: 'rgba(99,102,241,1)',
-              backgroundColor: gradFill,
-              borderWidth: 2.5,
-              pointRadius: 5,
-              pointBackgroundColor: pointColors,
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              tension: 0.4,
-              fill: true,
-              order: 1
-            },
-            {
-              label: 'Monthly Net',
-              data: monthlyNet,
-              borderColor: 'rgba(251,191,36,0.7)',
-              backgroundColor: 'transparent',
-              borderWidth: 1.5,
-              borderDash: [4,3],
-              pointRadius: 3,
-              pointBackgroundColor: 'rgba(251,191,36,1)',
-              tension: 0.4,
-              fill: false,
-              order: 2
-            }
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false,
-          interaction: { intersect: false, mode: 'index' },
-          plugins: {
-            legend: { labels: { color: '#94a3b8', boxWidth: 10, padding: 12, font: { size: 11 }, usePointStyle: true } },
-            tooltip: {
-              backgroundColor: 'rgba(0,0,0,0.88)', padding: 10,
-              borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1,
-              callbacks: {
-                label: function(c) {
-                  var sign = c.parsed.y >= 0 ? '+' : '';
-                  return ' ' + c.dataset.label + ': ' + sign + '₨ ' + Math.round(c.parsed.y).toLocaleString('en-IN');
-                }
-              }
-            }
-          },
-          scales: {
-            x: { grid: { color: EXP_GC }, ticks: { color: EXP_TC, maxRotation: 35 } },
-            y: {
-              grid: { color: EXP_GC },
-              ticks: { color: EXP_TC, callback: function(v){ return (v>=0?'+':'')+'₨'+(v/1000).toFixed(0)+'K'; } },
-              // zero-line emphasis
-              afterDataLimits: function(axis) { if (axis.min > 0) axis.min = 0; }
-            }
-          }
-        }
-      });
-    })();
-
-    // ── Chart 4: Top 5 Expense Groups — Horizontal Bar (E) ──────────────
-    (function() {
-      var ctxT = document.getElementById('hlTop5Chart');
-      if (!ctxT) return;
-      // Sum expenses per group
-      var expMap = {};
-      entries.forEach(function(e) {
-        if ((e.expense || 0) > 0) {
-          var g = e.group || 'Other';
-          expMap[g] = (expMap[g] || 0) + e.expense;
-        }
-      });
-      // Sort descending, take top 5
-      var sorted = Object.keys(expMap).sort(function(a,b){ return expMap[b]-expMap[a]; }).slice(0,5);
-      var vals   = sorted.map(function(g){ return expMap[g]; });
-      var total5 = vals.reduce(function(s,v){ return s+v; }, 0);
-      var BAR_COLORS = [
-        'rgba(239,68,68,0.85)',
-        'rgba(251,146,60,0.85)',
-        'rgba(251,191,36,0.85)',
-        'rgba(168,85,247,0.85)',
-        'rgba(99,102,241,0.85)'
-      ];
-      var BAR_BORDERS = [
-        'rgba(220,38,38,1)',
-        'rgba(234,88,12,1)',
-        'rgba(245,158,11,1)',
-        'rgba(147,51,234,1)',
-        'rgba(79,70,229,1)'
-      ];
-      new Chart(ctxT, {
-        type: 'bar',
-        data: {
-          labels: sorted,
-          datasets: [{
-            label: 'Total Expense',
-            data: vals,
-            backgroundColor: BAR_COLORS,
-            borderColor: BAR_BORDERS,
-            borderWidth: 2,
-            borderRadius: 6
-          }]
-        },
-        options: {
-          indexAxis: 'y',
-          responsive: true, maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: 'rgba(0,0,0,0.88)', padding: 10,
-              borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1,
-              callbacks: {
-                label: function(c) {
-                  var pct = total5 > 0 ? (c.parsed.x / total5 * 100).toFixed(1) : '0.0';
-                  return ' ₨ ' + Math.round(c.parsed.x).toLocaleString('en-IN') + ' (' + pct + '% of top 5)';
-                }
-              }
-            }
-          },
-          scales: {
-            x: { grid: { color: EXP_GC }, ticks: { color: EXP_TC, callback: function(v){ return '₨'+(v/1000).toFixed(0)+'K'; } } },
-            y: { grid: { color: 'transparent' }, ticks: { color: '#f1f5f9', font: { weight: '600', size: 11 } } }
-          }
-        }
-      });
-    })();
-
-  }, 50);
-  
-  // Render initial group chart
-  hlRenderGroupChart();
-}
-
-function hlRenderGroupChart() {
-  var selectedGroup = document.getElementById('hlGroupSelect').value;
-  var entries = window._hlAllEntries;
-  
-  // Filter entries for the selected group
-  var groupEntries = entries.filter(function(e) {
-    return e.group === selectedGroup;
-  });
-  
-  if (groupEntries.length === 0) {
-    return;
-  }
-  
-  // Sort by date
-  groupEntries.sort(function(a, b) { return a.timestamp - b.timestamp; });
-  
-  // Prepare data for chart
-  var labels = groupEntries.map(function(e) { 
-    return e.date.split(',')[0]; // Just the date part
-  });
-  // Show the actual amount for each entry (income, expense, or transfer)
-  var amtData = groupEntries.map(function(e) {
-    if (e.income !== 0) return Math.abs(e.income);
-    if (e.expense !== 0) return Math.abs(e.expense);
-    if (e.transfers !== 0) return Math.abs(e.transfers);
-    return 0;
-  });
-  // For tooltip: entry details and running sum
-  var entryDetails = groupEntries.map(function(e) {
-    return e.rawGroup || e.group || '';
-  });
-  var runningSum = amtData.reduce(function(arr, val) {
-    arr.push((arr.length > 0 ? arr[arr.length-1] : 0) + val);
-    return arr;
-  }, []);
-
-  var ctx = document.getElementById('hlDetailChart');
-  if (!ctx) return;
-
-  // Destroy existing chart if any
-  var existingChart = Chart.getChart(ctx);
-  if (existingChart) {
-    existingChart.destroy();
-  }
-
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Amount',
-          data: amtData,
-          borderColor: 'rgba(34,197,94,1)',
-          backgroundColor: 'rgba(16,185,129,0.1)',
-          borderWidth: 2,
-          pointRadius: 4,
-          pointBackgroundColor: 'rgba(34,197,94,1)',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          tension: 0.4,
-          fill: false
-        },
-        {
-          label: 'Running Sum',
-          data: runningSum,
-          borderColor: 'rgba(139,92,246,1)',
-          backgroundColor: 'rgba(139,92,246,0.08)',
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: 'rgba(139,92,246,1)',
-          pointBorderColor: '#fff',
-          pointBorderWidth: 2,
-          tension: 0.4,
-          fill: false,
-          yAxisID: 'y',
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { intersect: false, mode: 'index' },
-      plugins: {
-        legend: { display: true, labels: { color: '#94a3b8', boxWidth: 10, padding: 14, font: { size: 11 } } },
-        tooltip: {
-          backgroundColor: 'rgba(0,0,0,0.9)',
-          titleFont: { weight: 700, size: 13 },
-          bodyFont: { weight: 600, size: 12 },
-          padding: 12,
-          borderColor: 'rgba(255,255,255,0.2)',
-          borderWidth: 1,
-          displayColors: true,
-          boxPadding: 10,
-          callbacks: {
-            title: function(context) {
-              var idx = context[0].dataIndex;
-              return labels[idx] || '';
-            },
-            label: function(context) {
-              var idx = context.dataIndex;
-              var lines = [];
-              lines.push('Entry: ' + (entryDetails[idx] || ''));
-              lines.push('Amount: ₨ ' + Math.round(amtData[idx]).toLocaleString('en-IN'));
-              lines.push('Sum till here: ₨ ' + Math.round(runningSum[idx]).toLocaleString('en-IN'));
-              return lines;
-            }
-          }
-        }
-      },
-      scales: {
-        ...expSc(),
-        y: {
-          ...expSc().y,
-          ticks: {
-            ...expSc().y.ticks,
-            callback: function(value) {
-              return '₨ ' + (value / 1000).toFixed(0) + 'K';
-            }
-          }
-        }
-      }
-    }
-  });
 }
 
 function hlFilterTable() {
@@ -9113,19 +8797,22 @@ function hlRenderTablePage() {
   if (!tbody) return;
   
   tbody.innerHTML = pageEntries.map(function(e) {
-    return '<tr class="edm-cat-row">' +
-      '<td style="min-width:120px;">' + e.date + '</td>' +
-      '<td>' + (e.rawGroup || e.group || '—') + '</td>' +
-      '<td style="color:var(--green);min-width:110px;">' + (e.income > 0 ? expFr(e.income) : '—') + '</td>' +
-      '<td style="color:var(--red);min-width:110px;">' + (e.expense > 0 ? expFr(e.expense) : '—') + '</td>' +
-      '<td style="color:var(--purple);min-width:110px;">' + (e.transfers > 0 ? expFr(e.transfers) : '—') + '</td>' +
+    var incHtml = e.income > 0 ? '<span class="hmm-amt-inc">₨ ' + Math.round(e.income).toLocaleString() + '</span>' : '<span class="hmm-amt-dash">—</span>';
+    var expHtml = e.expense > 0 ? '<span class="hmm-amt-exp">₨ ' + Math.round(e.expense).toLocaleString() + '</span>' : '<span class="hmm-amt-dash">—</span>';
+    var trfHtml = e.transfers > 0 ? '<span class="hmm-amt-trf">₨ ' + Math.round(e.transfers).toLocaleString() + '</span>' : '<span class="hmm-amt-dash">—</span>';
+    return '<tr>' +
+      '<td class="hmm-date">' + e.date + '</td>' +
+      '<td class="hmm-ref">' + (e.rawGroup || e.group || '—') + '</td>' +
+      '<td style="text-align:right;">' + incHtml + '</td>' +
+      '<td style="text-align:right;">' + expHtml + '</td>' +
+      '<td style="text-align:right;">' + trfHtml + '</td>' +
     '</tr>';
   }).join('');
   
   var totalPages = Math.ceil(window._hlFilteredEntries.length / window._hlPageSize);
   var pageInfo = document.getElementById('hlPageInfo');
   if (pageInfo) {
-    pageInfo.textContent = 'Page ' + window._hlCurrentPage + ' / ' + totalPages;
+    pageInfo.textContent = (window._hlCurrentPage) + ' / ' + totalPages;
   }
   
   var paginationInfo = document.getElementById('hlPaginationInfo');
