@@ -2690,7 +2690,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:5px;
 }
 .analyze-exp-btn:hover{transform:translateY(-1px);box-shadow:0 0 18px rgba(99,102,241,.65);}
-.analyze-exp-btn .aeb-icon{font-size:1.1em;}
+.analyze-exp-btn .aeb-icon{width:15px;height:15px;flex-shrink:0;}
 .analyze-exp-btn .aeb-arrow{font-size:.65em;opacity:.6;transition:transform .2s;}
 .analyze-exp-btn:hover .aeb-arrow{transform:rotate(90deg);}
 
@@ -8334,7 +8334,7 @@ function expBuild(D){
 
   var root=document.getElementById('exp-root');
   root.innerHTML=
-    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><button class="analyze-exp-btn" onclick="analyzeExpModalOpen()"><span class="aeb-icon">🔥</span>Analyze<span class="aeb-arrow">▾</span></button><div class="exp-badge" id="exp-badge">–</div></div></div>'+
+    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><button class="analyze-exp-btn" onclick="analyzeExpModalOpen()"><svg class="aeb-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="8" width="4" height="12" rx="1"/><rect x="16" y="2" width="4" height="18" rx="1"/></svg>Analyze<span class="aeb-arrow">▾</span></button><div class="exp-badge" id="exp-badge">–</div></div></div>'+
     '<div class="sec-lbl">Overall</div>'+
     '<div class="kpi-strip">'+
       '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div><button class="kpi-detail-btn" onclick="expDetailOpen()">📋 View Details</button></div>'+

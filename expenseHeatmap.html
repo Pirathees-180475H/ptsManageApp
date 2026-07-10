@@ -170,7 +170,7 @@
 .hm-day.empty:hover{transform:none;}
 
 /* Intensity levels — GREEN→AMBER→RED */
-.hm-day.l0{background:rgba(6,11,24,.72);border-color:rgba(255,255,255,.03);color:rgba(255,255,255,.15);}}
+.hm-day.l0{background:rgba(6,11,24,.72);border-color:rgba(255,255,255,.03);color:rgba(255,255,255,.15);}
 .hm-day.l0 .hm-day-amt{color:transparent;}
 .hm-day.l1{background:rgba(16,185,129,.28);border-color:rgba(16,185,129,.4);color:#10b981;}
 .hm-day.l2{background:rgba(245,158,11,.3);border-color:rgba(245,158,11,.45);color:#f59e0b;}
@@ -413,6 +413,7 @@
 /* ── State ── */
 var _hmYear = new Date().getFullYear();
 var _hmData = null;
+var _hmYearTotals = [];
 var _hmActiveCat = 'all';
 var _hmMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var _hmWeekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -444,7 +445,16 @@ function hmLoad(){
     .withSuccessHandler(function(res){
       if(res && res.success){
         _hmData = res;
-        hmRender(res);
+        // Fetch year totals too
+        var yrs = [];
+        for(var y = _hmYear - 4; y <= _hmYear + 1; y++){ yrs.push(y); }
+        google.script.run
+          .withSuccessHandler(function(yrRes){
+            if(yrRes && yrRes.success) _hmYearTotals = yrRes.totals;
+            hmRender(res);
+          })
+          .withFailureHandler(function(){ hmRender(res); })
+          .getExpenseYearTotals(yrs);
       } else {
         document.getElementById('hmScroll').innerHTML =
           '<div class="hm-error">⚠ '+(res?res.error:'Failed')+'</div>';
@@ -544,6 +554,22 @@ function hmRender(d){
     html += '<div class="hm-mbar-col" style="cursor:pointer;" onclick="hmMonthOpen(' + i + ')" title="Click to view ' + _hmMonthNames[i] + ' expenses"><div class="hm-mbar-bar-wrap"><div class="hm-mbar-bar" style="height:' + pct + '%;background:' + barColor + ';box-shadow:0 0 8px ' + barColor + '40;"></div></div><div class="hm-mbar-lbl">' + _hmMonthNames[i] + '</div><div class="hm-mbar-val">' + hmFmt(mt) + '</div></div>';
   });
   html += '</div></div>';
+
+  // ── Yearly Totals Chart ──
+  if(_hmYearTotals && _hmYearTotals.length > 0){
+    var maxYr = 1;
+    _hmYearTotals.forEach(function(yt){ if(yt.total > maxYr) maxYr = yt.total; });
+    var curYr = _hmYear;
+    var bestYr = _hmYearTotals.reduce(function(a,b){ return (a.total < b.total) ? a : b; });
+    var worstYr = _hmYearTotals.reduce(function(a,b){ return (a.total > b.total) ? a : b; });
+    html += '<div class="hm-glass"><div class="hm-sec-hdr"><span>📅</span>Yearly Totals</div><div class="hm-month-bars">';
+    _hmYearTotals.forEach(function(yt){
+      var pct = maxYr > 0 ? Math.max(3, (yt.total / maxYr) * 100) : 3;
+      var barColor = yt.year === curYr ? '#8b5cf6' : (yt.year === bestYr.year ? '#10b981' : (yt.year === worstYr.year ? '#ef4444' : '#6366f1'));
+      html += '<div class="hm-mbar-col"><div class="hm-mbar-bar-wrap" style="height:64px;"><div class="hm-mbar-bar" style="height:' + pct + '%;background:' + barColor + ';box-shadow:0 0 8px ' + barColor + '40;border-radius:4px 4px 0 0;"></div></div><div class="hm-mbar-lbl">' + yt.year + '</div><div class="hm-mbar-val">' + hmFmt(yt.total) + '</div></div>';
+    });
+    html += '</div></div>';
+  }
 
   // ── Legend ──
   html += '<div class="hm-glass"><div class="hm-sec-hdr"><span>🗺️</span>' + _hmYear + ' Daily Spend' + (_hmActiveCat !== 'all' ? ' — ' + _hmActiveCat : '') + '</div>';

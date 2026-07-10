@@ -5180,3 +5180,51 @@ function getExpenseHeatmapData(reqYear) {
     return { success: false, error: error.message };
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════
+   getExpenseYearTotals
+   Returns expense totals for multiple years — lightweight,
+   reads the sheet once and aggregates by year.
+   Parameters: years (array of ints, e.g. [2023,2024,2025,2026])
+   Returns: { success: true, totals: [{ year: 2026, total: 123456 }, ...] }
+══════════════════════════════════════════════════════════════════ */
+function getExpenseYearTotals(years) {
+  try {
+    if (!Array.isArray(years) || years.length === 0)
+      return { success: false, error: 'No years provided' };
+
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet not found' };
+
+    var lastRow = sheet.getLastRow();
+    var numCols = 20;
+    if (numCols > sheet.getLastColumn()) numCols = sheet.getLastColumn();
+    var allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+    var tz = ss.getSpreadsheetTimeZone();
+
+    var CAT_COLS = [3,5,7,8,10,12,13,15,17,18];
+    var yearMap = {};
+    years.forEach(function(y){ yearMap[y] = 0; });
+
+    for (var r = 0; r < allData.length; r++) {
+      var row = allData[r];
+      if (!(row[0] instanceof Date) || isNaN(row[0])) continue;
+      var rowYear = parseInt(Utilities.formatDate(row[0], tz, 'yyyy'), 10);
+      if (yearMap[rowYear] === undefined) continue;
+
+      var rowTotal = 0;
+      for (var ci = 0; ci < CAT_COLS.length; ci++) {
+        var raw = row[CAT_COLS[ci] - 1];
+        var amt = (typeof raw === 'number') ? raw : (parseFloat(String(raw).replace(/[^0-9.+-]/g,'')) || 0);
+        if (!isNaN(amt) && amt > 0) rowTotal += amt;
+      }
+      yearMap[rowYear] += Math.round(rowTotal * 100) / 100;
+    }
+
+    var totals = years.map(function(y){ return { year: y, total: Math.round(yearMap[y] * 100) / 100 }; });
+    return { success: true, totals: totals };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+}
