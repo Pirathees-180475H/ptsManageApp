@@ -4792,7 +4792,26 @@ function getFinancialHealthData() {
   try {
     var mfSheet = ss.getSheetByName('Money Flow and invest');
     var mfLR = mfSheet.getLastRow();
-    var mfRows = mfSheet.getRange(2, 1, mfLR - 1, 11).getValues().filter(function(r) { return r[0]; });
+    // Read 13 columns (A–M); column M = JSON status: {"sentHome":"DONE","cal":"PENDING",...}
+    var mfRowsAll = mfSheet.getRange(2, 1, mfLR - 1, 13).getValues().filter(function(r) { return r[0]; });
+
+    // Helper: parse status JSON from column M (index 12)
+    function getStatusObj(row) {
+      try { var v = JSON.parse((row[12]||'').toString().trim()||'{}'); return v; } catch(e) { return {}; }
+    }
+    // Helper: check if ALL status entries are "DONE"
+    function isAllDone(row) {
+      var st = getStatusObj(row);
+      var keys = Object.keys(st);
+      if (keys.length === 0) return false;
+      return keys.every(function(k){ return st[k] === 'DONE'; });
+    }
+
+    // Filter to fully-DONE rows; fall back to all rows if none
+    var mfRows = mfRowsAll;
+    var doneRows = mfRowsAll.filter(isAllDone);
+    if (doneRows.length > 0) mfRows = doneRows;
+
     if (mfRows.length > 0) {
       var latestMf = mfRows[mfRows.length - 1];
       var savingPct = Number(latestMf[10]) || 0;
@@ -4876,7 +4895,11 @@ function getFinancialHealthData() {
     var income = 0;
     try {
       var mf2 = ss.getSheetByName('Money Flow and invest');
-      var mf2R = mf2.getRange(2,1,mf2.getLastRow()-1,11).getValues().filter(function(r){return r[0];});
+      var mf2All = mf2.getRange(2,1,mf2.getLastRow()-1,13).getValues().filter(function(r){return r[0];});
+      var mf2Done = mf2All.filter(function(r){
+        try { var s = JSON.parse((r[12]||'').toString().trim()||'{}'); return Object.keys(s).length > 0 && Object.keys(s).every(function(k){return s[k]==='DONE';}); } catch(e){return false;}
+      });
+      var mf2R = mf2Done.length > 0 ? mf2Done : mf2All;
       if (mf2R.length > 0) income = Number(mf2R[mf2R.length-1][9]) || 0;
     } catch(e2) {}
     var debtRatio = income > 0 ? (totalBal/income)*100 : 0;
@@ -5002,7 +5025,11 @@ function getFinancialHealthData() {
   // ── Month-over-month change (from savings rate trend) ───────
   try {
     var mf3 = ss.getSheetByName('Money Flow and invest');
-    var mf3R = mf3.getRange(2,1,mf3.getLastRow()-1,11).getValues().filter(function(r){return r[0];});
+    var mf3All = mf3.getRange(2,1,mf3.getLastRow()-1,13).getValues().filter(function(r){return r[0];});
+    var mf3Done = mf3All.filter(function(r){
+      try { var s = JSON.parse((r[12]||'').toString().trim()||'{}'); return Object.keys(s).length > 0 && Object.keys(s).every(function(k){return s[k]==='DONE';}); } catch(e){return false;}
+    });
+    var mf3R = mf3Done.length >= 2 ? mf3Done : mf3All;
     if (mf3R.length >= 2) prevMonthScore = Number(mf3R[mf3R.length-2][10]) || 0;
   } catch(e) {}
 
