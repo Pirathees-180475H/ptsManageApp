@@ -24,7 +24,6 @@
   background:linear-gradient(135deg,#6366f1,#06b6d4);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   white-space:nowrap;}
-.hm-hdr-sub{font-size:.52em;color:var(--hm-dim);font-weight:600;white-space:nowrap;}
 .hm-nav{display:flex;align-items:center;gap:6px;flex-shrink:0;}
 .hm-nav-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
   border-radius:8px;color:var(--hm-dim);width:30px;height:30px;cursor:pointer;
@@ -216,7 +215,6 @@
   .hm-glass{padding:10px;border-radius:12px;margin-bottom:8px;}
   .hm-hdr{padding:10px 12px;}
   .hm-hdr-title{font-size:.6em;}
-  .hm-hdr-sub{display:none;}
   .hm-kpis{grid-template-columns:repeat(3,1fr);padding:8px 10px 0;gap:6px;}
   .hm-kpi-val{font-size:1em;}
   .hm-kpi{padding:8px 9px;}
@@ -244,7 +242,6 @@
     <div class="hm-hdr-l">
       <span class="hm-hdr-icon">🔥</span>
       <span class="hm-hdr-title">Expense Heatmap</span>
-      <span class="hm-hdr-sub">Full Year · Daily Spend</span>
     </div>
     <div class="hm-nav">
       <button class="hm-nav-btn" onclick="hmNav(-1)">◀</button>
@@ -347,7 +344,11 @@ function hmRender(d){
   var curMonth = new Date().getMonth();
   var curDate = new Date().getDate();
 
-  // Stats
+  // Stats — only consider months that have expense data
+  var activeMonthCount = 0;
+  for(var mi = 0; mi < 12; mi++){
+    if(monthTotals[mi] > 0) activeMonthCount++;
+  }
   var totalDays = 0, totalSpend = 0, maxDayVal = 0, maxDayKey = '';
   for(var key in data){
     var dv = data[key].total || 0;
@@ -356,12 +357,17 @@ function hmRender(d){
   }
   var avgDay = totalDays > 0 ? totalSpend / totalDays : 0;
 
-  // Best/worst month
-  var bestMoVal = -1, bestMoI = 0, worstMoVal = Infinity, worstMoI = 0;
-  monthTotals.forEach(function(mt,i){
-    if(mt > bestMoVal){ bestMoVal = mt; bestMoI = i; }
-    if(mt < worstMoVal){ worstMoVal = mt; worstMoI = i; }
-  });
+  // Best month = LOWEST expense, Worst month = HIGHEST expense
+  var bestMoVal = Infinity, bestMoI = 0, worstMoVal = -1, worstMoI = 0;
+  for(var mi = 0; mi < 12; mi++){
+    var mt = monthTotals[mi];
+    if(mt > 0){
+      if(mt < bestMoVal){ bestMoVal = mt; bestMoI = mi; }
+      if(mt > worstMoVal){ worstMoVal = mt; worstMoI = mi; }
+    }
+  }
+  if(bestMoVal === Infinity) bestMoVal = 0;
+  if(worstMoVal <= 0) worstMoVal = 0;
 
   // Global max for scaling
   var globalMax = 0;
@@ -374,7 +380,7 @@ function hmRender(d){
   document.getElementById('hmKpiWorst').textContent = _hmMonthNames[worstMoI] + ' ' + hmFmtFull(worstMoVal);
   document.getElementById('hmKpiAvg').textContent = hmFmtFull(avgDay);
   document.getElementById('hmKpiPeak').textContent = maxDayKey ? hmFmtFull(maxDayVal) + ' (' + maxDayKey.slice(5) + ')' : '—';
-  document.getElementById('hmKpiAvgMo').textContent = hmFmtFull(yearTotal / 12);
+  document.getElementById('hmKpiAvgMo').textContent = hmFmtFull(activeMonthCount > 0 ? yearTotal / activeMonthCount : 0);
 
   var html = '';
 
