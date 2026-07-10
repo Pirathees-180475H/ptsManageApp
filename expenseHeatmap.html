@@ -170,19 +170,101 @@
 .hm-day.has-spend .hm-day-amt{display:block;}
 .hm-day .hm-day-amt{display:none;}
 
-/* ── Day detail popup (inside glass card at bottom) ── */
-.hm-detail{display:none;margin-top:14px;padding:14px;border-radius:12px;
-  background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);}
-.hm-detail.open{display:block;animation:fadeUp .2s ease;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.hm-detail-date{font-size:.62em;font-weight:700;color:rgba(255,255,255,.65);margin-bottom:4px;letter-spacing:.5px;text-transform:uppercase;}
-.hm-detail-total{font-size:1em;font-weight:800;margin-bottom:10px;}
-.hm-detail-cats{display:flex;flex-direction:column;gap:4px;}
-.hm-detail-cat{display:flex;align-items:center;gap:8px;padding:4px 8px;border-radius:7px;
-  font-size:.58em;font-weight:600;background:rgba(255,255,255,.025);}
-.hm-detail-cat-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
-.hm-detail-cat-name{color:rgba(255,255,255,.55);flex:1;}
-.hm-detail-cat-amt{font-weight:700;color:rgba(255,255,255,.85);}
+/* ── Month & Day Expense Modal (transparent glass style) ── */
+#hm-month-overlay,#hm-day-overlay{
+  display:none;position:fixed;inset:0;z-index:9500;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(12px);
+  align-items:center;justify-content:center;padding:16px;
+}
+#hm-month-overlay.open,#hm-day-overlay.open{display:flex;}
+#hm-month-modal,#hm-day-modal{
+  background:rgba(6,11,24,.9);backdrop-filter:blur(28px);
+  -webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.11);
+  border-radius:18px;width:100%;max-width:720px;
+  height:min(90vh,820px);display:flex;flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+  animation:hmmIn .25s ease;position:relative;overflow:hidden;
+}
+#hm-day-modal{max-width:520px;height:auto;max-height:min(90vh,700px);}
+#hm-month-modal::before,#hm-day-modal::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:2;pointer-events:none;
+  background:linear-gradient(90deg,transparent 5%,rgba(99,102,241,.7) 35%,rgba(168,85,247,.6) 65%,transparent 95%);
+}
+@keyframes hmmIn{
+  from{opacity:0;transform:scale(.94) translateY(10px)}
+  to{opacity:1;transform:scale(1) translateY(0)}
+}
+.hmm-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 18px 13px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
+.hmm-title{font-size:.9em;font-weight:700;color:#fff;}
+.hmm-sub{font-size:.68em;color:rgba(255,255,255,.35);margin-top:2px;}
+.hmm-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.45);border-radius:50%;width:28px;height:28px;
+  cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.hmm-close:hover{color:#fff;background:rgba(255,255,255,.12);}
+
+/* Search bar */
+.hmm-search-wrap{padding:10px 18px 0;flex-shrink:0;}
+.hmm-search{
+  width:100%;padding:8px 12px;border-radius:8px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:#fff;font-size:.75em;outline:none;transition:border-color .15s;
+  box-sizing:border-box;
+}
+.hmm-search:focus{border-color:rgba(99,102,241,.5);}
+.hmm-search::placeholder{color:rgba(255,255,255,.25);}
+
+/* Body / table area */
+.hmm-body{overflow-y:auto;flex:1;padding:8px 18px 12px;}
+.hmm-body::-webkit-scrollbar{width:4px;}
+.hmm-body::-webkit-scrollbar-track{background:transparent;}
+.hmm-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px;}
+.hmm-loading{display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:40px;color:rgba(255,255,255,.35);font-size:12px;}
+.hmm-spin{width:24px;height:24px;border:2px solid rgba(99,102,241,.2);
+  border-top-color:#6366f1;border-radius:50%;animation:hmmSpin .8s linear infinite;flex-shrink:0;}
+@keyframes hmmSpin{to{transform:rotate(360deg)}}
+.hmm-empty{text-align:center;padding:40px 16px;color:rgba(255,255,255,.3);font-size:.8em;}
+.hmm-err{text-align:center;padding:40px 16px;color:#ef4444;font-size:.8em;}
+
+/* Table */
+.hmm-table{width:100%;border-collapse:collapse;font-size:10px;}
+.hmm-table th{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);padding:10px;border-bottom:1px solid rgba(255,255,255,.07);
+  text-align:left;position:sticky;top:0;background:rgba(255,255,255,.05);z-index:1;}
+.hmm-table th:last-child{text-align:right;}
+.hmm-table td{padding:10px;font-size:.75em;border-bottom:1px solid rgba(255,255,255,.04);
+  vertical-align:middle;color:rgba(255,255,255,.6);}
+.hmm-table tr:hover td{background:rgba(255,255,255,.02);}
+.hmm-table .hmm-cat-dot{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:6px;vertical-align:middle;}
+.hmm-table .hmm-amt{font-weight:700;text-align:right;color:#f1f5f9;white-space:nowrap;}
+.hmm-table .hmm-date{font-weight:600;color:rgba(255,255,255,.5);white-space:nowrap;}
+.hmm-table .hmm-ref{color:rgba(255,255,255,.4);font-size:.92em;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hmm-table .hmm-cat{font-size:.88em;}
+
+/* Day modal category list */
+.hmm-day-cats{display:flex;flex-direction:column;gap:4px;padding:4px 0;}
+.hmm-day-cat{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;
+  font-size:.65em;font-weight:600;background:rgba(255,255,255,.025);}
+.hmm-day-cat-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.hmm-day-cat-name{color:rgba(255,255,255,.55);flex:1;}
+.hmm-day-cat-amt{font-weight:700;color:rgba(255,255,255,.85);}
+.hmm-day-total{font-size:1em;font-weight:800;margin-bottom:8px;padding:0 8px;}
+.hmm-day-date{font-size:.65em;font-weight:700;color:rgba(255,255,255,.55);margin-bottom:4px;padding:0 8px;letter-spacing:.5px;text-transform:uppercase;}
+
+/* Pagination */
+.hmm-pag{display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;
+  background:rgba(0,0,0,.2);}
+.hmm-pag-info{font-size:.65em;color:rgba(255,255,255,.3);}
+.hmm-pag-btns{display:flex;align-items:center;gap:6px;}
+.hmm-pag-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);border-radius:6px;padding:5px 12px;cursor:pointer;
+  font-size:.7em;font-weight:600;transition:all .12s;}
+.hmm-pag-btn:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);}
+.hmm-pag-btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
+.hmm-pag-num{font-size:.7em;font-weight:700;color:rgba(255,255,255,.5);min-width:60px;text-align:center;}
 
 /* ── Loading / Error ── */
 .hm-loading{text-align:center;padding:40px 16px;color:var(--hm-dim);font-size:.72em;}
@@ -263,6 +345,53 @@
     <div class="hm-loading">
       <div style="font-size:2em;margin-bottom:8px;">🔥</div>
       Loading heatmap…
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MONTH EXPENSE DETAIL MODAL
+═══════════════════════════════════════════ -->
+<div id="hm-month-overlay" onclick="if(event.target===this)hmMonthClose()">
+  <div id="hm-month-modal">
+    <div class="hmm-hdr">
+      <div>
+        <div class="hmm-title" id="hmm-title">📋 Month Expenses</div>
+        <div class="hmm-sub" id="hmm-sub">Loading…</div>
+      </div>
+      <button class="hmm-close" onclick="hmMonthClose()">✕</button>
+    </div>
+    <div class="hmm-search-wrap">
+      <input class="hmm-search" id="hmm-search" type="text" placeholder="🔍 Search by category, reference, amount…" oninput="hmMonthFilter()">
+    </div>
+    <div class="hmm-body" id="hmm-body">
+      <div class="hmm-loading"><div class="hmm-spin"></div>Loading entries…</div>
+    </div>
+    <div class="hmm-pag" id="hmm-pag">
+      <span class="hmm-pag-info" id="hmm-pag-info">—</span>
+      <div class="hmm-pag-btns">
+        <button class="hmm-pag-btn" id="hmm-pg-prev" onclick="hmMonthPage(-1)">◀ Prev</button>
+        <span class="hmm-pag-num" id="hmm-pg-num">1 / 1</span>
+        <button class="hmm-pag-btn" id="hmm-pg-next" onclick="hmMonthPage(1)">Next ▶</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     DAY EXPENSE DETAIL MODAL
+═══════════════════════════════════════════ -->
+<div id="hm-day-overlay" onclick="if(event.target===this)hmDayClose()">
+  <div id="hm-day-modal">
+    <div class="hmm-hdr">
+      <div>
+        <div class="hmm-title" id="hmd-title">📅 Day Expenses</div>
+        <div class="hmm-sub" id="hmd-sub">—</div>
+      </div>
+      <button class="hmm-close" onclick="hmDayClose()">✕</button>
+    </div>
+    <div class="hmm-body" id="hmd-body">
+      <div class="hmm-loading"><div class="hmm-spin"></div>Loading…</div>
     </div>
   </div>
 </div>
@@ -399,7 +528,7 @@ function hmRender(d){
   monthTotals.forEach(function(mt, i){
     var pct = maxMonth > 0 ? Math.max(2, (mt / maxMonth) * 100) : 2;
     var barColor = (i === bestMoI) ? '#34d399' : (i === worstMoI) ? '#f87171' : '#6366f1';
-    html += '<div class="hm-mbar-col"><div class="hm-mbar-bar-wrap"><div class="hm-mbar-bar" style="height:' + pct + '%;background:' + barColor + ';box-shadow:0 0 8px ' + barColor + '40;"></div></div><div class="hm-mbar-lbl">' + _hmMonthNames[i] + '</div><div class="hm-mbar-val">' + hmFmt(mt) + '</div></div>';
+    html += '<div class="hm-mbar-col" style="cursor:pointer;" onclick="hmMonthOpen(' + i + ')" title="Click to view ' + _hmMonthNames[i] + ' expenses"><div class="hm-mbar-bar-wrap"><div class="hm-mbar-bar" style="height:' + pct + '%;background:' + barColor + ';box-shadow:0 0 8px ' + barColor + '40;"></div></div><div class="hm-mbar-lbl">' + _hmMonthNames[i] + '</div><div class="hm-mbar-val">' + hmFmt(mt) + '</div></div>';
   });
   html += '</div></div>';
 
@@ -466,9 +595,7 @@ function hmRender(d){
 
   html += '</div>'; // months
 
-  // Day detail
-  html += '<div class="hm-detail" id="hmDetail"></div>';
-  html += '</div>'; // glass
+  html += '</div>'; // glass (legend + months)
 
   document.getElementById('hmScroll').innerHTML = html;
 }
@@ -479,36 +606,146 @@ function hmSetCat(catName){
   if(_hmData) hmRender(_hmData);
 }
 
-/* ── Day detail ── */
+/* ── Day detail modal ── */
 function hmShowDay(dateKey){
-  var el = document.getElementById('hmDetail');
-  if(!el) return;
   var d = _hmData ? _hmData.data[dateKey] : null;
-  if(!d || !d.total){ el.classList.remove('open'); return; }
+  if(!d || !d.total) return;
 
   var p = dateKey.split('-');
   var label = _hmMonthNames[parseInt(p[1],10)-1] + ' ' + parseInt(p[2],10) + ', ' + p[0];
 
-  var html = '<div class="hm-detail-date">📅 ' + label + '</div>';
-  html += '<div class="hm-detail-total" style="color:#a5b4fc;">Total: ' + hmFmtFull(d.total) + '</div>';
+  document.getElementById('hmd-title').textContent = '📅 ' + label + ' Expenses';
+  document.getElementById('hmd-sub').textContent = 'Total: ' + hmFmtFull(d.total);
+  document.getElementById('hm-day-overlay').classList.add('open');
+
+  var html = '<div class="hmm-day-date">📅 ' + label + '</div>';
+  html += '<div class="hmm-day-total" style="color:#a5b4fc;">Total: ' + hmFmtFull(d.total) + '</div>';
 
   if(d.cats && Object.keys(d.cats).length > 0){
-    html += '<div class="hm-detail-cats">';
+    html += '<div class="hmm-day-cats">';
     var sorted = Object.keys(d.cats).sort(function(a,b){ return d.cats[b] - d.cats[a]; });
     sorted.forEach(function(cn){
       var ci = (_hmData.categories||[]).find(function(c){ return c.name === cn; });
       var color = ci ? ci.color : '#94a3b8';
       var amt = d.cats[cn];
       var pct = d.total > 0 ? ((amt/d.total)*100).toFixed(1) : 0;
-      html += '<div class="hm-detail-cat"><span class="hm-detail-cat-dot" style="background:' + color + ';"></span><span class="hm-detail-cat-name">' + cn + '</span><span class="hm-detail-cat-amt">' + hmFmtFull(amt) + ' <span style="font-weight:400;color:rgba(255,255,255,.3);font-size:.82em;">(' + pct + '%)</span></span></div>';
+      html += '<div class="hmm-day-cat"><span class="hmm-day-cat-dot" style="background:' + color + ';"></span><span class="hmm-day-cat-name">' + cn + '</span><span class="hmm-day-cat-amt">' + hmFmtFull(amt) + ' <span style="font-weight:400;color:rgba(255,255,255,.3);font-size:.82em;">(' + pct + '%)</span></span></div>';
     });
     html += '</div>';
   }
 
-  el.innerHTML = html;
-  el.classList.add('open');
+  document.getElementById('hmd-body').innerHTML = html;
+}
+
+function hmDayClose(){
+  document.getElementById('hm-day-overlay').classList.remove('open');
 }
 
 /* ── Init ── */
 hmLoad();
+
+/* ══════════════════════════════════════════
+   MONTH EXPENSE DETAIL MODAL
+══════════════════════════════════════════ */
+var _hmmMonth = -1;
+var _hmmYear = -1;
+var _hmmAllEntries = [];
+var _hmmPage = 0;
+var _hmmPageSize = 20;
+var _hmmCats = [];
+
+function hmMonthOpen(monthIdx){
+  _hmmMonth = monthIdx;
+  _hmmYear = _hmYear;
+  _hmmPage = 0;
+  _hmmCats = (_hmData && _hmData.categories) || [];
+  document.getElementById('hm-month-overlay').classList.add('open');
+  document.getElementById('hmm-title').textContent = '📋 ' + _hmMonthNames[monthIdx] + ' ' + _hmYear + ' Expenses';
+  document.getElementById('hmm-sub').textContent = 'Loading…';
+  document.getElementById('hmm-body').innerHTML = '<div class="hmm-loading"><div class="hmm-spin"></div>Loading entries…</div>';
+  document.getElementById('hmm-search').value = '';
+
+  var reqM = monthIdx + 1;
+  google.script.run
+    .withSuccessHandler(function(data){
+      if(!data || !data.success){
+        document.getElementById('hmm-body').innerHTML = '<div class="hmm-err">⚠ ' + (data ? data.error : 'Failed') + '</div>';
+        return;
+      }
+      _hmmAllEntries = data.entries || [];
+      document.getElementById('hmm-sub').textContent = _hmMonthNames[_hmmMonth] + ' · ' + _hmmAllEntries.length + ' entries';
+      hmMonthRender();
+    })
+    .withFailureHandler(function(){
+      document.getElementById('hmm-body').innerHTML = '<div class="hmm-err">⚠ Error loading month data</div>';
+    })
+    .getCurrentMonthExpensesList(reqM, _hmYear);
+}
+
+function hmMonthClose(){
+  document.getElementById('hm-month-overlay').classList.remove('open');
+  _hmmAllEntries = [];
+  _hmmPage = 0;
+}
+
+function hmMonthRender(){
+  var query = (document.getElementById('hmm-search').value || '').trim().toLowerCase();
+  var filtered = _hmmAllEntries;
+
+  // Apply search filter
+  if(query){
+    filtered = _hmmAllEntries.filter(function(e){
+      return (e.category && e.category.toLowerCase().indexOf(query) >= 0) ||
+             (e.reference && e.reference.toLowerCase().indexOf(query) >= 0) ||
+             String(e.amount).indexOf(query) >= 0 ||
+             String(e.day).indexOf(query) >= 0;
+    });
+  }
+
+  // Sort by day ascending
+  filtered.sort(function(a, b){ return a.day - b.day; });
+
+  var totalPages = Math.max(1, Math.ceil(filtered.length / _hmmPageSize));
+  if(_hmmPage >= totalPages) _hmmPage = totalPages - 1;
+  if(_hmmPage < 0) _hmmPage = 0;
+
+  var start = _hmmPage * _hmmPageSize;
+  var pageEntries = filtered.slice(start, start + _hmmPageSize);
+
+  // Build table
+  if(filtered.length === 0){
+    document.getElementById('hmm-body').innerHTML = '<div class="hmm-empty">' + (query ? 'No expenses match your search.' : 'No expenses found for this month.') + '</div>';
+  } else {
+    var html = '<table class="hmm-table"><thead><tr><th>Date</th><th>Category</th><th>Reference</th><th style="text-align:right">Amount</th></tr></thead><tbody>';
+    pageEntries.forEach(function(e){
+      var ci = _hmmCats.find(function(c){ return c.name === e.category; });
+      var color = ci ? ci.color : '#94a3b8';
+      var dateStr = String(e.day).padStart(2,'0') + ' ' + _hmMonthNames[_hmmMonth];
+      html += '<tr>' +
+        '<td class="hmm-date">' + dateStr + '</td>' +
+        '<td class="hmm-cat"><span class="hmm-cat-dot" style="background:' + color + '"></span>' + e.category + '</td>' +
+        '<td class="hmm-ref">' + (e.reference || '—') + '</td>' +
+        '<td class="hmm-amt">₨ ' + Math.round(e.amount).toLocaleString() + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('hmm-body').innerHTML = html;
+  }
+
+  // Pagination
+  document.getElementById('hmm-pag-info').textContent = 'Showing ' + (filtered.length > 0 ? (start + 1) + '–' + Math.min(start + _hmmPageSize, filtered.length) : '0') + ' of ' + filtered.length;
+  document.getElementById('hmm-pg-num').textContent = (_hmmPage + 1) + ' / ' + totalPages;
+  document.getElementById('hmm-pg-prev').disabled = (_hmmPage <= 0);
+  document.getElementById('hmm-pg-next').disabled = (_hmmPage >= totalPages - 1);
+}
+
+function hmMonthPage(dir){
+  _hmmPage += dir;
+  hmMonthRender();
+}
+
+function hmMonthFilter(){
+  _hmmPage = 0;
+  hmMonthRender();
+}
 </script>
