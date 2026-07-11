@@ -580,7 +580,7 @@ function hmRender(d){
     _hmYearTotals.forEach(function(yt){
       var pct = maxYr > 0 ? Math.max(3, (yt.total / maxYr) * 100) : 3;
       var barColor = yt.year === curYr ? '#8b5cf6' : (yt.year === bestYr.year ? '#10b981' : (yt.year === worstYr.year ? '#ef4444' : '#6366f1'));
-      html += '<div class="hm-mbar-col"><div class="hm-mbar-bar-wrap" style="height:64px;"><div class="hm-mbar-bar" style="height:' + pct + '%;background:' + barColor + ';box-shadow:0 0 8px ' + barColor + '40;border-radius:4px 4px 0 0;"></div><div class="hm-bar-tip">' + hmFmtFull(yt.total) + '</div></div><div class="hm-mbar-lbl">' + yt.year + '</div><div class="hm-mbar-val">' + hmFmt(yt.total) + '</div></div>';
+      html += '<div class="hm-mbar-col" style="cursor:pointer;" onclick="hmYearOpen(' + yt.year + ')" title="Click to view ' + yt.year + ' expenses"><div class="hm-mbar-bar-wrap" style="height:64px;"><div class="hm-mbar-bar" style="height:' + pct + '%;background:' + barColor + ';box-shadow:0 0 8px ' + barColor + '40;border-radius:4px 4px 0 0;"></div><div class="hm-bar-tip">' + hmFmtFull(yt.total) + '</div></div><div class="hm-mbar-lbl">' + yt.year + '</div><div class="hm-mbar-val">' + hmFmt(yt.total) + '</div></div>';
     });
     html += '</div></div>';
   }
@@ -666,11 +666,35 @@ function hmShowDay(dateKey){
 
   var p = dateKey.split('-');
   var label = _hmMonthNames[parseInt(p[1],10)-1] + ' ' + parseInt(p[2],10) + ', ' + p[0];
+  var mIdx = parseInt(p[1], 10) - 1;
+  var dayNum = parseInt(p[2], 10);
 
   document.getElementById('hmd-title').textContent = '📅 ' + label + ' Expenses';
   document.getElementById('hmd-sub').textContent = 'Total: ' + hmFmtFull(d.total);
   document.getElementById('hm-day-overlay').classList.add('open');
+  document.getElementById('hmd-body').innerHTML = '<div class="hmm-loading"><div class="hmm-spin"></div>Loading entries…</div>';
 
+  // Fetch day-level entries with references from server
+  google.script.run
+    .withSuccessHandler(function(data){
+      if(!data || !data.success){
+        // Fallback: show just category aggregates
+        renderDayCategories(label, d);
+        return;
+      }
+      // Filter entries for this specific day
+      var dayEntries = (data.entries || []).filter(function(e){ return e.day === dayNum; });
+      renderDayEntries(label, d, dayEntries);
+    })
+    .withFailureHandler(function(){
+      // Fallback: show just category aggregates
+      renderDayCategories(label, d);
+    })
+    .getCurrentMonthExpensesList(mIdx + 1, parseInt(p[0], 10));
+}
+
+/* Render day with just category aggregates (fallback) */
+function renderDayCategories(label, d){
   var html = '<div class="hmm-day-date">📅 ' + label + '</div>';
   html += '<div class="hmm-day-total" style="color:#a5b4fc;">Total: ' + hmFmtFull(d.total) + '</div>';
 
@@ -685,6 +709,42 @@ function hmShowDay(dateKey){
       html += '<div class="hmm-day-cat"><span class="hmm-day-cat-dot" style="background:' + color + ';"></span><span class="hmm-day-cat-name">' + cn + '</span><span class="hmm-day-cat-amt">' + hmFmtFull(amt) + ' <span style="font-weight:400;color:rgba(255,255,255,.3);font-size:.82em;">(' + pct + '%)</span></span></div>';
     });
     html += '</div>';
+  }
+
+  document.getElementById('hmd-body').innerHTML = html;
+}
+
+/* Render day with full entries including references */
+function renderDayEntries(label, d, dayEntries){
+  var html = '<div class="hmm-day-date">📅 ' + label + '</div>';
+  html += '<div class="hmm-day-total" style="color:#a5b4fc;">Total: ' + hmFmtFull(d.total) + '</div>';
+
+  if(dayEntries.length > 0){
+    html += '<table class="hmm-table" style="margin-top:8px;"><thead><tr><th>Category</th><th>Reference</th><th style="text-align:right">Amount</th></tr></thead><tbody>';
+    dayEntries.forEach(function(e){
+      var ci = (_hmData.categories||[]).find(function(c){ return c.name === e.category; });
+      var color = ci ? ci.color : '#94a3b8';
+      html += '<tr>' +
+        '<td class="hmm-cat"><span class="hmm-cat-dot" style="background:' + color + '"></span>' + (e.category || '—') + '</td>' +
+        '<td class="hmm-ref">' + (e.reference || '—') + '</td>' +
+        '<td class="hmm-amt">₨ ' + Math.round(e.amount).toLocaleString() + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+  } else {
+    // Fallback: show categories
+    if(d.cats && Object.keys(d.cats).length > 0){
+      html += '<div class="hmm-day-cats">';
+      var sorted = Object.keys(d.cats).sort(function(a,b){ return d.cats[b] - d.cats[a]; });
+      sorted.forEach(function(cn){
+        var ci = (_hmData.categories||[]).find(function(c){ return c.name === cn; });
+        var color = ci ? ci.color : '#94a3b8';
+        var amt = d.cats[cn];
+        var pct = d.total > 0 ? ((amt/d.total)*100).toFixed(1) : 0;
+        html += '<div class="hmm-day-cat"><span class="hmm-day-cat-dot" style="background:' + color + ';"></span><span class="hmm-day-cat-name">' + cn + '</span><span class="hmm-day-cat-amt">' + hmFmtFull(amt) + ' <span style="font-weight:400;color:rgba(255,255,255,.3);font-size:.82em;">(' + pct + '%)</span></span></div>';
+      });
+      html += '</div>';
+    }
   }
 
   document.getElementById('hmd-body').innerHTML = html;
@@ -726,7 +786,8 @@ function hmMonthOpen(monthIdx){
         return;
       }
       _hmmAllEntries = data.entries || [];
-      document.getElementById('hmm-sub').textContent = _hmMonthNames[_hmmMonth] + ' · ' + _hmmAllEntries.length + ' entries';
+      var totalAmount = _hmmAllEntries.reduce(function(sum, e){ return sum + (e.amount || 0); }, 0);
+      document.getElementById('hmm-sub').textContent = _hmMonthNames[_hmmMonth] + ' · ' + _hmmAllEntries.length + ' entries · Total: ' + hmFmtFull(totalAmount);
       hmMonthRender();
     })
     .withFailureHandler(function(){
@@ -739,6 +800,12 @@ function hmMonthClose(){
   document.getElementById('hm-month-overlay').classList.remove('open');
   _hmmAllEntries = [];
   _hmmPage = 0;
+}
+
+/* ── Year navigation from yearly totals bar ── */
+function hmYearOpen(year){
+  _hmYear = year;
+  hmLoad();
 }
 
 function hmMonthRender(){
@@ -757,6 +824,9 @@ function hmMonthRender(){
 
   // Sort by day ascending
   filtered.sort(function(a, b){ return a.day - b.day; });
+
+  // Calculate filtered total
+  var filteredTotal = filtered.reduce(function(sum, e){ return sum + (e.amount || 0); }, 0);
 
   var totalPages = Math.max(1, Math.ceil(filtered.length / _hmmPageSize));
   if(_hmmPage >= totalPages) _hmmPage = totalPages - 1;
@@ -790,6 +860,14 @@ function hmMonthRender(){
   document.getElementById('hmm-pg-num').textContent = (_hmmPage + 1) + ' / ' + totalPages;
   document.getElementById('hmm-pg-prev').disabled = (_hmmPage <= 0);
   document.getElementById('hmm-pg-next').disabled = (_hmmPage >= totalPages - 1);
+
+  // Update subtitle with filtered total
+  var subEl = document.getElementById('hmm-sub');
+  if(subEl){
+    var baseLabel = _hmMonthNames[_hmmMonth];
+    var searchNote = query ? ' · Search: ' + hmFmtFull(filteredTotal) : ' · Total: ' + hmFmtFull(filteredTotal);
+    subEl.textContent = baseLabel + ' · ' + filtered.length + ' entries' + searchNote;
+  }
 }
 
 function hmMonthPage(dir){
