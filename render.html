@@ -4094,6 +4094,110 @@ input[type=date].swae-input{color-scheme:dark;}
   }
 }
 
+/* ── High Level / Analyze Modal Mobile ── */
+@media (max-width: 760px) {
+  /* HL modal: full-width on mobile */
+  #hl-exp-modal, #hm-exp-modal {
+    max-width: 100% !important;
+    height: 95vh !important;
+    border-radius: 12px !important;
+  }
+  #hl-exp-overlay, #hm-exp-overlay {
+    padding: 8px !important;
+  }
+  /* Header: stack title and close */
+  #hl-exp-modal .edm-hdr, #hm-exp-modal .edm-hdr {
+    padding: 14px 14px 12px !important;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #hl-exp-modal .edm-nav-row, #hm-exp-modal .edm-nav-row {
+    margin-left: auto;
+  }
+  /* Body padding */
+  #hl-exp-body, #analyze-hl-body {
+    padding: 10px !important;
+  }
+  /* KPI cards: 2 columns on tablet, 1 on small phone */
+  #hl-exp-body .hl-kpi-row, #analyze-hl-body .hl-kpi-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  /* KPI card reduce padding */
+  #hl-exp-body .kpi, #analyze-hl-body .kpi {
+    padding: 12px !important;
+  }
+  #hl-exp-body .kpi-val, #analyze-hl-body .kpi-val {
+    font-size: 1em !important;
+  }
+  /* Table wrapper: reduce padding */
+  #hl-exp-body .hl-table-wrap, #analyze-hl-body .hl-table-wrap {
+    padding: 10px !important;
+    border-radius: 12px !important;
+  }
+  /* Search row: stack vertically */
+  #hl-exp-body .hl-table-wrap > div:first-child,
+  #analyze-hl-body .hl-table-wrap > div:first-child {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  #hlSearchInput {
+    width: 100% !important;
+  }
+  /* Table: horizontal scroll */
+  #hl-exp-body .hl-table-wrap > div:nth-child(2),
+  #analyze-hl-body .hl-table-wrap > div:nth-child(2) {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Table cells: reduce padding */
+  #hl-exp-body .hmm-table td, #analyze-hl-body .hmm-table td {
+    padding: 7px 6px !important;
+    font-size: .78em !important;
+  }
+  #hl-exp-body .hmm-table th, #analyze-hl-body .hmm-table th {
+    padding: 7px 6px !important;
+    font-size: 9px !important;
+    white-space: nowrap;
+  }
+  #hl-exp-body .hmm-table .hmm-ref, #analyze-hl-body .hmm-table .hmm-ref {
+    max-width: 100px;
+    font-size: .85em;
+  }
+  /* Analyze modal toggle buttons: smaller */
+  .analyze-toggle-btn {
+    padding: 4px 10px;
+    font-size: .55em;
+  }
+  /* Analyze header: wrap */
+  #hm-exp-modal .edm-hdr {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+  #hm-exp-modal .edm-hdr > div:last-child {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 500px) {
+  /* KPI cards: 1 column on small phones */
+  #hl-exp-body .hl-kpi-row, #analyze-hl-body .hl-kpi-row {
+    grid-template-columns: 1fr !important;
+  }
+  /* Chart rows */
+  .hl-chart-row, .hl-chart-2x2 {
+    grid-template-columns: 1fr !important;
+  }
+  /* Pagination: fit */
+  #hl-exp-body .hmm-pag-btn, #analyze-hl-body .hmm-pag-btn {
+    padding: 5px 10px;
+    font-size: .65em;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    PTS TOAST + CHART SKELETON  (global utilities)
 ═══════════════════════════════════════════════════════════════ */
@@ -4229,10 +4333,10 @@ input[type=date].swae-input{color-scheme:dark;}
   pointer-events:none;
 }
 #hl-exp-body .hmm-table,
-#analyze-hl-body .hmm-table{width:100%;border-collapse:collapse;font-size:10px;}
+#analyze-hl-body .hmm-table{width:100%;border-collapse:collapse;font-size:12px;}
 #hl-exp-body .hmm-table th,
 #analyze-hl-body .hmm-table th{
-  font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
   color:rgba(255,255,255,.3);padding:10px 10px;
   border-bottom:1px solid rgba(255,255,255,.07);text-align:left;
   background:rgba(6,11,24,.72);z-index:1;
@@ -4241,7 +4345,7 @@ input[type=date].swae-input{color-scheme:dark;}
 #analyze-hl-body .hmm-table th:last-child{text-align:right;}
 #hl-exp-body .hmm-table td,
 #analyze-hl-body .hmm-table td{
-  padding:10px 10px;font-size:.75em;
+  padding:10px 10px;font-size:.85em;
   border-bottom:1px solid rgba(255,255,255,.04);
   vertical-align:middle;color:rgba(255,255,255,.6);
 }
@@ -8771,7 +8875,7 @@ renderHlExpData = function(res) {
   // Initialize pagination variables
   window._hlAllEntries = entries;
   window._hlCurrentPage = 1;
-  window._hlPageSize = 10;
+  window._hlPageSize = 20;
   window._hlFilteredEntries = entries;
 
   hlFilterTable();
