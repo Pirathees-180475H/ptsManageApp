@@ -2996,6 +2996,76 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-port .port-loading-txt{color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:1px;}
 #page-port .error-box{background:rgba(255,77,141,.08);border:1px solid rgba(255,77,141,.25);
   border-radius:14px;padding:22px;text-align:center;color:var(--red2);font-size:.88em;}
+/* ── Net Worth Hero Banner ── */
+#page-port .port-hero{position:relative;border-radius:20px;padding:24px 28px;margin-bottom:16px;
+  background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(168,85,247,.05),rgba(0,255,136,.04));
+  border:1px solid rgba(255,255,255,.1);overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);}
+#page-port .port-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;
+  border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.12),transparent 70%);pointer-events:none;}
+#page-port .port-hero::after{content:'';position:absolute;bottom:-30px;left:20%;width:200px;height:80px;
+  background:radial-gradient(ellipse,rgba(168,85,247,.08),transparent 70%);pointer-events:none;}
+#page-port .port-hero-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;position:relative;z-index:1;}
+#page-port .port-hero-main{display:flex;flex-direction:column;gap:4px;}
+#page-port .port-hero-label{font-size:.6em;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);display:flex;align-items:center;gap:7px;}
+#page-port .port-hero-label .hero-dot{width:7px;height:7px;border-radius:50%;
+  background:var(--blue);box-shadow:0 0 10px var(--blue);animation:portHeroPulse 2s ease-in-out infinite;}
+@keyframes portHeroPulse{0%,100%{opacity:1}50%{opacity:.35}}
+#page-port .port-hero-amount{font-size:2.2em;font-weight:900;letter-spacing:-1.5px;
+  background:linear-gradient(135deg,#fff 0%,#e2e8f0 40%,var(--blue) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  text-shadow:none;line-height:1.1;}
+#page-port .port-hero-sub{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:2px;}
+#page-port .port-hero-mom{font-size:.72em;font-weight:700;padding:4px 10px;border-radius:8px;
+  display:inline-flex;align-items:center;gap:4px;}
+#page-port .port-hero-mom.up{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);color:#00ff88;}
+#page-port .port-hero-mom.down{background:rgba(255,77,141,.1);border:1px solid rgba(255,77,141,.25);color:var(--red2);}
+#page-port .port-hero-mom.flat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.45);}
+#page-port .port-hero-abs{font-size:.68em;color:rgba(255,255,255,.35);}
+#page-port .port-hero-badges{display:flex;gap:10px;flex-wrap:wrap;}
+#page-port .port-hero-badge{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:11px 16px;text-align:center;min-width:90px;
+  backdrop-filter:blur(10px);transition:all .25s;}
+#page-port .port-hero-badge:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);transform:translateY(-1px);}
+#page-port .port-hero-badge.usd{border-left:2px solid #00ff88;}
+#page-port .port-hero-badge.epf{border-left:2px solid #c084fc;}
+#page-port .port-hero-badge-icon{font-size:1.1em;margin-bottom:3px;}
+#page-port .port-hero-badge-val{font-size:.85em;font-weight:800;color:rgba(255,255,255,.85);letter-spacing:-.5px;}
+#page-port .port-hero-badge-lbl{font-size:.55em;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:1px;}
+/* ── Quick Stats Row ── */
+#page-port .port-stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:9px;margin-bottom:16px;}
+#page-port .port-stat-pill{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+  border-radius:13px;padding:12px 14px;text-align:center;position:relative;overflow:hidden;
+  transition:all .25s;}
+#page-port .port-stat-pill:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.13);}
+#page-port .port-stat-pill .psp-icon{font-size:.95em;margin-bottom:4px;}
+#page-port .port-stat-pill .psp-val{font-size:.95em;font-weight:800;letter-spacing:-.5px;}
+#page-port .port-stat-pill .psp-lbl{font-size:.54em;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:rgba(255,255,255,.28);margin-top:2px;}
+#page-port .port-stat-pill .psp-bar{height:3px;border-radius:2px;margin-top:6px;transition:width 1s ease;}
+/* ── Growth chart enhancements ── */
+#page-port .port-growth-extra{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap;}
+#page-port .port-proj-toggle{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;
+  border-radius:8px;border:1px solid rgba(45,212,191,.25);background:rgba(45,212,191,.08);
+  color:#2dd4bf;font-size:.65em;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;
+  transition:all .2s;letter-spacing:1px;}
+#page-port .port-proj-toggle:hover{background:rgba(45,212,191,.16);border-color:rgba(45,212,191,.45);}
+#page-port .port-proj-toggle.active{background:rgba(45,212,191,.18);border-color:rgba(45,212,191,.5);box-shadow:0 0 12px rgba(45,212,191,.15);}
+#page-port .port-proj-dot{width:8px;height:8px;border-radius:50%;background:#fbbf24;display:inline-block;}
+#page-port .port-ma-dot{width:8px;height:8px;border-radius:50%;background:#a855f7;display:inline-block;}
+/* ── Mobile responsiveness ── */
+@media(max-width:760px){
+  #page-port .port-hero-inner{flex-direction:column;align-items:stretch;}
+  #page-port .port-hero-badges{justify-content:center;}
+  #page-port .port-hero-amount{font-size:1.7em;}
+}
+@media(max-width:600px){
+  #page-port .port-hero{padding:18px 16px;}
+  #page-port .port-hero-amount{font-size:1.45em;}
+  #page-port .port-stats-row{grid-template-columns:1fr 1fr;}
+}
 .port-toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%) translateY(70px);
   background:rgba(6,11,24,.97);border:1px solid rgba(255,255,255,.1);border-radius:14px;
   padding:11px 20px;font-size:.78em;font-weight:600;backdrop-filter:blur(20px);
@@ -9125,6 +9195,21 @@ function portDisplayPortfolio(data){
   var posAssets=assets.filter(function(a){return a.amt>0;});
   var totalPositive=posAssets.reduce(function(s,a){return s+a.amt;},0);
 
+  /* ── Compute MoM and other stats from growth data ── */
+  var momPct=0,momAbs=0;
+  if(growthData.length>=2){
+    var prevIdx=growthData.length-2,lastIdx=growthData.length-1;
+    var prevAmt=growthData[prevIdx].amount,lastAmt=growthData[lastIdx].amount;
+    if(prevAmt>0){momPct=((lastAmt-prevAmt)/prevAmt*100);momAbs=lastAmt-prevAmt;}
+  }
+  var momCls=momPct>0.5?'up':momPct<-0.5?'down':'flat';
+  var momArrow=momPct>0.5?'▲':momPct<-0.5?'▼':'→';
+  /* ── Largest asset ── */
+  var largestAsset=posAssets.length?posAssets.reduce(function(b,a){return a.amt>b.amt?a:b;},{cat:'—',amt:0}):{cat:'—',amt:0};
+  var diversityCount=posAssets.length;
+  var epfPct=totalLKR>0?(epfEtf/totalLKR*100).toFixed(1):'0.0';
+  var grandNetWorth=totalLKR;
+
   var assetCards=assets.map(function(a,i){
     var cls=portGetClass(a.cat);
     var badge=cls==='positive'?'badge-positive':cls==='negative'?'badge-negative':'badge-neutral';
@@ -9154,6 +9239,34 @@ function portDisplayPortfolio(data){
   }).join('');
 
   document.getElementById('port-root').innerHTML=
+    /* ── HERO BANNER: Net Worth ── */
+    '<div class="port-hero">'+
+      '<div class="port-hero-inner">'+
+        '<div class="port-hero-main">'+
+          '<div class="port-hero-label"><span class="hero-dot"></span>Net Worth · All Currencies Combined</div>'+
+          '<div class="port-hero-amount" id="portHeroAmount">'+portFmt(grandNetWorth)+'</div>'+
+          '<div class="port-hero-sub">'+
+            '<span class="port-hero-abs">LKR '+portFmt(totalLKR)+'</span>'+
+            '<span style="color:rgba(255,255,255,.15)">|</span>'+
+            '<span class="port-hero-abs">USD '+portFmt(totalUSD,'USD')+'</span>'+
+            '<span style="color:rgba(255,255,255,.15)">|</span>'+
+            '<span class="port-hero-abs">EPF '+portFmt(epfEtf)+'</span>'+
+            (growthData.length>=2?'<span style="color:rgba(255,255,255,.15)">|</span><span class="port-hero-mom '+momCls+'">'+momArrow+' '+(momPct>=0?'+':'')+momPct.toFixed(1)+'% MoM</span>':'')+
+          '</div>'+
+        '</div>'+
+        '<div class="port-hero-badges">'+
+          '<div class="port-hero-badge usd"><div class="port-hero-badge-icon">💵</div><div class="port-hero-badge-val">'+portFmt(totalUSD,'USD')+'</div><div class="port-hero-badge-lbl">USD Assets</div></div>'+
+          '<div class="port-hero-badge epf"><div class="port-hero-badge-icon">📊</div><div class="port-hero-badge-val">'+portFmt(epfEtf)+'</div><div class="port-hero-badge-lbl">EPF+ETF</div></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    /* ── QUICK STATS ROW ── */
+    '<div class="port-stats-row">'+
+      '<div class="port-stat-pill"><div class="psp-icon">🏆</div><div class="psp-val" style="color:#00d4ff">'+largestAsset.cat+'</div><div class="psp-lbl">Largest Asset</div><div class="psp-bar" style="width:0;background:#00d4ff" data-w="100"></div></div>'+
+      '<div class="port-stat-pill"><div class="psp-icon">📦</div><div class="psp-val" style="color:#a855f7">'+diversityCount+'</div><div class="psp-lbl">Asset Types</div><div class="psp-bar" style="width:0;background:#a855f7" data-w="'+(Math.min(diversityCount*10,100))+'"></div></div>'+
+      '<div class="port-stat-pill"><div class="psp-icon">📊</div><div class="psp-val" style="color:#c084fc">'+epfPct+'%</div><div class="psp-lbl">EPF Weight</div><div class="psp-bar" style="width:0;background:#c084fc" data-w="'+Math.min(parseFloat(epfPct),100)+'"></div></div>'+
+      '<div class="port-stat-pill"><div class="psp-icon">📈</div><div class="psp-val" style="color:#2dd4bf">'+(growthData.length||0)+'</div><div class="psp-lbl">Snapshots</div><div class="psp-bar" style="width:0;background:#2dd4bf" data-w="'+Math.min((growthData.length||0)*5,100)+'"></div></div>'+
+    '</div>'+
     /* ── top bar ── */
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">'+
       '<div class="pg-corner-title" style="margin-bottom:0;"><span class="pg-ct-icon">💵</span><span class="pg-ct-text">Analyze Portfolio</span></div>'+
@@ -9188,7 +9301,12 @@ function portDisplayPortfolio(data){
       '<div class="assets-section">'+
         '<div class="section-heading">📈 Growth Trajectory</div>'+
         '<div class="glass-card" style="margin-bottom:16px">'+
-          '<div class="card-header"><div class="card-dot" style="background:#2dd4bf;box-shadow:0 0 6px #2dd4bf"></div><div class="card-title">Portfolio Value Over Time</div></div>'+
+          '<div class="card-header"><div class="card-dot" style="background:#2dd4bf;box-shadow:0 0 6px #2dd4bf"></div><div class="card-title">Portfolio Value Over Time</div>'+
+            '<button class="port-proj-toggle" id="portMAToggle" onclick="portToggleMA()" title="3-point Moving Average">'+
+              '<span class="port-ma-dot"></span> MA</button>'+
+            '<button class="port-proj-toggle" id="portProjToggle" onclick="portToggleProj()" title="Linear Projection">'+
+              '<span class="port-proj-dot"></span> Projection</button>'+
+          '</div>'+
           '<div id="portGrowthStats" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>'+
           '<canvas id="portGrowthChart" style="max-height:190px"></canvas>'+
           '<div id="portGrowthMilestones" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:11px"></div>'+
@@ -9198,13 +9316,19 @@ function portDisplayPortfolio(data){
 
   setTimeout(function(){
     var lEl=document.getElementById('portLkrCounter'),uEl=document.getElementById('portUsdCounter');
+    var hEl=document.getElementById('portHeroAmount');
     if(lEl)portAnimateCounter(lEl,totalLKR,1600,'₨');
     if(uEl)portAnimateCounter(uEl,totalUSD,1600,'$');
+    if(hEl)portAnimateCounter(hEl,grandNetWorth,1800,'₨');
   },200);
 
   setTimeout(function(){
     document.querySelectorAll('#page-port .asset-card[data-bar]').forEach(function(card){
       var bar=card.querySelector('.asset-bar');if(bar)bar.style.width=card.dataset.bar+'%';
+    });
+    /* stat pill bars */
+    document.querySelectorAll('#page-port .psp-bar[data-w]').forEach(function(b){
+      b.style.width=b.dataset.w+'%';
     });
   },400);
 
@@ -9266,25 +9390,89 @@ function portBuildCharts(posAssets){
         y:{ticks:{color:'rgba(255,255,255,.5)',font:{size:9}},grid:{display:false}}}}});
 }
 
+var _portGrowthData=null,_portGrowthChart=null,_portShowMA=false,_portShowProj=false;
+
 function portBuildGrowthChart(growth){
+  _portGrowthData=growth;
   var canvas=document.getElementById('portGrowthChart');if(!canvas)return;
   var ctx=canvas.getContext('2d');
   var glabels=growth.map(function(g){return g.date;});
   var amounts=growth.map(function(g){return g.amount;});
   var notes=growth.map(function(g){return g.note;});
+
+  /* ── 3-point Moving Average ── */
+  var ma=[];
+  for(var m=0;m<amounts.length;m++){
+    if(m<2){ma.push(null);}else{ma.push((amounts[m-2]+amounts[m-1]+amounts[m])/3);}
+  }
+
+  /* ── Linear projection: next 3 points ── */
+  var proj=[],projLabels=[];
+  if(amounts.length>=2){
+    var n=amounts.length;
+    var sumX=0,sumY=0,sumXY=0,sumX2=0;
+    for(var p=0;p<n;p++){sumX+=p;sumY+=amounts[p];sumXY+=p*amounts[p];sumX2+=p*p;}
+    var slope=(n*sumXY-sumX*sumY)/(n*sumX2-sumX*sumX);
+    var intercept=(sumY-slope*sumX)/n;
+    for(var f=1;f<=3;f++){
+      var val=intercept+slope*(n-1+f);
+      proj.push(Math.max(0,val));
+      projLabels.push('Proj+'+f);
+    }
+    // fill same-length arrays for plotting
+    var fullProj=[];
+    for(var j=0;j<amounts.length;j++)fullProj.push(null);
+    for(var k=0;k<proj.length;k++){fullProj.push(proj[k]);}
+    var fullProjLabels=glabels.concat(projLabels);
+  }
+
   var fill=ctx.createLinearGradient(0,0,0,190);
   fill.addColorStop(0,'rgba(45,212,191,.38)');fill.addColorStop(1,'rgba(45,212,191,.02)');
-  new Chart(ctx,{type:'line',data:{labels:glabels,datasets:[{label:'Portfolio Value',data:amounts,
+
+  var allAmounts=fullProjLabels?amounts.concat(proj):amounts;
+  var yMin=Math.floor((Math.min.apply(null,allAmounts)*.94)/1e5)*1e5;
+  var yMax=Math.ceil((Math.max.apply(null,allAmounts)*1.04)/1e5)*1e5;
+
+  var datasets=[{
+    label:'Portfolio Value',data:amounts,
     borderColor:'#2dd4bf',backgroundColor:fill,borderWidth:3,fill:true,tension:.38,
     pointBackgroundColor:amounts.map(function(v,i){return notes[i]?'#ffd700':'#2dd4bf';}),
     pointRadius:amounts.map(function(v,i){return notes[i]?7:4;}),
-    pointHoverRadius:9,pointBorderColor:'rgba(0,0,0,.5)',pointBorderWidth:2}]},
+    pointHoverRadius:9,pointBorderColor:'rgba(0,0,0,.5)',pointBorderWidth:2
+  }];
+
+  /* MA line (hidden by default) */
+  datasets.push({
+    label:'MA (3-pt)',data:ma,hidden:!_portShowMA,
+    borderColor:'#a855f7',borderWidth:2.5,fill:false,tension:.45,
+    pointRadius:0,pointHoverRadius:5,pointBackgroundColor:'#a855f7',
+    borderDash:[4,3]
+  });
+
+  /* Projection line (hidden by default) */
+  if(fullProjLabels){
+    datasets.push({
+      label:'Projection',data:fullProj,hidden:!_portShowProj,
+      borderColor:'#fbbf24',borderWidth:2.5,fill:false,tension:.35,
+      pointRadius:function(ctx){var idx=ctx.dataIndex;return idx>=amounts.length?5:0;},
+      pointHoverRadius:7,pointBackgroundColor:'#fbbf24',pointBorderColor:'#fbbf24',
+      pointStyle:function(ctx){return ctx.dataIndex>=amounts.length?'rectRounded':'circle';},
+      borderDash:[8,4],segment:{borderDash:function(ctx){return ctx.p0DataIndex>=amounts.length-1?[8,4]:[];}}
+    });
+  }
+
+  _portGrowthChart=new Chart(ctx,{type:'line',
+    data:{labels:fullProjLabels||glabels,datasets:datasets},
     options:{responsive:true,animation:{duration:1600},
-      plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(6,11,24,.96)',borderColor:'rgba(45,212,191,.3)',borderWidth:1,titleColor:'#2dd4bf',bodyColor:'rgba(255,255,255,.65)',padding:11,
-        callbacks:{title:function(c){return glabels[c[0].dataIndex];},
-          label:function(c){var n2=notes[c.dataIndex];var base=' ₨'+Number(c.parsed.y).toLocaleString('en-IN',{minimumFractionDigits:0});return n2?[base,' 📌 '+n2]:base;}}}},
+      plugins:{legend:{display:true,position:'bottom',labels:{color:'rgba(255,255,255,.4)',font:{size:9},padding:10,boxWidth:12,usePointStyle:true,pointStyleWidth:6,filter:function(item){return !item.text||item.text.indexOf('Proj')===-1||_portShowProj;}}},
+        tooltip:{backgroundColor:'rgba(6,11,24,.96)',borderColor:'rgba(45,212,191,.3)',borderWidth:1,titleColor:'#2dd4bf',bodyColor:'rgba(255,255,255,.65)',padding:11,
+          callbacks:{title:function(c){var lbl=c[0].label||'';return lbl;},
+            label:function(c){var n2=notes[c.dataIndex];var base=' ₨'+Number(c.parsed.y).toLocaleString('en-IN',{minimumFractionDigits:0});
+              if(c.datasetIndex===1)return ' MA: '+base;
+              if(c.datasetIndex===2)return ' 🔮 '+base;
+              return n2?[base,' 📌 '+n2]:base;}}}},
       scales:{x:{ticks:{color:'rgba(255,255,255,.45)',font:{size:10},maxRotation:0},grid:{color:'rgba(255,255,255,.04)'}},
-        y:{min:Math.floor((Math.min.apply(null,amounts)*.94)/1e5)*1e5,max:Math.ceil((Math.max.apply(null,amounts)*1.04)/1e5)*1e5,
+        y:{min:yMin,max:yMax,
           ticks:{color:'rgba(255,255,255,.4)',font:{size:10},callback:function(v){return '₨'+(v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v);}},
           grid:{color:'rgba(255,255,255,.05)'}}}}});
 
@@ -9294,10 +9482,41 @@ function portBuildGrowthChart(growth){
   if(statsEl){
     var pill2=function(lbl,val,col){return '<div style="flex:1;min-width:90px;background:rgba(45,212,191,.07);border:1px solid rgba(45,212,191,.16);border-radius:11px;padding:9px 12px;text-align:center"><div style="font-size:.58em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.32);margin-bottom:2px">'+lbl+'</div><div style="font-size:1em;font-weight:800;color:'+(col||'#2dd4bf')+'">'+val+'</div></div>';};
     var fmtM=function(v){return '₨'+(v/1e6).toFixed(2)+'M';};
-    statsEl.innerHTML=pill2('Start',fmtM(first))+pill2('Latest',fmtM(last))+pill2('Growth',(growPct>=0?'+':'')+growPct.toFixed(1)+'%',growPct>=0?'#00ff88':'#ff4d8d')+pill2('Entries',growth.length);
+    // annualized growth rate
+    var annGrow='—';
+    if(growth.length>=2 && first>0){
+      var yrs=growth.length/12;if(yrs<0.08)yrs=0.08;
+      var cagrPct=((Math.pow(last/first,1/yrs)-1)*100);
+      annGrow=(cagrPct>=0?'+':'')+cagrPct.toFixed(1)+'%';
+    }
+    statsEl.innerHTML=pill2('Start',fmtM(first))+pill2('Latest',fmtM(last))+pill2('Growth',(growPct>=0?'+':'')+growPct.toFixed(1)+'%',growPct>=0?'#00ff88':'#ff4d8d')+pill2('Ann. Rate',annGrow,'#a855f7')+pill2('Entries',growth.length);
   }
   var msEl=document.getElementById('portGrowthMilestones');
   if(msEl)msEl.innerHTML=growth.filter(function(g){return g.note;}).map(function(g){return '<span style="font-size:.65em;padding:3px 9px;border-radius:6px;background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.25);color:#ffd700">📌 '+g.date+' · '+g.note+'</span>';}).join('');
+
+  /* sync toggle buttons */
+  var maBtn=document.getElementById('portMAToggle');
+  var projBtn=document.getElementById('portProjToggle');
+  if(maBtn){maBtn.className='port-proj-toggle' + (_portShowMA?' active':'');}
+  if(projBtn){projBtn.className='port-proj-toggle' + (_portShowProj?' active':'');}
+}
+
+function portToggleMA(){
+  _portShowMA=!_portShowMA;
+  if(!_portGrowthChart||!_portGrowthData)return;
+  var ds=_portGrowthChart.data.datasets;
+  if(ds.length>1){ds[1].hidden=!_portShowMA;_portGrowthChart.update();}
+  var btn=document.getElementById('portMAToggle');
+  if(btn)btn.className='port-proj-toggle' + (_portShowMA?' active':'');
+}
+
+function portToggleProj(){
+  _portShowProj=!_portShowProj;
+  if(!_portGrowthChart||!_portGrowthData)return;
+  var ds=_portGrowthChart.data.datasets;
+  if(ds.length>2){ds[2].hidden=!_portShowProj;_portGrowthChart.update();}
+  var btn=document.getElementById('portProjToggle');
+  if(btn)btn.className='port-proj-toggle' + (_portShowProj?' active':'');
 }
 
 /* ═══════════════════════════════════════════
