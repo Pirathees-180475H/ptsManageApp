@@ -3543,6 +3543,19 @@ function getSubscriptions() {
       var netCost = row[6] ? Number(row[6]) || 0 : 0;
       var note = row[7] ? String(row[7]).trim() : '';
 
+      // Parse note — could be JSON with note+usages, or plain text
+      var noteText = note;
+      var usages = [];
+      try {
+        var parsed = JSON.parse(note);
+        if (parsed && typeof parsed === 'object' && parsed.hasOwnProperty('usages')) {
+          noteText = parsed.note || '';
+          usages = parsed.usages || [];
+        }
+      } catch(e) {
+        // Not JSON, treat whole string as note text
+      }
+
       // Skip empty rows or Total row
       if (!platform || platform.toLowerCase() === 'total') {
         if (platform.toLowerCase() === 'total' && netCost > 0) {
@@ -3559,7 +3572,8 @@ function getSubscriptions() {
         collections: collections,
         collectionFrom: collectionFrom,
         netCost: netCost,
-        note: note,
+        note: noteText,
+        usages: usages,
         rowIndex: i + 3  // actual sheet row number (data starts at row 3)
       });
     }
@@ -3896,6 +3910,16 @@ function addSubscription(entry) {
     var insertRow = lastSubRow + 1; // always append — no insertRowBefore
 
     // Write data to columns M–T (13–20)
+    // Build note JSON: if note has usages, store as structured JSON
+    var noteJson = entry.note || '';
+    if (entry.usages && entry.usages.length > 0) {
+      try {
+        noteJson = JSON.stringify({ note: entry.note || '', usages: entry.usages });
+      } catch(e) {
+        noteJson = entry.note || '';
+      }
+    }
+
     sheet.getRange(insertRow, 13, 1, 8).setValues([[
       entry.month        || '',
       entry.platform     || '',
@@ -3904,7 +3928,7 @@ function addSubscription(entry) {
       entry.collections  || 0,
       entry.collectionFrom || '',
       entry.netCost      || 0,
-      entry.note         || ''
+      noteJson
     ]]);
 
     Logger.log('addSubscription: inserted at row ' + insertRow);
@@ -4163,6 +4187,97 @@ function deleteSubscription(rowIndex) {
 
   } catch (e) {
     Logger.log('deleteSubscription error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/* ── addSubscriptionUsage ───────────────────────────────────────
+   Add a usage entry to a subscription's note JSON in column T.
+   Expects: { rowIndex, usageText }
+───────────────────────────────────────────────────────────────── */
+function addSubscriptionUsage(data) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    var rowIndex = data.rowIndex;
+    if (rowIndex < 3) return { success: false, error: 'Invalid row index' };
+
+    // Read current note from column T (col 20)
+    var currentNote = String(sheet.getRange(rowIndex, 20).getValue()).trim();
+    var noteText = '';
+    var usages = [];
+
+    // Try to parse as JSON
+    try {
+      var parsed = JSON.parse(currentNote);
+      if (parsed && typeof parsed === 'object' && parsed.hasOwnProperty('usages')) {
+        noteText = parsed.note || '';
+        usages = parsed.usages || [];
+      } else {
+        noteText = currentNote;
+      }
+    } catch(e) {
+      noteText = currentNote;
+    }
+
+    // Add the new usage
+    usages.push(data.usageText);
+
+    // Write back as JSON
+    var newJson = JSON.stringify({ note: noteText, usages: usages });
+    sheet.getRange(rowIndex, 20).setValue(newJson);
+    Logger.log('addSubscriptionUsage: row ' + rowIndex + ' added usage: ' + data.usageText);
+
+    return { success: true };
+  } catch (e) {
+    Logger.log('addSubscriptionUsage error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/* ── deleteSubscriptionUsage ────────────────────────────────────
+   Remove a usage entry from a subscription's note JSON by index.
+   Expects: { rowIndex, usageIndex }
+───────────────────────────────────────────────────────────────── */
+function deleteSubscriptionUsage(data) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('OTHERS');
+    if (!sheet) return { success: false, error: 'OTHERS sheet not found' };
+
+    var rowIndex = data.rowIndex;
+    if (rowIndex < 3) return { success: false, error: 'Invalid row index' };
+
+    // Read current note from column T (col 20)
+    var currentNote = String(sheet.getRange(rowIndex, 20).getValue()).trim();
+    var noteText = '';
+    var usages = [];
+
+    try {
+      var parsed = JSON.parse(currentNote);
+      if (parsed && typeof parsed === 'object' && parsed.hasOwnProperty('usages')) {
+        noteText = parsed.note || '';
+        usages = parsed.usages || [];
+      }
+    } catch(e) {}
+
+    // Remove usage at given index
+    if (data.usageIndex >= 0 && data.usageIndex < usages.length) {
+      usages.splice(data.usageIndex, 1);
+    } else {
+      return { success: false, error: 'Invalid usage index' };
+    }
+
+    // Write back as JSON
+    var newJson = JSON.stringify({ note: noteText, usages: usages });
+    sheet.getRange(rowIndex, 20).setValue(newJson);
+    Logger.log('deleteSubscriptionUsage: row ' + rowIndex + ' removed usage index ' + data.usageIndex);
+
+    return { success: true };
+  } catch (e) {
+    Logger.log('deleteSubscriptionUsage error: ' + e.message);
     return { success: false, error: e.message };
   }
 }

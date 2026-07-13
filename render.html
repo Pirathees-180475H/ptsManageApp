@@ -1362,6 +1362,27 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   padding:6px 8px;background:rgba(255,255,255,.02);border-radius:6px;
   border-left:2px solid rgba(255,107,53,.3);
 }
+/* ── Usage tracking ── */
+.sub-entry-usages{margin-top:6px;padding:5px 0 0;}
+.sub-usage-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.sub-usage-title{font-size:.55em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.sub-usage-add-btn{background:none;border:1px dashed rgba(0,212,255,.3);color:var(--blue);font-size:.55em;font-weight:700;padding:2px 8px;border-radius:6px;cursor:pointer;transition:all .15s;font-family:inherit;}
+.sub-usage-add-btn:hover{background:rgba(0,212,255,.1);border-color:var(--blue);}
+.sub-usage-list{display:flex;flex-direction:column;gap:3px;}
+.sub-usage-item{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:5px;background:rgba(255,255,255,.02);transition:background .15s;}
+.sub-usage-item:hover{background:rgba(255,255,255,.05);}
+.sub-usage-bullet{color:var(--blue);font-size:.5em;flex-shrink:0;}
+.sub-usage-text{font-size:.62em;color:rgba(255,255,255,.65);flex:1;line-height:1.3;}
+.sub-usage-del{background:none;border:none;color:rgba(255,80,80,.3);font-size:.55em;cursor:pointer;padding:1px 4px;border-radius:4px;transition:all .15s;font-family:inherit;flex-shrink:0;line-height:1;}
+.sub-usage-del:hover{color:#ff5050;background:rgba(255,80,80,.12);}
+.sub-usage-empty{font-size:.58em;color:rgba(255,255,255,.2);padding:3px 6px;font-style:italic;}
+.sub-usage-add-inline{display:flex;gap:4px;margin-top:4px;}
+.sub-usage-input{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;color:#fff;font-size:.62em;padding:4px 8px;font-family:inherit;outline:none;transition:border-color .15s;}
+.sub-usage-input:focus{border-color:rgba(0,212,255,.4);}
+.sub-usage-confirm{background:rgba(0,230,118,.12);border:1px solid rgba(0,230,118,.25);color:var(--green);font-size:.55em;font-weight:700;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.sub-usage-confirm:hover{background:rgba(0,230,118,.25);}
+.sub-usage-cancel{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);font-size:.55em;padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;}
+.sub-usage-cancel:hover{background:rgba(255,255,255,.1);}
 .sub-total{
   margin-top:16px;padding:14px;background:linear-gradient(135deg,rgba(0,230,118,.08),rgba(0,212,255,.05));
   border:1px solid rgba(0,230,118,.2);border-radius:10px;display:flex;
@@ -2001,7 +2022,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .stockedit-save:hover{color:#00e676;border-color:rgba(0,230,118,.3);}
 .stockedit-save:disabled{opacity:.5;cursor:not-allowed;}
 .stock-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:16px;}
-.scard-wrap{}
+/* .scard-wrap{} - reserved */
 .scard{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:12px;
        position:relative;backdrop-filter:blur(16px);min-height:180px;}
 .scard:hover{border-color:rgba(0,212,255,.25);}
@@ -3676,7 +3697,7 @@ input[type=date].swae-input{color-scheme:dark;}
 .swae-pv-row:last-child{border-bottom:none;}
 .swae-pv-av{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.65em;font-weight:800;background:rgba(255,255,255,.07);flex-shrink:0;}
 .swae-pv-name{font-size:.8em;font-weight:600;color:rgba(255,255,255,.8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.swae-pv-cell-in{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 6px;color:#fff;font-size:.78em;font-family:inherit;outline:none;text-align:right;-webkit-appearance:none;}
+.swae-pv-cell-in{width:100%;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 6px;color:#fff;font-size:.78em;font-family:inherit;outline:none;text-align:right;-webkit-appearance:none;appearance:none;}
 .swae-pv-cell-in:focus{border-color:rgba(255,107,53,.6);}
 .swae-pv-cell-in.owed{border-color:rgba(0,212,255,.25);}
 .swae-pv-cell-in.owed:focus{border-color:rgba(0,212,255,.6);}
@@ -5167,6 +5188,10 @@ input[type=date].swae-input{color-scheme:dark;}
           <div class="sub-add-field">
             <label class="sub-add-label">Note</label>
             <input class="sub-add-input" id="saNote" type="text" placeholder="Optional note..." />
+          </div>
+          <div class="sub-add-field">
+            <label class="sub-add-label">Usage (comma-separated)</label>
+            <input class="sub-add-input" id="saUsage" type="text" placeholder="e.g. Watched a movie, Episode 1-3, Shared with friend" />
           </div>
           <div class="sub-add-actions">
             <button class="sub-form-cancel" onclick="subAddToggle()">Cancel</button>
@@ -13184,6 +13209,7 @@ function subAddToggle() {
     document.getElementById('saCollections').value = '';
     document.getElementById('saNetCost').value = '';
     document.getElementById('saNote').value = '';
+    document.getElementById('saUsage').value = '';
     form.classList.add('open');
     setTimeout(function(){ form.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 30);
   } else {
@@ -13208,6 +13234,8 @@ function subAddSave() {
   var collFrom     = document.getElementById('saCollFrom').value.trim();
   var netCost      = parseFloat(document.getElementById('saNetCost').value) || 0;
   var note         = document.getElementById('saNote').value.trim();
+  var usageStr     = document.getElementById('saUsage').value.trim();
+  var usages       = usageStr ? usageStr.split(',').map(function(s){ return s.trim(); }).filter(function(s){ return s; }) : [];
 
   if (!month || !platform) {
     alert('Month and Platform are required.');
@@ -13238,20 +13266,21 @@ function subAddSave() {
     .addSubscription({
       month: month, platform: platform, plan: plan,
       cost: cost, collections: collections,
-      collectionFrom: collFrom, netCost: netCost, note: note
+      collectionFrom: collFrom, netCost: netCost, note: note,
+      usages: usages
     });
 }
 
 /* ── Quick-add confirm modal state ── */
 var _qaddPending = null;
 
-function subQuickAdd(platform, plan, cost, collections, collFrom, netCost, note) {
+function subQuickAdd(platform, plan, cost, collections, collFrom, netCost, note, usages) {
   var month = _currentMonth;
   if (!month) { alert('Current month not detected.'); return; }
 
   _qaddPending = { month: month, platform: platform, plan: plan,
     cost: cost, collections: collections,
-    collectionFrom: collFrom, netCost: netCost, note: note };
+    collectionFrom: collFrom, netCost: netCost, note: note, usages: usages || [] };
 
   document.getElementById('qadd-title').textContent =
     'Add ' + platform + ' for ' + month + '?';
@@ -13532,7 +13561,7 @@ function renderSubscriptions(data) {
       html += '<div class="sub-entry-month' + (isActive ? ' active' : '') + '">' + (displayMonth || '—') + '</div>';
       html += '<div class="sub-entry-plan">' + (entry.plan || '—') + '</div>';
       html += '<div class="sub-entry-actions">';
-      html += '<button class="sub-entry-qadd" onclick="subQuickAdd(\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (entry.plan||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.cost)||0) + ',' + (parseFloat(entry.collections)||0) + ',\'' + (entry.collectionFrom||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.netCost)||0) + ',\'' + (entry.note||'').replace(/'/g,"\\'") + '\')" title="Quick-add for current month"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>';
+      html += '<button class="sub-entry-qadd" onclick="subQuickAdd(\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (entry.plan||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.cost)||0) + ',' + (parseFloat(entry.collections)||0) + ',\'' + (entry.collectionFrom||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.netCost)||0) + ',\'' + (entry.note||'').replace(/'/g,"\\'") + '\',\'' + JSON.stringify(entry.usages||[]).replace(/'/g,"\\'").replace(/"/g,'&quot;') + '\')" title="Quick-add for current month"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>';
       html += '<button class="sub-entry-del" onclick="subDeleteEntry(' + entry.rowIndex + ',\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (displayMonth||'').replace(/'/g,"\\'") + '\')" title="Remove entry"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
       html += '</div>';
       html += '</div>';
@@ -13555,13 +13584,15 @@ function renderSubscriptions(data) {
         html += '<div class="sub-entry-note">📝 ' + entry.note + '</div>';
       }
 
+      // ── Usage tracking ──
+      html += subRenderUsagesHtml(entry);
+
+      html += '</div>';
+      });
+      html += '</div></div>';
       html += '</div>';
     });
-    html += '</div></div>';
-    html += '</div>';
-  });
 
-  // Render closed platforms if any
   if(Object.keys(closedPlatforms).length > 0) {
     html += '<div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);">';
     html += '<div style="font-size:.65em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:12px;">🔒 Closed Platforms</div>';
@@ -13607,7 +13638,7 @@ function renderSubscriptions(data) {
         html += '<div class="sub-entry-month">' + (displayMonth || '—') + '</div>';
         html += '<div class="sub-entry-plan">' + (entry.plan || '—') + '</div>';
         html += '<div class="sub-entry-actions">';
-        html += '<button class="sub-entry-qadd" onclick="subQuickAdd(\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (entry.plan||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.cost)||0) + ',' + (parseFloat(entry.collections)||0) + ',\'' + (entry.collectionFrom||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.netCost)||0) + ',\'' + (entry.note||'').replace(/'/g,"\\'") + '\')" title="Quick-add for current month"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>';
+        html += '<button class="sub-entry-qadd" onclick="subQuickAdd(\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (entry.plan||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.cost)||0) + ',' + (parseFloat(entry.collections)||0) + ',\'' + (entry.collectionFrom||'').replace(/'/g,"\\'") + '\',' + (parseFloat(entry.netCost)||0) + ',\'' + (entry.note||'').replace(/'/g,"\\'") + '\',\'' + JSON.stringify(entry.usages||[]).replace(/'/g,"\\'").replace(/"/g,'&quot;') + '\')" title="Quick-add for current month"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></button>';
         html += '<button class="sub-entry-del" onclick="subDeleteEntry(' + entry.rowIndex + ',\'' + (entry.platform||'').replace(/'/g,"\\'") + '\',\'' + (displayMonth||'').replace(/'/g,"\\'") + '\')" title="Remove entry"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>';
         html += '</div>';
         html += '</div>';
@@ -13630,6 +13661,9 @@ function renderSubscriptions(data) {
           html += '<div class="sub-entry-note">📝 ' + entry.note + '</div>';
         }
 
+        // ── Usage tracking ──
+        html += subRenderUsagesHtml(entry);
+
         html += '</div>';
       });
       html += '</div></div>';
@@ -13646,6 +13680,94 @@ function renderSubscriptions(data) {
 function togglePlatform(platName) {
   var card = document.getElementById('sub-plat-' + platName);
   if(card) card.classList.toggle('expanded');
+}
+
+/* ── Usage Tracking helpers ── */
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function subRenderUsagesHtml(entry) {
+  var hasUsages = entry.usages && entry.usages.length > 0;
+  var rowIndex = entry.rowIndex;
+  var inputId = 'sui_' + rowIndex;
+
+  var h = '<div class="sub-entry-usages">';
+  h += '<div class="sub-usage-header">';
+  h += '<div class="sub-usage-title">📊 Usage Log</div>';
+  h += '<button class="sub-usage-add-btn" onclick="subAddUsageShow(' + rowIndex + ')">+ Add</button>';
+  h += '</div>';
+
+  if (hasUsages) {
+    h += '<div class="sub-usage-list">';
+    for (var ui = 0; ui < entry.usages.length; ui++) {
+      var usage = entry.usages[ui];
+      h += '<div class="sub-usage-item">';
+      h += '<span class="sub-usage-bullet">▸</span>';
+      h += '<span class="sub-usage-text">' + escapeHtml(usage) + '</span>';
+      h += '<button class="sub-usage-del" onclick="subDeleteUsage(' + rowIndex + ', ' + ui + ')" title="Remove usage">✕</button>';
+      h += '</div>';
+    }
+    h += '</div>';
+  } else {
+    h += '<div class="sub-usage-empty">No usage logged yet</div>';
+  }
+
+  // Inline add form
+  h += '<div class="sub-usage-add-inline" id="sua_' + rowIndex + '" style="display:none;">';
+  h += '<input class="sub-usage-input" id="' + inputId + '" type="text" placeholder="e.g. Watched a movie" onkeydown="if(event.key===\'Enter\')subConfirmAddUsage(' + rowIndex + ',\'' + inputId + '\')" />';
+  h += '<button class="sub-usage-confirm" onclick="subConfirmAddUsage(' + rowIndex + ',\'' + inputId + '\')">Add</button>';
+  h += '<button class="sub-usage-cancel" onclick="subCancelAddUsage(' + rowIndex + ')">✕</button>';
+  h += '</div>';
+
+  h += '</div>';
+  return h;
+}
+
+function subAddUsageShow(rowIndex) {
+  document.getElementById('sua_' + rowIndex).style.display = 'flex';
+  document.getElementById('sui_' + rowIndex).focus();
+}
+
+function subCancelAddUsage(rowIndex) {
+  document.getElementById('sua_' + rowIndex).style.display = 'none';
+  document.getElementById('sui_' + rowIndex).value = '';
+}
+
+function subConfirmAddUsage(rowIndex, inputId) {
+  var usageText = document.getElementById(inputId).value.trim();
+  if (!usageText) return;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.success) {
+        alert('Error: ' + (res ? res.error : 'Unknown error'));
+        return;
+      }
+      _subscriptionsData = null;
+      loadSubscriptions();
+    })
+    .withFailureHandler(function(err) {
+      alert('Error: ' + err.message);
+    })
+    .addSubscriptionUsage({ rowIndex: rowIndex, usageText: usageText });
+}
+
+function subDeleteUsage(rowIndex, usageIndex) {
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (!res || !res.success) {
+        alert('Error: ' + (res ? res.error : 'Unknown error'));
+        return;
+      }
+      _subscriptionsData = null;
+      loadSubscriptions();
+    })
+    .withFailureHandler(function(err) {
+      alert('Error: ' + err.message);
+    })
+    .deleteSubscriptionUsage({ rowIndex: rowIndex, usageIndex: usageIndex });
 }
 
 // ══════════════════════════════════════════
