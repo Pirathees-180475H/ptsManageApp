@@ -1238,6 +1238,132 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .lfm-btn.save:hover{background:#dc2626;transform:translateY(-1px);}
 .lfm-btn:disabled{opacity:.5;pointer-events:none;}
 
+/* ── Insurance Claims Tracker ── */
+.ins-toolbar{display:flex;align-items:center;justify-content:flex-end;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(8px);z-index:10;}
+.ins-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(6, 182, 212, 0.1));
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #60a5fa;
+    font-size: 0.75em;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+  .ins-add-btn:hover {
+    background: rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  }
+
+.ins-fm-btn:disabled{opacity:.5;pointer-events:none;}
+
+.ins-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+.ins-sum-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:11px 13px;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
+.ins-sum-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,rgba(99,102,241,.4),rgba(168,85,247,.3));}
+.ins-sum-card.submitted::before{background:linear-gradient(90deg,rgba(59,130,246,.5),rgba(14,165,233,.4));}
+.ins-sum-card.approved::before{background:linear-gradient(90deg,rgba(34,197,94,.5),rgba(16,185,129,.4));}
+.ins-sum-card.rejected::before{background:linear-gradient(90deg,rgba(239,68,68,.5),rgba(249,115,22,.4));}
+.ins-sum-card.settled::before{background:linear-gradient(90deg,rgba(139,92,246,.5),rgba(99,102,241,.4));}
+.ins-sum-lbl{font-size:.52em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:2px;}
+.ins-sum-val{font-size:1em;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.ins-sum-sub{font-size:.55em;color:rgba(255,255,255,.38);margin-top:1px;}
+.ins-sum-card.submitted .ins-sum-val{color:#60a5fa;}
+.ins-sum-card.approved .ins-sum-val{color:#4ade80;}
+.ins-sum-card.rejected .ins-sum-val{color:#f87171;}
+.ins-sum-card.settled .ins-sum-val{color:#a78bfa;}
+
+/* Insights */
+.ins-insights{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.ins-insight-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:13px;padding:11px 13px;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.06);transition:border-color .15s,background .15s;}
+.ins-insight-card:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);}
+.ins-insight-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,rgba(99,102,241,.3),rgba(168,85,247,.2));}
+.ins-insight-card.highlight{background:linear-gradient(135deg,rgba(255,215,0,.06),rgba(255,165,0,.04));border-color:rgba(255,215,0,.15);}
+.ins-insight-card.highlight::before{background:linear-gradient(90deg,rgba(255,215,0,.4),rgba(255,165,0,.3));}
+.ins-insight-lbl{font-size:.52em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.ins-insight-val{font-size:1em;font-weight:800;color:#fff;letter-spacing:-.3px;}
+.ins-insight-val.green{color:var(--green);}
+.ins-insight-val.orange{color:var(--orange);}
+.ins-insight-val.red{color:var(--red);}
+.ins-insight-val.blue{color:#60a5fa;}
+.ins-insight-val.purple{color:#a78bfa;}
+.ins-insight-sub{font-size:.55em;color:rgba(255,255,255,.38);margin-top:1px;}
+
+/* Section header */
+.ins-section-hdr{font-size:.6em;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.3);margin:16px 0 10px;display:flex;align-items:center;gap:10px;}
+.ins-section-hdr::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06);}
+
+/* Claim entries */
+.ins-entries{display:flex;flex-direction:column;gap:10px;}
+.ins-entry{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;position:relative;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.14),inset 0 1px 0 rgba(255,255,255,.05);transition:border-color .15s;}
+.ins-entry::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);}
+.ins-entry.approved{border-color:rgba(74,222,128,.22);background:linear-gradient(135deg,rgba(74,222,128,.05),rgba(16,185,129,.02));}
+.ins-entry.approved::before{background:linear-gradient(90deg,transparent,rgba(74,222,128,.3),transparent);}
+.ins-entry.rejected{border-color:rgba(248,113,113,.22);background:linear-gradient(135deg,rgba(248,113,113,.05),rgba(239,68,68,.02));}
+.ins-entry.rejected::before{background:linear-gradient(90deg,transparent,rgba(248,113,113,.3),transparent);}
+.ins-entry.pending{border-color:rgba(251,191,36,.22);background:linear-gradient(135deg,rgba(251,191,36,.05),rgba(245,158,11,.02));}
+.ins-entry.pending::before{background:linear-gradient(90deg,transparent,rgba(251,191,36,.3),transparent);}
+.ins-entry.settled{border-color:rgba(167,139,250,.22);background:linear-gradient(135deg,rgba(167,139,250,.05),rgba(139,92,246,.02));}
+.ins-entry.settled::before{background:linear-gradient(90deg,transparent,rgba(167,139,250,.3),transparent);}
+.ins-entry-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.ins-entry-info{flex:1;min-width:0;}
+.ins-entry-ref{font-size:.78em;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.ins-entry-meta{font-size:.6em;color:rgba(255,255,255,.4);margin-top:3px;display:flex;gap:12px;flex-wrap:wrap;}
+.ins-entry-meta span{display:flex;align-items:center;gap:3px;}
+.ins-entry-amt{font-size:1em;font-weight:800;color:#fff;white-space:nowrap;text-align:right;}
+.ins-entry-amt.green{color:#4ade80;}
+.ins-entry-badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;}
+.ins-badge{font-size:.58em;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 8px;border-radius:5px;display:inline-flex;align-items:center;gap:4px;}
+.ins-badge.submitted{background:rgba(59,130,246,.15);color:#60a5fa;}
+.ins-badge.approved{background:rgba(74,222,128,.15);color:#4ade80;}
+.ins-badge.rejected{background:rgba(248,113,113,.15);color:#f87171;}
+.ins-badge.settled{background:rgba(167,139,250,.15);color:#a78bfa;}
+.ins-badge.pending{background:rgba(251,191,36,.15);color:#fbbf24;}
+.ins-entry-reason{font-size:.65em;color:rgba(255,255,255,.5);line-height:1.4;margin-top:6px;padding:6px 10px;background:rgba(255,255,255,.03);border-radius:8px;border-left:3px solid rgba(255,255,255,.1);}
+.ins-entry-reason.has-text{border-left-color:#f87171;}
+.ins-entry-actions{display:flex;align-items:center;gap:8px;margin-top:8px;transition:opacity .2s;}
+.ins-action-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);font-size:.65em;font-weight:700;padding:3px 9px;border-radius:6px;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.5px;font-family:inherit;}
+.ins-action-btn:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);}
+.ins-action-btn.edit:hover{background:rgba(59,130,246,.2);color:#93c5fd;border-color:rgba(59,130,246,.3);}
+.ins-action-btn.delete:hover{background:rgba(239,68,68,.2);color:#fca5a5;border-color:rgba(239,68,68,.3);}
+
+/* Insurance Form Modal */
+#ins-form-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);width:90%;max-width:480px;z-index:9000;background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:20px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);display:none;flex-direction:column;opacity:0;transition:all .2s;}
+#ins-form-modal.open{display:flex;opacity:1;transform:translate(-50%,-50%) scale(1);}
+.ins-fm-hdr{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;}
+.ins-fm-title{font-size:.75em;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#fff;}
+.ins-fm-body{padding:18px;display:flex;flex-direction:column;gap:12px;max-height:60vh;overflow-y:auto;}
+.ins-fm-body::-webkit-scrollbar{width:4px;}
+.ins-fm-body::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:4px;}
+.ins-fm-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ins-fm-field{display:flex;flex-direction:column;gap:4px;}
+.ins-fm-label{font-size:.6em;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.5px;}
+.ins-fm-input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;color:#fff;font-size:.8em;font-family:inherit;transition:border-color .15s;}
+.ins-fm-input:focus{outline:none;border-color:rgba(59,130,246,.5);background:rgba(255,255,255,.06);}
+.ins-fm-select{cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px;}
+.ins-fm-select option{background:#0f172a;color:#fff;}
+.ins-fm-textarea{resize:vertical;min-height:60px;}
+.ins-fm-chk{display:flex;align-items:center;gap:6px;font-size:.75em;color:rgba(255,255,255,.7);cursor:pointer;user-select:none;}
+.ins-fm-chk input[type="checkbox"]{width:15px;height:15px;accent-color:#3b82f6;cursor:pointer;}
+.ins-fm-footer{padding:14px 18px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:flex-end;gap:10px;}
+.ins-fm-btn{padding:8px 16px;border-radius:10px;font-size:.7em;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit;}
+.ins-fm-btn.cancel{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);}
+.ins-fm-btn.cancel:hover{background:rgba(255,255,255,.1);color:#fff;}
+.ins-fm-btn.save{background:#3b82f6;border:none;color:#fff;box-shadow:0 4px 12px rgba(59,130,246,.3);}
+.ins-fm-btn.save:hover{background:#2563eb;transform:translateY(-1px);}
+.ins-fm-btn:disabled{opacity:.5;pointer-events:none;}
+
+@media(max-width:600px){
+  .ins-summary{grid-template-columns:repeat(2,1fr);}
+  .ins-insights{grid-template-columns:1fr;}
+  .ins-fm-grid{grid-template-columns:1fr;}
+}
+
 /* ── Subscription Modal ── */
 #sub-modal{
   position:fixed;
@@ -1401,6 +1527,13 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #trk-pane-loss > #notes-tab-losses::-webkit-scrollbar-track{background:transparent;}
 #trk-pane-loss > #notes-tab-losses::-webkit-scrollbar-thumb{background:rgba(239,68,68,.3);border-radius:4px;}
 #trk-pane-loss > #notes-tab-losses::-webkit-scrollbar-thumb:hover{background:rgba(239,68,68,.55);}
+
+#trk-pane-ins > .ins-toolbar{flex:0 0 auto;}
+#trk-pane-ins > #ins-body{flex:1;overflow-y:auto;padding:16px;min-height:0;}
+#trk-pane-ins > #ins-body::-webkit-scrollbar{width:4px;}
+#trk-pane-ins > #ins-body::-webkit-scrollbar-track{background:transparent;}
+#trk-pane-ins > #ins-body::-webkit-scrollbar-thumb{background:rgba(59,130,246,.3);border-radius:4px;}
+#trk-pane-ins > #ins-body::-webkit-scrollbar-thumb:hover{background:rgba(59,130,246,.55);}
 .sub-toolbar{display:flex;align-items:center;justify-content:flex-end;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;flex:0 0 auto;}
 .sub-filter-tabs{display:flex;gap:4px;}
 .sub-tab{padding:5px 14px;font-size:.58em;font-weight:700;letter-spacing:1px;text-transform:uppercase;border:1px solid rgba(255,255,255,.12);border-radius:20px;background:transparent;color:rgba(255,255,255,.4);cursor:pointer;transition:all .15s;font-family:inherit;}
@@ -5142,6 +5275,7 @@ input[type=date].swae-input{color-scheme:dark;}
       <button class="trk-tab"        id="trkTab-notes" onclick="trackerSetTab('notes')"><span>📝</span> <label>Notes</label></button>
       <button class="trk-tab"        id="trkTab-habbit" onclick="trackerSetTab('habbit')"><span>🎯</span> <label>Habbits</label></button>
       <button class="trk-tab"        id="trkTab-health" onclick="trackerSetTab('health')"><span>💎</span> <label>Health Score</label></button>
+      <button class="trk-tab"        id="trkTab-ins" onclick="trackerSetTab('ins')"><span>🛡️</span> <label>Claims</label></button>
     </div>
     <div class="tracker-content">
       <!-- ── Subscriptions pane ── -->
@@ -5257,6 +5391,20 @@ input[type=date].swae-input{color-scheme:dark;}
       <div class="trk-pane" id="trk-pane-health">
         <?!= include('financialHealth'); ?>
       </div>
+      <!-- ── Insurance Claims pane ── -->
+      <div class="trk-pane" id="trk-pane-ins">
+        <div class="ins-toolbar">
+          <button class="ins-add-btn" onclick="insOpenForm()" title="Add new insurance claim">
+            <span style="font-size:1.4em;line-height:1;">+</span> Add Claim
+          </button>
+        </div>
+        <div id="ins-body">
+          <div style="text-align:center;padding:40px;color:var(--muted);">
+            <div style="font-size:2em;margin-bottom:10px;">⏳</div>
+            Loading insurance claims...
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -5301,6 +5449,87 @@ input[type=date].swae-input{color-scheme:dark;}
   <div class="lfm-footer">
     <button class="lfm-btn cancel" onclick="closeLossForm()">Cancel</button>
     <button class="lfm-btn save" id="lfm-save-btn" onclick="saveLossEntry()">Save Entry</button>
+  </div>
+</div>
+
+<!-- ── Insurance Claim Form Modal ── -->
+<div id="ins-form-modal">
+  <div class="ins-fm-hdr">
+    <div class="ins-fm-title" id="ins-fm-title">Add Insurance Claim</div>
+    <button class="tracker-close" onclick="insCloseForm()">✕</button>
+  </div>
+  <div class="ins-fm-body">
+    <input type="hidden" id="ins-fm-row" value="">
+    <div class="ins-fm-grid">
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Date</label>
+        <input type="date" id="ins-fm-date" class="ins-fm-input">
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Reference</label>
+        <input type="text" id="ins-fm-ref" class="ins-fm-input" placeholder="e.g. Claim #123">
+      </div>
+    </div>
+    <div class="ins-fm-grid">
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Provider</label>
+        <input type="text" id="ins-fm-provider" class="ins-fm-input" placeholder="e.g. AIA Insurance">
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Source</label>
+        <select id="ins-fm-source" class="ins-fm-input ins-fm-select">
+          <option value="">— Select —</option>
+          <option value="Company">🏢 Company</option>
+          <option value="Personal">👤 Personal</option>
+          <option value="Government">🏛️ Government</option>
+          <option value="Other">📦 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="ins-fm-field">
+      <label class="ins-fm-label">Amount (₨)</label>
+      <input type="number" id="ins-fm-amount" class="ins-fm-input" placeholder="0.00">
+    </div>
+    <div class="ins-fm-grid">
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Submitted Date</label>
+        <input type="date" id="ins-fm-subdate" class="ins-fm-input">
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Submitted</label>
+        <div style="display:flex;gap:8px;padding-top:6px;">
+          <label class="ins-fm-chk"><input type="checkbox" id="ins-fm-submitted" onchange="insToggleSubmitDate()"> Yes</label>
+        </div>
+      </div>
+    </div>
+    <div class="ins-fm-grid">
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Approved</label>
+        <div style="display:flex;gap:8px;padding-top:6px;">
+          <label class="ins-fm-chk"><input type="checkbox" id="ins-fm-approved" onchange="insToggleStatusChecks()"> Yes</label>
+        </div>
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Rejected</label>
+        <div style="display:flex;gap:8px;padding-top:6px;">
+          <label class="ins-fm-chk"><input type="checkbox" id="ins-fm-rejected" onchange="insToggleStatusChecks()"> Yes</label>
+        </div>
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Settled</label>
+        <div style="display:flex;gap:8px;padding-top:6px;">
+          <label class="ins-fm-chk"><input type="checkbox" id="ins-fm-settled"> Yes</label>
+        </div>
+      </div>
+    </div>
+    <div class="ins-fm-field">
+      <label class="ins-fm-label">Reason / Notes</label>
+      <textarea id="ins-fm-reason" class="ins-fm-input ins-fm-textarea" placeholder="Reason for rejection, delays, or any notes…" rows="3"></textarea>
+    </div>
+  </div>
+  <div class="ins-fm-footer">
+    <button class="ins-fm-btn cancel" onclick="insCloseForm()">Cancel</button>
+    <button class="ins-fm-btn save" id="ins-fm-save" onclick="insSaveClaim()">Save Claim</button>
   </div>
 </div>
 
@@ -13111,7 +13340,7 @@ function trackerClose() {
 
 function trackerSetTab(tab) {
   _trackerActiveTab = tab;
-  var tabs = ['sub','rot','loss','inst','budget','smoke','notes','habbit','health'];
+  var tabs = ['sub','rot','loss','inst','budget','smoke','notes','habbit','health','ins'];
   tabs.forEach(function(t) {
     var btn  = document.getElementById('trkTab-' + t);
     var pane = document.getElementById('trk-pane-' + t);
@@ -13124,6 +13353,7 @@ function trackerSetTab(tab) {
   if (tab === 'budget') loadBudgetData();
   if (tab === 'smoke') loadSmokingData();
   if (tab === 'notes') loadNotesData();
+  if (tab === 'ins') loadInsuranceData();
 }
 
 // Draggable tracker-modal (mouse + touch)
@@ -14009,6 +14239,291 @@ function instAddToExpense(btn, instName, entryMonth, entryAmount, mode) {
 }
 
 // Draggable inst-modal — removed (handled by tracker-modal)
+
+// ══════════════════════════════════════════
+// INSURANCE CLAIMS TRACKER
+// ══════════════════════════════════════════
+var _insuranceData = null;
+
+function loadInsuranceData() {
+  var body = document.getElementById('ins-body');
+  if (!body) return;
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">⏳</div>Loading insurance claims...</div>';
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      if (!data || !data.success) {
+        body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error: ' + (data ? data.error : 'Unknown error') + '</div>';
+        return;
+      }
+      _insuranceData = data;
+      renderInsuranceData(data);
+    })
+    .withFailureHandler(function(err) {
+      body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red);"><div style="font-size:2em;margin-bottom:10px;">⚠️</div>Error: ' + err.message + '</div>';
+    })
+    .getInsuranceData();
+}
+
+function renderInsuranceData(data) {
+  var claims = data.claims || [];
+  var stats = data.stats || {};
+
+  var totalAmt = stats.totalAmount || 0;
+  var submittedAmt = stats.submittedAmount || 0;
+  var approvedAmt = stats.approvedAmount || 0;
+  var rejectedAmt = stats.rejectedAmount || 0;
+  var settledAmt = stats.settledAmount || 0;
+  var pendingAmt = stats.pendingAmount || 0;
+
+  if (!claims.length) {
+    document.getElementById('ins-body').innerHTML =
+      '<div style="text-align:center;padding:40px;color:var(--muted);"><div style="font-size:2em;margin-bottom:10px;">📭</div>No insurance claims found</div>';
+    return;
+  }
+
+  var html = '';
+
+  // ── Summary cards ──
+  html += '<div class="ins-summary">';
+  html += '<div class="ins-sum-card"><div class="ins-sum-lbl">Total Claims</div><div class="ins-sum-val">' + claims.length + '</div><div class="ins-sum-sub">₨ ' + totalAmt.toLocaleString('en-IN') + '</div></div>';
+  html += '<div class="ins-sum-card submitted"><div class="ins-sum-lbl">Submitted</div><div class="ins-sum-val">' + (stats.submitted||0) + '</div><div class="ins-sum-sub">₨ ' + submittedAmt.toLocaleString('en-IN') + '</div></div>';
+  html += '<div class="ins-sum-card approved"><div class="ins-sum-lbl">Approved</div><div class="ins-sum-val">' + (stats.approved||0) + '</div><div class="ins-sum-sub">₨ ' + approvedAmt.toLocaleString('en-IN') + '</div></div>';
+  html += '<div class="ins-sum-card rejected"><div class="ins-sum-lbl">Rejected</div><div class="ins-sum-val">' + (stats.rejected||0) + '</div><div class="ins-sum-sub">₨ ' + rejectedAmt.toLocaleString('en-IN') + '</div></div>';
+  html += '<div class="ins-sum-card settled"><div class="ins-sum-lbl">Settled</div><div class="ins-sum-val">' + (stats.settled||0) + '</div><div class="ins-sum-sub">₨ ' + settledAmt.toLocaleString('en-IN') + '</div></div>';
+  html += '</div>';
+
+  // ── Extra Insights ──
+  var providers = {}, sources = {};
+  claims.forEach(function(c) {
+    if (c.provider) providers[c.provider] = (providers[c.provider]||0) + c.amount;
+    if (c.source) sources[c.source] = (sources[c.source]||0) + 1;
+  });
+  var topProvider = Object.keys(providers).sort(function(a,b){ return providers[b]-providers[a]; })[0] || '—';
+  var topProviderAmt = topProvider !== '—' ? providers[topProvider] : 0;
+  var approvalRate = stats.submitted > 0 ? Math.round((stats.approved/stats.submitted)*100) : 0;
+  var settleRate = stats.approved > 0 ? Math.round((stats.settled/stats.approved)*100) : 0;
+
+  html += '<div class="ins-insights">';
+  html += '<div class="ins-insight-card"><div class="ins-insight-lbl">Approval Rate</div><div class="ins-insight-val green">' + approvalRate + '%</div><div class="ins-insight-sub">' + (stats.approved||0) + ' approved of ' + (stats.submitted||0) + ' submitted</div></div>';
+  html += '<div class="ins-insight-card"><div class="ins-insight-lbl">Settlement Rate</div><div class="ins-insight-val purple">' + settleRate + '%</div><div class="ins-insight-sub">' + (stats.settled||0) + ' settled of ' + (stats.approved||0) + ' approved</div></div>';
+  html += '<div class="ins-insight-card highlight"><div class="ins-insight-lbl">Top Provider</div><div class="ins-insight-val orange">' + escHtml(topProvider) + '</div><div class="ins-insight-sub">₨ ' + topProviderAmt.toLocaleString('en-IN') + '</div></div>';
+  html += '</div>';
+
+  // ── Status donut chart (pending vs settled) ──
+  if ((pendingAmt + settledAmt) > 0) {
+    var _pPct = Math.round(pendingAmt / (pendingAmt + settledAmt) * 100);
+    var _sPct = 100 - _pPct;
+    html += '<div class="trk-chart-section">'
+      + '<div class="trk-donut-wrap">'
+      + trkDonut([{v: settledAmt, c: '#8b5cf6'}, {v: pendingAmt, c: '#f59e0b'}], 100, 12)
+      + '<div class="trk-donut-center">'
+      + '<div class="trk-donut-total">' + _sPct + '%</div>'
+      + '<div class="trk-donut-lbl">settled</div>'
+      + '</div></div>'
+      + '<div class="trk-legend">'
+      + '<div class="trk-legend-item"><div class="trk-legend-dot" style="background:#8b5cf6;--dot-color:#8b5cf6"></div><div class="trk-legend-name">Settled</div><div class="trk-legend-pct">' + _sPct + '%</div><div class="trk-legend-amt">₨ ' + settledAmt.toLocaleString('en-IN') + '</div></div>'
+      + '<div class="trk-legend-item"><div class="trk-legend-dot" style="background:#f59e0b;--dot-color:#f59e0b"></div><div class="trk-legend-name">Pending</div><div class="trk-legend-pct">' + _pPct + '%</div><div class="trk-legend-amt">₨ ' + pendingAmt.toLocaleString('en-IN') + '</div></div>'
+      + '</div></div>';
+  }
+
+  // ── Claim entries ──
+  html += '<div class="ins-section-hdr">📋 All Claims (' + claims.length + ' entries)</div>';
+  html += '<div class="ins-entries">';
+
+  // Sort: most recent first
+  claims.sort(function(a,b) { return (b.date||'') > (a.date||'') ? 1 : -1; });
+
+  claims.forEach(function(c) {
+    var statusClass = c.isSettled ? 'settled' : (c.isApproved ? 'approved' : (c.isRejected ? 'rejected' : 'pending'));
+    var badges = '';
+
+    badges += '<span class="ins-badge ' + (c.isSubmitted ? 'submitted' : 'pending') + '">' + (c.isSubmitted ? '✓ Submitted' : '○ Not Submitted') + '</span>';
+    if (c.isApproved) badges += '<span class="ins-badge approved">✓ Approved</span>';
+    if (c.isRejected) badges += '<span class="ins-badge rejected">✕ Rejected</span>';
+    if (c.isSettled)  badges += '<span class="ins-badge settled">✓ Settled</span>';
+
+    html += '<div class="ins-entry ' + statusClass + '">';
+    html += '<div class="ins-entry-top">';
+    html += '<div class="ins-entry-info">';
+    html += '<div class="ins-entry-ref">';
+    html += '<span>' + escHtml(c.ref) + '</span>';
+    html += '</div>';
+    html += '<div class="ins-entry-meta">';
+    if (c.date) html += '<span>📅 ' + c.date + '</span>';
+    if (c.provider) html += '<span>🏥 ' + escHtml(c.provider) + '</span>';
+    if (c.source) html += '<span>📂 ' + escHtml(c.source) + '</span>';
+    if (c.submittedDate) html += '<span>📨 Submitted: ' + c.submittedDate + '</span>';
+    html += '</div>';
+    if (badges) html += '<div class="ins-entry-badges">' + badges + '</div>';
+    if (c.reason) {
+      html += '<div class="ins-entry-reason has-text">💬 ' + escHtml(c.reason) + '</div>';
+    }
+    html += '</div>';
+    html += '<div class="ins-entry-amt ' + (c.isSettled ? 'green' : '') + '">₨ ' + c.amount.toLocaleString('en-IN') + '</div>';
+    html += '</div>';
+
+    // Actions
+    var safeRef = escHtml(c.ref).replace(/'/g,"\\'");
+    var safeProvider = escHtml(c.provider).replace(/'/g,"\\'");
+    var safeReason = escHtml(c.reason||'').replace(/'/g,"\\'");
+    html += '<div class="ins-entry-actions">';
+    html += '<button class="ins-action-btn edit" onclick="insOpenForm(' + c.rowIndex + ',\'' + c.date + '\',\'' + safeRef + '\',\'' + safeProvider + '\',\'' + (c.source||'') + '\',' + c.amount + ',' + (c.isSubmitted||false) + ',\'' + (c.submittedDate||'') + '\',' + (c.isApproved||false) + ',' + (c.isRejected||false) + ',' + (c.isSettled||false) + ',\'' + safeReason + '\')">Edit</button>';
+    html += '<button class="ins-action-btn delete" onclick="insDeleteClaim(' + c.rowIndex + ')">Delete</button>';
+    html += '</div>';
+
+    html += '</div>';
+  });
+
+  html += '</div>';
+  document.getElementById('ins-body').innerHTML = html;
+}
+
+function insOpenForm(rowIndex, date, ref, provider, source, amount, isSubmitted, submittedDate, isApproved, isRejected, isSettled, reason) {
+  var modal = document.getElementById('ins-form-modal');
+  if (!modal) return;
+
+  document.getElementById('ins-fm-row').value = rowIndex || '';
+
+  if (rowIndex) {
+    document.getElementById('ins-fm-title').textContent = 'Edit Insurance Claim';
+    document.getElementById('ins-fm-date').value = date || '';
+    document.getElementById('ins-fm-ref').value = ref || '';
+    document.getElementById('ins-fm-provider').value = provider || '';
+    document.getElementById('ins-fm-source').value = source || '';
+    document.getElementById('ins-fm-amount').value = amount || '';
+    document.getElementById('ins-fm-submitted').checked = isSubmitted === true || isSubmitted === 'true';
+    document.getElementById('ins-fm-subdate').value = submittedDate || '';
+    document.getElementById('ins-fm-approved').checked = isApproved === true || isApproved === 'true';
+    document.getElementById('ins-fm-rejected').checked = isRejected === true || isRejected === 'true';
+    document.getElementById('ins-fm-settled').checked = isSettled === true || isSettled === 'true';
+    document.getElementById('ins-fm-reason').value = reason || '';
+  } else {
+    document.getElementById('ins-fm-title').textContent = 'Add Insurance Claim';
+    document.getElementById('ins-fm-date').value = '';
+    document.getElementById('ins-fm-ref').value = '';
+    document.getElementById('ins-fm-provider').value = '';
+    document.getElementById('ins-fm-source').value = '';
+    document.getElementById('ins-fm-amount').value = '';
+    document.getElementById('ins-fm-submitted').checked = false;
+    document.getElementById('ins-fm-subdate').value = '';
+    document.getElementById('ins-fm-approved').checked = false;
+    document.getElementById('ins-fm-rejected').checked = false;
+    document.getElementById('ins-fm-settled').checked = false;
+    document.getElementById('ins-fm-reason').value = '';
+  }
+
+  insToggleSubmitDate();
+  modal.classList.add('open');
+}
+
+function insCloseForm() {
+  var modal = document.getElementById('ins-form-modal');
+  if (modal) modal.classList.remove('open');
+}
+
+function insToggleSubmitDate() {
+  var subCheck = document.getElementById('ins-fm-submitted');
+  var subDate = document.getElementById('ins-fm-subdate');
+  if (subDate) {
+    subDate.disabled = !subCheck.checked;
+    if (!subCheck.checked) subDate.value = '';
+  }
+}
+
+function insToggleStatusChecks() {
+  var approved = document.getElementById('ins-fm-approved');
+  var rejected = document.getElementById('ins-fm-rejected');
+  // Make approved and rejected mutually exclusive
+  if (document.activeElement === approved && approved.checked) rejected.checked = false;
+  if (document.activeElement === rejected && rejected.checked) approved.checked = false;
+}
+
+function insSaveClaim() {
+  var rowIndex = document.getElementById('ins-fm-row').value;
+  var date = document.getElementById('ins-fm-date').value;
+  var ref = document.getElementById('ins-fm-ref').value.trim();
+  var provider = document.getElementById('ins-fm-provider').value.trim();
+  var source = document.getElementById('ins-fm-source').value;
+  var amount = parseFloat(document.getElementById('ins-fm-amount').value) || 0;
+  var isSubmitted = document.getElementById('ins-fm-submitted').checked;
+  var submittedDate = document.getElementById('ins-fm-subdate').value;
+  var isApproved = document.getElementById('ins-fm-approved').checked;
+  var isRejected = document.getElementById('ins-fm-rejected').checked;
+  var isSettled = document.getElementById('ins-fm-settled').checked;
+  var reason = document.getElementById('ins-fm-reason').value.trim();
+
+  if (!ref) { alert('Please enter a reference for the claim.'); return; }
+  if (!amount || amount <= 0) { alert('Please enter a valid amount.'); return; }
+
+  var payload = {
+    rowIndex: rowIndex,
+    date: date,
+    ref: ref,
+    provider: provider,
+    source: source,
+    amount: amount,
+    isSubmitted: isSubmitted,
+    submittedDate: submittedDate,
+    isApproved: isApproved,
+    isRejected: isRejected,
+    isSettled: isSettled,
+    reason: reason
+  };
+
+  var saveBtn = document.getElementById('ins-fm-save');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving...';
+
+  var successHandler = function(res) {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Claim';
+    if (res && res.success) {
+      insCloseForm();
+      _insuranceData = null;
+      loadInsuranceData();
+    } else {
+      alert('Error: ' + (res ? res.error : 'Unknown error'));
+    }
+  };
+
+  var failureHandler = function(err) {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Claim';
+    alert('Failed: ' + err.message);
+  };
+
+  if (rowIndex) {
+    payload.rowIndex = parseInt(rowIndex, 10);
+    google.script.run
+      .withSuccessHandler(successHandler)
+      .withFailureHandler(failureHandler)
+      .updateInsuranceClaim(payload);
+  } else {
+    google.script.run
+      .withSuccessHandler(successHandler)
+      .withFailureHandler(failureHandler)
+      .addInsuranceClaim(payload);
+  }
+}
+
+function insDeleteClaim(rowIndex) {
+  if (!confirm('Are you sure you want to delete this claim?')) return;
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.success) {
+        _insuranceData = null;
+        loadInsuranceData();
+      } else {
+        alert('Error: ' + (res ? res.error : 'Unknown error'));
+      }
+    })
+    .withFailureHandler(function(err) {
+      alert('Failed: ' + err.message);
+    })
+    .deleteInsuranceClaim(rowIndex);
+}
 
 // ══════════════════════════════════════════
 // NOTES MODAL - Rotation Tracking

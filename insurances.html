@@ -1,0 +1,91 @@
+<!-- Insurance Tracker Dashboard (loaded when tab selected) -->
+<div class="ins-header">
+  <div class="ins-header-title">Insurance Claims Tracker</div>
+  <div class="ins-header-sub">Track, manage & analyze your insurance claims</div>
+</div>
+
+<div class="ins-summary" id="ins-summary"></div>
+<div class="ins-insights" id="ins-insights"></div>
+<div class="ins-section-hdr">📋 Claim Records</div>
+<div class="ins-entries" id="ins-entries"></div>
+
+<!-- Insurance Form Modal -->
+<div id="ins-form-modal">
+  <div class="ins-fm-hdr">
+    <div class="ins-fm-title" id="ins-fm-title">Add Insurance Claim</div>
+    <button class="tracker-close" onclick="insCloseForm()">✕</button>
+  </div>
+  <div class="ins-fm-body">
+    <input type="hidden" id="ins-fm-row" value="">
+    <div class="ins-fm-grid">
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Date</label>
+        <input type="date" id="ins-fm-date" class="ins-fm-input">
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Reference</label>
+        <input type="text" id="ins-fm-ref" class="ins-fm-input" placeholder="e.g. Claim #123">
+      </div>
+    </div>
+    <div class="ins-fm-grid">
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Provider</label>
+        <input type="text" id="ins-fm-provider" class="ins-fm-input" placeholder="e.g. AIA Insurance">
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Source</label>
+        <select id="ins-fm-source" class="ins-fm-input ins-fm-select">
+          <option value="">— Select —</option>
+          <option value="Company">🏢 Company</option>
+          <option value="Personal">👤 Personal</option>
+          <option value="Government">🏛️ Government</option>
+          <option value="Other">📦 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="ins-fm-field">
+      <label class="ins-fm-label">Amount (₨)</label>
+      <input type="number" id="ins-fm-amount" class="ins-fm-input" placeholder="0.00">
+    </div>
+    <div class="ins-fm-grid">
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Submitted Date</label>
+        <input type="date" id="ins-fm-subdate" class="ins-fm-input">
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Submitted</label>
+        <div style="display:flex;gap:8px;padding-top:6px;">
+          <label class="ins-fm-chk"><input type="checkbox" id="ins-fm-submitted" onchange="insToggleSubmitDate()"> Yes</label>
+        </div>
+      </div>
+    </div>
+    <div class="ins-fm-grid">
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Approved</label>
+        <div style="display:flex;gap:8px;padding-top:6px;">
+          <label class="ins-fm-chk"><input type="checkbox" id="ins-fm-approved" onchange="insToggleStatusChecks()"> Yes</label>
+        </div>
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Rejected</label>
+        <div style="display:flex;gap:8px;padding-top:6px;">
+          <label class="ins-fm-chk"><input type="checkbox" id="ins-fm-rejected" onchange="insToggleStatusChecks()"> Yes</label>
+        </div>
+      </div>
+      <div class="ins-fm-field">
+        <label class="ins-fm-label">Settled</label>
+        <div style="display:flex;gap:8px;padding-top:6px;">
+          <label class="ins-fm-chk"><input type="checkbox" id="ins-fm-settled"> Yes</label>
+        </div>
+      </div>
+    </div>
+    <div class="ins-fm-field">
+      <label class="ins-fm-label">Reason / Notes</label>
+      <textarea id="ins-fm-reason" class="ins-fm-input ins-fm-textarea" placeholder="Reason for rejection, delays, or any notes…" rows="3"></textarea>
+    </div>
+  </div>
+  <div class="ins-fm-footer">
+    <button class="ins-fm-btn cancel" onclick="insCloseForm()">Cancel</button>
+    <button class="ins-fm-btn save" id="ins-fm-save" onclick="insSaveClaim()">Save Claim</button>
+  </div>
+</div>

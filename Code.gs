@@ -5343,3 +5343,188 @@ function getExpenseYearTotals(years) {
     return { success: false, error: e.message };
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// INSURANCE CLAIMS TRACKER
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * getInsuranceData – Reads from "Insurances" sheet
+ * Columns: A=Date, B=Reference, C=Provider, D=Source, E=Amount,
+ *          F=Submitted?, G=Approved?, H=Rejected?, I=SubmittedDate,
+ *          J=Settled?, K=Reason/Notes
+ */
+function getInsuranceData() {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('Insurances');
+    if (!sheet) return { success: false, error: 'Insurances sheet not found' };
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) {
+      return { success: true, claims: [], stats: { total: 0, submitted: 0, approved: 0, rejected: 0, settled: 0, pendingAmount: 0, settledAmount: 0 } };
+    }
+
+    // Row 1 = headers, data from row 2 onwards
+    var data = sheet.getRange(2, 1, lastRow - 1, 11).getValues();
+    var claims = [];
+    var totalAmt = 0, submittedAmt = 0, approvedAmt = 0, rejectedAmt = 0, settledAmt = 0;
+    var submittedCount = 0, approvedCount = 0, rejectedCount = 0, settledCount = 0;
+
+    for (var i = 0; i < data.length; i++) {
+      var row = data[i];
+      var ref = row[1] ? String(row[1]).trim() : '';
+      if (!ref) continue;
+
+      // Skip rows without a date in column A
+      var dateVal = row[0] instanceof Date ? Utilities.formatDate(row[0], ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : (row[0] ? String(row[0]).trim() : '');
+      if (!dateVal) continue;
+
+      var amount = parseFloat(row[4]) || 0;
+      if (amount === 0) continue;
+
+      var isSubmitted = (row[5] === true || row[5] === 'TRUE' || row[5] === 'true' || row[5] === 'Yes');
+      var isApproved  = (row[6] === true || row[6] === 'TRUE' || row[6] === 'true' || row[6] === 'Yes');
+      var isRejected  = (row[7] === true || row[7] === 'TRUE' || row[7] === 'true' || row[7] === 'Yes');
+      var isSettled   = (row[9] === true || row[9] === 'TRUE' || row[9] === 'true' || row[9] === 'Yes');
+
+      totalAmt += amount;
+      if (isSubmitted) { submittedAmt += amount; submittedCount++; }
+      if (isApproved)  { approvedAmt += amount; approvedCount++; }
+      if (isRejected)  { rejectedAmt += amount; rejectedCount++; }
+      if (isSettled)   { settledAmt += amount; settledCount++; }
+
+      claims.push({
+        rowIndex: i + 2,
+        date: dateVal,
+        ref: ref,
+        provider: row[2] ? String(row[2]).trim() : '',
+        source: row[3] ? String(row[3]).trim() : '',
+        amount: amount,
+        isSubmitted: isSubmitted,
+        isApproved: isApproved,
+        isRejected: isRejected,
+        submittedDate: row[8] instanceof Date ? Utilities.formatDate(row[8], ss.getSpreadsheetTimeZone(), 'yyyy-MM-dd') : (row[8] ? String(row[8]) : ''),
+        isSettled: isSettled,
+        reason: row[10] ? String(row[10]).trim() : ''
+      });
+    }
+
+    var pendingAmt = totalAmt - settledAmt;
+
+    return {
+      success: true,
+      claims: claims,
+      stats: {
+        total: claims.length,
+        totalAmount: totalAmt,
+        submitted: submittedCount,
+        submittedAmount: submittedAmt,
+        approved: approvedCount,
+        approvedAmount: approvedAmt,
+        rejected: rejectedCount,
+        rejectedAmount: rejectedAmt,
+        settled: settledCount,
+        settledAmount: settledAmt,
+        pendingAmount: pendingAmt
+      }
+    };
+  } catch (e) {
+    Logger.log('getInsuranceData error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * addInsuranceClaim – Inserts a new row in the Insurances sheet
+ */
+function addInsuranceClaim(data) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('Insurances');
+    if (!sheet) return { success: false, error: 'Insurances sheet not found' };
+
+    var nextRow = sheet.getLastRow() + 1;
+    var dateVal = data.date || '';
+    var ref = data.ref || '';
+    var provider = data.provider || '';
+    var source = data.source || '';
+    var amount = parseFloat(data.amount) || 0;
+    var isSubmitted = data.isSubmitted === true || data.isSubmitted === 'true';
+    var isApproved  = data.isApproved === true || data.isApproved === 'true';
+    var isRejected  = data.isRejected === true || data.isRejected === 'true';
+    var submittedDate = data.submittedDate || '';
+    var isSettled   = data.isSettled === true || data.isSettled === 'true';
+    var reason  = data.reason || '';
+
+    // Parse dates
+    var dateObj = dateVal ? new Date(dateVal + 'T00:00:00') : null;
+    var subDateObj = submittedDate ? new Date(submittedDate + 'T00:00:00') : null;
+
+    sheet.getRange(nextRow, 1, 1, 11).setValues([[
+      dateObj, ref, provider, source, amount,
+      isSubmitted, isApproved, isRejected, subDateObj, isSettled, reason
+    ]]);
+
+    return { success: true, rowIndex: nextRow };
+  } catch (e) {
+    Logger.log('addInsuranceClaim error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * updateInsuranceClaim – Updates an existing claim row
+ */
+function updateInsuranceClaim(data) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('Insurances');
+    if (!sheet) return { success: false, error: 'Insurances sheet not found' };
+
+    var rowIndex = parseInt(data.rowIndex, 10);
+    if (!rowIndex || rowIndex < 2) return { success: false, error: 'Invalid row index' };
+
+    var dateVal = data.date || '';
+    var ref = data.ref || '';
+    var provider = data.provider || '';
+    var source = data.source || '';
+    var amount = parseFloat(data.amount) || 0;
+    var isSubmitted = data.isSubmitted === true || data.isSubmitted === 'true';
+    var isApproved  = data.isApproved === true || data.isApproved === 'true';
+    var isRejected  = data.isRejected === true || data.isRejected === 'true';
+    var submittedDate = data.submittedDate || '';
+    var isSettled   = data.isSettled === true || data.isSettled === 'true';
+    var reason  = data.reason || '';
+
+    var dateObj = dateVal ? new Date(dateVal + 'T00:00:00') : null;
+    var subDateObj = submittedDate ? new Date(submittedDate + 'T00:00:00') : null;
+
+    sheet.getRange(rowIndex, 1, 1, 11).setValues([[
+      dateObj, ref, provider, source, amount,
+      isSubmitted, isApproved, isRejected, subDateObj, isSettled, reason
+    ]]);
+
+    return { success: true };
+  } catch (e) {
+    Logger.log('updateInsuranceClaim error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * deleteInsuranceClaim – Deletes a claim row
+ */
+function deleteInsuranceClaim(rowIndex) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('Insurances');
+    if (!sheet) return { success: false, error: 'Insurances sheet not found' };
+
+    sheet.deleteRow(parseInt(rowIndex, 10));
+    return { success: true };
+  } catch (e) {
+    Logger.log('deleteInsuranceClaim error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
