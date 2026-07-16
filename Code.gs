@@ -787,6 +787,109 @@ function saveMonthlySettled(rowNumber, value) {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   CARD ANALYSIS (CARD_ANALYSIS sheet)
+   Columns: A=Date, B=Card, C=Reference, D=Amount Total,
+            E=Paid Amount, F=Offers/Discounts, G=Fees
+   Row 1 = header, data starts row 2
+═══════════════════════════════════════════════════════════════ */
+
+function getCardAnalysisData() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('CARD_ANALYSIS');
+    if (!sheet) throw new Error('Sheet "CARD_ANALYSIS" not found');
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { success: true, data: [] };
+
+    var values = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+    var data = [];
+
+    for (var r = 0; r < values.length; r++) {
+      var row = values[r];
+      // Skip completely empty rows
+      if (!row[0] && !row[1] && !row[2] && !row[3] && !row[4] && !row[5] && !row[6]) continue;
+      data.push({
+        date:     String(row[0] || '').trim(),
+        card:     String(row[1] || '').trim(),
+        reference: String(row[2] || '').trim(),
+        amountTotal: parseFloat(String(row[3] || '0').replace(/,/g,'')) || 0,
+        paidAmount:  parseFloat(String(row[4] || '0').replace(/,/g,'')) || 0,
+        offersDiscounts: parseFloat(String(row[5] || '0').replace(/,/g,'')) || 0,
+        fees:         parseFloat(String(row[6] || '0').replace(/,/g,'')) || 0
+      });
+    }
+
+    return { success: true, data: data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function addCardAnalysisEntry(entry) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('CARD_ANALYSIS');
+    if (!sheet) throw new Error('Sheet "CARD_ANALYSIS" not found');
+
+    var lastRow = sheet.getLastRow();
+    var newRow = lastRow + 1;
+
+    sheet.getRange(newRow, 1).setValue(entry.date || '');
+    sheet.getRange(newRow, 2).setValue(entry.card || '');
+    sheet.getRange(newRow, 3).setValue(entry.reference || '');
+    sheet.getRange(newRow, 4).setValue(entry.amountTotal || 0);
+    sheet.getRange(newRow, 5).setValue(entry.paidAmount || 0);
+    sheet.getRange(newRow, 6).setValue(entry.offersDiscounts || 0);
+    sheet.getRange(newRow, 7).setValue(entry.fees || 0);
+
+    SpreadsheetApp.flush();
+    return { success: true, message: 'Entry added' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function updateCardAnalysisEntry(rowIndex, entry) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('CARD_ANALYSIS');
+    if (!sheet) throw new Error('Sheet "CARD_ANALYSIS" not found');
+
+    // rowIndex is 0-based relative to data (row 2 in sheet)
+    var sheetRow = rowIndex + 2;
+
+    sheet.getRange(sheetRow, 1).setValue(entry.date || '');
+    sheet.getRange(sheetRow, 2).setValue(entry.card || '');
+    sheet.getRange(sheetRow, 3).setValue(entry.reference || '');
+    sheet.getRange(sheetRow, 4).setValue(entry.amountTotal || 0);
+    sheet.getRange(sheetRow, 5).setValue(entry.paidAmount || 0);
+    sheet.getRange(sheetRow, 6).setValue(entry.offersDiscounts || 0);
+    sheet.getRange(sheetRow, 7).setValue(entry.fees || 0);
+
+    SpreadsheetApp.flush();
+    return { success: true, message: 'Entry updated' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function deleteCardAnalysisEntry(rowIndex) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('CARD_ANALYSIS');
+    if (!sheet) throw new Error('Sheet "CARD_ANALYSIS" not found');
+
+    var sheetRow = rowIndex + 2;
+    sheet.deleteRow(sheetRow);
+    SpreadsheetApp.flush();
+    return { success: true, message: 'Entry deleted' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 function getPortfolioData() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();

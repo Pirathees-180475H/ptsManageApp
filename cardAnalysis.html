@@ -1,0 +1,434 @@
+<!-- ═══════════════════════════════════════════════════════════
+     CREDIT CARD ANALYSIS
+     CARD_ANALYSIS sheet: Date, Card, Reference, Total, Paid, Offers, Fees
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Card Analysis ── */
+.ca-page{padding:14px;max-width:1400px;margin:0 auto;width:100%;}
+/* ── Card Analysis header (uses global pg-corner-title classes) ── */
+.ca-header-sub{color:rgba(255,255,255,.3);font-size:.72em;margin:0 0 16px;}
+
+/* KPI row */
+.ca-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;animation:fadeUp .4s ease both;}
+.ca-kpi{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;backdrop-filter:blur(20px);position:relative;overflow:hidden;transition:transform .2s;}
+.ca-kpi:hover{transform:translateY(-2px);}
+.ca-kpi-icon{font-size:1.4em;margin-bottom:5px;display:block;}
+.ca-kpi-label{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.33);margin-bottom:3px;}
+.ca-kpi-value{font-size:1.3em;font-weight:800;letter-spacing:-.5px;line-height:1;color:#fff;}
+.ca-kpi-sub{font-size:.6em;color:rgba(255,255,255,.25);margin-top:3px;}
+
+/* Filters */
+.ca-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center;animation:fadeUp .4s ease .05s both;}
+.ca-filter-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 32px 8px 12px;color:#fff;font-size:.75em;font-family:inherit;font-weight:500;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:border-color .2s;}
+.ca-filter-select:focus{outline:none;border-color:var(--purple);}
+.ca-filter-select option{background:#0d1220;color:#fff;}
+.ca-add-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:10px;background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(0,212,255,.1));border:1px solid rgba(168,85,247,.35);color:#c084fc;font-size:.72em;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;margin-left:auto;}
+.ca-add-btn:hover{background:rgba(168,85,247,.3);transform:translateY(-1px);box-shadow:0 4px 14px rgba(168,85,247,.2);}
+
+/* Charts row */
+.ca-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;animation:fadeUp .4s ease .1s both;}
+.ca-chart-box{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:16px;backdrop-filter:blur(20px);}
+.ca-chart-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);}
+.ca-chart-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ca-chart-title{font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+.ca-chart-wrap{height:220px;position:relative;}
+
+/* Table */
+.ca-table-wrap{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;backdrop-filter:blur(20px);animation:fadeUp .4s ease .15s both;}
+.ca-table-scroll{overflow-x:auto;}
+.ca-table{width:100%;border-collapse:collapse;font-size:.78em;}
+.ca-table th{padding:10px 12px;text-align:left;font-size:.62em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);white-space:nowrap;}
+.ca-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.8);white-space:nowrap;}
+.ca-table tr:hover td{background:rgba(255,255,255,.03);}
+.ca-table td.ca-cell-date{color:rgba(255,255,255,.5);font-weight:500;}
+.ca-table td.ca-cell-card{font-weight:700;color:#fff;}
+.ca-table td.ca-cell-amt{font-weight:700;text-align:right;font-variant-numeric:tabular-nums;}
+.ca-table td.ca-cell-green{color:var(--green);}
+.ca-table td.ca-cell-red{color:var(--red);}
+.ca-table td.ca-cell-gold{color:var(--gold);}
+.ca-table td.ca-cell-fees{color:var(--amber);}
+.ca-table td.ca-cell-actions{text-align:right;}
+.ca-action-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.75em;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;}
+.ca-action-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.ca-action-btn.edit:hover{background:rgba(59,130,246,.2);color:#93c5fd;border-color:rgba(59,130,246,.3);}
+.ca-action-btn.delete:hover{background:rgba(239,68,68,.2);color:#fca5a5;border-color:rgba(239,68,68,.3);}
+
+/* Modal */
+#ca-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);width:90%;max-width:480px;max-height:85vh;overflow:hidden;z-index:9000;background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:20px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);display:none;flex-direction:column;opacity:0;transition:all .2s;}
+#ca-modal.open{display:flex;opacity:1;transform:translate(-50%,-50%) scale(1);}
+#ca-overlay{position:fixed;inset:0;z-index:8999;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;}
+#ca-overlay.open{display:block;}
+.ca-m-hdr{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;}
+.ca-m-title{font-size:.72em;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#fff;}
+.ca-m-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:8px;cursor:pointer;transition:all .2s;font-size:.8em;display:flex;align-items:center;justify-content:center;}
+.ca-m-close:hover{background:rgba(239,68,68,.2);color:#f87171;border-color:rgba(239,68,68,.3);}
+.ca-m-body{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow-y:auto;}
+.ca-m-field{display:flex;flex-direction:column;gap:4px;}
+.ca-m-label{font-size:.58em;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.5px;}
+.ca-m-input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;color:#fff;font-size:.78em;font-family:inherit;transition:border-color .15s;}
+.ca-m-input:focus{outline:none;border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+.ca-m-footer{padding:12px 18px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:flex-end;gap:8px;}
+.ca-m-btn{padding:8px 18px;border-radius:9px;font-size:.7em;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:.3px;text-transform:uppercase;}
+.ca-m-btn.cancel{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);}
+.ca-m-btn.cancel:hover{background:rgba(255,255,255,.1);color:#fff;}
+.ca-m-btn.save{background:linear-gradient(135deg,var(--purple),#7c3aed);border:none;color:#fff;box-shadow:0 4px 12px rgba(168,85,247,.3);}
+.ca-m-btn.save:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(168,85,247,.4);}
+.ca-m-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
+.ca-m-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+@media(max-width:700px){
+  .ca-charts{grid-template-columns:1fr;}
+  .ca-kpi-row{grid-template-columns:repeat(2,1fr);}
+  .ca-filters{flex-wrap:wrap;}
+  .ca-add-btn{margin-left:0;width:100%;justify-content:center;}
+}
+</style>
+
+<div class="ca-page" id="ca-body">
+  <div class="loading">
+    <div class="spinner"></div>
+    <div class="loading-txt">Loading Card Analysis…</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CARD ANALYSIS JS
+═══════════════════════════════════════════ */
+var caData = [];
+var caCharts = {};
+
+function caLoad() {
+  google.script.run
+    .withSuccessHandler(caDisplayData)
+    .withFailureHandler(function(err) {
+      document.getElementById('ca-body').innerHTML = '<div class="error-box">⚠️ ' + (err.message || err) + '</div>';
+    })
+    .getCardAnalysisData();
+}
+
+function caFmt(v) {
+  if (v === undefined || v === null || isNaN(v)) return '—';
+  return '₨ ' + Math.abs(v).toLocaleString('en-IN', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+}
+
+function caDestroyCharts() {
+  Object.keys(caCharts).forEach(function(k) {
+    if (caCharts[k]) { caCharts[k].destroy(); delete caCharts[k]; }
+  });
+}
+
+function caDisplayData(res) {
+  if (!res || !res.success) {
+    document.getElementById('ca-body').innerHTML = '<div class="error-box">⚠️ ' + (res ? res.error : 'Failed to load') + '</div>';
+    return;
+  }
+  caData = res.data || [];
+  caDestroyCharts();
+
+  // Compute KPIs
+  var totalSpend = caData.reduce(function(s, r) { return s + r.amountTotal; }, 0);
+  var totalPaid  = caData.reduce(function(s, r) { return s + r.paidAmount; }, 0);
+  var totalOffers = caData.reduce(function(s, r) { return s + r.offersDiscounts; }, 0);
+  var totalFees  = caData.reduce(function(s, r) { return s + r.fees; }, 0);
+  var netOutflow = totalSpend - totalOffers - totalPaid;
+  var count = caData.length;
+
+  // Unique cards
+  var cardSet = {};
+  caData.forEach(function(r) { if (r.card) cardSet[r.card] = true; });
+  var cards = Object.keys(cardSet).sort();
+
+  // Build table rows HTML
+  var rowsHtml = caData.map(function(r, i) {
+    var remaining = r.amountTotal - r.paidAmount - r.offersDiscounts;
+    var hasFees = r.fees > 0;
+    return '<tr>' +
+      '<td class="ca-cell-date">' + (r.date || '—') + '</td>' +
+      '<td class="ca-cell-card">' + (r.card || '—') + '</td>' +
+      '<td style="color:rgba(255,255,255,.6);max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + (r.reference || '—') + '</td>' +
+      '<td class="ca-cell-amt">' + caFmt(r.amountTotal) + '</td>' +
+      '<td class="ca-cell-amt ca-cell-green">' + caFmt(r.paidAmount) + '</td>' +
+      '<td class="ca-cell-amt ca-cell-gold">' + caFmt(r.offersDiscounts) + '</td>' +
+      '<td class="ca-cell-amt ' + (hasFees ? 'ca-cell-fees' : '') + '">' + caFmt(r.fees) + '</td>' +
+      '<td class="ca-cell-amt" style="color:' + (remaining > 0 ? 'var(--red)' : 'var(--green)') + '">' + caFmt(remaining) + '</td>' +
+      '<td class="ca-cell-actions">' +
+        '<button class="ca-action-btn edit" onclick="caEditEntry(' + i + ')" title="Edit">✎</button>' +
+        '<button class="ca-action-btn delete" onclick="caDeleteEntry(' + i + ')" title="Delete">✕</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  // Build card filters
+  var cardOpts = '<option value="">All Cards</option>';
+  cards.forEach(function(c) {
+    cardOpts += '<option value="' + c.replace(/"/g,'&quot;') + '">' + c + '</option>';
+  });
+
+  document.getElementById('ca-body').innerHTML =
+    '<div class="pg-corner-title" style="margin-bottom:12px;">' +
+      '<span class="pg-ct-icon">📊</span>' +
+      '<span class="pg-ct-text">Credit Card Analysis</span>' +
+    '</div>' +
+    '<p class="ca-header-sub">Spend breakdown · Offers · Fees tracker</p>' +
+
+    '<div class="ca-kpi-row">' +
+      '<div class="ca-kpi" style="border-color:rgba(168,85,247,.2)"><span class="ca-kpi-icon">💳</span><div class="ca-kpi-label">Total Spend</div><div class="ca-kpi-value" style="color:var(--purple)">' + caFmt(totalSpend) + '</div><div class="ca-kpi-sub">across ' + count + ' entries</div></div>' +
+      '<div class="ca-kpi" style="border-color:rgba(0,230,118,.2)"><span class="ca-kpi-icon">✅</span><div class="ca-kpi-label">Total Paid</div><div class="ca-kpi-value" style="color:var(--green)">' + caFmt(totalPaid) + '</div><div class="ca-kpi-sub">' + (totalSpend > 0 ? Math.round(totalPaid/totalSpend*100) + '% of spend' : '') + '</div></div>' +
+      '<div class="ca-kpi" style="border-color:rgba(255,215,0,.2)"><span class="ca-kpi-icon">🏷️</span><div class="ca-kpi-label">Offers/Discounts</div><div class="ca-kpi-value" style="color:var(--gold)">' + caFmt(totalOffers) + '</div><div class="ca-kpi-sub">savings earned</div></div>' +
+      '<div class="ca-kpi" style="border-color:rgba(251,146,60,.2)"><span class="ca-kpi-icon">💸</span><div class="ca-kpi-label">Fees</div><div class="ca-kpi-value" style="color:var(--amber)">' + caFmt(totalFees) + '</div><div class="ca-kpi-sub">' + (totalFees > 0 ? 'charged' : 'no fees') + '</div></div>' +
+      '<div class="ca-kpi" style="border-color:rgba(255,77,109,.2)"><span class="ca-kpi-icon">📉</span><div class="ca-kpi-label">Net Outflow</div><div class="ca-kpi-value" style="color:' + (netOutflow > 0 ? 'var(--red)' : 'var(--green)') + '">' + caFmt(netOutflow) + '</div><div class="ca-kpi-sub">after offers &amp; payments</div></div>' +
+      '<div class="ca-kpi" style="border-color:rgba(0,212,255,.2)"><span class="ca-kpi-icon">🃏</span><div class="ca-kpi-label">Cards Tracked</div><div class="ca-kpi-value" style="color:var(--blue)">' + cards.length + '</div><div class="ca-kpi-sub">' + cards.join(', ') + '</div></div>' +
+    '</div>' +
+
+    '<div class="ca-filters">' +
+      '<select class="ca-filter-select" id="ca-card-filter" onchange="caFilter()">' + cardOpts + '</select>' +
+      '<select class="ca-filter-select" id="ca-year-filter" onchange="caFilter()"></select>' +
+      '<button class="ca-add-btn" onclick="caOpenForm()">+ Add Entry</button>' +
+    '</div>' +
+
+    '<div class="ca-charts">' +
+      '<div class="ca-chart-box"><div class="ca-chart-hdr"><div class="ca-chart-dot" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></div><div class="ca-chart-title">Spend by Card</div></div><div class="ca-chart-wrap"><canvas id="caChartByCard"></canvas></div></div>' +
+      '<div class="ca-chart-box"><div class="ca-chart-hdr"><div class="ca-chart-dot" style="background:var(--gold);box-shadow:0 0 6px var(--gold)"></div><div class="ca-chart-title">Offers vs Fees</div></div><div class="ca-chart-wrap"><canvas id="caChartOffersFees"></canvas></div></div>' +
+    '</div>' +
+
+    '<div class="ca-table-wrap">' +
+      '<div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);">' +
+        '<div style="font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);">📋 All Transactions</div>' +
+        '<div style="font-size:.65em;color:rgba(255,255,255,.25);">' + count + ' entries</div>' +
+      '</div>' +
+      '<div class="ca-table-scroll">' +
+        '<table class="ca-table">' +
+          '<thead><tr><th>Date</th><th>Card</th><th>Reference</th><th style="text-align:right">Total</th><th style="text-align:right">Paid</th><th style="text-align:right">Offers</th><th style="text-align:right">Fees</th><th style="text-align:right">Remaining</th><th style="text-align:right">Actions</th></tr></thead>' +
+          '<tbody id="ca-table-body">' + rowsHtml + '</tbody>' +
+        '</table>' +
+      '</div>' +
+    '</div>' +
+
+    '<!-- Modal -->' +
+    '<div id="ca-overlay" class="" onclick="caCloseForm()"></div>' +
+    '<div id="ca-modal" class="">' +
+      '<div class="ca-m-hdr"><div class="ca-m-title" id="ca-m-title">Add Entry</div><button class="ca-m-close" onclick="caCloseForm()">✕</button></div>' +
+      '<div class="ca-m-body">' +
+        '<div class="ca-m-grid">' +
+          '<div class="ca-m-field"><label class="ca-m-label">Date (M/YYYY)</label><input class="ca-m-input" id="ca-f-date" placeholder="e.g. 6/2026"></div>' +
+          '<div class="ca-m-field"><label class="ca-m-label">Card</label><input class="ca-m-input" id="ca-f-card" placeholder="e.g. Amex"></div>' +
+        '</div>' +
+        '<div class="ca-m-field"><label class="ca-m-label">Reference</label><input class="ca-m-input" id="ca-f-ref" placeholder="e.g. cool planet"></div>' +
+        '<div class="ca-m-grid">' +
+          '<div class="ca-m-field"><label class="ca-m-label">Total Amount</label><input class="ca-m-input" id="ca-f-total" type="number" step="0.01" placeholder="0"></div>' +
+          '<div class="ca-m-field"><label class="ca-m-label">Paid Amount</label><input class="ca-m-input" id="ca-f-paid" type="number" step="0.01" placeholder="0"></div>' +
+        '</div>' +
+        '<div class="ca-m-grid">' +
+          '<div class="ca-m-field"><label class="ca-m-label">Offers/Discounts</label><input class="ca-m-input" id="ca-f-offers" type="number" step="0.01" placeholder="0"></div>' +
+          '<div class="ca-m-field"><label class="ca-m-label">Fees</label><input class="ca-m-input" id="ca-f-fees" type="number" step="0.01" placeholder="0"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ca-m-footer"><button class="ca-m-btn cancel" onclick="caCloseForm()">Cancel</button><button class="ca-m-btn save" id="ca-save-btn" onclick="caSaveEntry()">Save</button></div>' +
+    '</div>';
+
+  // Populate year filter
+  var yearSet = {};
+  caData.forEach(function(r) {
+    if (r.date) {
+      var y = r.date.split('/')[1];
+      if (y) yearSet[y] = true;
+    }
+  });
+  var years = Object.keys(yearSet).sort(function(a,b) { return b - a; });
+  var yearOpts = '<option value="">All Years</option>';
+  years.forEach(function(y) { yearOpts += '<option value="' + y + '">' + y + '</option>'; });
+  document.getElementById('ca-year-filter').innerHTML = yearOpts;
+
+  caRenderCharts();
+}
+
+function caRenderCharts() {
+  var TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:11};
+  Chart.defaults.color='rgba(255,255,255,0.4)';
+  Chart.defaults.font.family='Inter';
+
+  // 1. Spend by Card (doughnut)
+  var cardSpend = {};
+  caData.forEach(function(r) {
+    if (r.card) cardSpend[r.card] = (cardSpend[r.card] || 0) + r.amountTotal;
+  });
+  var labels = Object.keys(cardSpend);
+  var values = labels.map(function(l) { return cardSpend[l]; });
+  var colors = ['#a855f7','#00d4ff','#ff4d6d','#00e676','#ffd700','#fb923c','#3b82f6','#ec4899'];
+
+  var el1 = document.getElementById('caChartByCard');
+  if (el1) {
+    caCharts.byCard = new Chart(el1, {
+      type: 'doughnut',
+      data: { labels: labels, datasets: [{ data: values, backgroundColor: colors.map(function(c) { return c + '44'; }), borderColor: colors, borderWidth: 2 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '65%', animation: { animateRotate: true, duration: 1200 },
+        plugins: { legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,.5)', font: { size: 10 }, padding: 12, usePointStyle: true } },
+          tooltip: { ...TIP, callbacks: { label: function(ctx) { return ' ' + ctx.label + ': ' + caFmt(ctx.parsed); } } } } }
+    });
+  }
+
+  // 2. Offers vs Fees per card (bar)
+  var cardOffers = {}, cardFees = {};
+  caData.forEach(function(r) {
+    if (r.card) {
+      cardOffers[r.card] = (cardOffers[r.card] || 0) + r.offersDiscounts;
+      cardFees[r.card] = (cardFees[r.card] || 0) + r.fees;
+    }
+  });
+  var barLabels = Object.keys(cardOffers).sort();
+  var offersVals = barLabels.map(function(l) { return cardOffers[l]; });
+  var feesVals = barLabels.map(function(l) { return cardFees[l]; });
+  var barColors = barLabels.map(function(_, i) { return colors[i % colors.length]; });
+
+  var el2 = document.getElementById('caChartOffersFees');
+  if (el2) {
+    caCharts.offersFees = new Chart(el2, {
+      type: 'bar',
+      data: {
+        labels: barLabels,
+        datasets: [
+          { label: 'Offers/Discounts', data: offersVals, backgroundColor: 'rgba(255,215,0,0.2)', borderColor: 'var(--gold)', borderWidth: 1.5, borderRadius: 6, borderSkipped: false },
+          { label: 'Fees', data: feesVals, backgroundColor: 'rgba(251,146,60,0.2)', borderColor: 'var(--amber)', borderWidth: 1.5, borderRadius: 6, borderSkipped: false }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1100 },
+        plugins: { legend: { labels: { color: 'rgba(255,255,255,.5)', font: { size: 10 }, usePointStyle: true } },
+          tooltip: { ...TIP, callbacks: { label: function(ctx) { return ' ' + ctx.dataset.label + ': ' + caFmt(ctx.parsed.y); } } } },
+        scales: { x: { ticks: { color: 'rgba(255,255,255,.4)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' } },
+          y: { ticks: { color: 'rgba(255,255,255,.4)', font: { size: 9 }, callback: function(v) { return '₨' + v.toLocaleString('en-IN'); } }, grid: { color: 'rgba(255,255,255,.04)' } } }
+      }
+    });
+  }
+}
+
+function caFilter() {
+  var cardFilter = (document.getElementById('ca-card-filter').value || '').toLowerCase();
+  var yearFilter = document.getElementById('ca-year-filter').value;
+
+  var filtered = caData.filter(function(r) {
+    if (cardFilter && (r.card || '').toLowerCase() !== cardFilter) return false;
+    if (yearFilter) {
+      var y = (r.date || '').split('/')[1];
+      if (y !== yearFilter) return false;
+    }
+    return true;
+  });
+
+  var rowsHtml = filtered.map(function(r, i) {
+    var remaining = r.amountTotal - r.paidAmount - r.offersDiscounts;
+    var hasFees = r.fees > 0;
+    // Find original index
+    var origIdx = caData.indexOf(r);
+    return '<tr>' +
+      '<td class="ca-cell-date">' + (r.date || '—') + '</td>' +
+      '<td class="ca-cell-card">' + (r.card || '—') + '</td>' +
+      '<td style="color:rgba(255,255,255,.6);max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + (r.reference || '—') + '</td>' +
+      '<td class="ca-cell-amt">' + caFmt(r.amountTotal) + '</td>' +
+      '<td class="ca-cell-amt ca-cell-green">' + caFmt(r.paidAmount) + '</td>' +
+      '<td class="ca-cell-amt ca-cell-gold">' + caFmt(r.offersDiscounts) + '</td>' +
+      '<td class="ca-cell-amt ' + (hasFees ? 'ca-cell-fees' : '') + '">' + caFmt(r.fees) + '</td>' +
+      '<td class="ca-cell-amt" style="color:' + (remaining > 0 ? 'var(--red)' : 'var(--green)') + '">' + caFmt(remaining) + '</td>' +
+      '<td class="ca-cell-actions">' +
+        '<button class="ca-action-btn edit" onclick="caEditEntry(' + origIdx + ')" title="Edit">✎</button>' +
+        '<button class="ca-action-btn delete" onclick="caDeleteEntry(' + origIdx + ')" title="Delete">✕</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+  document.getElementById('ca-table-body').innerHTML = rowsHtml || '<tr><td colspan="9" style="text-align:center;padding:30px;color:rgba(255,255,255,.3);">🔍 No entries match your filter.</td></tr>';
+}
+
+/* ── CRUD operations ── */
+var caEditingIndex = -1;
+
+function caOpenForm(data) {
+  caEditingIndex = (data && data !== true) ? caData.indexOf(data) : -1;
+  document.getElementById('ca-m-title').textContent = caEditingIndex >= 0 ? 'Edit Entry' : 'Add Entry';
+  document.getElementById('ca-f-date').value   = data ? (data.date || '') : '';
+  document.getElementById('ca-f-card').value   = data ? (data.card || '') : '';
+  document.getElementById('ca-f-ref').value    = data ? (data.reference || '') : '';
+  document.getElementById('ca-f-total').value  = data ? data.amountTotal : '';
+  document.getElementById('ca-f-paid').value   = data ? data.paidAmount : '';
+  document.getElementById('ca-f-offers').value = data ? data.offersDiscounts : '';
+  document.getElementById('ca-f-fees').value   = data ? data.fees : '';
+  document.getElementById('ca-modal').classList.add('open');
+  document.getElementById('ca-overlay').classList.add('open');
+}
+
+function caEditEntry(idx) {
+  caOpenForm(caData[idx]);
+}
+
+function caCloseForm() {
+  document.getElementById('ca-modal').classList.remove('open');
+  document.getElementById('ca-overlay').classList.remove('open');
+  caEditingIndex = -1;
+}
+
+function caDeleteEntry(idx) {
+  if (!confirm('Delete this entry?')) return;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.success) {
+        caData.splice(idx, 1);
+        caDisplayData({ success: true, data: caData });
+      } else {
+        alert('Delete failed: ' + (res ? res.error : 'Unknown'));
+      }
+    })
+    .withFailureHandler(function(err) {
+      alert('Error: ' + err.message);
+    })
+    .deleteCardAnalysisEntry(idx);
+}
+
+function caSaveEntry() {
+  var entry = {
+    date:     document.getElementById('ca-f-date').value.trim(),
+    card:     document.getElementById('ca-f-card').value.trim(),
+    reference: document.getElementById('ca-f-ref').value.trim(),
+    amountTotal: parseFloat(document.getElementById('ca-f-total').value) || 0,
+    paidAmount:  parseFloat(document.getElementById('ca-f-paid').value) || 0,
+    offersDiscounts: parseFloat(document.getElementById('ca-f-offers').value) || 0,
+    fees:         parseFloat(document.getElementById('ca-f-fees').value) || 0
+  };
+
+  var btn = document.getElementById('ca-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  var isEdit = caEditingIndex >= 0;
+  if (isEdit) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          caData[caEditingIndex] = entry;
+          caCloseForm();
+          caDisplayData({ success: true, data: caData });
+        } else {
+          alert('Save failed: ' + (res ? res.error : 'Unknown'));
+          btn.disabled = false; btn.textContent = 'Save';
+        }
+      })
+      .withFailureHandler(function(err) { alert('Error: ' + err.message); btn.disabled = false; btn.textContent = 'Save'; })
+      .updateCardAnalysisEntry(caEditingIndex, entry);
+  } else {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          caData.push(entry);
+          caCloseForm();
+          caDisplayData({ success: true, data: caData });
+        } else {
+          alert('Save failed: ' + (res ? res.error : 'Unknown'));
+          btn.disabled = false; btn.textContent = 'Save';
+        }
+      })
+      .withFailureHandler(function(err) { alert('Error: ' + err.message); btn.disabled = false; btn.textContent = 'Save'; })
+      .addCardAnalysisEntry(entry);
+  }
+}
+
+// Auto-load when included
+(function(){ caLoad(); })();
+</script>
