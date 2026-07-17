@@ -106,7 +106,7 @@
 
   <!-- Items textarea -->
   <div class="ed-field">
-    <label class="ed-label">Items — one per line</label>
+    <label class="ed-label">Items — one per line <span id="ed-mode-badge" onclick="edToggleInputMode()" style="cursor:pointer;background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.3);border-radius:6px;padding:1px 8px;font-size:.85em;font-weight:600;color:#a5b4fc;text-transform:none;letter-spacing:0;">Item→Person</span></label>
     <div class="ed-textarea-wrap">
       <textarea class="ed-textarea" id="ed-items-input" oninput="edUpdateWhoPaidHint()" placeholder="Faluda(690)- Lithusan&#10;Rice(1590)- Pirathees,Sajee,Vasanth&#10;Kothu(1800)- Pirathees,Sajee,Vasanth&#10;Movie-NT(4250)- Pirathees,Sarma,Sajee,Vasant,Narthanan&#10;Melon-NT(330+330)- Sarma"></textarea>
     </div>
@@ -171,6 +171,20 @@
    EXPENSE DIVIDER JS
 ═══════════════════════════════════════════ */
 var _edPayerIdx = 0;
+var _edInputMode = 'itemFirst';
+
+function edToggleInputMode() {
+  _edInputMode = (_edInputMode === 'itemFirst') ? 'personFirst' : 'itemFirst';
+  var badge = document.getElementById('ed-mode-badge');
+  if (badge) badge.textContent = (_edInputMode === 'itemFirst') ? 'Item→Person' : 'Person→Item';
+  var ta = document.getElementById('ed-items-input');
+  if (ta) {
+    ta.placeholder = (_edInputMode === 'itemFirst')
+      ? 'Faluda(690)- Lithusan\nRice(1590)- Pirathees,Sajee,Vasanth\nMovie-NT(4250)- Pirathees,Sarma'
+      : 'Pirathees-Faluda(690),Movie-NT(4250)\nSajee-Rice(1590),Kothu(1800)';
+  }
+  edUpdateWhoPaidHint();
+}
 
 function edInit() {
   _edPayerIdx = 0;
@@ -288,6 +302,11 @@ function edShowEval(input) {
 }
 
 function edParseItems(text) {
+  if (_edInputMode === 'personFirst') return edParsePersonFirst(text);
+  return edParseItemFirst(text);
+}
+
+function edParseItemFirst(text) {
   var items = [];
   var lines = text.split('\n');
   lines.forEach(function(line) {
@@ -306,6 +325,35 @@ function edParseItems(text) {
     if (name && price > 0 && persons.length > 0) {
       items.push({ name: name, price: price, persons: persons, taxable: !isNT });
     }
+  });
+  return items;
+}
+
+function edParsePersonFirst(text) {
+  var items = [];
+  var lines = text.split('\n');
+  lines.forEach(function(line) {
+    line = line.trim();
+    if (!line) return;
+    // Format: PersonName-Item1(price),Item2-NT(price)
+    var match = line.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+    if (!match) return;
+    var personName = match[1].trim();
+    if (!personName) return;
+    var itemsStr = match[2].trim();
+    var parts = itemsStr.split(',');
+    parts.forEach(function(part) {
+      part = part.trim();
+      if (!part) return;
+      var m = part.match(/^(.+?)(-nt)?\s*\(([\d.+\s]+)\)\s*$/i);
+      if (!m) return;
+      var itemName = m[1].trim();
+      var isNT = !!m[2];
+      var price = edEvalPrice(m[3]);
+      if (itemName && price > 0) {
+        items.push({ name: itemName, price: price, persons: [personName], taxable: !isNT });
+      }
+    });
   });
   return items;
 }
