@@ -43,14 +43,15 @@
 .ed-tbl tr:last-child td{border-bottom:none;}
 .ed-tbl td:first-child{font-weight:700;color:#fff;white-space:nowrap;}
 .ed-tbl td:nth-child(2){color:rgba(255,255,255,.7);}
-.ed-tbl td:nth-child(3),
+.ed-tbl td:nth-child(3){color:rgba(255,255,255,.5);font-size:.9em;text-align:center;}
 .ed-tbl td:nth-child(4),
 .ed-tbl td:nth-child(5),
-.ed-tbl td:nth-child(6){font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
-.ed-tbl td:nth-child(3){color:rgba(255,255,255,.65);}
-.ed-tbl td:nth-child(4){color:var(--amber);}
-.ed-tbl td:nth-child(5){color:var(--green);}
-.ed-tbl td:nth-child(6){color:#fff;}
+.ed-tbl td:nth-child(6),
+.ed-tbl td:nth-child(7){font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+.ed-tbl td:nth-child(4){color:rgba(255,255,255,.65);}
+.ed-tbl td:nth-child(5){color:var(--amber);}
+.ed-tbl td:nth-child(6){color:var(--green);}
+.ed-tbl td:nth-child(7){color:#fff;}
 .ed-tbl td.net-pos{color:var(--green)!important;}
 .ed-tbl td.net-neg{color:#f87171!important;}
 
@@ -79,7 +80,7 @@
   <!-- Items textarea -->
   <div class="ed-field">
     <label class="ed-label">Items — one per line</label>
-    <textarea class="ed-textarea" id="ed-items-input" placeholder="Pizza(1200)- John, Anna&#10;Pasta(800)- John&#10;Drinks(500)- Anna, Mike&#10;Dessert(350)- Mike, John, Anna"></textarea>
+    <textarea class="ed-textarea" id="ed-items-input" placeholder="Faluda(690)- Lithusan&#10;Rice(1590)- Pirathees,Sajee,Vasanth&#10;Kothu(1800)- Pirathees,Sajee,Vasanth&#10;Movie-NT(4250)- Pirathees,Sarma,Sajee,Vasant,Narthanan&#10;Melon-NT(330+330)- Sarma"></textarea>
   </div>
 
   <!-- Tax & Discount -->
@@ -139,7 +140,7 @@ function edAddPayer() {
   div.id = 'ed-payer-' + idx;
   div.innerHTML =
     '<input class="ed-input" id="ed-payer-name-' + idx + '" placeholder="Person name">' +
-    '<input class="ed-input ed-pay-amt" id="ed-payer-amt-' + idx + '" type="number" step="0.01" min="0" placeholder="Amount paid">' +
+    '<input class="ed-input ed-pay-amt" id="ed-payer-amt-' + idx + '" type="text" inputmode="decimal" placeholder="Amount" oninput="edShowEval(this)" onpaste="setTimeout(edShowEval.bind(null,this),10)">' +
     '<button class="ed-rm-btn" onclick="edRemovePayer(' + idx + ')" title="Remove">✕</button>';
   document.getElementById('ed-payers-container').appendChild(div);
 }
@@ -149,22 +150,45 @@ function edRemovePayer(idx) {
   if (el) el.remove();
 }
 
+function edEvalPrice(str) {
+  if (!str) return 0;
+  str = str.replace(/^=\s*/, '');
+  var parts = str.split('+');
+  var total = 0;
+  parts.forEach(function(p) { total += parseFloat(p.trim()) || 0; });
+  return Math.round(total);
+}
+
+function edShowEval(input) {
+  var val = input.value.trim();
+  if (val.indexOf('+') !== -1) {
+    var result = edEvalPrice(val);
+    input.style.borderColor = 'rgba(16,185,129,.5)';
+    input.title = '= ' + result;
+  } else {
+    input.style.borderColor = '';
+    input.title = '';
+  }
+}
+
 function edParseItems(text) {
   var items = [];
   var lines = text.split('\n');
   lines.forEach(function(line) {
     line = line.trim();
     if (!line) return;
-    // Format: itemName(price)- person1,person2  OR  itemName price- person1,person2
-    var match = line.match(/^(.+?)\(([\d.]+)\)\s*[-–—]\s*(.+)$/);
-    if (!match) match = line.match(/^(.+?)\s+([\d.]+)\s*[-–—]\s*(.+)$/);
+    // Format: ItemName(price)- person1,person2  OR  ItemName-NT(price)- person1,person2
+    // Also supports math in price: ItemName(690+300)- person1,person2
+    var match = line.match(/^(.+?)(-nt)?\s*\(([\d.+\s]+)\)\s*[-–—]\s*(.+)$/i);
+    if (!match) match = line.match(/^(.+?)(-nt)?\s+([\d.+\s]+)\s*[-–—]\s*(.+)$/i);
     if (!match) return;
     var name = match[1].trim();
-    var price = parseFloat(match[2]) || 0;
-    var personsStr = match[3].trim();
+    var isNT = !!match[2];
+    var price = edEvalPrice(match[3]);
+    var personsStr = match[4].trim();
     var persons = personsStr ? personsStr.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) : [];
     if (name && price > 0 && persons.length > 0) {
-      items.push({ name: name, price: price, persons: persons });
+      items.push({ name: name, price: price, persons: persons, taxable: !isNT });
     }
   });
   return items;
@@ -178,7 +202,7 @@ function edGetPayers() {
     var nameInput = row.querySelector('.ed-input:first-child');
     var amtInput = row.querySelector('.ed-pay-amt');
     var name = (nameInput ? nameInput.value : '').trim();
-    var amt = parseFloat(amtInput ? amtInput.value : 0) || 0;
+    var amt = edEvalPrice(amtInput ? amtInput.value : '0');
     if (name || amt > 0) {
       payers.push({ name: name || 'Person', amount: amt });
     }
@@ -195,22 +219,27 @@ function edCalculate() {
   var payers = edGetPayers();
 
   if (items.length === 0) {
-    document.getElementById('ed-result-area').innerHTML = '<div style="text-align:center;padding:30px;color:rgba(255,255,255,.3);font-size:.8em;">⚠️ Add at least one valid item line.<br><span style="font-size:.85em;opacity:.6">Format: ItemName(price)- Person1, Person2</span></div>';
+    document.getElementById('ed-result-area').innerHTML = '<div class="ed-result"><div style="padding:24px;text-align:center;line-height:1.8;color:rgba(255,255,255,.7);font-size:.82em;">⚠️ Add at least one valid item line.<br><span style="font-size:.85em;opacity:.6">Format: ItemName(price)- Person1, Person2  |  Add -NT for no tax  |  Supports 690+300 in price</span></div>';
     return;
   }
 
-  // Calculate subtotal
+  // Calculate subtotals
   var subtotal = 0;
-  items.forEach(function(item) { subtotal += item.price; });
+  var taxableSubtotal = 0;
+  items.forEach(function(item) {
+    subtotal += item.price;
+    if (item.taxable) taxableSubtotal += item.price;
+  });
+  var nonTaxableSubtotal = subtotal - taxableSubtotal;
 
-  // Apply tax and discount
-  var taxAmt = subtotal * (taxPct / 100);
+  // Apply tax (only on taxable items) and discount (on everything)
+  var taxAmt = taxableSubtotal * (taxPct / 100);
   var discAmt = subtotal * (discPct / 100);
-  var totalAfterAdjustments = subtotal + taxAmt - discAmt;
-  var factor = subtotal > 0 ? (totalAfterAdjustments / subtotal) : 1;
+  var totalAfterAdjustments = Math.round(subtotal + taxAmt - discAmt);
 
   // Calculate each person's share per item (before adjustments)
   var personShares = {};
+  var personTaxableShares = {};
   var personItems = {};
   var nameDisplay = {}; // lowercase key → display name (first occurrence wins)
   items.forEach(function(item) {
@@ -219,22 +248,27 @@ function edCalculate() {
     item.persons.forEach(function(p) {
       var key = p.toLowerCase();
       if (!nameDisplay[key]) nameDisplay[key] = p;
-      if (!personShares[key]) { personShares[key] = 0; personItems[key] = []; }
+      if (!personShares[key]) { personShares[key] = 0; personTaxableShares[key] = 0; personItems[key] = []; }
       personShares[key] += sharePerPerson;
-      personItems[key].push({ name: item.name, share: sharePerPerson });
+      if (item.taxable) personTaxableShares[key] += sharePerPerson;
+      personItems[key].push({ name: item.name, share: sharePerPerson, taxable: item.taxable });
     });
   });
 
-  // Final owed after tax/discount
+  // Final owed after tax (on taxable items) and discount (on everything)
   var finalOwed = {};
   var allKeys = Object.keys(personShares);
   allKeys.forEach(function(k) {
-    finalOwed[k] = personShares[k] * factor;
+    var taxableShare = personTaxableShares[k] || 0;
+    var nonTaxableShare = personShares[k] - taxableShare;
+    var shareAfterTax = Math.round(taxableShare * (1 + taxPct / 100) + nonTaxableShare);
+    var shareAfterDisc = Math.round(shareAfterTax - personShares[k] * (discPct / 100));
+    finalOwed[k] = shareAfterDisc;
   });
 
   // Total paid
   var totalPaid = 0;
-  payers.forEach(function(payer) { totalPaid += payer.amount; });
+  payers.forEach(function(payer) { totalPaid += Math.round(payer.amount); });
 
   // Validation: Grand Total should equal total paid
   if (payers.length > 0 && Math.abs(totalAfterAdjustments - totalPaid) > 0.01) {
@@ -258,6 +292,8 @@ function edCalculate() {
   // Summary chips
   html += '<div class="ed-summary">';
   html += '<div class="ed-sum-chip"><span class="sc-lbl">Subtotal</span><span class="sc-val">' + edFmt(subtotal) + '</span></div>';
+  if (nonTaxableSubtotal > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Non-Taxable</span><span class="sc-val" style="color:var(--amber)">' + edFmt(nonTaxableSubtotal) + '</span></div>';
+  if (taxableSubtotal > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Taxable</span><span class="sc-val" style="color:var(--blue)">' + edFmt(taxableSubtotal) + '</span></div>';
   if (taxPct > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Tax</span><span class="sc-val" style="color:var(--amber)">+' + taxPct + '% (' + edFmt(taxAmt) + ')</span></div>';
   if (discPct > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Discount</span><span class="sc-val" style="color:var(--green)">−' + discPct + '% (' + edFmt(discAmt) + ')</span></div>';
   html += '<div class="ed-sum-chip"><span class="sc-lbl">Total</span><span class="sc-val">' + edFmt(totalAfterAdjustments) + '</span></div>';
@@ -274,6 +310,7 @@ function edCalculate() {
     html += '<thead><tr>' +
       '<th>Name</th>' +
       '<th>Items Taken</th>' +
+      '<th>Taxable</th>' +
       '<th>Price</th>' +
       '<th>After Tax</th>' +
       '<th>After Disc.</th>' +
@@ -283,10 +320,11 @@ function edCalculate() {
     allKeys.sort(function(a, b) { return finalOwed[b] - finalOwed[a]; });
     allKeys.forEach(function(k) {
       var displayName = nameDisplay[k] || k;
-      var share = finalOwed[k];
       var shareBeforeTax = personShares[k];
-      var shareAfterTax = shareBeforeTax * (1 + taxPct / 100);
-      var shareAfterAll = share;
+      var taxableShare = personTaxableShares[k] || 0;
+      var nonTaxableShare = shareBeforeTax - taxableShare;
+      var shareAfterTax = Math.round(taxableShare * (1 + taxPct / 100) + nonTaxableShare);
+      var shareAfterAll = Math.round(shareAfterTax - shareBeforeTax * (discPct / 100));
 
       var paidByThis = 0;
       payers.forEach(function(payer) {
@@ -295,9 +333,14 @@ function edCalculate() {
       var net = paidByThis - shareAfterAll;
 
       var itemStrs = personItems[k].map(function(i) {
-        return i.name + ' (' + edFmt(i.share) + ')';
+        var tag = i.taxable ? '' : ' (NT)';
+        return i.name + tag + ' (' + edFmt(i.share) + ')';
       });
       var itemsList = itemStrs.join(', ');
+
+      var hasTaxable = personItems[k].some(function(i) { return i.taxable; });
+      var hasNonTaxable = personItems[k].some(function(i) { return !i.taxable; });
+      var taxableLabel = hasTaxable && hasNonTaxable ? '🔄 Mixed' : (hasTaxable ? '✅ Yes' : '❌ No');
 
       var netClass = net >= 0 ? 'net-pos' : 'net-neg';
       var netLabel = (net >= 0 ? '🟢 Gets back ' : '🔴 Owes ') + edFmt(Math.abs(net));
@@ -305,6 +348,7 @@ function edCalculate() {
       html += '<tr>' +
         '<td>' + displayName + '</td>' +
         '<td>' + itemsList + '</td>' +
+        '<td>' + taxableLabel + '</td>' +
         '<td>' + edFmt(shareBeforeTax) + '</td>' +
         '<td>' + edFmt(shareAfterTax) + '</td>' +
         '<td>' + edFmt(shareAfterAll) + '</td>' +
@@ -435,13 +479,15 @@ function edCopyAsImage() {
   sumBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;padding:14px 24px;background:#f8f9fc;border-bottom:1px solid #eef0f5;';
   var summaryItems = [
     { label: 'Subtotal', val: chipData['Subtotal'] || '—', color: '#333' },
-    { label: 'Tax', val: chipData['Tax'] || '—', color: '#b8860b' },
-    { label: 'Discount', val: chipData['Discount'] || '—', color: '#2e7d32' },
+    { label: 'Non-Taxable', val: chipData['Non-Taxable'] || null, color: '#b8860b' },
+    { label: 'Taxable', val: chipData['Taxable'] || null, color: '#1565c0' },
+    { label: 'Tax', val: chipData['Tax'] || null, color: '#b8860b' },
+    { label: 'Discount', val: chipData['Discount'] || null, color: '#2e7d32' },
     { label: 'Total', val: chipData['Total'] || '—', color: '#0f3460', bold: true },
-    { label: 'Paid', val: chipData['Paid'] || '—', color: '#1565c0', bold: true }
+    { label: 'Paid', val: chipData['Paid'] || null, color: '#1565c0', bold: true }
   ];
   summaryItems.forEach(function(item) {
-    if (!chipData[item.label] && item.label !== 'Subtotal' && item.label !== 'Total') return;
+    if (item.val === null) return;
     var chip = document.createElement('div');
     chip.style.cssText = 'background:#fff;border-radius:10px;padding:6px 16px;border:1px solid #e8ecf2;text-align:center;';
     var lbl = document.createElement('div');
@@ -484,8 +530,8 @@ function edCopyAsImage() {
   var headers = table.querySelectorAll('thead th');
   headers.forEach(function(th, idx) {
     var hc = document.createElement('th');
-    hc.textContent = th.textContent.replace(/[🟢🔴]/g,'').trim();
-    hc.style.cssText = 'padding:8px 12px;border:1px solid #d0d5dd;font-weight:700;background:#1a1a2e;color:#fff;text-align:' + (idx >= 2 ? 'right' : 'left') + ';font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;';
+    hc.textContent = th.textContent.replace(/[🟢🔴✅❌🔄]/g,'').trim();
+    hc.style.cssText = 'padding:8px 12px;border:1px solid #d0d5dd;font-weight:700;background:#1a1a2e;color:#fff;text-align:' + (idx === 2 ? 'center' : (idx >= 3 ? 'right' : 'left')) + ';font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;';
     hRow.appendChild(hc);
   });
   thead.appendChild(hRow);
@@ -500,11 +546,19 @@ function edCopyAsImage() {
     var cells = tr.querySelectorAll('td');
     cells.forEach(function(td, i) {
       var dc = document.createElement('td');
-      var txt = td.textContent.replace(/[🟢🔴]/g,'').trim();
+      var txt = td.textContent.replace(/[🟢🔴✅❌🔄]/g,'').trim();
+      // Clean up Mixed/Yes/No labels for image
+      var rawTxt = td.textContent.trim();
+      if (i === 2) {
+        if (rawTxt.indexOf('Mixed') !== -1) txt = 'Mixed';
+        else if (rawTxt.indexOf('Yes') !== -1) txt = 'Yes';
+        else txt = 'No';
+      }
       dc.textContent = txt;
       var extra = '';
-      if (i >= 2) extra += 'text-align:right;font-weight:600;';
-      if (i === 5) {
+      if (i === 2) extra += 'text-align:center;font-size:11px;';
+      else if (i >= 3) extra += 'text-align:right;font-weight:600;';
+      if (i === 6) {
         if (txt.indexOf('Gets') !== -1) extra += 'color:#2e7d32;';
         else if (txt.indexOf('Owes') !== -1) extra += 'color:#c62828;';
         else extra += 'color:#333;';
