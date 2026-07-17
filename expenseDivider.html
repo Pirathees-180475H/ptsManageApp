@@ -2,45 +2,60 @@
      EXPENSE DIVIDER — textarea input + copyable table output
 ═══════════════════════════════════════════════════════════════ -->
 <style>
-.ed-page{padding:14px;max-width:800px;margin:0 auto;width:100%;}
-.ed-header-sub{color:rgba(255,255,255,.3);font-size:.72em;margin:0 0 16px;}
+/* ═══════════════════════════════════════════
+   EXPENSE DIVIDER — Bank Balances Design
+═══════════════════════════════════════════ */
+.ed-page{padding:14px;max-width:800px;margin:0 auto;width:100%;font-family:'Inter',system-ui,sans-serif;}
+.ed-page .pg-corner-title{margin-bottom:10px;}
 
+/* ── Inputs ── */
 .ed-field{margin-bottom:12px;display:flex;flex-direction:column;gap:4px;}
-.ed-label{font-size:.58em;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.5px;}
-.ed-input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;color:#fff;font-size:.78em;font-family:inherit;transition:border-color .15s;width:100%;box-sizing:border-box;}
-.ed-input:focus{outline:none;border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
-.ed-textarea{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;color:#fff;font-size:.78em;font-family:'Consolas','Courier New',monospace;transition:border-color .15s;width:100%;box-sizing:border-box;resize:vertical;min-height:90px;line-height:1.6;}
-.ed-textarea:focus{outline:none;border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+.ed-label{font-size:.52em;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:rgba(255,255,255,.35);}
+.ed-input-wrap{display:flex;align-items:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:0 10px;gap:5px;transition:border-color .2s,box-shadow .2s;height:34px;}
+.ed-input-wrap:focus-within{border-color:rgba(99,102,241,.5);box-shadow:0 0 0 2px rgba(99,102,241,.1);}
+.ed-input{background:transparent;border:none;color:#fff;font-family:'Inter',sans-serif;font-size:.78em;font-weight:600;outline:none;width:100%;padding:0;letter-spacing:.2px;}
+.ed-input::placeholder{color:rgba(255,255,255,.15);}
 
-.ed-pct-row{display:flex;gap:14px;margin-bottom:16px;}
+.ed-textarea-wrap{display:flex;align-items:flex-start;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:6px 10px;transition:border-color .2s,box-shadow .2s;}
+.ed-textarea-wrap:focus-within{border-color:rgba(99,102,241,.5);box-shadow:0 0 0 2px rgba(99,102,241,.1);}
+.ed-textarea{background:transparent;border:none;color:#fff;font-family:'Consolas','Courier New',monospace;font-size:.72em;outline:none;width:100%;resize:vertical;min-height:90px;line-height:1.6;padding:0;}
+.ed-textarea::placeholder{color:rgba(255,255,255,.15);}
+
+/* ── Percentage row ── */
+.ed-pct-row{display:flex;gap:12px;margin-bottom:16px;}
 .ed-pct-row .ed-field{flex:1;}
 
-.ed-calc-btn{width:100%;padding:11px;border-radius:12px;background:linear-gradient(135deg,var(--purple),#7c3aed);border:none;color:#fff;font-size:.82em;font-weight:800;font-family:inherit;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(168,85,247,.3);margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;}
-.ed-calc-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(168,85,247,.4);}
+/* ── Section titles ── */
+.ed-section-title{font-size:.52em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin:18px 0 10px;display:flex;align-items:center;gap:6px;}
 
-.ed-section-title{font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);margin:16px 0 8px;}
+/* ── Calc button ── */
+.ed-calc-btn{width:100%;padding:11px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);font-size:.78em;font-weight:700;font-family:inherit;cursor:pointer;transition:all .25s ease;box-shadow:0 4px 15px rgba(0,0,0,.2);margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;}
+.ed-calc-btn:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.35);}
 
 /* ── Payer rows ── */
 .ed-payer-item{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
-.ed-payer-item .ed-input{flex:1;}
-.ed-payer-item .ed-input.ed-pay-amt{max-width:100px;}
+.ed-payer-item .ed-input-wrap{flex:1;}
+.ed-payer-item .ed-input-wrap.ed-pay-amt-wrap{max-width:110px;}
 .ed-rm-btn{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.25);color:#fca5a5;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:.7em;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
 .ed-rm-btn:hover{background:rgba(239,68,68,.3);}
 .ed-add-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);color:rgba(255,255,255,.45);font-size:.7em;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:4px;}
 .ed-add-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2);}
 
-/* ── Result table ── */
-.ed-result{border-radius:14px;border:1px solid rgba(255,255,255,.08);overflow:hidden;background:rgba(255,255,255,.02);animation:fadeUp .3s ease both;}
-.ed-result-title{padding:12px 16px;background:rgba(255,255,255,.03);font-size:.65em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between;}
+/* ── Result card ── */
+.ed-result{background:rgba(255,255,255,.032);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;animation:fadeUp .3s ease both;position:relative;}
+.ed-result::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#6366f1;box-shadow:2px 0 10px #6366f1;opacity:.7;}
+.ed-result-title{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-size:.65em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(99,102,241,.07) 0%,transparent 100%);}
 .ed-copy-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);border-radius:7px;padding:4px 10px;font-size:.85em;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:4px;}
 .ed-copy-btn:hover{color:#fff;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);}
 .ed-copy-btn.copied{background:rgba(16,185,129,.2);border-color:rgba(16,185,129,.4);color:#34d399;}
 .ed-copy-row{display:flex;gap:6px;}
 
-.ed-tbl{width:100%;border-collapse:collapse;font-size:.72em;}
-.ed-tbl th{padding:9px 10px;text-align:left;font-weight:700;color:rgba(255,255,255,.4);font-size:.85em;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;}
-.ed-tbl td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top;line-height:1.5;}
+/* ── Result table ── */
+.ed-tbl{width:100%;border-collapse:collapse;font-size:.72em;font-family:'Inter',sans-serif;}
+.ed-tbl th{padding:10px 12px;text-align:left;font-weight:700;color:rgba(255,255,255,.3);font-size:9px;text-transform:uppercase;letter-spacing:1px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap;}
+.ed-tbl td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top;line-height:1.5;}
 .ed-tbl tr:last-child td{border-bottom:none;}
+.ed-tbl tr:hover{background:rgba(255,255,255,.02);}
 .ed-tbl td:first-child{font-weight:700;color:#fff;white-space:nowrap;}
 .ed-tbl td:nth-child(2){color:rgba(255,255,255,.7);}
 .ed-tbl td:nth-child(3){color:rgba(255,255,255,.5);font-size:.9em;text-align:center;}
@@ -51,17 +66,24 @@
 .ed-tbl td:nth-child(4){color:rgba(255,255,255,.65);}
 .ed-tbl td:nth-child(5){color:var(--amber);}
 .ed-tbl td:nth-child(6){color:var(--green);}
-.ed-tbl td:nth-child(7){color:#fff;}
+.ed-tbl td:nth-child(7){font-weight:700;}
 .ed-tbl td.net-pos{color:var(--green)!important;}
 .ed-tbl td.net-neg{color:#f87171!important;}
 
 /* ── Summary chips ── */
-.ed-summary{display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.05);}
-.ed-sum-chip{background:rgba(255,255,255,.04);border-radius:18px;padding:4px 12px;font-size:.68em;display:flex;gap:6px;align-items:center;}
-.ed-sum-chip .sc-lbl{color:rgba(255,255,255,.35);}
-.ed-sum-chip .sc-val{font-weight:700;color:#fff;}
-#ed-image-container img{max-width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 2px 16px rgba(0,0,0,.12);}
-#ed-image-container{transition:all .3s ease;}
+.ed-summary{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);}
+.ed-sum-chip{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:5px 14px;font-size:.68em;display:flex;gap:6px;align-items:center;}
+.ed-sum-chip .sc-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.3);font-weight:700;}
+.ed-sum-chip .sc-val{font-weight:700;color:#fff;font-size:13px;}
+
+/* ── Image container ── */
+#ed-image-container img{max-width:100%;height:auto;display:block;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,.25);}
+#ed-image-container{border-radius:16px;border:1px solid rgba(255,255,255,.06);overflow:hidden;background:rgba(255,255,255,.032);padding:8px;margin-top:12px;transition:all .3s ease;}
+
+/* ── Payer Detail footer ── */
+.ed-payer-detail{background:rgba(255,255,255,.02);border-top:1px solid rgba(255,255,255,.04);padding:10px 16px;font-size:.65em;color:rgba(255,255,255,.35);display:flex;gap:14px;flex-wrap:wrap;}
+.ed-payer-detail span{display:flex;align-items:center;gap:4px;}
+.ed-payer-detail strong{color:rgba(255,255,255,.6);}
 </style>
 
 <div class="ed-page" id="ed-body">
@@ -69,18 +91,21 @@
     <span class="pg-ct-icon">💰</span>
     <span class="pg-ct-text">Expense Divider</span>
   </div>
-  <p class="ed-header-sub">Split expenses with tax &amp; discount</p>
 
   <!-- Title -->
   <div class="ed-field">
     <label class="ed-label">Expense Title</label>
-    <input class="ed-input" id="ed-title" placeholder="e.g. Dinner at Cool Planet">
+    <div class="ed-input-wrap">
+      <input class="ed-input" id="ed-title" placeholder="e.g. Dinner at Cool Planet">
+    </div>
   </div>
 
   <!-- Items textarea -->
   <div class="ed-field">
     <label class="ed-label">Items — one per line</label>
-    <textarea class="ed-textarea" id="ed-items-input" placeholder="Faluda(690)- Lithusan&#10;Rice(1590)- Pirathees,Sajee,Vasanth&#10;Kothu(1800)- Pirathees,Sajee,Vasanth&#10;Movie-NT(4250)- Pirathees,Sarma,Sajee,Vasant,Narthanan&#10;Melon-NT(330+330)- Sarma"></textarea>
+    <div class="ed-textarea-wrap">
+      <textarea class="ed-textarea" id="ed-items-input" placeholder="Faluda(690)- Lithusan&#10;Rice(1590)- Pirathees,Sajee,Vasanth&#10;Kothu(1800)- Pirathees,Sajee,Vasanth&#10;Movie-NT(4250)- Pirathees,Sarma,Sajee,Vasant,Narthanan&#10;Melon-NT(330+330)- Sarma"></textarea>
+    </div>
   </div>
 
   <!-- Tax & Discount -->
@@ -88,11 +113,15 @@
   <div class="ed-pct-row">
     <div class="ed-field">
       <label class="ed-label">Tax (%)</label>
-      <input class="ed-input" id="ed-tax" type="number" step="0.01" min="0" placeholder="0">
+      <div class="ed-input-wrap">
+        <input class="ed-input" id="ed-tax" type="number" step="0.01" min="0" placeholder="0">
+      </div>
     </div>
     <div class="ed-field">
       <label class="ed-label">Discount (%)</label>
-      <input class="ed-input" id="ed-disc" type="number" step="0.01" min="0" placeholder="0">
+      <div class="ed-input-wrap">
+        <input class="ed-input" id="ed-disc" type="number" step="0.01" min="0" placeholder="0">
+      </div>
     </div>
   </div>
 
@@ -108,7 +137,7 @@
   <div id="ed-result-area"></div>
 
   <!-- Rendered image appears here for right-click copy -->
-  <div id="ed-image-container" style="display:none;margin-top:12px;border-radius:14px;border:1px solid rgba(255,255,255,.08);overflow:hidden;background:rgba(255,255,255,.02);padding:8px;">
+  <div id="ed-image-container" style="display:none;">
     <div style="padding:8px 12px 6px;font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:space-between;">
       <span>📸 Table Image — Right-click → Copy Image</span>
       <button class="ed-copy-btn" onclick="document.getElementById('ed-image-container').style.display='none';" style="font-size:.9em;">✕ Close</button>
@@ -139,8 +168,8 @@ function edAddPayer() {
   div.className = 'ed-payer-item';
   div.id = 'ed-payer-' + idx;
   div.innerHTML =
-    '<input class="ed-input" id="ed-payer-name-' + idx + '" placeholder="Person name">' +
-    '<input class="ed-input ed-pay-amt" id="ed-payer-amt-' + idx + '" type="text" inputmode="decimal" placeholder="Amount" oninput="edShowEval(this)" onpaste="setTimeout(edShowEval.bind(null,this),10)">' +
+    '<div class="ed-input-wrap"><input class="ed-input" id="ed-payer-name-' + idx + '" placeholder="Person name"></div>' +
+    '<div class="ed-input-wrap ed-pay-amt-wrap"><input class="ed-input" id="ed-payer-amt-' + idx + '" type="text" inputmode="decimal" placeholder="Amount" oninput="edShowEval(this)" onpaste="setTimeout(edShowEval.bind(null,this),10)"></div>' +
     '<button class="ed-rm-btn" onclick="edRemovePayer(' + idx + ')" title="Remove">✕</button>';
   document.getElementById('ed-payers-container').appendChild(div);
 }
@@ -161,12 +190,13 @@ function edEvalPrice(str) {
 
 function edShowEval(input) {
   var val = input.value.trim();
+  var wrap = input.closest('.ed-input-wrap');
   if (val.indexOf('+') !== -1) {
     var result = edEvalPrice(val);
-    input.style.borderColor = 'rgba(16,185,129,.5)';
+    if (wrap) wrap.style.borderColor = 'rgba(16,185,129,.5)';
     input.title = '= ' + result;
   } else {
-    input.style.borderColor = '';
+    if (wrap) wrap.style.borderColor = '';
     input.title = '';
   }
 }
@@ -199,8 +229,8 @@ function edGetPayers() {
   var container = document.getElementById('ed-payers-container');
   var rows = container.querySelectorAll('.ed-payer-item');
   rows.forEach(function(row) {
-    var nameInput = row.querySelector('.ed-input:first-child');
-    var amtInput = row.querySelector('.ed-pay-amt');
+    var nameInput = row.querySelector('.ed-input-wrap:first-child .ed-input');
+    var amtInput = row.querySelector('.ed-pay-amt-wrap .ed-input');
     var name = (nameInput ? nameInput.value : '').trim();
     var amt = edEvalPrice(amtInput ? amtInput.value : '0');
     if (name || amt > 0) {
@@ -343,7 +373,7 @@ function edCalculate() {
       var taxableLabel = hasTaxable && hasNonTaxable ? '🔄 Mixed' : (hasTaxable ? '✅ Yes' : '❌ No');
 
       var netClass = net >= 0 ? 'net-pos' : 'net-neg';
-      var netLabel = (net >= 0 ? '🟢 Gets back ' : '🔴 Owes ') + edFmt(Math.abs(net));
+      var netLabel = (net >= 0 ? 'Gets back ' : 'Owes ') + edFmt(Math.abs(net));
 
       html += '<tr>' +
         '<td>' + displayName + '</td>' +
@@ -361,9 +391,9 @@ function edCalculate() {
 
   // Payer detail at bottom
   if (payers.length > 0) {
-    html += '<div style="padding:8px 16px 10px;border-top:1px solid rgba(255,255,255,.05);font-size:.7em;color:rgba(255,255,255,.35);display:flex;gap:14px;flex-wrap:wrap;">';
+    html += '<div class="ed-payer-detail">';
     payers.forEach(function(payer) {
-      html += '<span>💵 <strong style="color:rgba(255,255,255,.6)">' + payer.name + '</strong> paid ' + edFmt(payer.amount) + '</span>';
+      html += '<span>💵 <strong>' + payer.name + '</strong> paid ' + edFmt(payer.amount) + '</span>';
     });
     html += '</div>';
   }
@@ -456,9 +486,9 @@ function edCopyAsImage() {
   wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:99999;';
   wrapper.id = 'ed-export-wrap';
 
-  // Inner container with white background and shadow
+  // Inner container with dark background and shadow
   var inner = document.createElement('div');
-  inner.style.cssText = 'width:auto;background:#fff;border-radius:12px;padding:0;font-family:Calibri,Arial,sans-serif;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 8px 30px rgba(0,0,0,.12);';
+  inner.style.cssText = 'width:auto;background:#0d1220;border-radius:12px;padding:0;font-family:Inter,Calibri,Arial,sans-serif;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 8px 30px rgba(0,0,0,.5);';
 
   // ── HEADER ──
   var header = document.createElement('div');
@@ -476,22 +506,22 @@ function edCopyAsImage() {
 
   // ── SUMMARY BAR ──
   var sumBar = document.createElement('div');
-  sumBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;padding:14px 24px;background:#f8f9fc;border-bottom:1px solid #eef0f5;';
+  sumBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;padding:14px 24px;background:#0f1525;border-bottom:1px solid rgba(255,255,255,.06);';
   var summaryItems = [
-    { label: 'Subtotal', val: chipData['Subtotal'] || '—', color: '#333' },
-    { label: 'Non-Taxable', val: chipData['Non-Taxable'] || null, color: '#b8860b' },
-    { label: 'Taxable', val: chipData['Taxable'] || null, color: '#1565c0' },
-    { label: 'Tax', val: chipData['Tax'] || null, color: '#b8860b' },
-    { label: 'Discount', val: chipData['Discount'] || null, color: '#2e7d32' },
-    { label: 'Total', val: chipData['Total'] || '—', color: '#0f3460', bold: true },
-    { label: 'Paid', val: chipData['Paid'] || null, color: '#1565c0', bold: true }
+    { label: 'Subtotal', val: chipData['Subtotal'] || '—', color: '#ccc' },
+    { label: 'Non-Taxable', val: chipData['Non-Taxable'] || null, color: '#fbbf24' },
+    { label: 'Taxable', val: chipData['Taxable'] || null, color: '#60a5fa' },
+    { label: 'Tax', val: chipData['Tax'] || null, color: '#fbbf24' },
+    { label: 'Discount', val: chipData['Discount'] || null, color: '#34d399' },
+    { label: 'Total', val: chipData['Total'] || '—', color: '#e2e8f0', bold: true },
+    { label: 'Paid', val: chipData['Paid'] || null, color: '#60a5fa', bold: true }
   ];
   summaryItems.forEach(function(item) {
     if (item.val === null) return;
     var chip = document.createElement('div');
-    chip.style.cssText = 'background:#fff;border-radius:10px;padding:6px 16px;border:1px solid #e8ecf2;text-align:center;';
+    chip.style.cssText = 'background:rgba(255,255,255,.04);border-radius:10px;padding:6px 16px;border:1px solid rgba(255,255,255,.08);text-align:center;';
     var lbl = document.createElement('div');
-    lbl.style.cssText = 'font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:700;';
+    lbl.style.cssText = 'font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.35);font-weight:700;';
     lbl.textContent = item.label;
     var val = document.createElement('div');
     val.style.cssText = 'font-size:15px;font-weight:' + (item.bold ? '800' : '600') + ';color:' + item.color + ';margin-top:2px;';
@@ -505,13 +535,13 @@ function edCopyAsImage() {
   // ── PAID BY BAR ──
   if (payerStrs.length > 0) {
     var paidBar = document.createElement('div');
-    paidBar.style.cssText = 'padding:8px 24px;background:#f0f4ff;border-bottom:1px solid #eef0f5;font-size:12px;color:#333;display:flex;gap:18px;flex-wrap:wrap;';
-    paidBar.innerHTML = '<span style="font-weight:700;color:#555;margin-right:4px;">💵 Paid By:</span> ';
+    paidBar.style.cssText = 'padding:8px 24px;background:rgba(99,102,241,.06);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:rgba(255,255,255,.6);display:flex;gap:18px;flex-wrap:wrap;';
+    paidBar.innerHTML = '<span style="font-weight:700;color:rgba(255,255,255,.4);margin-right:4px;">💵 Paid By:</span> ';
     payerStrs.forEach(function(s, i) {
       var sp = document.createElement('span');
-      sp.style.cssText = 'font-weight:600;color:#0f3460;';
+      sp.style.cssText = 'font-weight:600;color:#a5b4fc;';
       sp.textContent = s.replace('💵','').trim();
-      if (i < payerStrs.length - 1) paidBar.innerHTML += sp.outerHTML + '<span style="color:#aaa;"> | </span>';
+      if (i < payerStrs.length - 1) paidBar.innerHTML += sp.outerHTML + '<span style="color:rgba(255,255,255,.15);"> | </span>';
       else paidBar.innerHTML += sp.outerHTML;
     });
     inner.appendChild(paidBar);
@@ -522,7 +552,7 @@ function edCopyAsImage() {
   tblContainer.style.cssText = 'padding:16px 24px 20px;';
 
   var tbl = document.createElement('table');
-  tbl.style.cssText = 'border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:12px;width:100%;';
+  tbl.style.cssText = 'border-collapse:collapse;font-family:Inter,Calibri,Arial,sans-serif;font-size:12px;width:100%;';
 
   // Headers
   var thead = document.createElement('thead');
@@ -531,7 +561,7 @@ function edCopyAsImage() {
   headers.forEach(function(th, idx) {
     var hc = document.createElement('th');
     hc.textContent = th.textContent.replace(/[🟢🔴✅❌🔄]/g,'').trim();
-    hc.style.cssText = 'padding:8px 12px;border:1px solid #d0d5dd;font-weight:700;background:#1a1a2e;color:#fff;text-align:' + (idx === 2 ? 'center' : (idx >= 3 ? 'right' : 'left')) + ';font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;';
+    hc.style.cssText = 'padding:8px 12px;border:1px solid rgba(255,255,255,.1);font-weight:700;background:#1a1a2e;color:#e2e8f0;text-align:' + (idx === 2 ? 'center' : (idx >= 3 ? 'right' : 'left')) + ';font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;';
     hRow.appendChild(hc);
   });
   thead.appendChild(hRow);
@@ -542,7 +572,7 @@ function edCopyAsImage() {
   var rows = table.querySelectorAll('tbody tr');
   rows.forEach(function(tr, ri) {
     var r = document.createElement('tr');
-    r.style.cssText = 'background:' + (ri % 2 === 0 ? '#fff' : '#f8f9fc') + ';';
+    r.style.cssText = 'background:' + (ri % 2 === 0 ? 'rgba(255,255,255,.02)' : 'rgba(255,255,255,.04)') + ';';
     var cells = tr.querySelectorAll('td');
     cells.forEach(function(td, i) {
       var dc = document.createElement('td');
@@ -559,13 +589,14 @@ function edCopyAsImage() {
       if (i === 2) extra += 'text-align:center;font-size:11px;';
       else if (i >= 3) extra += 'text-align:right;font-weight:600;';
       if (i === 6) {
-        if (txt.indexOf('Gets') !== -1) extra += 'color:#2e7d32;';
-        else if (txt.indexOf('Owes') !== -1) extra += 'color:#c62828;';
-        else extra += 'color:#333;';
+        if (txt.indexOf('Gets') !== -1) { extra += 'color:#34d399;'; dc.style.fontWeight = '700'; }
+        else if (txt.indexOf('Owes') !== -1) { extra += 'color:#f87171;'; dc.style.fontWeight = '700'; }
+        else extra += 'color:rgba(255,255,255,.7);';
       }
-      dc.style.cssText = 'padding:7px 12px;border:1px solid #e0e4ea;color:#333;font-size:12px;' + extra + ';vertical-align:middle;';
+      dc.style.cssText = 'padding:7px 12px;border:1px solid rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:12px;' + extra + ';vertical-align:middle;';
       if (i === 0) dc.style.fontWeight = '700';
-      if (i === 1) dc.style.color = '#555';
+      if (i === 0) dc.style.color = '#e2e8f0';
+      if (i === 1) dc.style.color = 'rgba(255,255,255,.55)';
       r.appendChild(dc);
     });
     tbody.appendChild(r);
@@ -576,7 +607,7 @@ function edCopyAsImage() {
   // Total row at bottom of table
   var totalVal = chipData['Total'] || '—';
   var tFoot = document.createElement('div');
-  tFoot.style.cssText = 'margin-top:8px;text-align:right;font-size:13px;font-weight:700;color:#0f3460;padding:4px 4px 0;border-top:2px solid #1a1a2e;';
+  tFoot.style.cssText = 'margin-top:8px;text-align:right;font-size:13px;font-weight:700;color:#a5b4fc;padding:4px 4px 0;border-top:2px solid rgba(99,102,241,.5);';
   tFoot.innerHTML = 'Grand Total: ' + totalVal;
   tblContainer.appendChild(tFoot);
 
@@ -584,7 +615,7 @@ function edCopyAsImage() {
 
   // ── FOOTER ──
   var footer = document.createElement('div');
-  footer.style.cssText = 'background:#f0f2f5;padding:10px 24px;font-size:10px;color:#999;text-align:center;border-top:1px solid #e0e4ea;';
+  footer.style.cssText = 'background:rgba(0,0,0,.2);padding:10px 24px;font-size:10px;color:rgba(255,255,255,.25);text-align:center;border-top:1px solid rgba(255,255,255,.05);';
   footer.textContent = 'Generated by ptsManage Expense Divider';
   inner.appendChild(footer);
 
@@ -612,7 +643,7 @@ function edCopyAsImage() {
 function edCaptureTable(wrapper) {
   html2canvas(wrapper, {
     scale: 2,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0d1220',
     useCORS: true,
     logging: false,
     width: wrapper.scrollWidth,
