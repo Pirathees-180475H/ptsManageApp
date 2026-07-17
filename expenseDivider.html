@@ -41,6 +41,10 @@
 .ed-add-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);color:rgba(255,255,255,.45);font-size:.7em;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:4px;}
 .ed-add-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2);}
 
+/* ── Sponsor grid ── */
+.ed-sponsor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+@media(max-width:480px){.ed-sponsor-grid{grid-template-columns:1fr;}}
+
 /* ── Result card ── */
 .ed-result{background:rgba(255,255,255,.032);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;animation:fadeUp .3s ease both;position:relative;}
 .ed-result::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#6366f1;box-shadow:2px 0 10px #6366f1;opacity:.7;}
@@ -104,7 +108,7 @@
   <div class="ed-field">
     <label class="ed-label">Items — one per line</label>
     <div class="ed-textarea-wrap">
-      <textarea class="ed-textarea" id="ed-items-input" placeholder="Faluda(690)- Lithusan&#10;Rice(1590)- Pirathees,Sajee,Vasanth&#10;Kothu(1800)- Pirathees,Sajee,Vasanth&#10;Movie-NT(4250)- Pirathees,Sarma,Sajee,Vasant,Narthanan&#10;Melon-NT(330+330)- Sarma"></textarea>
+      <textarea class="ed-textarea" id="ed-items-input" oninput="edUpdateWhoPaidHint()" placeholder="Faluda(690)- Lithusan&#10;Rice(1590)- Pirathees,Sajee,Vasanth&#10;Kothu(1800)- Pirathees,Sajee,Vasanth&#10;Movie-NT(4250)- Pirathees,Sarma,Sajee,Vasant,Narthanan&#10;Melon-NT(330+330)- Sarma"></textarea>
     </div>
   </div>
 
@@ -114,19 +118,36 @@
     <div class="ed-field">
       <label class="ed-label">Tax (%)</label>
       <div class="ed-input-wrap">
-        <input class="ed-input" id="ed-tax" type="number" step="0.01" min="0" placeholder="0">
+        <input class="ed-input" id="ed-tax" type="number" step="0.01" min="0" placeholder="0" oninput="edUpdateWhoPaidHint()">
       </div>
     </div>
     <div class="ed-field">
       <label class="ed-label">Discount (%)</label>
       <div class="ed-input-wrap">
-        <input class="ed-input" id="ed-disc" type="number" step="0.01" min="0" placeholder="0">
+        <input class="ed-input" id="ed-disc" type="number" step="0.01" min="0" placeholder="0" oninput="edUpdateWhoPaidHint()">
       </div>
     </div>
   </div>
 
-  <!-- Who paid -->
-  <div class="ed-section-title">💵 Who Paid</div>
+  <!-- Sponsor -->
+  <div class="ed-section-title">💵 Sponsor</div>
+  <div class="ed-sponsor-grid">
+    <div class="ed-field" style="margin:0;">
+      <label class="ed-label">Sponsor Names <span style="font-weight:400;text-transform:none;color:rgba(255,255,255,.2);">— name or name + reference</span></label>
+      <div class="ed-input-wrap">
+        <input class="ed-input" id="ed-sponsor-names" placeholder="e.g. John, Dany Birthday" oninput="edUpdateWhoPaidHint()">
+      </div>
+    </div>
+    <div class="ed-field" style="margin:0;">
+      <label class="ed-label">Sponsor Amounts <span style="font-weight:400;text-transform:none;color:rgba(255,255,255,.2);">— 100+200, math supported</span></label>
+      <div class="ed-input-wrap">
+        <input class="ed-input" id="ed-sponsor-amounts" type="text" inputmode="decimal" placeholder="e.g. 100+200" oninput="edShowEval(this);edUpdateWhoPaidHint()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Who Paid — remaining after sponsor -->
+  <div class="ed-section-title">💵 Who Paid <span style="font-weight:400;text-transform:none;color:rgba(255,255,255,.2);font-size:1em;">— <span id="ed-who-paid-hint">Gross − Sponsor</span></span></div>
   <div id="ed-payers-container"></div>
   <button class="ed-add-btn" onclick="edAddPayer()">+ Add Person Who Paid</button>
 
@@ -154,6 +175,8 @@ var _edPayerIdx = 0;
 function edInit() {
   _edPayerIdx = 0;
   document.getElementById('ed-payers-container').innerHTML = '';
+  document.getElementById('ed-sponsor-names').value = '';
+  document.getElementById('ed-sponsor-amounts').value = '';
   document.getElementById('ed-result-area').innerHTML = '';
   document.getElementById('ed-title').value = '';
   document.getElementById('ed-items-input').value = '';
@@ -168,15 +191,78 @@ function edAddPayer() {
   div.className = 'ed-payer-item';
   div.id = 'ed-payer-' + idx;
   div.innerHTML =
-    '<div class="ed-input-wrap"><input class="ed-input" id="ed-payer-name-' + idx + '" placeholder="Person name"></div>' +
-    '<div class="ed-input-wrap ed-pay-amt-wrap"><input class="ed-input" id="ed-payer-amt-' + idx + '" type="text" inputmode="decimal" placeholder="Amount" oninput="edShowEval(this)" onpaste="setTimeout(edShowEval.bind(null,this),10)"></div>' +
+    '<div class="ed-input-wrap"><input class="ed-input" id="ed-payer-name-' + idx + '" placeholder="Person name" oninput="edUpdateWhoPaidHint()"></div>' +
+    '<div class="ed-input-wrap ed-pay-amt-wrap"><input class="ed-input" id="ed-payer-amt-' + idx + '" type="text" inputmode="decimal" placeholder="Amount" oninput="edShowEval(this);edUpdateWhoPaidHint()" onpaste="setTimeout(function(){edShowEval(document.getElementById(\'ed-payer-amt-' + idx + '\'));edUpdateWhoPaidHint();},10)"></div>' +
     '<button class="ed-rm-btn" onclick="edRemovePayer(' + idx + ')" title="Remove">✕</button>';
   document.getElementById('ed-payers-container').appendChild(div);
 }
 
 function edRemovePayer(idx) {
   var el = document.getElementById('ed-payer-' + idx);
-  if (el) el.remove();
+  if (el) { el.remove(); edUpdateWhoPaidHint(); }
+}
+
+function edGetPayers() {
+  var payers = [];
+  var container = document.getElementById('ed-payers-container');
+  var rows = container.querySelectorAll('.ed-payer-item');
+  rows.forEach(function(row) {
+    var nameInput = row.querySelector('.ed-input-wrap:first-child .ed-input');
+    var amtInput = row.querySelector('.ed-pay-amt-wrap .ed-input');
+    var name = (nameInput ? nameInput.value : '').trim();
+    var amt = edEvalPrice(amtInput ? amtInput.value : '0');
+    if (name || amt > 0) {
+      payers.push({ name: name || 'Person', amount: amt });
+    }
+  });
+  return payers;
+}
+
+function edGetSponsors() {
+  var namesStr = document.getElementById('ed-sponsor-names').value.trim();
+  var amtStr = document.getElementById('ed-sponsor-amounts').value.trim();
+  var total = edEvalPrice(amtStr);
+  var names = namesStr ? namesStr.split(',').map(function(s) {
+    return s.trim();
+  }).filter(function(s) {
+    return s;
+  }) : [];
+  if (names.length === 0 && total > 0) names = ['Sponsor'];
+  return { names: names, total: total };
+}
+
+function edUpdateWhoPaidHint() {
+  var raw = document.getElementById('ed-items-input').value.trim();
+  var items = edParseItems(raw);
+  var taxPct = parseFloat(document.getElementById('ed-tax').value) || 0;
+  var discPct = parseFloat(document.getElementById('ed-disc').value) || 0;
+  var subtotal = 0, taxableSubtotal = 0;
+  items.forEach(function(i) { subtotal += i.price; if (i.taxable && taxPct > 0) taxableSubtotal += i.price; });
+  var total = Math.round(subtotal + taxableSubtotal * (taxPct / 100) - subtotal * (discPct / 100));
+  var sponsorAmt = edEvalPrice(document.getElementById('ed-sponsor-amounts').value);
+  var remaining = Math.max(0, total - sponsorAmt);
+  var payers = edGetPayers();
+  var totalPaid = 0;
+  payers.forEach(function(p) { totalPaid += p.amount; });
+  var hint = document.getElementById('ed-who-paid-hint');
+  var hasSponsors = sponsorAmt > 0;
+  var hasPayers = payers.length > 0;
+  if (total > 0) {
+    if (!hasSponsors && !hasPayers) {
+      hint.innerHTML = '<span style="color:#f87171;font-size:1.15em;font-weight:700;">⚠️ Add Sponsor or Who Paid</span>';
+    } else {
+      var combined = sponsorAmt + totalPaid;
+      if (Math.abs(combined - total) > 0.01) {
+        hint.innerHTML = '<span style="color:#f87171;font-size:1.15em;font-weight:700;">⚠️ Sponsor+Paid ' + edFmt(combined) + ' ≠ Gross ' + edFmt(total) + '</span>';
+      } else if (hasSponsors) {
+        hint.innerHTML = '<span style="font-size:1.15em;font-weight:700;color:var(--green)">Remaining: ' + edFmt(remaining) + '</span> <span style="opacity:.5;font-size:.85em;">(Gross: ' + edFmt(total) + ' − Sponsor: ' + edFmt(sponsorAmt) + ')</span>';
+      } else {
+        hint.innerHTML = '<span style="font-size:1.15em;font-weight:700;">' + edFmt(total) + ' to split</span>';
+      }
+    }
+  } else {
+    hint.textContent = 'Gross − Sponsor';
+  }
 }
 
 function edEvalPrice(str) {
@@ -224,28 +310,13 @@ function edParseItems(text) {
   return items;
 }
 
-function edGetPayers() {
-  var payers = [];
-  var container = document.getElementById('ed-payers-container');
-  var rows = container.querySelectorAll('.ed-payer-item');
-  rows.forEach(function(row) {
-    var nameInput = row.querySelector('.ed-input-wrap:first-child .ed-input');
-    var amtInput = row.querySelector('.ed-pay-amt-wrap .ed-input');
-    var name = (nameInput ? nameInput.value : '').trim();
-    var amt = edEvalPrice(amtInput ? amtInput.value : '0');
-    if (name || amt > 0) {
-      payers.push({ name: name || 'Person', amount: amt });
-    }
-  });
-  return payers;
-}
-
 function edCalculate() {
   var title = document.getElementById('ed-title').value.trim() || 'Untitled';
   var taxPct = parseFloat(document.getElementById('ed-tax').value) || 0;
   var discPct = parseFloat(document.getElementById('ed-disc').value) || 0;
   var raw = document.getElementById('ed-items-input').value.trim();
   var items = edParseItems(raw);
+  var sponsors = edGetSponsors();
   var payers = edGetPayers();
 
   if (items.length === 0) {
@@ -296,23 +367,71 @@ function edCalculate() {
     finalOwed[k] = shareAfterDisc;
   });
 
-  // Total paid
+  // Sum Who Paid amounts
   var totalPaid = 0;
-  payers.forEach(function(payer) { totalPaid += Math.round(payer.amount); });
+  payers.forEach(function(p) { totalPaid += Math.round(p.amount); });
 
-  // Validation: Grand Total should equal total paid
-  if (payers.length > 0 && Math.abs(totalAfterAdjustments - totalPaid) > 0.01) {
-    var diff = totalAfterAdjustments - totalPaid;
-    var msg = '⚠️ <strong>Amount Mismatch!</strong><br><br>' +
-      'Grand Total: <strong>' + edFmt(totalAfterAdjustments) + '</strong><br>' +
-      'Total Paid: <strong>' + edFmt(totalPaid) + '</strong><br>' +
-      'Difference: <strong style="color:' + (diff > 0 ? 'var(--amber)' : 'var(--red)') + '">' + edFmt(Math.abs(diff)) + '</strong><br><br>' +
-      (diff > 0
-        ? 'The total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>) is <strong>more</strong> than what was paid (<strong>' + edFmt(totalPaid) + '</strong>). Someone still needs to pay <strong>' + edFmt(Math.abs(diff)) + '</strong>.'
-        : 'The total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>) is <strong>less</strong> than what was paid (<strong>' + edFmt(totalPaid) + '</strong>). There\'s an excess of <strong>' + edFmt(Math.abs(diff)) + '</strong>.');
-    document.getElementById('ed-result-area').innerHTML = '<div class="ed-result"><div style="padding:24px;text-align:center;line-height:1.8;color:rgba(255,255,255,.7);font-size:.82em;">' + msg + '</div></div>';
+  // Sponsor total
+  var sponsorTotal = sponsors.total;
+  var hasSponsors = sponsorTotal > 0;
+
+  // Remaining to split = Gross - Sponsor
+  var remainingAfterSponsor = Math.max(0, totalAfterAdjustments - sponsorTotal);
+
+  // Validation: Sponsor + Who Paid = Gross
+  var hasPayers = payers.length > 0;
+  if (!hasSponsors && !hasPayers) {
+    document.getElementById('ed-result-area').innerHTML = '<div class="ed-result"><div style="padding:24px;text-align:center;line-height:1.8;color:rgba(255,255,255,.7);font-size:.82em;">⚠️ <strong>Add Sponsor or Who Paid amounts</strong><br><span style="font-size:.85em;opacity:.6">Sponsor + Who Paid must equal Grand Total (' + edFmt(totalAfterAdjustments) + ')</span></div></div>';
     document.getElementById('ed-result-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     return;
+  }
+  if (hasSponsors && hasPayers) {
+    var combined = sponsorTotal + totalPaid;
+    if (Math.abs(combined - totalAfterAdjustments) > 0.01) {
+      var diff = combined - totalAfterAdjustments;
+      var msg = '⚠️ <strong>Amount Mismatch!</strong><br><br>' +
+        'Grand Total: <strong>' + edFmt(totalAfterAdjustments) + '</strong><br>' +
+        'Sponsor: <strong>' + edFmt(sponsorTotal) + '</strong><br>' +
+        'Who Paid: <strong>' + edFmt(totalPaid) + '</strong><br>' +
+        'Sponsor + Who Paid: <strong>' + edFmt(combined) + '</strong><br>' +
+        'Difference: <strong style="color:' + (diff > 0 ? 'var(--amber)' : 'var(--red)') + '">' + edFmt(Math.abs(diff)) + '</strong><br><br>' +
+        (diff > 0
+          ? 'Sponsor + Who Paid (<strong>' + edFmt(combined) + '</strong>) is <strong>more</strong> than Grand Total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>) by <strong>' + edFmt(Math.abs(diff)) + '</strong>. Reduce something.'
+          : 'Sponsor + Who Paid (<strong>' + edFmt(combined) + '</strong>) is <strong>less</strong> than Grand Total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>) by <strong>' + edFmt(Math.abs(diff)) + '</strong>. Add more to Sponsor or Who Paid.');
+      document.getElementById('ed-result-area').innerHTML = '<div class="ed-result"><div style="padding:24px;text-align:center;line-height:1.8;color:rgba(255,255,255,.7);font-size:.82em;">' + msg + '</div></div>';
+      document.getElementById('ed-result-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+  } else if (hasSponsors && !hasPayers) {
+    // Only sponsor — sponsor must cover the whole gross
+    if (Math.abs(sponsorTotal - totalAfterAdjustments) > 0.01) {
+      var diff = sponsorTotal - totalAfterAdjustments;
+      var msg = '⚠️ <strong>Amount Mismatch!</strong><br><br>' +
+        'Grand Total: <strong>' + edFmt(totalAfterAdjustments) + '</strong><br>' +
+        'Sponsor: <strong>' + edFmt(sponsorTotal) + '</strong><br>' +
+        'Difference: <strong style="color:' + (diff > 0 ? 'var(--amber)' : 'var(--red)') + '">' + edFmt(Math.abs(diff)) + '</strong><br><br>' +
+        (diff > 0
+          ? 'Sponsor amount (<strong>' + edFmt(sponsorTotal) + '</strong>) exceeds Grand Total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>). Reduce sponsor amount.'
+          : 'Sponsor amount (<strong>' + edFmt(sponsorTotal) + '</strong>) is less than Grand Total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>). Add Who Paid entries for the remaining ' + edFmt(Math.abs(diff)) + '.');
+      document.getElementById('ed-result-area').innerHTML = '<div class="ed-result"><div style="padding:24px;text-align:center;line-height:1.8;color:rgba(255,255,255,.7);font-size:.82em;">' + msg + '</div></div>';
+      document.getElementById('ed-result-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
+  } else if (!hasSponsors && hasPayers) {
+    // Only Who Paid — must equal gross
+    if (Math.abs(totalPaid - totalAfterAdjustments) > 0.01) {
+      var diff = totalPaid - totalAfterAdjustments;
+      var msg = '⚠️ <strong>Amount Mismatch!</strong><br><br>' +
+        'Grand Total: <strong>' + edFmt(totalAfterAdjustments) + '</strong><br>' +
+        'Who Paid Total: <strong>' + edFmt(totalPaid) + '</strong><br>' +
+        'Difference: <strong style="color:' + (diff > 0 ? 'var(--amber)' : 'var(--red)') + '">' + edFmt(Math.abs(diff)) + '</strong><br><br>' +
+        (diff > 0
+          ? 'Who Paid total (<strong>' + edFmt(totalPaid) + '</strong>) exceeds Grand Total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>). Reduce.'
+          : 'Who Paid total (<strong>' + edFmt(totalPaid) + '</strong>) is less than Grand Total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>). Add ' + edFmt(Math.abs(diff)) + ' more.');
+      document.getElementById('ed-result-area').innerHTML = '<div class="ed-result"><div style="padding:24px;text-align:center;line-height:1.8;color:rgba(255,255,255,.7);font-size:.82em;">' + msg + '</div></div>';
+      document.getElementById('ed-result-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      return;
+    }
   }
 
   // Build result HTML
@@ -322,13 +441,19 @@ function edCalculate() {
   // Summary chips
   html += '<div class="ed-summary">';
   html += '<div class="ed-sum-chip"><span class="sc-lbl">Subtotal</span><span class="sc-val">' + edFmt(subtotal) + '</span></div>';
-  if (nonTaxableSubtotal > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Non-Taxable</span><span class="sc-val" style="color:var(--amber)">' + edFmt(nonTaxableSubtotal) + '</span></div>';
-  if (taxableSubtotal > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Taxable</span><span class="sc-val" style="color:var(--blue)">' + edFmt(taxableSubtotal) + '</span></div>';
+  if (taxPct > 0) {
+    if (nonTaxableSubtotal > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Non-Taxable</span><span class="sc-val" style="color:var(--amber)">' + edFmt(nonTaxableSubtotal) + '</span></div>';
+    if (taxableSubtotal > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Taxable</span><span class="sc-val" style="color:var(--blue)">' + edFmt(taxableSubtotal) + '</span></div>';
+  }
   if (taxPct > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Tax</span><span class="sc-val" style="color:var(--amber)">+' + taxPct + '% (' + edFmt(taxAmt) + ')</span></div>';
   if (discPct > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Discount</span><span class="sc-val" style="color:var(--green)">−' + discPct + '% (' + edFmt(discAmt) + ')</span></div>';
   html += '<div class="ed-sum-chip"><span class="sc-lbl">Total</span><span class="sc-val">' + edFmt(totalAfterAdjustments) + '</span></div>';
+  if (hasSponsors) {
+    html += '<div class="ed-sum-chip"><span class="sc-lbl">Sponsor</span><span class="sc-val" style="color:var(--blue)">' + edFmt(sponsorTotal) + '</span></div>';
+    html += '<div class="ed-sum-chip"><span class="sc-lbl">To Split</span><span class="sc-val" style="color:var(--green)">' + edFmt(remainingAfterSponsor) + '</span></div>';
+  }
   if (payers.length > 0) {
-    html += '<div class="ed-sum-chip"><span class="sc-lbl">Paid</span><span class="sc-val" style="color:var(--blue)">' + edFmt(totalPaid) + '</span></div>';
+    html += '<div class="ed-sum-chip"><span class="sc-lbl">Who Paid</span><span class="sc-val" style="color:var(--amber)">' + edFmt(totalPaid) + '</span></div>';
   }
   html += '</div>';
 
@@ -356,11 +481,19 @@ function edCalculate() {
       var shareAfterTax = Math.round(taxableShare * (1 + taxPct / 100) + nonTaxableShare);
       var shareAfterAll = Math.round(shareAfterTax - shareBeforeTax * (discPct / 100));
 
+      // Their share of the remaining amount (Gross − Sponsor)
+      var shareOfRemaining = remainingAfterSponsor > 0
+        ? Math.round(finalOwed[k] / totalAfterAdjustments * remainingAfterSponsor)
+        : 0;
+
+      // How much this person paid in Who Paid section
       var paidByThis = 0;
       payers.forEach(function(payer) {
         if (payer.name.toLowerCase() === k) paidByThis += payer.amount;
       });
-      var net = paidByThis - shareAfterAll;
+
+      // Net = what they paid − what they owe (their share of remaining)
+      var net = paidByThis - shareOfRemaining;
 
       var itemStrs = personItems[k].map(function(i) {
         var tag = i.taxable ? '' : ' (NT)';
@@ -368,9 +501,10 @@ function edCalculate() {
       });
       var itemsList = itemStrs.join(', ');
 
-      var hasTaxable = personItems[k].some(function(i) { return i.taxable; });
-      var hasNonTaxable = personItems[k].some(function(i) { return !i.taxable; });
-      var taxableLabel = hasTaxable && hasNonTaxable ? '🔄 Mixed' : (hasTaxable ? '✅ Yes' : '❌ No');
+      var applyTax = taxPct > 0;
+      var hasTaxable = applyTax && personItems[k].some(function(i) { return i.taxable; });
+      var hasNonTaxable = !applyTax || personItems[k].some(function(i) { return !i.taxable; });
+      var taxableLabel = applyTax ? (hasTaxable && hasNonTaxable ? '🔄 Mixed' : (hasTaxable ? '✅ Yes' : '❌ No')) : '❌ No';
 
       var netClass = net >= 0 ? 'net-pos' : 'net-neg';
       var netLabel = (net >= 0 ? 'Gets back ' : 'Owes ') + edFmt(Math.abs(net));
@@ -389,12 +523,25 @@ function edCalculate() {
     html += '</tbody></table></div>';
   }
 
-  // Payer detail at bottom
-  if (payers.length > 0) {
+  // Bottom detail — Sponsor + Who Paid
+  var hasPayers = payers.length > 0;
+  if (hasSponsors || hasPayers) {
     html += '<div class="ed-payer-detail">';
-    payers.forEach(function(payer) {
-      html += '<span>💵 <strong>' + payer.name + '</strong> paid ' + edFmt(payer.amount) + '</span>';
-    });
+    if (hasSponsors) {
+      sponsors.names.forEach(function(name) {
+        html += '<span>🏅 <strong>' + name + '</strong> sponsored ' + edFmt(Math.round(sponsorTotal / sponsors.names.length)) + '</span>';
+      });
+    }
+    if (hasPayers) {
+      payers.forEach(function(payer) {
+        html += '<span>💵 <strong>' + payer.name + '</strong> paid ' + edFmt(payer.amount) + '</span>';
+      });
+    }
+    if (hasSponsors) {
+      html += '<span style="margin-left:auto;color:var(--blue);font-weight:700;">Gross: ' + edFmt(totalAfterAdjustments) + ' − Sponsor: ' + edFmt(sponsorTotal) + ' = Split: ' + edFmt(remainingAfterSponsor) + '</span>';
+    } else {
+      html += '<span style="margin-left:auto;color:var(--green);font-weight:700;">Total: ' + edFmt(totalAfterAdjustments) + ' = Split: ' + edFmt(totalAfterAdjustments) + '</span>';
+    }
     html += '</div>';
   }
 
@@ -477,7 +624,7 @@ function edCopyAsImage() {
     var spans = footerEl.querySelectorAll('span');
     spans.forEach(function(s) {
       var txt = s.textContent.trim();
-      if (txt) payerStrs.push(txt);
+      if (txt && txt.indexOf('Gross:') === -1 && txt.indexOf('Total:') === -1 && txt.indexOf('Sponsored:') === -1 && txt.indexOf('Split:') === -1) payerStrs.push(txt);
     });
   }
 
@@ -514,7 +661,9 @@ function edCopyAsImage() {
     { label: 'Tax', val: chipData['Tax'] || null, color: '#fbbf24' },
     { label: 'Discount', val: chipData['Discount'] || null, color: '#34d399' },
     { label: 'Total', val: chipData['Total'] || '—', color: '#e2e8f0', bold: true },
-    { label: 'Paid', val: chipData['Paid'] || null, color: '#60a5fa', bold: true }
+    { label: 'Sponsor', val: chipData['Sponsor'] || null, color: '#60a5fa', bold: true },
+    { label: 'To Split', val: chipData['To Split'] || null, color: '#34d399', bold: true },
+    { label: 'Who Paid', val: chipData['Who Paid'] || null, color: '#fbbf24', bold: true }
   ];
   summaryItems.forEach(function(item) {
     if (item.val === null) return;
@@ -532,18 +681,37 @@ function edCopyAsImage() {
   });
   inner.appendChild(sumBar);
 
-  // ── PAID BY BAR ──
+  // ── SPONSOR / WHO PAID BAR ──
   if (payerStrs.length > 0) {
     var paidBar = document.createElement('div');
     paidBar.style.cssText = 'padding:8px 24px;background:rgba(99,102,241,.06);border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:rgba(255,255,255,.6);display:flex;gap:18px;flex-wrap:wrap;';
-    paidBar.innerHTML = '<span style="font-weight:700;color:rgba(255,255,255,.4);margin-right:4px;">💵 Paid By:</span> ';
-    payerStrs.forEach(function(s, i) {
-      var sp = document.createElement('span');
-      sp.style.cssText = 'font-weight:600;color:#a5b4fc;';
-      sp.textContent = s.replace('💵','').trim();
-      if (i < payerStrs.length - 1) paidBar.innerHTML += sp.outerHTML + '<span style="color:rgba(255,255,255,.15);"> | </span>';
-      else paidBar.innerHTML += sp.outerHTML;
+    // Separate sponsor (🏅) from payer (💵) entries
+    var sponsorItems = [], payerItems = [];
+    payerStrs.forEach(function(s) {
+      if (s.indexOf('🏅') !== -1) sponsorItems.push(s);
+      else payerItems.push(s);
     });
+    if (sponsorItems.length > 0) {
+      paidBar.innerHTML += '<span style="font-weight:700;color:rgba(255,255,255,.4);margin-right:4px;">🏅 Sponsor:</span> ';
+      sponsorItems.forEach(function(s, i) {
+        var sp = document.createElement('span');
+        sp.style.cssText = 'font-weight:600;color:#a5b4fc;';
+        sp.textContent = s.replace('🏅','').trim();
+        if (i < sponsorItems.length - 1) paidBar.innerHTML += sp.outerHTML + '<span style="color:rgba(255,255,255,.15);"> | </span>';
+        else paidBar.innerHTML += sp.outerHTML;
+      });
+    }
+    if (payerItems.length > 0) {
+      if (sponsorItems.length > 0) paidBar.innerHTML += '<span style="color:rgba(255,255,255,.15);margin:0 4px;">•</span>';
+      paidBar.innerHTML += '<span style="font-weight:700;color:rgba(255,255,255,.4);margin-right:4px;">💵 Paid By:</span> ';
+      payerItems.forEach(function(s, i) {
+        var sp = document.createElement('span');
+        sp.style.cssText = 'font-weight:600;color:#fbbf24;';
+        sp.textContent = s.replace('💵','').trim();
+        if (i < payerItems.length - 1) paidBar.innerHTML += sp.outerHTML + '<span style="color:rgba(255,255,255,.15);"> | </span>';
+        else paidBar.innerHTML += sp.outerHTML;
+      });
+    }
     inner.appendChild(paidBar);
   }
 
