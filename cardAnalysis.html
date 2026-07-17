@@ -31,6 +31,9 @@
 .ca-chart-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);}
 .ca-chart-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .ca-chart-title{font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+.ca-chart-select{margin-left:auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:4px 24px 4px 8px;color:rgba(255,255,255,.6);font-size:.65em;font-family:inherit;font-weight:600;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;transition:border-color .2s;}
+.ca-chart-select:focus{outline:none;border-color:var(--purple);}
+.ca-chart-select option{background:#0d1220;color:#fff;}
 .ca-chart-wrap{height:220px;position:relative;}
 
 /* Table */
@@ -190,7 +193,7 @@ function caDisplayData(res) {
 
     '<div class="ca-charts">' +
       '<div class="ca-chart-box"><div class="ca-chart-hdr"><div class="ca-chart-dot" style="background:var(--gold);box-shadow:0 0 6px var(--gold)"></div><div class="ca-chart-title">Offers vs Fees by Card</div></div><div class="ca-chart-wrap"><canvas id="caChartOffersFees"></canvas></div></div>' +
-      '<div class="ca-chart-box"><div class="ca-chart-hdr"><div class="ca-chart-dot" style="background:#00e676;box-shadow:0 0 6px #00e676"></div><div class="ca-chart-title">Total Offers vs Fees</div></div><div class="ca-chart-wrap"><canvas id="caChartTotals"></canvas></div></div>' +
+      '<div class="ca-chart-box"><div class="ca-chart-hdr"><div class="ca-chart-dot" style="background:#00e676;box-shadow:0 0 6px #00e676"></div><div class="ca-chart-title">Total Offers vs Fees</div><select class="ca-chart-select" id="caChartMode" onchange="caSwitchChart(this.value)"><option value="doughnut">Doughnut</option><option value="line">Trend (Line)</option></select></div><div class="ca-chart-wrap"><canvas id="caChartTotals"></canvas></div></div>' +
     '</div>' +
 
     '<div class="ca-filters">' +
@@ -288,12 +291,100 @@ function caRenderCharts() {
     });
   }
 
-  // 2. Offers vs Fees Over Time (doughnut — green vs red)
-  var totalOffersAll = caData.reduce(function(s, r) { return s + r.offersDiscounts; }, 0);
-  var totalFeesAll = caData.reduce(function(s, r) { return s + r.fees; }, 0);
+  // 2. Offers vs Fees (doughnut — green vs red) — draw after mode known
+  caRenderRightChart('doughnut');
+}
 
+var caChartMode = 'doughnut';
+function caSwitchChart(mode) {
+  caChartMode = mode;
+  caRenderRightChart(mode);
+}
+
+function caRenderRightChart(mode) {
+  var TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:11};
+  if (caCharts.totals) { caCharts.totals.destroy(); delete caCharts.totals; }
   var el3 = document.getElementById('caChartTotals');
-  if (el3) {
+  if (!el3) return;
+
+  if (mode === 'line') {
+    // Build monthly data
+    var monthlyData = {};
+    caData.forEach(function(r) {
+      var m = caFormatDate(r.date);
+      if (!monthlyData[m]) monthlyData[m] = { offers: 0, fees: 0 };
+      monthlyData[m].offers += r.offersDiscounts;
+      monthlyData[m].fees += r.fees;
+    });
+    var months = Object.keys(monthlyData).sort(function(a, b) {
+      var pa = a.split('/'), pb = b.split('/');
+      return pa[1] !== pb[1] ? (pa[1] - pb[1]) : (pa[0] - pb[0]);
+    });
+    var offerVals = months.map(function(m) { return monthlyData[m].offers; });
+    var feeVals = months.map(function(m) { return monthlyData[m].fees; });
+
+    // Find max for vertical indicator
+    var maxOffer = Math.max.apply(null, offerVals);
+    var maxFee = Math.max.apply(null, feeVals);
+    var maxOfferIdx = offerVals.indexOf(maxOffer);
+    var maxFeeIdx = feeVals.indexOf(maxFee);
+
+    caCharts.totals = new Chart(el3, {
+      type: 'line',
+      data: {
+        labels: months,
+        datasets: [
+          { label: 'Offers/Discounts', data: offerVals, borderColor: '#00e676', backgroundColor: 'rgba(0,230,118,0.08)', borderWidth: 2, pointBackgroundColor: '#00e676', pointBorderColor: '#00e676', pointRadius: 3, pointHoverRadius: 5, tension: 0.3, fill: true },
+          { label: 'Fees', data: feeVals, borderColor: '#ff4d6d', backgroundColor: 'rgba(255,77,109,0.08)', borderWidth: 2, pointBackgroundColor: '#ff4d6d', pointBorderColor: '#ff4d6d', pointRadius: 3, pointHoverRadius: 5, tension: 0.3, fill: true }
+        ]
+      },
+      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1000 },
+        plugins: {
+          legend: { labels: { color: 'rgba(255,255,255,.5)', font: { size: 10 }, usePointStyle: true } },
+          tooltip: { ...TIP, callbacks: { label: function(ctx) { return ' ' + ctx.dataset.label + ': ' + caFmt(ctx.parsed.y); } } }
+        },
+        scales: { x: { ticks: { color: 'rgba(255,255,255,.4)', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,.04)' } },
+          y: { ticks: { color: 'rgba(255,255,255,.4)', font: { size: 9 }, callback: function(v) { return '₨' + v.toLocaleString('en-IN'); } }, grid: { color: 'rgba(255,255,255,.04)' } } }
+      },
+      plugins: [{
+        id: 'maxIndicators',
+        afterDraw: function(chart) {
+          var ctx = chart.ctx;
+          var xAxis = chart.scales.x;
+          var yAxis = chart.scales.y;
+          chart.data.datasets.forEach(function(ds, di) {
+            var maxVal = Math.max.apply(null, ds.data);
+            var maxIdx = ds.data.indexOf(maxVal);
+            if (maxIdx < 0) return;
+            var x = xAxis.getPixelForValue(maxIdx);
+            var y0 = yAxis.getPixelForValue(0);
+            var y1 = yAxis.getPixelForValue(maxVal);
+            var color = ds.borderColor;
+            ctx.save();
+            ctx.setLineDash([5, 4]);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.7;
+            ctx.beginPath();
+            ctx.moveTo(x, y0);
+            ctx.lineTo(x, y1);
+            ctx.stroke();
+            ctx.restore();
+            // Label
+            ctx.save();
+            ctx.fillStyle = color;
+            ctx.font = 'bold 9px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.globalAlpha = 0.9;
+            ctx.fillText('▲ HIGH', x, y1 - 6);
+            ctx.restore();
+          });
+        }
+      }]
+    });
+  } else {
+    var totalOffersAll = caData.reduce(function(s, r) { return s + r.offersDiscounts; }, 0);
+    var totalFeesAll = caData.reduce(function(s, r) { return s + r.fees; }, 0);
     caCharts.totals = new Chart(el3, {
       type: 'doughnut',
       data: {
