@@ -520,6 +520,14 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .pg-cal-btn:active{transform:scale(.9);}
 .pg-cal-btn.cal-active{background:rgba(0,212,255,.28);border-color:rgba(0,212,255,.6);color:#7dd3fc;}
 
+.pg-divider-btn{
+  background:rgba(251,191,36,.13);border:1px solid rgba(251,191,36,.28);
+  color:#fbbf24;border-radius:8px;padding:5px 10px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;
+  transition:background .15s,transform .12s;line-height:1;
+}
+.pg-divider-btn:active{transform:scale(.9);}
+
 .pg-docs-btn{
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
   color:rgba(255,255,255,.6);border-radius:8px;padding:5px 10px;
@@ -2848,6 +2856,39 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #hm-exp-modal .edm-body{padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;}
 #hm-exp-modal .edm-body .hm-wrap{border-radius:0;}
 
+/* ── Expense Divider Modal ── */
+#ed-overlay{
+  display:none;position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(18px);
+  align-items:center;justify-content:center;padding:16px;
+}
+#ed-overlay.open{display:flex;}
+#ed-modal{
+  background:#0a0e1c;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:22px;width:100%;max-width:820px;
+  height:min(94vh,900px);display:flex;flex-direction:column;
+  box-shadow:0 32px 90px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.07);
+  animation:edmIn .25s ease;position:relative;overflow:hidden;
+}
+#ed-modal::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:2;pointer-events:none;
+  background:linear-gradient(90deg,transparent 5%,rgba(99,102,241,.7) 35%,rgba(168,85,247,.6) 65%,transparent 95%);
+}
+#ed-modal .edm-hdr{
+  padding:16px 20px 14px;
+  border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;
+  background:linear-gradient(180deg,rgba(99,102,241,.07) 0%,transparent 100%);
+}
+#ed-modal .edm-title{
+  font-size:.95em;font-weight:800;letter-spacing:-.2px;
+  background:linear-gradient(135deg,#fff 0%,#a5b4fc 55%,#c084fc 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+#ed-modal .edm-sub{font-size:.68em;color:rgba(255,255,255,.3);margin-top:3px;}
+#ed-modal .edm-body{padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;}
+#ed-modal .edm-body .ed-page{padding:14px;overflow-y:auto;flex:1;}
+
 /* ── Analyze button (Heatmap + High Level toggle) ── */
 .analyze-exp-btn{
   background:linear-gradient(135deg,#6366f1,#8b5cf6);
@@ -4334,16 +4375,16 @@ input[type=date].swae-input{color-scheme:dark;}
 /* ── High Level / Analyze Modal Mobile ── */
 @media (max-width: 760px) {
   /* HL modal: full-width on mobile */
-  #hl-exp-modal, #hm-exp-modal {
+  #hl-exp-modal, #hm-exp-modal, #ed-modal {
     max-width: 100% !important;
     height: 95vh !important;
     border-radius: 12px !important;
   }
-  #hl-exp-overlay, #hm-exp-overlay {
+  #hl-exp-overlay, #hm-exp-overlay, #ed-overlay {
     padding: 8px !important;
   }
   /* Header: stack title and close */
-  #hl-exp-modal .edm-hdr, #hm-exp-modal .edm-hdr {
+  #hl-exp-modal .edm-hdr, #hm-exp-modal .edm-hdr, #ed-modal .edm-hdr {
     padding: 14px 14px 12px !important;
     flex-wrap: wrap;
     gap: 8px;
@@ -4867,6 +4908,7 @@ input[type=date].swae-input{color-scheme:dark;}
       <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-divider-btn" onclick="edToggle()" title="Expense Divider">⚖️</button>
       <button class="pg-reload-btn" onclick="reloadPage('exp')">↺ Reload</button>
     </div>
   </div>
@@ -5220,6 +5262,24 @@ input[type=date].swae-input{color-scheme:dark;}
       <div id="analyze-hl-body">
         <div class="edm-loading"><div class="edm-spin"></div>Fetching data…</div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     EXPENSE DIVIDER MODAL
+═══════════════════════════════════════════ -->
+<div id="ed-overlay" onclick="if(event.target===this)edClose()">
+  <div id="ed-modal">
+    <div class="edm-hdr" style="display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div class="edm-title">⚖️ Expense Divider</div>
+        <div class="edm-sub">Split expenses with tax &amp; discount</div>
+      </div>
+      <button class="edm-close" onclick="edClose()">✕</button>
+    </div>
+    <div class="edm-body" style="position:relative;">
+      <?!= include('expenseDivider'); ?>
     </div>
   </div>
 </div>
@@ -9103,6 +9163,24 @@ function analyzeExpModalOpen() {
 }
 function analyzeExpModalClose() {
   document.getElementById('hm-exp-overlay').classList.remove('open');
+}
+
+/* ── Expense Divider Modal ── */
+function edToggle() {
+  var overlay = document.getElementById('ed-overlay');
+  var isOpen = overlay.classList.contains('open');
+  if (isOpen) {
+    edClose();
+  } else {
+    edOpen();
+  }
+}
+function edOpen() {
+  document.getElementById('ed-overlay').classList.add('open');
+  if (typeof edInit === 'function') edInit();
+}
+function edClose() {
+  document.getElementById('ed-overlay').classList.remove('open');
 }
 
 var _analyzeView = 'heatmap';

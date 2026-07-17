@@ -1,0 +1,639 @@
+<!-- ═══════════════════════════════════════════════════════════
+     EXPENSE DIVIDER — textarea input + copyable table output
+═══════════════════════════════════════════════════════════════ -->
+<style>
+.ed-page{padding:14px;max-width:800px;margin:0 auto;width:100%;}
+.ed-header-sub{color:rgba(255,255,255,.3);font-size:.72em;margin:0 0 16px;}
+
+.ed-field{margin-bottom:12px;display:flex;flex-direction:column;gap:4px;}
+.ed-label{font-size:.58em;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.5px;}
+.ed-input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;color:#fff;font-size:.78em;font-family:inherit;transition:border-color .15s;width:100%;box-sizing:border-box;}
+.ed-input:focus{outline:none;border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+.ed-textarea{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;color:#fff;font-size:.78em;font-family:'Consolas','Courier New',monospace;transition:border-color .15s;width:100%;box-sizing:border-box;resize:vertical;min-height:90px;line-height:1.6;}
+.ed-textarea:focus{outline:none;border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+
+.ed-pct-row{display:flex;gap:14px;margin-bottom:16px;}
+.ed-pct-row .ed-field{flex:1;}
+
+.ed-calc-btn{width:100%;padding:11px;border-radius:12px;background:linear-gradient(135deg,var(--purple),#7c3aed);border:none;color:#fff;font-size:.82em;font-weight:800;font-family:inherit;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(168,85,247,.3);margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;}
+.ed-calc-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(168,85,247,.4);}
+
+.ed-section-title{font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);margin:16px 0 8px;}
+
+/* ── Payer rows ── */
+.ed-payer-item{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.ed-payer-item .ed-input{flex:1;}
+.ed-payer-item .ed-input.ed-pay-amt{max-width:100px;}
+.ed-rm-btn{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.25);color:#fca5a5;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:.7em;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.ed-rm-btn:hover{background:rgba(239,68,68,.3);}
+.ed-add-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);color:rgba(255,255,255,.45);font-size:.7em;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:4px;}
+.ed-add-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2);}
+
+/* ── Result table ── */
+.ed-result{border-radius:14px;border:1px solid rgba(255,255,255,.08);overflow:hidden;background:rgba(255,255,255,.02);animation:fadeUp .3s ease both;}
+.ed-result-title{padding:12px 16px;background:rgba(255,255,255,.03);font-size:.65em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between;}
+.ed-copy-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);border-radius:7px;padding:4px 10px;font-size:.85em;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:4px;}
+.ed-copy-btn:hover{color:#fff;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);}
+.ed-copy-btn.copied{background:rgba(16,185,129,.2);border-color:rgba(16,185,129,.4);color:#34d399;}
+.ed-copy-row{display:flex;gap:6px;}
+
+.ed-tbl{width:100%;border-collapse:collapse;font-size:.72em;}
+.ed-tbl th{padding:9px 10px;text-align:left;font-weight:700;color:rgba(255,255,255,.4);font-size:.85em;text-transform:uppercase;letter-spacing:.5px;background:rgba(255,255,255,.02);border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap;}
+.ed-tbl td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top;line-height:1.5;}
+.ed-tbl tr:last-child td{border-bottom:none;}
+.ed-tbl td:first-child{font-weight:700;color:#fff;white-space:nowrap;}
+.ed-tbl td:nth-child(2){color:rgba(255,255,255,.7);}
+.ed-tbl td:nth-child(3),
+.ed-tbl td:nth-child(4),
+.ed-tbl td:nth-child(5),
+.ed-tbl td:nth-child(6){font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+.ed-tbl td:nth-child(3){color:rgba(255,255,255,.65);}
+.ed-tbl td:nth-child(4){color:var(--amber);}
+.ed-tbl td:nth-child(5){color:var(--green);}
+.ed-tbl td:nth-child(6){color:#fff;}
+.ed-tbl td.net-pos{color:var(--green)!important;}
+.ed-tbl td.net-neg{color:#f87171!important;}
+
+/* ── Summary chips ── */
+.ed-summary{display:flex;flex-wrap:wrap;gap:8px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.05);}
+.ed-sum-chip{background:rgba(255,255,255,.04);border-radius:18px;padding:4px 12px;font-size:.68em;display:flex;gap:6px;align-items:center;}
+.ed-sum-chip .sc-lbl{color:rgba(255,255,255,.35);}
+.ed-sum-chip .sc-val{font-weight:700;color:#fff;}
+#ed-image-container img{max-width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 2px 16px rgba(0,0,0,.12);}
+#ed-image-container{transition:all .3s ease;}
+</style>
+
+<div class="ed-page" id="ed-body">
+  <div class="pg-corner-title" style="margin-bottom:4px;">
+    <span class="pg-ct-icon">💰</span>
+    <span class="pg-ct-text">Expense Divider</span>
+  </div>
+  <p class="ed-header-sub">Split expenses with tax &amp; discount</p>
+
+  <!-- Title -->
+  <div class="ed-field">
+    <label class="ed-label">Expense Title</label>
+    <input class="ed-input" id="ed-title" placeholder="e.g. Dinner at Cool Planet">
+  </div>
+
+  <!-- Items textarea -->
+  <div class="ed-field">
+    <label class="ed-label">Items — one per line</label>
+    <textarea class="ed-textarea" id="ed-items-input" placeholder="Pizza(1200)- John, Anna&#10;Pasta(800)- John&#10;Drinks(500)- Anna, Mike&#10;Dessert(350)- Mike, John, Anna"></textarea>
+  </div>
+
+  <!-- Tax & Discount -->
+  <div class="ed-section-title">📊 Overall Adjustments</div>
+  <div class="ed-pct-row">
+    <div class="ed-field">
+      <label class="ed-label">Tax (%)</label>
+      <input class="ed-input" id="ed-tax" type="number" step="0.01" min="0" placeholder="0">
+    </div>
+    <div class="ed-field">
+      <label class="ed-label">Discount (%)</label>
+      <input class="ed-input" id="ed-disc" type="number" step="0.01" min="0" placeholder="0">
+    </div>
+  </div>
+
+  <!-- Who paid -->
+  <div class="ed-section-title">💵 Who Paid</div>
+  <div id="ed-payers-container"></div>
+  <button class="ed-add-btn" onclick="edAddPayer()">+ Add Person Who Paid</button>
+
+  <!-- Calculate -->
+  <button class="ed-calc-btn" onclick="edCalculate()">🧮 Calculate Split</button>
+
+  <!-- Result -->
+  <div id="ed-result-area"></div>
+
+  <!-- Rendered image appears here for right-click copy -->
+  <div id="ed-image-container" style="display:none;margin-top:12px;border-radius:14px;border:1px solid rgba(255,255,255,.08);overflow:hidden;background:rgba(255,255,255,.02);padding:8px;">
+    <div style="padding:8px 12px 6px;font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:space-between;">
+      <span>📸 Table Image — Right-click → Copy Image</span>
+      <button class="ed-copy-btn" onclick="document.getElementById('ed-image-container').style.display='none';" style="font-size:.9em;">✕ Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   EXPENSE DIVIDER JS
+═══════════════════════════════════════════ */
+var _edPayerIdx = 0;
+
+function edInit() {
+  _edPayerIdx = 0;
+  document.getElementById('ed-payers-container').innerHTML = '';
+  document.getElementById('ed-result-area').innerHTML = '';
+  document.getElementById('ed-title').value = '';
+  document.getElementById('ed-items-input').value = '';
+  document.getElementById('ed-tax').value = '';
+  document.getElementById('ed-disc').value = '';
+  edAddPayer();
+}
+
+function edAddPayer() {
+  var idx = _edPayerIdx++;
+  var div = document.createElement('div');
+  div.className = 'ed-payer-item';
+  div.id = 'ed-payer-' + idx;
+  div.innerHTML =
+    '<input class="ed-input" id="ed-payer-name-' + idx + '" placeholder="Person name">' +
+    '<input class="ed-input ed-pay-amt" id="ed-payer-amt-' + idx + '" type="number" step="0.01" min="0" placeholder="Amount paid">' +
+    '<button class="ed-rm-btn" onclick="edRemovePayer(' + idx + ')" title="Remove">✕</button>';
+  document.getElementById('ed-payers-container').appendChild(div);
+}
+
+function edRemovePayer(idx) {
+  var el = document.getElementById('ed-payer-' + idx);
+  if (el) el.remove();
+}
+
+function edParseItems(text) {
+  var items = [];
+  var lines = text.split('\n');
+  lines.forEach(function(line) {
+    line = line.trim();
+    if (!line) return;
+    // Format: itemName(price)- person1,person2  OR  itemName price- person1,person2
+    var match = line.match(/^(.+?)\(([\d.]+)\)\s*[-–—]\s*(.+)$/);
+    if (!match) match = line.match(/^(.+?)\s+([\d.]+)\s*[-–—]\s*(.+)$/);
+    if (!match) return;
+    var name = match[1].trim();
+    var price = parseFloat(match[2]) || 0;
+    var personsStr = match[3].trim();
+    var persons = personsStr ? personsStr.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; }) : [];
+    if (name && price > 0 && persons.length > 0) {
+      items.push({ name: name, price: price, persons: persons });
+    }
+  });
+  return items;
+}
+
+function edGetPayers() {
+  var payers = [];
+  var container = document.getElementById('ed-payers-container');
+  var rows = container.querySelectorAll('.ed-payer-item');
+  rows.forEach(function(row) {
+    var nameInput = row.querySelector('.ed-input:first-child');
+    var amtInput = row.querySelector('.ed-pay-amt');
+    var name = (nameInput ? nameInput.value : '').trim();
+    var amt = parseFloat(amtInput ? amtInput.value : 0) || 0;
+    if (name || amt > 0) {
+      payers.push({ name: name || 'Person', amount: amt });
+    }
+  });
+  return payers;
+}
+
+function edCalculate() {
+  var title = document.getElementById('ed-title').value.trim() || 'Untitled';
+  var taxPct = parseFloat(document.getElementById('ed-tax').value) || 0;
+  var discPct = parseFloat(document.getElementById('ed-disc').value) || 0;
+  var raw = document.getElementById('ed-items-input').value.trim();
+  var items = edParseItems(raw);
+  var payers = edGetPayers();
+
+  if (items.length === 0) {
+    document.getElementById('ed-result-area').innerHTML = '<div style="text-align:center;padding:30px;color:rgba(255,255,255,.3);font-size:.8em;">⚠️ Add at least one valid item line.<br><span style="font-size:.85em;opacity:.6">Format: ItemName(price)- Person1, Person2</span></div>';
+    return;
+  }
+
+  // Calculate subtotal
+  var subtotal = 0;
+  items.forEach(function(item) { subtotal += item.price; });
+
+  // Apply tax and discount
+  var taxAmt = subtotal * (taxPct / 100);
+  var discAmt = subtotal * (discPct / 100);
+  var totalAfterAdjustments = subtotal + taxAmt - discAmt;
+  var factor = subtotal > 0 ? (totalAfterAdjustments / subtotal) : 1;
+
+  // Calculate each person's share per item (before adjustments)
+  var personShares = {};
+  var personItems = {};
+  var nameDisplay = {}; // lowercase key → display name (first occurrence wins)
+  items.forEach(function(item) {
+    if (item.persons.length === 0) return;
+    var sharePerPerson = item.price / item.persons.length;
+    item.persons.forEach(function(p) {
+      var key = p.toLowerCase();
+      if (!nameDisplay[key]) nameDisplay[key] = p;
+      if (!personShares[key]) { personShares[key] = 0; personItems[key] = []; }
+      personShares[key] += sharePerPerson;
+      personItems[key].push({ name: item.name, share: sharePerPerson });
+    });
+  });
+
+  // Final owed after tax/discount
+  var finalOwed = {};
+  var allKeys = Object.keys(personShares);
+  allKeys.forEach(function(k) {
+    finalOwed[k] = personShares[k] * factor;
+  });
+
+  // Total paid
+  var totalPaid = 0;
+  payers.forEach(function(payer) { totalPaid += payer.amount; });
+
+  // Validation: Grand Total should equal total paid
+  if (payers.length > 0 && Math.abs(totalAfterAdjustments - totalPaid) > 0.01) {
+    var diff = totalAfterAdjustments - totalPaid;
+    var msg = '⚠️ <strong>Amount Mismatch!</strong><br><br>' +
+      'Grand Total: <strong>' + edFmt(totalAfterAdjustments) + '</strong><br>' +
+      'Total Paid: <strong>' + edFmt(totalPaid) + '</strong><br>' +
+      'Difference: <strong style="color:' + (diff > 0 ? 'var(--amber)' : 'var(--red)') + '">' + edFmt(Math.abs(diff)) + '</strong><br><br>' +
+      (diff > 0
+        ? 'The total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>) is <strong>more</strong> than what was paid (<strong>' + edFmt(totalPaid) + '</strong>). Someone still needs to pay <strong>' + edFmt(Math.abs(diff)) + '</strong>.'
+        : 'The total (<strong>' + edFmt(totalAfterAdjustments) + '</strong>) is <strong>less</strong> than what was paid (<strong>' + edFmt(totalPaid) + '</strong>). There\'s an excess of <strong>' + edFmt(Math.abs(diff)) + '</strong>.');
+    document.getElementById('ed-result-area').innerHTML = '<div class="ed-result"><div style="padding:24px;text-align:center;line-height:1.8;color:rgba(255,255,255,.7);font-size:.82em;">' + msg + '</div></div>';
+    document.getElementById('ed-result-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+
+  // Build result HTML
+  var html = '<div class="ed-result">';
+  html += '<div class="ed-result-title"><span>🧾 ' + title + ' — Summary</span><div class="ed-copy-row"><button class="ed-copy-btn" id="ed-copy-btn" onclick="edCopyTable(\'text\')">📋 Excel Table</button><button class="ed-copy-btn" id="ed-copy-img-btn" onclick="edCopyTable(\'image\')">📸 Screenshot</button></div></div>';
+
+  // Summary chips
+  html += '<div class="ed-summary">';
+  html += '<div class="ed-sum-chip"><span class="sc-lbl">Subtotal</span><span class="sc-val">' + edFmt(subtotal) + '</span></div>';
+  if (taxPct > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Tax</span><span class="sc-val" style="color:var(--amber)">+' + taxPct + '% (' + edFmt(taxAmt) + ')</span></div>';
+  if (discPct > 0) html += '<div class="ed-sum-chip"><span class="sc-lbl">Discount</span><span class="sc-val" style="color:var(--green)">−' + discPct + '% (' + edFmt(discAmt) + ')</span></div>';
+  html += '<div class="ed-sum-chip"><span class="sc-lbl">Total</span><span class="sc-val">' + edFmt(totalAfterAdjustments) + '</span></div>';
+  if (payers.length > 0) {
+    html += '<div class="ed-sum-chip"><span class="sc-lbl">Paid</span><span class="sc-val" style="color:var(--blue)">' + edFmt(totalPaid) + '</span></div>';
+  }
+  html += '</div>';
+
+  // Table
+  if (allKeys.length === 0) {
+    html += '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">No persons assigned to items</div>';
+  } else {
+    html += '<div style="overflow-x:auto;"><table class="ed-tbl" id="ed-results-table">';
+    html += '<thead><tr>' +
+      '<th>Name</th>' +
+      '<th>Items Taken</th>' +
+      '<th>Price</th>' +
+      '<th>After Tax</th>' +
+      '<th>After Disc.</th>' +
+      '<th>Final Owe/Own</th>' +
+    '</tr></thead><tbody>';
+
+    allKeys.sort(function(a, b) { return finalOwed[b] - finalOwed[a]; });
+    allKeys.forEach(function(k) {
+      var displayName = nameDisplay[k] || k;
+      var share = finalOwed[k];
+      var shareBeforeTax = personShares[k];
+      var shareAfterTax = shareBeforeTax * (1 + taxPct / 100);
+      var shareAfterAll = share;
+
+      var paidByThis = 0;
+      payers.forEach(function(payer) {
+        if (payer.name.toLowerCase() === k) paidByThis += payer.amount;
+      });
+      var net = paidByThis - shareAfterAll;
+
+      var itemStrs = personItems[k].map(function(i) {
+        return i.name + ' (' + edFmt(i.share) + ')';
+      });
+      var itemsList = itemStrs.join(', ');
+
+      var netClass = net >= 0 ? 'net-pos' : 'net-neg';
+      var netLabel = (net >= 0 ? '🟢 Gets back ' : '🔴 Owes ') + edFmt(Math.abs(net));
+
+      html += '<tr>' +
+        '<td>' + displayName + '</td>' +
+        '<td>' + itemsList + '</td>' +
+        '<td>' + edFmt(shareBeforeTax) + '</td>' +
+        '<td>' + edFmt(shareAfterTax) + '</td>' +
+        '<td>' + edFmt(shareAfterAll) + '</td>' +
+        '<td class="' + netClass + '">' + netLabel + '</td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+  }
+
+  // Payer detail at bottom
+  if (payers.length > 0) {
+    html += '<div style="padding:8px 16px 10px;border-top:1px solid rgba(255,255,255,.05);font-size:.7em;color:rgba(255,255,255,.35);display:flex;gap:14px;flex-wrap:wrap;">';
+    payers.forEach(function(payer) {
+      html += '<span>💵 <strong style="color:rgba(255,255,255,.6)">' + payer.name + '</strong> paid ' + edFmt(payer.amount) + '</span>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  document.getElementById('ed-result-area').innerHTML = html;
+  document.getElementById('ed-result-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function edCopyTable(mode) {
+  if (mode === 'image') {
+    edCopyAsImage();
+    return;
+  }
+  // Excel/TSV mode — put both HTML (for Excel) and plain text on clipboard
+  var table = document.getElementById('ed-results-table');
+  if (!table) return;
+
+  // Build TSV
+  var rows = table.querySelectorAll('tr');
+  var tsv = '';
+  var htmlRows = [];
+  rows.forEach(function(row) {
+    var cells = row.querySelectorAll('th, td');
+    var vals = [];
+    var htmlCells = [];
+    cells.forEach(function(cell) {
+      var txt = cell.textContent.replace(/[🟢🔴]/g,'').trim();
+      vals.push(txt);
+      var tag = cell.tagName === 'TH' ? 'th' : 'td';
+      var bold = cell.tagName === 'TH' ? 'font-weight:bold;background:#f0f0f0;' : '';
+      htmlCells.push('<' + tag + ' style="padding:4px 8px;border:1px solid #ccc;font-family:Calibri,sans-serif;font-size:11px;' + bold + '">' + txt + '</' + tag + '>');
+    });
+    tsv += vals.join('\t') + '\n';
+    htmlRows.push('<tr>' + htmlCells.join('') + '</tr>');
+  });
+
+  var htmlStr = '<table style="border-collapse:collapse;">' + htmlRows.join('') + '</table>';
+
+  // Put both formats on clipboard — Excel will pick up the HTML version
+  try {
+    var htmlBlob = new Blob([htmlStr], { type: 'text/html' });
+    var textBlob = new Blob([tsv], { type: 'text/plain' });
+    var clipboardItem = new ClipboardItem({
+      'text/html': htmlBlob,
+      'text/plain': textBlob
+    });
+    navigator.clipboard.write([clipboardItem]).then(function() {
+      edShowCopied('ed-copy-btn', '📋 Copy Text');
+    }).catch(function() {
+      // Fallback to TSV only
+      edCopyToClipboard(tsv);
+    });
+  } catch(e) {
+    edCopyToClipboard(tsv);
+  }
+}
+
+function edCopyAsImage() {
+  var table = document.getElementById('ed-results-table');
+  if (!table) return;
+
+  // ── Read data from the existing result DOM ──
+  var expTitle = '';
+  var titleEl = document.querySelector('.ed-result-title span');
+  if (titleEl) expTitle = titleEl.textContent.replace('🧾','').replace('— Summary','').trim();
+
+  // Read summary chips
+  var chipData = {};
+  var chips = document.querySelectorAll('.ed-summary .ed-sum-chip');
+  chips.forEach(function(chip) {
+    var lbl = chip.querySelector('.sc-lbl');
+    var val = chip.querySelector('.sc-val');
+    if (lbl && val) chipData[lbl.textContent.trim()] = val.textContent.trim();
+  });
+
+  // Read payer info from the footer
+  var payerStrs = [];
+  var footerEl = document.querySelector('.ed-result > div:last-child');
+  if (footerEl) {
+    var spans = footerEl.querySelectorAll('span');
+    spans.forEach(function(s) {
+      var txt = s.textContent.trim();
+      if (txt) payerStrs.push(txt);
+    });
+  }
+
+  // ── Build a gorgeous wrapper ──
+  var wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:99999;';
+  wrapper.id = 'ed-export-wrap';
+
+  // Inner container with white background and shadow
+  var inner = document.createElement('div');
+  inner.style.cssText = 'width:auto;background:#fff;border-radius:12px;padding:0;font-family:Calibri,Arial,sans-serif;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.06),0 8px 30px rgba(0,0,0,.12);';
+
+  // ── HEADER ──
+  var header = document.createElement('div');
+  header.style.cssText = 'background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);padding:18px 24px 14px;display:flex;align-items:center;justify-content:space-between;';
+  var hLeft = document.createElement('div');
+  hLeft.innerHTML = '<div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:.5px;">💰 ' + (expTitle || 'Expense Split') + '</div><div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px;">Expense Summary Report</div>';
+  var hRight = document.createElement('div');
+  hRight.style.cssText = 'text-align:right;font-size:11px;color:rgba(255,255,255,.35);line-height:1.5;';
+  var d = new Date();
+  var dateStr = d.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+  hRight.innerHTML = dateStr + '<br>Expense Divider';
+  header.appendChild(hLeft);
+  header.appendChild(hRight);
+  inner.appendChild(header);
+
+  // ── SUMMARY BAR ──
+  var sumBar = document.createElement('div');
+  sumBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;padding:14px 24px;background:#f8f9fc;border-bottom:1px solid #eef0f5;';
+  var summaryItems = [
+    { label: 'Subtotal', val: chipData['Subtotal'] || '—', color: '#333' },
+    { label: 'Tax', val: chipData['Tax'] || '—', color: '#b8860b' },
+    { label: 'Discount', val: chipData['Discount'] || '—', color: '#2e7d32' },
+    { label: 'Total', val: chipData['Total'] || '—', color: '#0f3460', bold: true },
+    { label: 'Paid', val: chipData['Paid'] || '—', color: '#1565c0', bold: true }
+  ];
+  summaryItems.forEach(function(item) {
+    if (!chipData[item.label] && item.label !== 'Subtotal' && item.label !== 'Total') return;
+    var chip = document.createElement('div');
+    chip.style.cssText = 'background:#fff;border-radius:10px;padding:6px 16px;border:1px solid #e8ecf2;text-align:center;';
+    var lbl = document.createElement('div');
+    lbl.style.cssText = 'font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:700;';
+    lbl.textContent = item.label;
+    var val = document.createElement('div');
+    val.style.cssText = 'font-size:15px;font-weight:' + (item.bold ? '800' : '600') + ';color:' + item.color + ';margin-top:2px;';
+    val.textContent = item.val;
+    chip.appendChild(lbl);
+    chip.appendChild(val);
+    sumBar.appendChild(chip);
+  });
+  inner.appendChild(sumBar);
+
+  // ── PAID BY BAR ──
+  if (payerStrs.length > 0) {
+    var paidBar = document.createElement('div');
+    paidBar.style.cssText = 'padding:8px 24px;background:#f0f4ff;border-bottom:1px solid #eef0f5;font-size:12px;color:#333;display:flex;gap:18px;flex-wrap:wrap;';
+    paidBar.innerHTML = '<span style="font-weight:700;color:#555;margin-right:4px;">💵 Paid By:</span> ';
+    payerStrs.forEach(function(s, i) {
+      var sp = document.createElement('span');
+      sp.style.cssText = 'font-weight:600;color:#0f3460;';
+      sp.textContent = s.replace('💵','').trim();
+      if (i < payerStrs.length - 1) paidBar.innerHTML += sp.outerHTML + '<span style="color:#aaa;"> | </span>';
+      else paidBar.innerHTML += sp.outerHTML;
+    });
+    inner.appendChild(paidBar);
+  }
+
+  // ── TABLE ──
+  var tblContainer = document.createElement('div');
+  tblContainer.style.cssText = 'padding:16px 24px 20px;';
+
+  var tbl = document.createElement('table');
+  tbl.style.cssText = 'border-collapse:collapse;font-family:Calibri,Arial,sans-serif;font-size:12px;width:100%;';
+
+  // Headers
+  var thead = document.createElement('thead');
+  var hRow = document.createElement('tr');
+  var headers = table.querySelectorAll('thead th');
+  headers.forEach(function(th, idx) {
+    var hc = document.createElement('th');
+    hc.textContent = th.textContent.replace(/[🟢🔴]/g,'').trim();
+    hc.style.cssText = 'padding:8px 12px;border:1px solid #d0d5dd;font-weight:700;background:#1a1a2e;color:#fff;text-align:' + (idx >= 2 ? 'right' : 'left') + ';font-size:11px;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;';
+    hRow.appendChild(hc);
+  });
+  thead.appendChild(hRow);
+  tbl.appendChild(thead);
+
+  // Body rows
+  var tbody = document.createElement('tbody');
+  var rows = table.querySelectorAll('tbody tr');
+  rows.forEach(function(tr, ri) {
+    var r = document.createElement('tr');
+    r.style.cssText = 'background:' + (ri % 2 === 0 ? '#fff' : '#f8f9fc') + ';';
+    var cells = tr.querySelectorAll('td');
+    cells.forEach(function(td, i) {
+      var dc = document.createElement('td');
+      var txt = td.textContent.replace(/[🟢🔴]/g,'').trim();
+      dc.textContent = txt;
+      var extra = '';
+      if (i >= 2) extra += 'text-align:right;font-weight:600;';
+      if (i === 5) {
+        if (txt.indexOf('Gets') !== -1) extra += 'color:#2e7d32;';
+        else if (txt.indexOf('Owes') !== -1) extra += 'color:#c62828;';
+        else extra += 'color:#333;';
+      }
+      dc.style.cssText = 'padding:7px 12px;border:1px solid #e0e4ea;color:#333;font-size:12px;' + extra + ';vertical-align:middle;';
+      if (i === 0) dc.style.fontWeight = '700';
+      if (i === 1) dc.style.color = '#555';
+      r.appendChild(dc);
+    });
+    tbody.appendChild(r);
+  });
+  tbl.appendChild(tbody);
+  tblContainer.appendChild(tbl);
+
+  // Total row at bottom of table
+  var totalVal = chipData['Total'] || '—';
+  var tFoot = document.createElement('div');
+  tFoot.style.cssText = 'margin-top:8px;text-align:right;font-size:13px;font-weight:700;color:#0f3460;padding:4px 4px 0;border-top:2px solid #1a1a2e;';
+  tFoot.innerHTML = 'Grand Total: ' + totalVal;
+  tblContainer.appendChild(tFoot);
+
+  inner.appendChild(tblContainer);
+
+  // ── FOOTER ──
+  var footer = document.createElement('div');
+  footer.style.cssText = 'background:#f0f2f5;padding:10px 24px;font-size:10px;color:#999;text-align:center;border-top:1px solid #e0e4ea;';
+  footer.textContent = 'Generated by ptsManage Expense Divider';
+  inner.appendChild(footer);
+
+  wrapper.appendChild(inner);
+  document.body.appendChild(wrapper);
+
+  // ── Loading indicator ──
+  var imgContainer = document.getElementById('ed-image-container');
+  if (imgContainer) {
+    imgContainer.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">⏳ Rendering image…</div>';
+    imgContainer.style.display = 'block';
+  }
+
+  // ── Load html2canvas & capture ──
+  if (typeof html2canvas === 'undefined') {
+    var script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+    script.onload = function() { setTimeout(function() { edCaptureTable(wrapper); }, 150); };
+    document.head.appendChild(script);
+  } else {
+    setTimeout(function() { edCaptureTable(wrapper); }, 150);
+  }
+}
+
+function edCaptureTable(wrapper) {
+  html2canvas(wrapper, {
+    scale: 2,
+    backgroundColor: '#ffffff',
+    useCORS: true,
+    logging: false,
+    width: wrapper.scrollWidth,
+    height: wrapper.scrollHeight
+  }).then(function(canvas) {
+    document.body.removeChild(wrapper);
+    var imgContainer = document.getElementById('ed-image-container');
+    if (imgContainer) {
+      var img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.alt = 'Expense Split Table';
+      img.style.cssText = 'max-width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);';
+      imgContainer.innerHTML = '';
+      imgContainer.appendChild(img);
+      imgContainer.style.display = 'block';
+    }
+    edShowCopied('ed-copy-img-btn', '📸 Screenshot');
+  }).catch(function() {
+    document.body.removeChild(wrapper);
+    var imgContainer = document.getElementById('ed-image-container');
+    if (imgContainer) {
+      imgContainer.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">⚠️ Failed to render image</div>';
+    }
+  });
+}
+
+function edCopyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      edShowCopied('ed-copy-btn', '📋 Copy Text');
+    }).catch(function() {
+      edFallbackCopy(text);
+    });
+  } else {
+    edFallbackCopy(text);
+  }
+}
+
+function edShowCopied(btnId, origLabel) {
+  var btn = document.getElementById(btnId);
+  if (!btn) return;
+  btn.textContent = '✅ Copied!';
+  btn.classList.add('copied');
+  setTimeout(function() {
+    var label = btnId === 'ed-copy-img-btn' ? '📸 Screenshot' : '📋 Excel Table';
+    btn.innerHTML = label;
+    btn.classList.remove('copied');
+  }, 2000);
+}
+
+function edFallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    // Show copied on all copy buttons
+    var btns = document.querySelectorAll('.ed-copy-btn');
+    btns.forEach(function(btn) {
+      btn.textContent = '✅ Copied!';
+      btn.classList.add('copied');
+      setTimeout(function() {
+        btn.innerHTML = btn.id === 'ed-copy-img-btn' ? '📸 Screenshot' : '📋 Excel Table';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  } catch(e) {}
+  document.body.removeChild(ta);
+}
+
+function edFmt(v) {
+  if (v === undefined || v === null || isNaN(v)) return '—';
+  return '₨ ' + v.toLocaleString('en-IN', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+}
+</script>
