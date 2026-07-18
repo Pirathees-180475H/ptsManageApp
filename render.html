@@ -2468,6 +2468,21 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .cc-exp-search-input:focus{border-color:rgba(0,212,255,.4);background:rgba(255,255,255,.08);}
 .cc-exp-search-clear{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);padding:6px 10px;border-radius:7px;cursor:pointer;font-size:.7em;font-weight:700;font-family:inherit;transition:all .15s;}
 .cc-exp-search-clear:hover{background:rgba(255,77,109,.15);border-color:rgba(255,77,109,.3);color:#fff;}
+.cc-exp-ca-btn{background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(0,212,255,.1));border:1px solid rgba(168,85,247,.35);color:#c084fc;padding:6px 10px;border-radius:7px;cursor:pointer;font-size:.7em;font-weight:700;font-family:inherit;transition:all .15s;white-space:nowrap;}
+.cc-exp-ca-btn:hover{background:rgba(168,85,247,.3);color:#fff;}
+
+/* ── Card Analysis inline form in cc-exp ── */
+.cc-exp-ca-form{display:none;margin-bottom:14px;padding:14px;background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.18);border-radius:12px;flex-direction:column;gap:10px;}
+.cc-exp-ca-form.open{display:flex;}
+.cc-exp-ca-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.cc-exp-ca-field{display:flex;flex-direction:column;gap:3px;}
+.cc-exp-ca-field label{font-size:.55em;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+.cc-exp-ca-field input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 10px;color:#fff;font-size:.75em;font-family:inherit;transition:border-color .15s;}
+.cc-exp-ca-field input:focus{outline:none;border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+.cc-exp-ca-actions{display:flex;align-items:center;gap:10px;margin-top:2px;}
+.cc-exp-ca-save{background:linear-gradient(135deg,rgba(168,85,247,.4),rgba(0,212,255,.2));border:1px solid rgba(168,85,247,.45);color:#fff;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:.7em;font-weight:700;font-family:inherit;transition:all .15s;}
+.cc-exp-ca-save:hover{background:rgba(168,85,247,.5);transform:translateY(-1px);}
+.cc-exp-ca-msg{font-size:.65em;color:rgba(255,255,255,.45);}
 .cc-exp-pager{display:flex;align-items:center;justify-content:space-between;padding:10px 0 2px;gap:8px;}
 .cc-exp-pager-info{font-size:.62em;color:rgba(255,255,255,.35);font-weight:600;white-space:nowrap;}
 .cc-exp-pager-btns{display:flex;gap:5px;}
@@ -7903,6 +7918,24 @@ function ccExpRender(res) {
   var html = '<div class="cc-exp-search">'
     + '<input type="text" id="cc-exp-search-input" class="cc-exp-search-input" placeholder="Search by date or reference..." oninput="ccExpSearch(this.value)">'
     + '<button class="cc-exp-search-clear" onclick="ccExpSearchClear()">✕ Clear</button>'
+    + '<button class="cc-exp-ca-btn" onclick="ccExpToggleCaForm()">📊 Analysis +</button>'
+    + '</div>'
+    + '<div id="cc-exp-ca-form" class="cc-exp-ca-form">'
+    + '<div class="cc-exp-ca-grid">'
+    + '<div class="cc-exp-ca-field"><label>Reference</label><input id="cc-exp-ca-ref" placeholder="e.g. cool planet"></div>'
+    + '</div>'
+    + '<div class="cc-exp-ca-grid">'
+    + '<div class="cc-exp-ca-field"><label>Total Amount</label><input id="cc-exp-ca-total" type="number" step="0.01" placeholder="0"></div>'
+    + '<div class="cc-exp-ca-field"><label>Paid Amount</label><input id="cc-exp-ca-paid" type="number" step="0.01" placeholder="0"></div>'
+    + '</div>'
+    + '<div class="cc-exp-ca-grid">'
+    + '<div class="cc-exp-ca-field"><label>Offers/Discounts</label><input id="cc-exp-ca-offers" type="number" step="0.01" placeholder="0"></div>'
+    + '<div class="cc-exp-ca-field"><label>Fees</label><input id="cc-exp-ca-fees" type="number" step="0.01" placeholder="0"></div>'
+    + '</div>'
+    + '<div class="cc-exp-ca-actions">'
+    + '<button class="cc-exp-ca-save" onclick="ccExpCaSave()">💾 Save to Analysis</button>'
+    + '<span id="cc-exp-ca-msg" class="cc-exp-ca-msg"></span>'
+    + '</div>'
     + '</div>'
     + '<div class="cc-exp-summary" style="margin-bottom:14px;">'
     + '<div class="cc-exp-stat stat-exp"><div class="cc-exp-stat-lbl">Total Expense</div><div class="cc-exp-stat-val">₨ ' + _ccExpTotalExp.toLocaleString() + '</div></div>'
@@ -7937,6 +7970,69 @@ function ccExpSearchClear() {
   var inp = document.getElementById('cc-exp-search-input');
   if (inp) inp.value = '';
   ccExpSearch('');
+}
+
+function ccExpToggleCaForm() {
+  var form = document.getElementById('cc-exp-ca-form');
+  if (!form) return;
+  var open = form.classList.toggle('open');
+  if (open) {
+    // Pre-fill current month/year as date hint
+    var now = new Date();
+    document.getElementById('cc-exp-ca-ref').value = '';
+    document.getElementById('cc-exp-ca-total').value = '';
+    document.getElementById('cc-exp-ca-paid').value = '';
+    document.getElementById('cc-exp-ca-offers').value = '';
+    document.getElementById('cc-exp-ca-fees').value = '';
+    document.getElementById('cc-exp-ca-msg').textContent = '';
+  }
+}
+
+function ccExpCaSave() {
+  var cardName = _ccExpState ? _ccExpState.cardName : '';
+  var now = new Date();
+  var m = _ccExpState ? _ccExpState.month : (now.getMonth() + 1);
+  var y = _ccExpState ? _ccExpState.year : now.getFullYear();
+
+  var entry = {
+    date: m + '/' + y,
+    card: cardName,
+    reference: document.getElementById('cc-exp-ca-ref').value.trim(),
+    amountTotal: parseFloat(document.getElementById('cc-exp-ca-total').value) || 0,
+    paidAmount:  parseFloat(document.getElementById('cc-exp-ca-paid').value) || 0,
+    offersDiscounts: parseFloat(document.getElementById('cc-exp-ca-offers').value) || 0,
+    fees:         parseFloat(document.getElementById('cc-exp-ca-fees').value) || 0
+  };
+
+  var msg = document.getElementById('cc-exp-ca-msg');
+  var btn = document.querySelector('.cc-exp-ca-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  msg.textContent = '';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (btn) { btn.disabled = false; btn.textContent = '💾 Save to Analysis'; }
+      if (res && res.success) {
+        msg.textContent = '✓ Saved!';
+        msg.style.color = '#4ade80';
+        // Clear form
+        document.getElementById('cc-exp-ca-ref').value = '';
+        document.getElementById('cc-exp-ca-total').value = '';
+        document.getElementById('cc-exp-ca-paid').value = '';
+        document.getElementById('cc-exp-ca-offers').value = '';
+        document.getElementById('cc-exp-ca-fees').value = '';
+        setTimeout(function() { msg.textContent = ''; }, 2500);
+      } else {
+        msg.textContent = '⚠ ' + (res ? res.error : 'Save failed');
+        msg.style.color = '#f87171';
+      }
+    })
+    .withFailureHandler(function(err) {
+      if (btn) { btn.disabled = false; btn.textContent = '💾 Save to Analysis'; }
+      msg.textContent = '⚠ ' + err.message;
+      msg.style.color = '#f87171';
+    })
+    .addCardAnalysisEntry(entry);
 }
 
 function ccExpPage(page) {

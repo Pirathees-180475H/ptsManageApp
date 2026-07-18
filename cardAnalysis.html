@@ -134,6 +134,21 @@ function caDisplayData(res) {
     return;
   }
   caData = res.data || [];
+
+  // Normalize card names: group case-insensitively, use first-seen casing + title-case the rest
+  var cardNameMap = {};
+  caData.forEach(function(r) {
+    if (r.card) {
+      var key = r.card.toLowerCase().trim();
+      if (!cardNameMap[key]) {
+        // Keep the first encountered casing
+        cardNameMap[key] = r.card.trim();
+      } else {
+        // Normalize to the canonical form
+        r.card = cardNameMap[key];
+      }
+    }
+  });
   caDestroyCharts();
 
   // Compute KPIs
