@@ -2153,7 +2153,7 @@ function getCurrentMonthExpensesList(reqMonth, reqYear) {
     var curMonth = (reqMonth && reqMonth >= 1 && reqMonth <= 12) ? parseInt(reqMonth, 10) : parseInt(Utilities.formatDate(now, tz, 'M'), 10);
     var curYear  = (reqYear  && reqYear  >= 2000) ? parseInt(reqYear, 10)  : parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
 
-    // Column definitions (1-based), exclude CC (AE=31,AF=32,AG=33,AH=34,AI=35)
+    // Column definitions (1-based), exclude CC (AE=31,AF=32,AG=33,AH=34,AI=35,AJ=36,AK=37,AL=38,AM=39)
     // and SW (T=20, U=21, W=23)
     var CATS = [
       { name: 'Food',               amtCol: 3,  refCol: 4  },  // C / D
@@ -3475,13 +3475,13 @@ function getExpenseRow(dateKey, prevKey) {
     }
 
     // Read both values (computed results) and formulas for the row
-    var numCols  = 37; // A through AK
+    var numCols  = 39; // A through AM
     var rowRange = sheet.getRange(targetRow, 1, 1, numCols);
     var rowVals  = rowRange.getValues()[0];
     var rowFmls  = rowRange.getFormulas()[0];  // "" if cell has no formula
 
     var COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S',
-                'T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK'];
+                'T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM'];
 
     var result = { _row: targetRow, _sheet: 'Monthly Expences', _prevDay: isPrevDay };
     for (var c = 0; c < COLS.length && c < rowVals.length; c++) {
@@ -4190,6 +4190,7 @@ function addInstallmentToExpense(instName, amount, dateKey, mode) {
       if      (cardLow.indexOf('amex') >= 0 || cardLow.indexOf('american') >= 0) payCol = 33; // AG
       else if (cardLow.indexOf('ntb')  >= 0 || cardLow.indexOf('nations')  >= 0) payCol = 35; // AI
       else if (cardLow.indexOf('selan') >= 0)                                     payCol = 37; // AK
+      else if (cardLow.indexOf('ndb')   >= 0)                                     payCol = 39; // AM
 
       if (payCol > 0) {
         var existingPay = rowVals[payCol - 1];
@@ -4627,6 +4628,8 @@ function deleteLossEntry(rowIndex) {
    Column layout (from ADD_EXP.html):
      AE=31 shared ref | AF=32 Amex-Exp | AG=33 Amex-Pay
                       | AH=34 NTB-Exp  | AI=35 NTB-Pay
+                      | AJ=36 Selan-Exp | AK=37 Selan-Pay
+                      | AL=38 NDB-Exp   | AM=39 NDB-Pay
 ───────────────────────────────────────────────────────────────── */
 function getCardExpenses(cardName, month, year) {
   try {
@@ -4642,7 +4645,7 @@ function getCardExpenses(cardName, month, year) {
                    : parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
 
     // Hardcoded columns matching ADD_EXP.html (1-based):
-    // AE=31 ref | AF=32 Amex-Exp | AG=33 Amex-Pay | AH=34 NTB-Exp | AI=35 NTB-Pay | AJ=36 Selan-Exp | AK=37 Selan-Pay
+    // AE=31 ref | AF=32 Amex-Exp | AG=33 Amex-Pay | AH=34 NTB-Exp | AI=35 NTB-Pay | AJ=36 Selan-Exp | AK=37 Selan-Pay | AL=38 NDB-Exp | AM=39 NDB-Pay
     var REF_COL = 31; // AE — shared CC reference
     var cardLow = (cardName || '').toLowerCase();
     var expCol  = -1;
@@ -4657,6 +4660,9 @@ function getCardExpenses(cardName, month, year) {
     } else if (cardLow.indexOf('selan') >= 0) {
       expCol = 36; // AJ
       payCol = 37; // AK
+    } else if (cardLow.indexOf('ndb') >= 0) {
+      expCol = 38; // AL
+      payCol = 39; // AM
     }
 
     if (expCol < 0) {

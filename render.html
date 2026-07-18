@@ -4721,6 +4721,7 @@ input[type=date].swae-input{color-scheme:dark;}
           <option value="AF">AMEX (Expense AF)</option>
           <option value="AH">NTB (Expense AH)</option>
           <option value="AJ">Selan (Expense AJ)</option>
+          <option value="AL">NDB (Expense AL)</option>
         </select>
       </div>
 
@@ -7879,7 +7880,7 @@ function ccExpRender(res) {
     return;
   }
   if (res.noColumn) {
-    body.innerHTML = '<div class="cc-exp-empty">📭 No expense column mapped for <strong>' + res.cardName + '</strong>.<br><span style="font-size:.9em;opacity:.6">Check card name contains "amex", "ntb", or "selan".</span></div>';
+    body.innerHTML = '<div class="cc-exp-empty">📭 No expense column mapped for <strong>' + res.cardName + '</strong>.<br><span style="font-size:.9em;opacity:.6">Check card name contains "amex", "ntb", "selan", or "ndb".</span></div>';
     return;
   }
   _ccExpEntriesAll = res.entries || [];

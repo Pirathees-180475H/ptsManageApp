@@ -640,6 +640,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
           </div>
         </div>
 
+        <div class="cc-card">
+          <div class="cc-card-hd">🏛️ NDB</div>
+          <div class="card-row">
+            <div class="card-field">
+              <div class="fsub">Expense <span class="cid">AL</span></div>
+              <input class="inp fml cc" id="fAL" data-col="AL"
+                oninput="calcPreview(this,'calcAL');updateTotals();markChanged(this)">
+              <div class="calc empty" id="calcAL">—</div>
+            </div>
+            <div class="card-field">
+              <div class="fsub">Payment <span class="cid">AM</span></div>
+              <input class="inp fml cc" id="fAM" data-col="AM"
+                oninput="calcPreview(this,'calcAM');markChanged(this)">
+              <div class="calc empty" id="calcAM">—</div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -689,7 +707,7 @@ var COL_MAP = {
   K:'fK',L:'fL',M:'fM',N:'fN',O:'fO',P:'fP',Q:'fQ',R:'fR',
   T:'fT',U:'fU',W:'fW',
   X:'fX',Y:'fY',Z:'fZ',AA:'fAA',
-  AE:'fAE',AF:'fAF',AG:'fAG',AH:'fAH',AI:'fAI',AJ:'fAJ',AK:'fAK'
+  AE:'fAE',AF:'fAF',AG:'fAG',AH:'fAH',AI:'fAI',AJ:'fAJ',AK:'fAK',AL:'fAL',AM:'fAM'
 };
 
 /* ═══════════════════════════════════════════════
@@ -939,7 +957,7 @@ function updateTotals(){
   var r  = getV('fC')+getV('fE');
   var nr = getV('fG')+getV('fH')+getV('fJ')+getV('fL')
           +getV('fM')+getV('fO')+getV('fQ')+getV('fR');
-  var cc = getV('fAF')+getV('fAH')+getV('fAJ');
+  var cc = getV('fAF')+getV('fAH')+getV('fAJ')+getV('fAL');
   var tot= r+nr;
 
   // Dynamic label — "Today's Total" only when viewing today
@@ -1045,6 +1063,7 @@ function renderLog(data){
     {col:'AE·AF·AG',cat:'cc',label:'Amex',        val:data.AF,ref2:data.AG,ref:data.AE},
     {col:'AH · AI', cat:'cc',label:'NTB',         val:data.AH,ref2:data.AI},
     {col:'AJ · AK', cat:'cc',label:'Selan',        val:data.AJ,ref2:data.AK},
+    {col:'AL · AM', cat:'cc',label:'NDB',         val:data.AL,ref2:data.AM,ref:data.AE},
     {col:'X · AA',  cat:'',  label:'High Income', val:data.X,ref:data.AA},
     {col:'Y',       cat:'',  label:'High Expense',val:data.Y},
     {col:'Z',       cat:'',  label:'Transfers',   val:data.Z}
