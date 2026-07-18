@@ -141,7 +141,7 @@ function caDisplayData(res) {
   var totalPaid  = caData.reduce(function(s, r) { return s + r.paidAmount; }, 0);
   var totalOffers = caData.reduce(function(s, r) { return s + r.offersDiscounts; }, 0);
   var totalFees  = caData.reduce(function(s, r) { return s + r.fees; }, 0);
-  var netOutflow = totalSpend - totalOffers - totalPaid;
+  var netOutflow = totalOffers - totalFees;
   var count = caData.length;
 
   // Unique cards
@@ -187,7 +187,7 @@ function caDisplayData(res) {
       '<div class="ca-kpi" style="border-color:rgba(0,230,118,.2)"><span class="ca-kpi-icon">✅</span><div class="ca-kpi-label">Total Paid</div><div class="ca-kpi-value" style="color:var(--green)">' + caFmt(totalPaid) + '</div><div class="ca-kpi-sub">' + (totalSpend > 0 ? Math.round(totalPaid/totalSpend*100) + '% of spend' : '') + '</div></div>' +
       '<div class="ca-kpi" style="border-color:rgba(255,215,0,.2)"><span class="ca-kpi-icon">🏷️</span><div class="ca-kpi-label">Offers/Discounts</div><div class="ca-kpi-value" style="color:var(--gold)">' + caFmt(totalOffers) + '</div><div class="ca-kpi-sub">savings earned</div></div>' +
       '<div class="ca-kpi" style="border-color:rgba(251,146,60,.2)"><span class="ca-kpi-icon">💸</span><div class="ca-kpi-label">Fees</div><div class="ca-kpi-value" style="color:var(--amber)">' + caFmt(totalFees) + '</div><div class="ca-kpi-sub">' + (totalFees > 0 ? 'charged' : 'no fees') + '</div></div>' +
-      '<div class="ca-kpi" style="border-color:rgba(255,77,109,.2)"><span class="ca-kpi-icon">📉</span><div class="ca-kpi-label">Net Outflow</div><div class="ca-kpi-value" style="color:' + (netOutflow > 0 ? 'var(--red)' : 'var(--green)') + '">' + caFmt(netOutflow) + '</div><div class="ca-kpi-sub">after offers &amp; payments</div></div>' +
+      '<div class="ca-kpi" style="border-color:rgba(255,77,109,.2)"><span class="ca-kpi-icon">�</span><div class="ca-kpi-label">Net Benefit</div><div class="ca-kpi-value" style="color:' + (netOutflow > 0 ? 'var(--green)' : 'var(--red)') + '">' + caFmt(netOutflow) + '</div><div class="ca-kpi-sub">offers − fees</div></div>' +
       '<div class="ca-kpi" style="border-color:rgba(0,212,255,.2)"><span class="ca-kpi-icon">🃏</span><div class="ca-kpi-label">Cards Tracked</div><div class="ca-kpi-value" style="color:var(--blue)">' + cards.length + '</div><div class="ca-kpi-sub">' + cards.join(', ') + '</div></div>' +
     '</div>' +
 

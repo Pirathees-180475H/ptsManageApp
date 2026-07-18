@@ -2418,6 +2418,10 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .amt-val.danger{color:var(--red);}
 .amt-val.ok    {color:var(--green);}
 .amt-val.warn  {color:var(--amber);}
+
+/* ── Analyze button in Manage Credit Cards ── */
+.cc-analyze-btn{background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(0,212,255,.1));border:1px solid rgba(168,85,247,.35);color:#c084fc;padding:7px 14px;border-radius:9px;font-size:.68em;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .2s;}
+.cc-analyze-btn:hover{background:rgba(168,85,247,.3);transform:translateY(-1px);}
 /* ── CC Expenses floating panel (draggable, no overlay) ── */
 #cc-exp-panel{
   position:fixed;width:95%;max-width:520px;max-height:80vh;z-index:9500;
@@ -7720,7 +7724,7 @@ function ccDisplayData(data){
   document.getElementById('cc-root').innerHTML=
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">'+
       '<div class="pg-corner-title" style="margin-bottom:0;"><span class="pg-ct-icon">👜</span><span class="pg-ct-text">Manage Credit Cards</span></div>'+
-      '<button onclick="showPage(\'ca\')" style="background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(0,212,255,.1));border:1px solid rgba(168,85,247,.35);color:#c084fc;padding:7px 14px;border-radius:9px;font-size:.68em;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:5px;transition:all .2s;" onmouseover="this.style.background=\'rgba(168,85,247,.3)\';this.style.transform=\'translateY(-1px)\';" onmouseout="this.style.background=\'\';this.style.transform=\'\';">📊 Analyze</button>'+
+      '<button onclick="showPage(\'ca\')" class="cc-analyze-btn">📊 Analyze</button>'+
     '</div>'+
     '<div class="cc-grid">'+cardsHTML+'</div>'+
     '<div class="kpi-row">'+
