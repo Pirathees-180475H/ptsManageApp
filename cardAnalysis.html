@@ -79,6 +79,26 @@
 .ca-m-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
 .ca-m-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
+/* ── Search + Pagination for table ── */
+.ca-search-wrap{padding:0 16px 10px;}
+.ca-search{width:100%;padding:8px 12px;border-radius:8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  color:#fff;font-size:.75em;font-family:inherit;outline:none;transition:border-color .15s;
+  box-sizing:border-box;}
+.ca-search:focus{border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+.ca-search::placeholder{color:rgba(255,255,255,.25);}
+.ca-pagination{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;border-top:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.02);flex-shrink:0;}
+.ca-pag-info{font-size:.65em;color:rgba(255,255,255,.3);}
+.ca-pag-btns{display:flex;align-items:center;gap:6px;}
+.ca-page-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);border-radius:9px;padding:5px 12px;cursor:pointer;
+  font-size:.65em;font-weight:600;transition:all .12s;font-family:inherit;text-transform:uppercase;letter-spacing:.3px;}
+.ca-page-btn:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);}
+.ca-page-btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
+.ca-pag-num{font-size:.65em;font-weight:700;color:rgba(255,255,255,.5);min-width:60px;text-align:center;}
+
 @media(max-width:700px){
   .ca-charts{grid-template-columns:1fr;}
   .ca-kpi-row{grid-template-columns:repeat(2,1fr);}
@@ -100,6 +120,9 @@
 ═══════════════════════════════════════════ */
 var caData = [];
 var caCharts = {};
+var _caPage = 0;
+var _caPageSize = 10;
+var _caFilteredData = [];
 
 function caLoad() {
   google.script.run
@@ -164,26 +187,6 @@ function caDisplayData(res) {
   caData.forEach(function(r) { if (r.card) cardSet[r.card] = true; });
   var cards = Object.keys(cardSet).sort();
 
-  // Build table rows HTML
-  var rowsHtml = caData.map(function(r, i) {
-    var remaining = r.amountTotal - r.paidAmount - r.offersDiscounts;
-    var hasFees = r.fees > 0;
-    return '<tr>' +
-      '<td class="ca-cell-date">' + caFormatDate(r.date) + '</td>' +
-      '<td class="ca-cell-card">' + (r.card || '—') + '</td>' +
-      '<td style="color:rgba(255,255,255,.6);max-width:200px;overflow:hidden;text-overflow:ellipsis;">' + (r.reference || '—') + '</td>' +
-      '<td class="ca-cell-amt">' + caFmt(r.amountTotal) + '</td>' +
-      '<td class="ca-cell-amt ca-cell-green">' + caFmt(r.paidAmount) + '</td>' +
-      '<td class="ca-cell-amt ca-cell-gold">' + caFmt(r.offersDiscounts) + '</td>' +
-      '<td class="ca-cell-amt ' + (hasFees ? 'ca-cell-fees' : '') + '">' + caFmt(r.fees) + '</td>' +
-      '<td class="ca-cell-amt" style="color:' + (remaining > 0 ? 'var(--red)' : 'var(--green)') + '">' + caFmt(remaining) + '</td>' +
-      '<td class="ca-cell-actions">' +
-        '<button class="ca-action-btn edit" onclick="caEditEntry(' + i + ')" title="Edit">✎</button>' +
-        '<button class="ca-action-btn delete" onclick="caDeleteEntry(' + i + ')" title="Delete">✕</button>' +
-      '</td>' +
-    '</tr>';
-  }).join('');
-
   // Build card filters
   var cardOpts = '<option value="">All Cards</option>';
   cards.forEach(function(c) {
@@ -222,12 +225,14 @@ function caDisplayData(res) {
         '<div style="font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);">📋 All Transactions</div>' +
         '<div style="font-size:.65em;color:rgba(255,255,255,.25);">' + count + ' entries</div>' +
       '</div>' +
+      '<div class="ca-search-wrap"><input class="ca-search" id="ca-search" type="text" placeholder="🔍 Search by card, reference, amount…" oninput="caSearch()"></div>' +
       '<div class="ca-table-scroll">' +
         '<table class="ca-table">' +
           '<thead><tr><th>Date</th><th>Card</th><th>Reference</th><th style="text-align:right">Total</th><th style="text-align:right">Paid</th><th style="text-align:right">Offers</th><th style="text-align:right">Fees</th><th style="text-align:right">Remaining</th><th style="text-align:right">Actions</th></tr></thead>' +
-          '<tbody id="ca-table-body">' + rowsHtml + '</tbody>' +
+          '<tbody id="ca-table-body"></tbody>' +
         '</table>' +
       '</div>' +
+      '<div class="ca-pagination" id="ca-pagination"><span class="ca-pag-info" id="ca-pag-info">—</span><div class="ca-pag-btns"><button class="ca-page-btn" id="ca-pg-prev" onclick="caPage(-1)">◀ Prev</button><span class="ca-pag-num" id="ca-pg-num">1 / 1</span><button class="ca-page-btn" id="ca-pg-next" onclick="caPage(1)">Next ▶</button></div></div>' +
     '</div>' +
 
     '<!-- Modal -->' +
@@ -267,6 +272,7 @@ function caDisplayData(res) {
   document.getElementById('ca-year-filter').innerHTML = yearOpts;
 
   caRenderCharts();
+  caFilter();
 }
 
 function caRenderCharts() {
@@ -428,21 +434,47 @@ function caRenderRightChart(mode) {
 function caFilter() {
   var cardFilter = (document.getElementById('ca-card-filter').value || '').toLowerCase();
   var yearFilter = document.getElementById('ca-year-filter').value;
+  var query = (document.getElementById('ca-search').value || '').trim().toLowerCase();
 
-  var filtered = caData.filter(function(r) {
+  _caFilteredData = caData.filter(function(r) {
     if (cardFilter && (r.card || '').toLowerCase() !== cardFilter) return false;
     if (yearFilter) {
       var d = caFormatDate(r.date);
       var y = d && d !== '—' ? d.split('/')[1] : '';
       if (y !== yearFilter) return false;
     }
+    if (query) {
+      var matchStr = ((r.card || '') + ' ' + (r.reference || '') + ' ' + (r.date || '') + ' ' + r.amountTotal + ' ' + r.paidAmount + ' ' + r.offersDiscounts + ' ' + r.fees).toLowerCase();
+      if (matchStr.indexOf(query) < 0) return false;
+    }
     return true;
   });
 
-  var rowsHtml = filtered.map(function(r, i) {
+  _caPage = 0;
+  caRenderTable();
+}
+
+function caSearch() {
+  caFilter();
+}
+
+function caPage(dir) {
+  _caPage += dir;
+  caRenderTable();
+}
+
+function caRenderTable() {
+  var totalPages = Math.max(1, Math.ceil(_caFilteredData.length / _caPageSize));
+  if (_caPage >= totalPages) _caPage = totalPages - 1;
+  if (_caPage < 0) _caPage = 0;
+
+  var start = _caPage * _caPageSize;
+  var pageEntries = _caFilteredData.slice(start, start + _caPageSize);
+
+  // Build rows
+  var rowsHtml = pageEntries.map(function(r) {
     var remaining = r.amountTotal - r.paidAmount - r.offersDiscounts;
     var hasFees = r.fees > 0;
-    // Find original index
     var origIdx = caData.indexOf(r);
     return '<tr>' +
       '<td class="ca-cell-date">' + caFormatDate(r.date) + '</td>' +
@@ -459,7 +491,16 @@ function caFilter() {
       '</td>' +
     '</tr>';
   }).join('');
-  document.getElementById('ca-table-body').innerHTML = rowsHtml || '<tr><td colspan="9" style="text-align:center;padding:30px;color:rgba(255,255,255,.3);">🔍 No entries match your filter.</td></tr>';
+
+  document.getElementById('ca-table-body').innerHTML = rowsHtml || '<tr><td colspan="9" style="text-align:center;padding:30px;color:rgba(255,255,255,.3);">🔍 No entries match.</td></tr>';
+
+  // Pagination info
+  document.getElementById('ca-pag-info').textContent = _caFilteredData.length > 0
+    ? 'Showing ' + (start + 1) + '–' + Math.min(start + _caPageSize, _caFilteredData.length) + ' of ' + _caFilteredData.length
+    : '0 entries';
+  document.getElementById('ca-pg-num').textContent = (_caPage + 1) + ' / ' + totalPages;
+  document.getElementById('ca-pg-prev').disabled = (_caPage <= 0);
+  document.getElementById('ca-pg-next').disabled = (_caPage >= totalPages - 1);
 }
 
 /* ── CRUD operations ── */
