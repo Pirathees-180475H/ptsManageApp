@@ -34,39 +34,29 @@
 .hm-nav-lbl{font-size:.65em;font-weight:700;color:rgba(255,255,255,.5);
   min-width:65px;text-align:center;letter-spacing:.3px;}
 
-/* ── KPI Strip ── */
-.hm-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding:12px 18px 0;
+/* ── KPI Row — consistent with cardAnalysis ca-kpi-row ── */
+.hm-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;padding:12px 18px 0;
   flex-shrink:0;}
-.hm-kpi{background:var(--hm-card-bg);border:1px solid var(--hm-card-bdr);
-  border-radius:var(--hm-card-radius);padding:14px 14px;
-  position:relative;overflow:hidden;transition:all .28s cubic-bezier(.4,0,.2,1);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);}
-.hm-kpi:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(0,0,0,.4);
-  background:rgba(6,11,24,.82);border-color:rgba(255,255,255,.08);}
-.hm-kpi::after{content:'';position:absolute;left:0;top:0;bottom:0;
-  width:3px;box-shadow:2px 0 12px var(--hm-kpi-accent, #6366f1);
-  opacity:.9;}
-.hm-kpi::before{display:none;}
-.hm-kpi.k0{--hm-kpi-accent:#6366f1;}
-.hm-kpi.k1{--hm-kpi-accent:#06b6d4;}
-.hm-kpi.k2{--hm-kpi-accent:#f59e0b;}
-.hm-kpi.k3{--hm-kpi-accent:#10b981;}
-.hm-kpi.k4{--hm-kpi-accent:#f97316;}
-.hm-kpi.k5{--hm-kpi-accent:#ec4899;}
-.hm-kpi-val{font-size:1.1em;font-weight:800;letter-spacing:-.5px;line-height:1.2;}
-.hm-kpi-lbl{font-size:.46em;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-  color:rgba(255,255,255,.3);margin-top:2px;}
+.hm-kpi{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;
+  backdrop-filter:blur(20px);position:relative;overflow:hidden;transition:transform .2s;
+  box-shadow:none;}
+.hm-kpi:hover{transform:translateY(-2px);box-shadow:none;background:var(--card);border-color:var(--bdr);}
+.hm-kpi::after,.hm-kpi::before{display:none;}
+.hm-kpi-icon{font-size:1.4em;margin-bottom:5px;display:block;}
+.hm-kpi-lbl{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(255,255,255,.33);margin-bottom:3px;}
+.hm-kpi-val{font-size:1.3em;font-weight:800;letter-spacing:-.5px;line-height:1;}
+.hm-kpi-sub{font-size:.6em;color:rgba(255,255,255,.25);margin-top:3px;}
 
 /* ── Scroll area ── */
 .hm-scroll{flex:1;overflow-y:auto;padding:10px 18px 14px;
   scrollbar-width:none;-ms-overflow-style:none;}
 .hm-scroll::-webkit-scrollbar{display:none;}
 
-/* ── Glass card ── */
-.hm-glass{background:var(--hm-card-bg);
-  border:1px solid var(--hm-card-bdr);
-  border-radius:var(--hm-card-radius);margin-bottom:12px;padding:16px;
-  box-shadow:0 8px 32px rgba(0,0,0,.2);position:relative;overflow:hidden;}
+/* ── Glass card — consistent with cardAnalysis ca-chart-box ── */
+.hm-glass{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:16px;
+  margin-bottom:12px;backdrop-filter:blur(20px);position:relative;overflow:hidden;
+  box-shadow:none;}
 .hm-glass::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
   pointer-events:none;}
@@ -122,16 +112,10 @@
 .hm-months{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
 
 /* Each month is a separate card */
-.hm-month-card{background:var(--hm-card-bg);border:1px solid var(--hm-card-bdr);
-  border-radius:var(--hm-card-radius);padding:14px 12px 12px;
-  transition:all .28s cubic-bezier(.4,0,.2,1);
-  position:relative;overflow:hidden;}
-.hm-month-card:hover{transform:translateY(-3px);
-  box-shadow:0 12px 36px rgba(0,0,0,.4);
-  background:rgba(6,11,24,.82);
-  border-color:rgba(255,255,255,.1);}
-.hm-month-card::after{content:'';position:absolute;left:0;top:0;bottom:0;
-  width:3px;opacity:.9;}
+.hm-month-card{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:14px 14px;
+  backdrop-filter:blur(20px);transition:transform .2s;position:relative;overflow:hidden;}
+.hm-month-card:hover{transform:translateY(-2px);}
+.hm-month-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;opacity:.9;}
 .hm-month-card::before{display:none;}
 .hm-month-card.m0::after{background:linear-gradient(#6366f1,#8b5cf6);box-shadow:2px 0 12px #6366f1;}
 .hm-month-card.m1::after{background:linear-gradient(#f59e0b,#f97316);box-shadow:2px 0 12px #f59e0b;}
@@ -197,83 +181,78 @@
 .hm-day.has-spend .hm-day-amt{display:block;}
 .hm-day .hm-day-amt{display:none;}
 
-/* ── Month & Day Expense Modal (transparent glass style) ── */
+/* ── Modal — consistent with cardAnalysis ca-modal ── */
 #hm-month-overlay,#hm-day-overlay{
   display:none;position:fixed;inset:0;z-index:9500;
-  background:rgba(6,11,24,.5);
+  background:rgba(0,0,0,.6);backdrop-filter:blur(6px);
   align-items:center;justify-content:center;padding:16px;
 }
 #hm-month-overlay.open,#hm-day-overlay.open{display:flex;}
 #hm-month-modal,#hm-day-modal{
-  background:rgba(6,11,24,.85);backdrop-filter:blur(32px);
-  -webkit-backdrop-filter:blur(32px);
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:18px;width:100%;max-width:720px;
-  height:min(90vh,820px);display:flex;flex-direction:column;
-  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+  background:#0f172a;border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;width:100%;max-width:720px;
+  max-height:85vh;display:flex;flex-direction:column;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.5);
   animation:hmmIn .25s ease;position:relative;overflow:hidden;
 }
 #hm-day-modal{max-width:520px;height:auto;max-height:min(90vh,700px);}
-#hm-month-modal::before,#hm-day-modal::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:2;pointer-events:none;
-  background:linear-gradient(90deg,transparent 5%,rgba(99,102,241,.8) 35%,rgba(139,92,246,.7) 65%,transparent 95%);
-}
+#hm-month-modal::before,#hm-day-modal::before{display:none;}
 @keyframes hmmIn{
   from{opacity:0;transform:scale(.94) translateY(10px)}
   to{opacity:1;transform:scale(1) translateY(0)}
 }
 .hmm-hdr{display:flex;align-items:center;justify-content:space-between;
-  padding:16px 18px 13px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
-.hmm-title{font-size:.9em;font-weight:700;color:#fff;}
-.hmm-sub{font-size:.68em;color:rgba(255,255,255,.35);margin-top:2px;}
-.hmm-close{background:rgba(6,11,24,.72);border:1px solid rgba(255,255,255,.08);
-  color:rgba(255,255,255,.45);border-radius:50%;width:28px;height:28px;
-  cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.hmm-close:hover{color:#fff;background:rgba(6,11,24,.82);}
+  padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);flex-shrink:0;}
+.hmm-title{font-size:.72em;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#fff;}
+.hmm-sub{font-size:.65em;color:rgba(255,255,255,.35);margin-top:3px;font-weight:500;text-transform:none;letter-spacing:0;}
+.hmm-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+  color:rgba(255,255,255,.5);border-radius:8px;width:28px;height:28px;
+  cursor:pointer;font-size:.8em;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-weight:700;}
+.hmm-close:hover{background:rgba(239,68,68,.2);color:#f87171;border-color:rgba(239,68,68,.3);}
 
 /* Search bar */
 .hmm-search-wrap{padding:10px 18px 0;flex-shrink:0;}
 .hmm-search{
   width:100%;padding:8px 12px;border-radius:8px;
-  background:rgba(6,11,24,.72);border:1px solid rgba(255,255,255,.08);
-  color:#fff;font-size:.75em;outline:none;transition:border-color .15s;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  color:#fff;font-size:.75em;font-family:inherit;outline:none;transition:border-color .15s;
   box-sizing:border-box;
 }
-.hmm-search:focus{border-color:rgba(99,102,241,.6);}
+.hmm-search:focus{border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
 .hmm-search::placeholder{color:rgba(255,255,255,.25);}
 
 /* Body / table area */
-.hmm-body{overflow-y:auto;flex:1;padding:8px 18px 12px;}
+.hmm-body{overflow-y:auto;flex:1;padding:12px 18px;}
 .hmm-body::-webkit-scrollbar{width:4px;}
 .hmm-body::-webkit-scrollbar-track{background:transparent;}
-.hmm-body::-webkit-scrollbar-thumb{background:rgba(6,11,24,.72);border-radius:4px;}
+.hmm-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px;}
 .hmm-loading{display:flex;align-items:center;justify-content:center;gap:10px;
   padding:40px;color:rgba(255,255,255,.35);font-size:12px;}
-.hmm-spin{width:24px;height:24px;border:2px solid rgba(99,102,241,.2);
-  border-top-color:#6366f1;border-radius:50%;animation:hmmSpin .8s linear infinite;flex-shrink:0;}
+.hmm-spin{width:24px;height:24px;border:2px solid rgba(168,85,247,.2);
+  border-top-color:#a855f7;border-radius:50%;animation:hmmSpin .8s linear infinite;flex-shrink:0;}
 @keyframes hmmSpin{to{transform:rotate(360deg)}}
 .hmm-empty{text-align:center;padding:40px 16px;color:rgba(255,255,255,.3);font-size:.8em;}
 .hmm-err{text-align:center;padding:40px 16px;color:#ef4444;font-size:.8em;}
 
-/* Table */
-.hmm-table{width:100%;border-collapse:collapse;font-size:10px;}
-.hmm-table th{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
-  color:rgba(255,255,255,.3);padding:10px;border-bottom:1px solid rgba(255,255,255,.07);
-  text-align:left;position:sticky;top:0;background:rgba(6,11,24,.72);z-index:1;}
+/* Table — consistent with cardAnalysis ca-table */
+.hmm-table{width:100%;border-collapse:collapse;font-size:.78em;}
+.hmm-table th{font-size:.62em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);
+  text-align:left;background:rgba(255,255,255,.02);white-space:nowrap;}
 .hmm-table th:last-child{text-align:right;}
-.hmm-table td{padding:10px;font-size:.75em;border-bottom:1px solid rgba(255,255,255,.04);
-  vertical-align:middle;color:rgba(255,255,255,.6);}
-.hmm-table tr:hover td{background:rgba(6,11,24,.25);}
+.hmm-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04);
+  vertical-align:middle;color:rgba(255,255,255,.6);white-space:nowrap;}
+.hmm-table tr:hover td{background:rgba(255,255,255,.03);}
 .hmm-table .hmm-cat-dot{display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:6px;vertical-align:middle;}
 .hmm-table .hmm-amt{font-weight:700;text-align:right;color:#f1f5f9;white-space:nowrap;}
 .hmm-table .hmm-date{font-weight:600;color:rgba(255,255,255,.5);white-space:nowrap;}
-.hmm-table .hmm-ref{color:rgba(255,255,255,.4);font-size:.92em;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.hmm-table .hmm-cat{font-size:.88em;}
+.hmm-table .hmm-ref{color:rgba(255,255,255,.4);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hmm-table .hmm-cat{font-size:.92em;}
 
 /* Day modal category list */
 .hmm-day-cats{display:flex;flex-direction:column;gap:4px;padding:4px 0;}
 .hmm-day-cat{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;
-  font-size:.65em;font-weight:600;background:rgba(6,11,24,.72);}
+  font-size:.65em;font-weight:600;background:rgba(255,255,255,.03);}
 .hmm-day-cat-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
 .hmm-day-cat-name{color:rgba(255,255,255,.55);flex:1;}
 .hmm-day-cat-amt{font-weight:700;color:rgba(255,255,255,.85);}
@@ -283,15 +262,15 @@
 /* Pagination */
 .hmm-pag{display:flex;align-items:center;justify-content:space-between;
   padding:12px 18px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0;
-  background:rgba(6,11,24,.72);}
+  background:rgba(255,255,255,.02);}
 .hmm-pag-info{font-size:.65em;color:rgba(255,255,255,.3);}
 .hmm-pag-btns{display:flex;align-items:center;gap:6px;}
-.hmm-pag-btn{background:rgba(6,11,24,.72);border:1px solid rgba(255,255,255,.08);
-  color:rgba(255,255,255,.55);border-radius:6px;padding:5px 12px;cursor:pointer;
-  font-size:.7em;font-weight:600;transition:all .12s;}
-.hmm-pag-btn:hover{color:#fff;background:rgba(6,11,24,.82);border-color:rgba(255,255,255,.15);}
+.hmm-pag-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);border-radius:9px;padding:5px 12px;cursor:pointer;
+  font-size:.65em;font-weight:600;transition:all .12s;font-family:inherit;text-transform:uppercase;letter-spacing:.3px;}
+.hmm-pag-btn:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);}
 .hmm-pag-btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
-.hmm-pag-num{font-size:.7em;font-weight:700;color:rgba(255,255,255,.5);min-width:60px;text-align:center;}
+.hmm-pag-num{font-size:.65em;font-weight:700;color:rgba(255,255,255,.5);min-width:60px;text-align:center;}
 
 /* ── Loading / Error ── */
 .hm-loading{text-align:center;padding:40px 16px;color:var(--hm-dim);font-size:.72em;}
@@ -316,19 +295,22 @@
 }
 @media(max-width:760px){
   .hm-months{grid-template-columns:repeat(2,1fr);gap:10px;}
-  .hm-month-card{padding:10px 8px 8px;border-radius:12px;}
+  .hm-month-card{padding:10px 10px 10px;}
   .hm-day{border-radius:4px;font-size:.45em;}
+}
+@media(max-width:700px){
+  .hm-kpis{grid-template-columns:repeat(3,1fr);}
+  .hm-kpi{padding:12px 14px;}
 }
 @media(max-width:640px){
   .hm-scroll{padding:6px 10px 8px;}
-  .hm-glass{padding:10px;border-radius:12px;margin-bottom:8px;}
+  .hm-glass{padding:10px;margin-bottom:8px;}
   .hm-hdr{padding:10px 12px;}
   .hm-hdr-title{font-size:.6em;}
   .hm-kpis{grid-template-columns:repeat(3,1fr);padding:8px 10px 0;gap:6px;}
-  .hm-kpi-val{font-size:1em;}
-  .hm-kpi{padding:8px 9px;}
+  .hm-kpi-val{font-size:1.1em;}
   .hm-months{grid-template-columns:repeat(2,1fr);gap:8px;}
-  .hm-month-card{padding:8px 6px 6px;border-radius:10px;}
+  .hm-month-card{padding:8px 8px 8px;}
   .hm-month-name{font-size:.5em;}
   .hm-weekday{font-size:.35em;}
   .hm-day{border-radius:3px;font-size:.4em;}
@@ -338,8 +320,7 @@
 @media(max-width:430px){
   .hm-months{grid-template-columns:repeat(1,1fr);gap:8px;}
   .hm-kpis{grid-template-columns:repeat(2,1fr);}
-  .hm-kpi-val{font-size:.85em;}
-  .hm-kpi-lbl{font-size:.4em;}
+  .hm-kpi-val{font-size:.95em;}
   .hm-day{font-size:.5em;border-radius:4px;}
   .hm-nav-btn{width:26px;height:26px;font-size:.65em;}
   .hm-nav-lbl{min-width:52px;font-size:.5em;}
@@ -360,12 +341,12 @@
   </div>
 
   <div class="hm-kpis" id="hmKpis">
-    <div class="hm-kpi k0"><div class="hm-kpi-val" id="hmKpiTotal" style="color:#a5b4fc;">—</div><div class="hm-kpi-lbl">💰 Total</div></div>
-    <div class="hm-kpi k1"><div class="hm-kpi-val" id="hmKpiBest" style="color:#10b981;">—</div><div class="hm-kpi-lbl">📈 Best Month</div></div>
-    <div class="hm-kpi k2"><div class="hm-kpi-val" id="hmKpiWorst" style="color:#f87171;">—</div><div class="hm-kpi-lbl">📉 Worst Month</div></div>
-    <div class="hm-kpi k3"><div class="hm-kpi-val" id="hmKpiAvg" style="color:#06b6d4;">—</div><div class="hm-kpi-lbl">📊 Avg/Day</div></div>
-    <div class="hm-kpi k4"><div class="hm-kpi-val" id="hmKpiPeak" style="color:#f59e0b;">—</div><div class="hm-kpi-lbl">⚡ Peak Day</div></div>
-    <div class="hm-kpi k5"><div class="hm-kpi-val" id="hmKpiAvgMo" style="color:#ec4899;">—</div><div class="hm-kpi-lbl">📅 Avg/Month</div></div>
+    <div class="hm-kpi" style="border-color:rgba(99,102,241,.2)"><span class="hm-kpi-icon">💰</span><div class="hm-kpi-lbl">💰 Total</div><div class="hm-kpi-val" id="hmKpiTotal" style="color:#a5b4fc;">—</div></div>
+    <div class="hm-kpi" style="border-color:rgba(16,185,129,.2)"><span class="hm-kpi-icon">📈</span><div class="hm-kpi-lbl">Best Month</div><div class="hm-kpi-val" id="hmKpiBest" style="color:#10b981;">—</div></div>
+    <div class="hm-kpi" style="border-color:rgba(239,68,68,.2)"><span class="hm-kpi-icon">📉</span><div class="hm-kpi-lbl">Worst Month</div><div class="hm-kpi-val" id="hmKpiWorst" style="color:#f87171;">—</div></div>
+    <div class="hm-kpi" style="border-color:rgba(6,182,212,.2)"><span class="hm-kpi-icon">📊</span><div class="hm-kpi-lbl">Avg/Day</div><div class="hm-kpi-val" id="hmKpiAvg" style="color:#06b6d4;">—</div></div>
+    <div class="hm-kpi" style="border-color:rgba(245,158,11,.2)"><span class="hm-kpi-icon">⚡</span><div class="hm-kpi-lbl">Peak Day</div><div class="hm-kpi-val" id="hmKpiPeak" style="color:#f59e0b;">—</div></div>
+    <div class="hm-kpi" style="border-color:rgba(236,72,153,.2)"><span class="hm-kpi-icon">📅</span><div class="hm-kpi-lbl">Avg/Month</div><div class="hm-kpi-val" id="hmKpiAvgMo" style="color:#ec4899;">—</div></div>
   </div>
 
   <div class="hm-scroll" id="hmScroll">
