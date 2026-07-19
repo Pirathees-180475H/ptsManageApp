@@ -11544,12 +11544,19 @@ function swRender(data){
       +'</div>'
     : '';
 
-  /* ── Recent transactions ── */
+  /* ── Recent transactions (paginated) ── */
   var txnHtml = '';
   if(TRANSACTIONS && TRANSACTIONS.length > 0){
+    _swMainTxns = TRANSACTIONS;
+    _swMainPage = 0;
+    var total = TRANSACTIONS.length;
+    var pages = Math.ceil(total / _swMainPs);
+    var start = _swMainPage * _swMainPs;
+    var shown = TRANSACTIONS.slice(start, start + _swMainPs);
+
     txnHtml = '<div class="txn-section"><div class="section-hdr">Recent Transactions</div>'
       +'<div id="sw-analysisBox"></div><div id="sw-txnList">';
-    TRANSACTIONS.forEach(function(tx){
+    shown.forEach(function(tx){
       var icon    = tx.isPayment ? '💸' : (tx.paidByMe ? '🧾' : '📋');
       var netCls  = tx.myNet > 0 ? 'owed' : (tx.myNet < 0 ? 'owe' : 'zero');
       var netLbl  = tx.myNet > 0 ? '+'+tx.myNet.toFixed(2)
@@ -11567,7 +11574,24 @@ function swRender(data){
           +'<div class="txn-net '+netCls+'">'+netLbl+'</div>'
         +'</div>';
     });
-    txnHtml += '</div></div>';
+    txnHtml += '</div>';
+
+    // Pagination controls
+    if(pages > 1){
+      txnHtml += '<div class="sw-main-pager" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 0 4px">'
+        +'<button class="sw-page-btn" onclick="swMainPage('+(_swMainPage-1)+')" '+
+          (_swMainPage===0?'disabled':'')+'>‹</button>';
+      var s = Math.max(0, _swMainPage-2), e = Math.min(pages-1, _swMainPage+2);
+      if(s > 0) txnHtml += '<button class="sw-page-btn" onclick="swMainPage(0)">1</button>'+(s>1?'<span class="sw-page-info" style="color:rgba(255,255,255,.3);font-size:.72em;padding:0 4px">…</span>':'');
+      for(var i=s; i<=e; i++)
+        txnHtml += '<button class="sw-page-btn'+(i===_swMainPage?' cur':'')+'" onclick="swMainPage('+i+')">'+(i+1)+'</button>';
+      if(e < pages-1) txnHtml += (e<pages-2?'<span class="sw-page-info" style="color:rgba(255,255,255,.3);font-size:.72em;padding:0 4px">…</span>':'')+'<button class="sw-page-btn" onclick="swMainPage('+(pages-1)+')">'+pages+'</button>';
+      txnHtml += '<button class="sw-page-btn" onclick="swMainPage('+(_swMainPage+1)+')" '+
+        (_swMainPage>=pages-1?'disabled':'')+'>›</button>'
+        +'</div>'
+        +'<div class="sw-page-info-bottom" style="text-align:center;color:rgba(255,255,255,.3);font-size:.72em;padding:2px 0 6px">Page '+(_swMainPage+1)+' of '+pages+' · '+total+' total</div>';
+    }
+    txnHtml += '</div>';
   }
 
   /* ── Friend cards ── */
@@ -11667,6 +11691,61 @@ function swRender(data){
       );
     });
   });
+}
+
+/* ── SW main page pagination ── */
+function swMainPage(page){
+  _swMainPage = page;
+  var total = _swMainTxns.length;
+  var pages = Math.ceil(total / _swMainPs);
+  var start = page * _swMainPs;
+  var shown = _swMainTxns.slice(start, start + _swMainPs);
+
+  var list = document.getElementById('sw-txnList');
+  if(!list) return;
+  list.innerHTML = '';
+  shown.forEach(function(tx){
+    var icon    = tx.isPayment ? '💸' : (tx.paidByMe ? '🧾' : '📋');
+    var netCls  = tx.myNet > 0 ? 'owed' : (tx.myNet < 0 ? 'owe' : 'zero');
+    var netLbl  = tx.myNet > 0 ? '+'+tx.myNet.toFixed(2)
+                : tx.myNet < 0 ? tx.myNet.toFixed(2) : '—';
+    var payBadge= tx.isPayment ? '<span class="txn-badge payment">Payment</span>' : '';
+    var row = document.createElement('div');
+    row.className = 'txn-row';
+    row.dataset.net  = tx.myNet||0;
+    row.dataset.currency = tx.currency||'';
+    row.dataset.id   = tx.id||'';
+    row.style.cursor = 'pointer';
+    row.innerHTML =
+      '<div class="txn-icon">'+icon+'</div>'
+      +'<div class="txn-info">'
+        +'<div class="txn-desc"><span class="txn-desc-inner">'+swEscHtml(tx.description)+'</span></div>'
+        +'<div class="txn-date">'+(tx.date||'')+'</div>'
+      +'</div>'
+      +'<div class="txn-cost">'+(tx.currency||'')+' '+tx.cost.toFixed(2)+'</div>'
+      +payBadge
+      +'<div class="txn-net '+netCls+'">'+netLbl+'</div>';
+    row.addEventListener('click', function(){ swOpenTxnDetail(tx); });
+    list.appendChild(row);
+  });
+
+  // Rebuild pager
+  var pager = list.parentNode.querySelector('.sw-main-pager');
+  var info  = list.parentNode.querySelector('.sw-page-info-bottom');
+  if(pager){
+    var pHtml = '';
+    if(pages > 1){
+      pHtml += '<button class="sw-page-btn" onclick="swMainPage('+(page-1)+')" '+(page===0?'disabled':'')+'>‹</button>';
+      var s=Math.max(0,page-2), e=Math.min(pages-1,page+2);
+      if(s>0) pHtml += '<button class="sw-page-btn" onclick="swMainPage(0)">1</button>'+(s>1?'<span class="sw-page-info" style="color:rgba(255,255,255,.3);font-size:.72em;padding:0 4px">…</span>':'');
+      for(var i=s;i<=e;i++)
+        pHtml += '<button class="sw-page-btn'+(i===page?' cur':'')+'" onclick="swMainPage('+i+')">'+(i+1)+'</button>';
+      if(e<pages-1) pHtml += (e<pages-2?'<span class="sw-page-info" style="color:rgba(255,255,255,.3);font-size:.72em;padding:0 4px">…</span>':'')+'<button class="sw-page-btn" onclick="swMainPage('+(pages-1)+')">'+pages+'</button>';
+      pHtml += '<button class="sw-page-btn" onclick="swMainPage('+(page+1)+')" '+(page>=pages-1?'disabled':'')+'>›</button>';
+    }
+    pager.innerHTML = pHtml;
+  }
+  if(info) info.textContent = 'Page '+(page+1)+' of '+pages+' · '+total+' total';
 }
 
 function swBuildCharts(RAW, totalOwe, totalOwed){
@@ -11852,6 +11931,11 @@ function swCloseDrawer(){
   document.getElementById('sw-drawerOverlay').classList.remove('open');
   document.getElementById('sw-friendDrawer').classList.remove('open');
 }
+
+/* ── SW main page pagination state ── */
+var _swMainTxns    = [];
+var _swMainPage    = 0;
+var _swMainPs      = 20;
 
 /* ── SW drawer state ── */
 var _swAllTxns   = [];
