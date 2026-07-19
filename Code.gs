@@ -13,6 +13,45 @@ function getMyDocsFolder() {
   }
 }
 
+function getBillsFolder() {
+  var parent = getMyDocsFolder();
+  var folders = parent.getFoldersByName("bills");
+  if (folders.hasNext()) {
+    return folders.next();
+  } else {
+    return parent.createFolder("bills");
+  }
+}
+
+function saveBillToDrive(base64Data, fileName) {
+  var folder = getBillsFolder();
+  var decoded = Utilities.base64Decode(base64Data);
+  var blob = Utilities.newBlob(decoded, 'image/png', fileName + '.png');
+  var file = folder.createFile(blob);
+  try { file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch(e) {}
+  return { id: file.getId(), name: file.getName() };
+}
+
+function listBills() {
+  var folder = getBillsFolder();
+  var files = folder.getFiles();
+  var result = [];
+  while (files.hasNext()) {
+    var file = files.next();
+    result.push({
+      id: file.getId(),
+      name: file.getName(),
+      mimeType: file.getMimeType(),
+      size: file.getSize(),
+      date: file.getDateCreated().getTime(),
+      downloadUrl: file.getDownloadUrl(),
+      viewUrl: file.getUrl()
+    });
+  }
+  result.sort(function(a, b) { return b.date - a.date; });
+  return result;
+}
+
 function listMyDocs(searchQuery) {
   var folder = getMyDocsFolder();
   var files;

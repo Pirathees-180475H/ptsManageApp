@@ -484,7 +484,7 @@ function edCalculate() {
 
   // Build result HTML
   var html = '<div class="ed-result">';
-  html += '<div class="ed-result-title"><span>🧾 ' + title + ' — Summary</span><div class="ed-copy-row"><button class="ed-copy-btn" id="ed-copy-btn" onclick="edCopyTable(\'text\')">📋 Excel Table</button><button class="ed-copy-btn" id="ed-copy-img-btn" onclick="edCopyTable(\'image\')">📸 Screenshot</button></div></div>';
+  html += '<div class="ed-result-title"><span>🧾 ' + title + ' — Summary</span><div class="ed-copy-row"><button class="ed-copy-btn" id="ed-copy-btn" onclick="edCopyTable(\'text\')">📋 Excel Table</button><button class="ed-copy-btn" id="ed-copy-img-btn" onclick="edCopyTable(\'image\')">📸 Screenshot</button><button class="ed-copy-btn" id="ed-save-docs-btn" onclick="edSaveToDocs()" style="border-color:rgba(0,212,255,.25);color:var(--blue);">💾 Save to Docs</button></div></div>';
 
   // Summary chips
   html += '<div class="ed-summary">';
@@ -883,6 +883,147 @@ function edCaptureTable(wrapper) {
     if (imgContainer) {
       imgContainer.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">⚠️ Failed to render image</div>';
     }
+  });
+}
+
+/* ── Save to Google Drive Docs ── */
+function edSaveToDocs() {
+  // Get the title from input
+  var titleInput = document.getElementById('ed-title');
+  var expTitle = titleInput ? titleInput.value.trim() : '';
+  if (!expTitle) {
+    // Fallback: use the expense title from the rendered result
+    var titleEl = document.querySelector('.ed-result-title span');
+    if (titleEl) expTitle = titleEl.textContent.replace('🧾','').replace('— Summary','').trim();
+  }
+  if (!expTitle) expTitle = 'Expense Split';
+
+  // Check if screenshot image already exists
+  var imgContainer = document.getElementById('ed-image-container');
+  var existingImg = imgContainer ? imgContainer.querySelector('img') : null;
+
+  if (existingImg && existingImg.src && existingImg.src.indexOf('data:image/png') === 0) {
+    // Use existing captured image
+    doUpload(existingImg.src, expTitle);
+  } else {
+    // Need to capture first — reuse the image capture logic
+    var btn = document.getElementById('ed-save-docs-btn');
+    if (btn) { btn.textContent = '⏳ Capturing…'; btn.disabled = true; }
+
+    // Build wrapper same as edCopyAsImage
+    var table = document.getElementById('ed-results-table');
+    if (!table) { alert('No table to capture. Calculate first.'); return; }
+
+    var expTitle2 = '';
+    var titleEl2 = document.querySelector('.ed-result-title span');
+    if (titleEl2) expTitle2 = titleEl2.textContent.replace('🧾','').replace('— Summary','').trim();
+
+    var chipData = {};
+    var chips = document.querySelectorAll('.ed-summary .ed-sum-chip');
+    chips.forEach(function(chip) {
+      var lbl = chip.querySelector('.sc-lbl');
+      var val = chip.querySelector('.sc-val');
+      if (lbl && val) chipData[lbl.textContent.trim()] = val.textContent.trim();
+    });
+
+    var payerStrs = [];
+    var footerEl = document.querySelector('.ed-result > div:last-child');
+    if (footerEl) {
+      var spans = footerEl.querySelectorAll('span');
+      spans.forEach(function(s) { payerStrs.push(s.outerHTML); });
+    }
+
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'padding:24px;background:#0d1220;font-family:system-ui,-apple-system,sans-serif;';
+
+    var innerHtml = '<div style="margin-bottom:16px;"><h2 style="color:#fff;font-size:1.1em;margin:0 0 4px;">🧾 ' + expTitle2 + ' — Summary</h2></div>';
+    innerHtml += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">';
+    Object.keys(chipData).forEach(function(k) {
+      innerHtml += '<div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:6px 14px;display:flex;flex-direction:column;align-items:center;"><span style="font-size:.65em;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.5px;">' + k + '</span><span style="font-size:.95em;font-weight:700;color:#fff;">' + chipData[k] + '</span></div>';
+    });
+    innerHtml += '</div>';
+    innerHtml += table.outerHTML;
+    if (payerStrs.length) {
+      innerHtml += '<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:8px 20px;font-size:.8em;color:rgba(255,255,255,.5);">' + payerStrs.join('') + '</div>';
+    }
+    wrapper.innerHTML = innerHtml;
+    document.body.appendChild(wrapper);
+
+    // Capture and then save
+    if (typeof html2canvas === 'undefined') {
+      var script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      script.onload = function() { setTimeout(function() { edCaptureAndSave(wrapper, expTitle2); }, 150); };
+      document.head.appendChild(script);
+    } else {
+      setTimeout(function() { edCaptureAndSave(wrapper, expTitle2); }, 150);
+    }
+  }
+
+  function doUpload(dataUrl, fileName) {
+    var base64 = dataUrl.split(',')[1];
+    var btn = document.getElementById('ed-save-docs-btn');
+    if (btn) { btn.textContent = '⏳ Saving…'; btn.disabled = true; }
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (btn) { btn.textContent = '✅ Saved!'; btn.disabled = false; }
+        setTimeout(function() {
+          if (btn) { btn.textContent = '💾 Save to Docs'; }
+        }, 2500);
+      })
+      .withFailureHandler(function(err) {
+        alert('Save to Docs failed: ' + (err.message || err));
+        if (btn) { btn.textContent = '💾 Save to Docs'; btn.disabled = false; }
+      })
+      .saveBillToDrive(base64, fileName);
+  }
+}
+
+function edCaptureAndSave(wrapper, fileName) {
+  html2canvas(wrapper, {
+    scale: 2,
+    backgroundColor: '#0d1220',
+    useCORS: true,
+    logging: false,
+    width: wrapper.scrollWidth,
+    height: wrapper.scrollHeight
+  }).then(function(canvas) {
+    document.body.removeChild(wrapper);
+    var dataUrl = canvas.toDataURL('image/png');
+    // Use doUpload via edSaveToDocs scope — call a new save
+    var base64 = dataUrl.split(',')[1];
+    var btn = document.getElementById('ed-save-docs-btn');
+    if (btn) { btn.textContent = '⏳ Saving…'; btn.disabled = true; }
+
+    google.script.run
+      .withSuccessHandler(function(result) {
+        if (btn) { btn.textContent = '✅ Saved!'; btn.disabled = false; }
+        setTimeout(function() {
+          if (btn) { btn.textContent = '💾 Save to Docs'; }
+        }, 2500);
+        // Also show the image in container
+        var imgContainer = document.getElementById('ed-image-container');
+        if (imgContainer) {
+          var img = document.createElement('img');
+          img.src = dataUrl;
+          img.alt = 'Expense Split Table';
+          img.style.cssText = 'max-width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);';
+          imgContainer.innerHTML = '';
+          imgContainer.appendChild(img);
+          imgContainer.style.display = 'block';
+        }
+      })
+      .withFailureHandler(function(err) {
+        alert('Save to Docs failed: ' + (err.message || err));
+        if (btn) { btn.textContent = '💾 Save to Docs'; btn.disabled = false; }
+      })
+      .saveBillToDrive(base64, fileName);
+  }).catch(function() {
+    document.body.removeChild(wrapper);
+    var btn = document.getElementById('ed-save-docs-btn');
+    if (btn) { btn.textContent = '💾 Save to Docs'; btn.disabled = false; }
+    alert('Failed to capture image for saving.');
   });
 }
 

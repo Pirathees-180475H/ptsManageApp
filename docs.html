@@ -216,6 +216,8 @@
     var _docsData = [];
     var _deleteTargetId = null;
     var _selectedId = null;
+    var _docsView = 'files'; // 'files' | 'bills'
+    var _billsData = [];
 
     window.docsToggle = function() {
     var modal = document.getElementById('docs-modal-bg');
@@ -232,6 +234,7 @@
   };
 
     window.docsLoadList = function() {
+      _docsView = 'files';
       var sidebar = document.getElementById('docs-sidebar-list');
       sidebar.innerHTML = '<div style="padding:40px; text-align:center"><div class="ld-spin" style="margin:0 auto"></div></div>';
 
@@ -248,12 +251,21 @@
 
     window.docsRenderList = function(files) {
       var sidebar = document.getElementById('docs-sidebar-list');
+      
+      var html = '<div class="doc-nav-item" onclick="docsLoadBills()" style="border-color:rgba(0,212,255,.12);background:rgba(0,212,255,.04);margin-bottom:8px;">';
+      html += '  <div class="doc-nav-icon" style="background:rgba(0,212,255,.1);">📁</div>';
+      html += '  <div class="doc-nav-info">';
+      html += '    <div class="doc-nav-name" style="color:var(--blue);">Bills</div>';
+      html += '    <div class="doc-nav-meta">Saved from Expense Divider</div>';
+      html += '  </div>';
+      html += '</div>';
+
       if (!files || files.length === 0) {
-        sidebar.innerHTML = '<div style="padding:40px; text-align:center; opacity:0.3; font-size:0.8em">No documents</div>';
+        html += '<div style="padding:40px; text-align:center; opacity:0.3; font-size:0.8em">No documents</div>';
+        sidebar.innerHTML = html;
         return;
       }
 
-      var html = '';
       files.forEach(function(f) {
         var icon = '📄';
         if (f.mimeType.indexOf('image/') === 0) icon = '🖼️';
@@ -271,6 +283,106 @@
         html += '</div>';
       });
       sidebar.innerHTML = html;
+    };
+
+    window.docsLoadBills = function() {
+      _docsView = 'bills';
+      _selectedId = null;
+      
+      // Update sidebar active state
+      document.querySelectorAll('.doc-nav-item').forEach(function(el) { el.classList.remove('active'); });
+      
+      // Hide detail header, show bills grid
+      document.getElementById('docs-detail-hdr').style.display = 'none';
+      document.getElementById('docs-layout').classList.remove('item-open');
+      
+      var pane = document.getElementById('docs-view-pane');
+      pane.innerHTML = '<div style="text-align:center;padding:40px;"><div class="ld-spin" style="margin:0 auto"></div><p style="font-size:.8em;color:rgba(255,255,255,.3);margin-top:12px;">Loading bills…</p></div>';
+
+      google.script.run
+        .withSuccessHandler(function(bills) {
+          _billsData = bills;
+          docsRenderBills(bills);
+        })
+        .withFailureHandler(function(err) {
+          pane.innerHTML = '<div style="padding:20px;text-align:center;color:var(--red);font-size:.85em;">Failed to load bills: ' + (err.message || err) + '</div>';
+        })
+        .listBills();
+    };
+
+    window.docsRenderBills = function(bills) {
+      var pane = document.getElementById('docs-view-pane');
+      
+      if (!bills || bills.length === 0) {
+        pane.innerHTML = '<div class="docs-view-empty"><i>📭</i><p>No bills saved yet</p><p style="font-size:.75em;margin-top:6px;">Use Save to Docs in Expense Divider</p></div>';
+        return;
+      }
+
+      var html = '<div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);">';
+      html += '<div style="display:flex;align-items:center;gap:10px;">';
+      html += '<button onclick="docsLoadList()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:10px;padding:6px 14px;cursor:pointer;font-size:.8em;">← Back to Files</button>';
+      html += '<span style="font-weight:700;font-size:.85em;color:var(--blue);">📁 Bills</span>';
+      html += '<span style="font-size:.7em;color:rgba(255,255,255,.25);">' + bills.length + ' file(s)</span>';
+      html += '</div></div>';
+
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;padding:20px;overflow-y:auto;flex:1;">';
+      
+      bills.forEach(function(b) {
+        var thumbUrl = 'https://drive.google.com/thumbnail?id=' + b.id + '&sz=w400';
+        var displayName = b.name.replace(/\.png$/i, '').replace(/_/g, ' ');
+        var dateStr = new Date(b.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        html += '<div class="doc-bill-card" onclick="docsPreviewBill(\'' + b.id + '\')" style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;overflow:hidden;cursor:pointer;transition:all .25s;display:flex;flex-direction:column;">';
+        html += '  <div style="aspect-ratio:1;background:#0a0e1a;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">';
+        html += '    <img src="' + thumbUrl + '" alt="' + displayName + '" style="width:100%;height:100%;object-fit:cover;transition:transform .3s;" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">';
+        html += '    <div style="display:none;align-items:center;justify-content:center;font-size:2em;opacity:.3;position:absolute;inset:0;">🖼️</div>';
+        html += '  </div>';
+        html += '  <div style="padding:10px 12px;">';
+        html += '    <div style="font-size:.78em;font-weight:600;color:rgba(255,255,255,.8);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + displayName + '</div>';
+        html += '    <div style="font-size:.65em;color:rgba(255,255,255,.3);margin-top:3px;">' + dateStr + '</div>';
+        html += '  </div>';
+        html += '</div>';
+      });
+      
+      html += '</div>';
+      pane.innerHTML = html;
+      
+      // Add hover effect via style
+      var style = document.createElement('style');
+      style.textContent = '.doc-bill-card:hover { border-color: rgba(0,212,255,.2) !important; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,.3); } .doc-bill-card:hover img { transform: scale(1.05); }';
+      pane.appendChild(style);
+    };
+
+    window.docsPreviewBill = function(id) {
+      var bill = _billsData.find(function(b) { return b.id === id; });
+      if (!bill) return;
+      
+      var name = bill.name.replace(/\.png$/i, '').replace(/_/g, ' ');
+      var thumbUrl = 'https://drive.google.com/thumbnail?id=' + bill.id + '&sz=w1200';
+      
+      var pane = document.getElementById('docs-view-pane');
+      pane.innerHTML = '<div style="display:flex;flex-direction:column;height:100%;">';
+      pane.innerHTML += '<div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;">';
+      pane.innerHTML += '  <div style="display:flex;align-items:center;gap:10px;">';
+      pane.innerHTML += '    <button onclick="docsLoadBills()" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:10px;padding:6px 14px;cursor:pointer;font-size:.8em;">← Back</button>';
+      pane.innerHTML += '    <span style="font-weight:600;font-size:.82em;color:rgba(255,255,255,.8);max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + name + '</span>';
+      pane.innerHTML += '  </div>';
+      pane.innerHTML += '  <div style="display:flex;gap:8px;">';
+      pane.innerHTML += '    <button onclick="window.open(\'' + (bill.downloadUrl || bill.viewUrl) + '\',\'_blank\')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:10px;padding:6px 14px;cursor:pointer;font-size:.8em;">⬇️ Download</button>';
+      pane.innerHTML += '    <button onclick="docsDeleteBill(\'' + bill.id + '\')" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,77,109,.2);color:var(--red);border-radius:10px;padding:6px 14px;cursor:pointer;font-size:.8em;">🗑️ Delete</button>';
+      pane.innerHTML += '  </div>';
+      pane.innerHTML += '</div>';
+      pane.innerHTML += '<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden;background:#080b14;">';
+      pane.innerHTML += '  <img src="' + thumbUrl + '" style="max-width:100%;max-height:100%;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5);object-fit:contain;">';
+      pane.innerHTML += '</div></div>';
+    };
+
+    window.docsDeleteBill = function(id) {
+      _deleteTargetId = id;
+      var bill = _billsData.find(function(b) { return b.id === id; });
+      var name = bill ? bill.name.replace(/'/g, "\\'") : 'this bill';
+      document.getElementById('docs-confirm-msg').innerText = "Delete '" + (bill ? bill.name : 'bill') + "' permanently?";
+      document.getElementById('docs-confirm-bg').classList.add('open');
     };
 
     window.docsSelectItem = function(id) {
@@ -320,6 +432,10 @@
 
     window.docsLocalSearch = function() {
       var query = document.getElementById('docs-search-input').value.toLowerCase();
+      // If viewing bills, switch back to files view for search
+      if (_docsView === 'bills') {
+        _docsView = 'files';
+      }
       var filtered = _docsData.filter(function(f) {
         return f.name.toLowerCase().indexOf(query) !== -1;
       });
@@ -393,21 +509,25 @@
 
     window.docsDeleteConfirm = function(yes) {
       document.getElementById('docs-confirm-bg').classList.remove('open');
-      if (yes && _deleteTargetId) {
+      var targetId = _deleteTargetId;
+      _deleteTargetId = null;
+      if (yes && targetId) {
+        var wasBills = (_docsView === 'bills');
         google.script.run
           .withSuccessHandler(function() {
-            _deleteTargetId = null;
-            _selectedId = null;
-            docsLoadList();
-            document.getElementById('docs-detail-hdr').style.display = 'none';
-            document.getElementById('docs-view-pane').innerHTML = '<div class="docs-view-empty"><i>🗑️</i><p>Document Deleted</p></div>';
+            if (wasBills) {
+              docsLoadBills();
+            } else {
+              _selectedId = null;
+              docsLoadList();
+              document.getElementById('docs-detail-hdr').style.display = 'none';
+              document.getElementById('docs-view-pane').innerHTML = '<div class="docs-view-empty"><i>🗑️</i><p>Document Deleted</p></div>';
+            }
           })
           .withFailureHandler(function(err) {
             alert("Delete failed: " + err);
           })
-          .deleteDoc(_deleteTargetId);
-      } else {
-        _deleteTargetId = null;
+          .deleteDoc(targetId);
       }
     };
 
