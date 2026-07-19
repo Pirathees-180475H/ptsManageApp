@@ -1519,11 +1519,10 @@ function getSplitwiseData() {
     var recentTransactions = [];
     try {
       var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-      var expUrl  = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=15&offset=0';
+      var expUrl  = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=100&offset=0';
       var expResp = UrlFetchApp.fetch(expUrl, opts);
       var allTxns = (JSON.parse(expResp.getContentText()).expenses || [])
-                      .filter(function(e) { return !e.deleted_at; })
-                      .slice(0, 15);
+                      .filter(function(e) { return !e.deleted_at; });
       recentTransactions = allTxns.map(function(e) {
         var myNet = 0, paidByMe = false;
         if (currentUserId) {
@@ -1687,16 +1686,15 @@ function getFriendBalances() {
       currentUserId = JSON.parse(meResp.getContentText()).user.id;
     } catch(e) {}
 
-    // ── 3. Recent 10 expenses ──
+    // ── 3. Recent expenses ──
     var recentTransactions = [];
     try {
       const expResp = UrlFetchApp.fetch(
-        'https://secure.splitwise.com/api/v3.0/get_expenses?limit=15&offset=0', opts);
+        'https://secure.splitwise.com/api/v3.0/get_expenses?limit=100&offset=0', opts);
       const expenses = JSON.parse(expResp.getContentText()).expenses;
 
       recentTransactions = expenses
         .filter(function(e) { return !e.deleted_at; })
-        .slice(0, 10)
         .map(function(e) {
           var myNet = 0;
           var paidByMe = false;
@@ -4138,9 +4136,10 @@ function _addSubscriptionToExpenses(entry) {
    Called from the "Add to Expense" button in the Installments UI.
    dateKey: "M-D" string matching col A (e.g. "5-26" for May 26).
    instName may contain a card suffix: "iPhone:AMEX" → card = AMEX.
-   mode: 'other' or 'card'. 
+   mode: 'other', 'card', or 'splitwise'.
    - 'other': Writes to Other columns (K, L)
    - 'card': Writes to Card columns (AE, AG/AI/AK)
+   - 'splitwise': Writes to Splitwise columns (U=amount, W=ref)
 ───────────────────────────────────────────────────────────────── */
 function addInstallmentToExpense(instName, amount, dateKey, mode) {
   try {
@@ -4179,6 +4178,20 @@ function addInstallmentToExpense(instName, amount, dateKey, mode) {
         sheet.getRange(targetRow, 12).setFormula('=' + (parseFloat(existingAmt) || 0) + '+' + amtNum);
       } else {
         sheet.getRange(targetRow, 12).setValue(amtNum);
+      }
+    }
+
+    // ── U = col 21 (Splitwise amount) + W = col 23 (Splitwise ref) ──
+    if (mode === 'splitwise') {
+      var existingSWRef = String(rowVals[22] || '').trim(); // W = col 23 (0-indexed = 22)
+      sheet.getRange(targetRow, 23).setValue(existingSWRef ? existingSWRef + ', ' + cleanName : cleanName);
+
+      var existingSWAmt = rowVals[20]; // U = col 21 (0-indexed = 20)
+      var swFilled = (existingSWAmt !== '' && existingSWAmt !== null && existingSWAmt !== undefined && existingSWAmt !== 0);
+      if (swFilled) {
+        sheet.getRange(targetRow, 21).setFormula('=' + (parseFloat(existingSWAmt) || 0) + '+' + amtNum);
+      } else {
+        sheet.getRange(targetRow, 21).setValue(amtNum);
       }
     }
 

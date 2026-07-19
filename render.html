@@ -1726,6 +1726,16 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .inst-add-card-btn:disabled{opacity:.45;pointer-events:none;}
 .inst-add-card-btn.inst-add-exp-done{background:rgba(0,230,118,.15);color:var(--green);border-color:rgba(0,230,118,.35);}
 
+.inst-add-sw-btn{
+  font-size:.58em;font-weight:700;letter-spacing:.6px;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;flex-shrink:0;cursor:pointer;
+  background:rgba(0,212,255,.15);color:#38bdf8;border:1px solid rgba(0,212,255,.35);
+  transition:background .15s,transform .15s,color .15s;user-select:none;
+}
+.inst-add-sw-btn:hover{background:rgba(0,212,255,.3);transform:scale(1.05);}
+.inst-add-sw-btn:disabled{opacity:.45;pointer-events:none;}
+.inst-add-sw-btn.inst-add-exp-done{background:rgba(0,230,118,.15);color:var(--green);border-color:rgba(0,230,118,.35);}
+
 /* ── Tracker Modal (combined) ── */
 #tracker-modal{
   position:fixed;
@@ -14368,7 +14378,12 @@ function renderInstallments(data) {
       var safeMonth = (entry.month || '').replace(/'/g,"\\'");
       html += '<div class="inst-status ' + statusClass + '" data-status="' + statusClass + '" title="Click to toggle status" onclick="instToggleStatus(this,\'' + safeInstName + '\',' + entry.num + ',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ')">' + entry.status + '</div>';
       html += '<button class="inst-add-exp-btn" title="Add to Other Expense" onclick="instAddToExpense(this,\'' + safeInstName + '\',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ',\'other\')">+ Other</button>';
-      html += '<button class="inst-add-card-btn" title="Add to Card" onclick="instAddToExpense(this,\'' + safeInstName + '\',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ',\'card\')">+ Card</button>';
+      var isSplitwise = inst.name.toLowerCase().indexOf('splitwise') >= 0;
+      if (isSplitwise) {
+        html += '<button class="inst-add-sw-btn" title="Add to Splitwise" onclick="instAddToExpense(this,\'' + safeInstName + '\',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ',\'splitwise\')">+ Splitwise</button>';
+      } else {
+        html += '<button class="inst-add-card-btn" title="Add to Card" onclick="instAddToExpense(this,\'' + safeInstName + '\',\'' + safeMonth + '\',' + (parseFloat(entry.amount)||0) + ',\'card\')">+ Card</button>';
+      }
       html += '</div>';
     });
     html += '</div></div></div>';
