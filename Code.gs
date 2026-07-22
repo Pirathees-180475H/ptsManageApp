@@ -3929,48 +3929,36 @@ function getNotesData() {
   }
 }
 
-function saveNote(notes, isMultiDay) {
+function saveNote(notes) {
   try {
     var ss = SpreadsheetApp.getActive();
     var sheet = ss.getSheetByName('note');
     if (!sheet) return { success: false, error: 'Sheet "note" not found.' };
 
-    // If isMultiDay is true, notes is an array — append a row for each date
-    if (isMultiDay) {
-      // If editing a single row in multi-day mode is not supported; treat as new entries
-      var rows = notes.map(function(n) {
-        return [
-          n.date ? new Date(n.date.replace(/-/g, '/')) : new Date(),
-          n.yearly || false,
-          n.reference || '',
-          n.calendar || false,
-          n.category || '',
-          false, // weeklyNotified
-          false, // monthlyNotified
-          false  // actionDone
-        ];
-      });
-      sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
-      return { success: true };
+    // notes is always an array now — one entry per date row
+    if (!Array.isArray(notes) || notes.length === 0) {
+      return { success: false, error: 'No note data provided.' };
     }
 
-    // Legacy single-note path (also handles the single date when multi-day is off)
-    var note = notes;
-    var rowData = [
-      note.date ? new Date(note.date.replace(/-/g, '/')) : new Date(),
-      note.yearly || false,
-      note.reference || '',
-      note.calendar || false,
-      note.category || '',
-      note.weeklyNotified || false,
-      note.monthlyNotified || false,
-      note.actionDone || false
-    ];
+    var rows = notes.map(function(n) {
+      return [
+        n.date ? new Date(n.date.replace(/-/g, '/')) : new Date(),
+        n.yearly || false,
+        n.reference || '',
+        n.calendar || false,
+        n.category || '',
+        n.weeklyNotified || false,
+        n.monthlyNotified || false,
+        n.actionDone || false
+      ];
+    });
 
-    if (note.row && note.row >= 2) {
-      sheet.getRange(note.row, 1, 1, 8).setValues([rowData]);
+    // If first note has a valid row, it's a single-row edit — update in place
+    var first = notes[0];
+    if (first && first.row && first.row >= 2) {
+      sheet.getRange(first.row, 1, 1, 8).setValues([rows[0]]);
     } else {
-      sheet.appendRow(rowData);
+      sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 8).setValues(rows);
     }
     return { success: true };
   } catch (e) {

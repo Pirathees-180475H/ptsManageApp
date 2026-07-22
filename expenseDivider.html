@@ -160,8 +160,11 @@
   <!-- Rendered image appears here for right-click copy -->
   <div id="ed-image-container" style="display:none;">
     <div style="padding:8px 12px 6px;font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:space-between;">
-      <span>📸 Table Image — Right-click → Copy Image</span>
-      <button class="ed-copy-btn" onclick="document.getElementById('ed-image-container').style.display='none';" style="font-size:.9em;">✕ Close</button>
+      <span>📸 Table Image</span>
+      <div style="display:flex;gap:6px;">
+        <button class="ed-copy-btn" onclick="edCopyContainerImage()" style="font-size:.9em;">📋 Copy Image</button>
+        <button class="ed-copy-btn" onclick="document.getElementById('ed-image-container').style.display='none';" style="font-size:.9em;">✕ Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -884,6 +887,59 @@ function edCaptureTable(wrapper) {
       imgContainer.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">⚠️ Failed to render image</div>';
     }
   });
+}
+
+/* ── Copy image from container to clipboard ── */
+function edCopyContainerImage() {
+  var imgContainer = document.getElementById('ed-image-container');
+  var img = imgContainer ? imgContainer.querySelector('img') : null;
+  if (!img || !img.src) {
+    var btn = imgContainer ? imgContainer.querySelector('.ed-copy-btn') : null;
+    if (btn) { btn.textContent = '⚠️ No Image'; setTimeout(function() { btn.textContent = '📋 Copy Image'; }, 1500); }
+    return;
+  }
+  // Convert data URL to a Blob and copy to clipboard
+  var dataUrl = img.src;
+  var blobBin = atob(dataUrl.split(',')[1]);
+  var arr = [];
+  for (var i = 0; i < blobBin.length; i++) arr.push(blobBin.charCodeAt(i));
+  var blob = new Blob([new Uint8Array(arr)], { type: 'image/png' });
+
+  try {
+    navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': blob })
+    ]).then(function() {
+      var btns = imgContainer.querySelectorAll('.ed-copy-btn');
+      for (var b = 0; b < btns.length; b++) {
+        if (btns[b].textContent.indexOf('📋') !== -1 || btns[b].textContent.indexOf('Copy Image') !== -1) {
+          btns[b].textContent = '✅ Copied!';
+          btns[b].classList.add('copied');
+          (function(btn) {
+            setTimeout(function() {
+              btn.textContent = '📋 Copy Image';
+              btn.classList.remove('copied');
+            }, 2000);
+          })(btns[b]);
+          break;
+        }
+      }
+    }).catch(function() {
+      edFallbackCopyImage(img.src);
+    });
+  } catch(e) {
+    edFallbackCopyImage(img.src);
+  }
+}
+
+function edFallbackCopyImage(dataUrl) {
+  // Fallback: open image in new tab so user can right-click copy
+  var w = window.open('');
+  if (w) {
+    w.document.write('<img src="' + dataUrl + '" style="max-width:100%;">');
+    w.document.title = 'Expense Split — Right-click → Copy Image';
+  } else {
+    alert('Clipboard copy not supported. Right-click the image above and select "Copy image".');
+  }
 }
 
 /* ── Save to Google Drive Docs ── */

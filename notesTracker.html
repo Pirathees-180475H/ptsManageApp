@@ -161,13 +161,14 @@
 <div class="notes-container">
   <!-- Toolbar -->
   <div class="notes-toolbar">
-    <button class="notes-add-btn" onclick="toggleNoteForm()"><span>+</span> Add Note</button>
+    <button class="notes-add-btn" onclick="document.getElementById('n-row').value='';document.getElementById('n-edit-rows').value='';toggleNoteForm()"><span>+</span> Add Note</button>
   </div>
 
   <!-- Form -->
   <div class="notes-form-card" id="notes-form-card">
     <div class="notes-form-title" id="notes-form-title">New Note</div>
     <input type="hidden" id="n-row">
+    <input type="hidden" id="n-edit-rows"><!-- comma-separated row IDs for multi-row edit -->
     
     <div class="notes-form-grid">
       <div class="notes-field">
@@ -341,7 +342,8 @@
         + '    <div class="note-flag ' + (g.note.calendar ? 'active' : '') + '">📅 Calendar</div>'
         + '  </div>'
         + '  <div class="note-actions">'
-        + '    <button class="note-act-btn" onclick="deleteGroup(\'' + rowIds + '\')" title="Delete all">🗑️</button>'
+        + '    <button class="note-act-btn" onclick="editNoteGroup(\'' + g.dates[0] + '\',\'' + g.dates[g.dates.length-1] + '\',\'' + rowIds + '\')" title="Edit all in group">✏️</button>'
+        + '    <button class="note-act-btn del" onclick="deleteGroup(\'' + rowIds + '\')" title="Delete all">🗑️</button>'
         + '  </div>'
         + '</div>'
         + '</div>';
@@ -405,7 +407,7 @@
     
     if (show) {
       card.classList.add('open');
-      if (!document.getElementById('n-row').value) {
+      if (!document.getElementById('n-row').value && !document.getElementById('n-edit-rows').value) {
         document.getElementById('notes-form-title').innerText = 'New Note';
         document.getElementById('n-date').value = new Date().toISOString().split('T')[0];
         document.getElementById('n-cat-sel').value = '';
@@ -422,6 +424,7 @@
     } else {
       card.classList.remove('open');
       document.getElementById('n-row').value = '';
+      document.getElementById('n-edit-rows').value = '';
     }
   }
 
@@ -453,6 +456,7 @@
     var isMultiDay = document.getElementById('n-multiday').checked;
     var upToDate = document.getElementById('n-date-upto').value;
     var row = parseInt(document.getElementById('n-row').value) || null;
+    var editRowsStr = document.getElementById('n-edit-rows').value;
 
     // Generate list of dates
     var dates = [];
@@ -474,7 +478,7 @@
     // Build notes array (one per date)
     var notes = dates.map(function(date) {
       return {
-        row: row, // only used for edit (single row)
+        row: row,
         date: date,
         category: category,
         reference: ref,
@@ -487,16 +491,41 @@
     btn.disabled = true;
     btn.innerText = 'Saving...';
 
-    google.script.run.withSuccessHandler(function(res) {
-      btn.disabled = false;
-      btn.innerText = 'Save Note';
-      if (res.success) {
-        toggleNoteForm(false);
-        loadNotesData();
-      } else {
-        alert('Error: ' + res.error);
-      }
-    }).saveNote(notes, isMultiDay);
+    // If editing a group (multi-row), delete old rows then insert new ones
+    if (editRowsStr) {
+      var oldRows = editRowsStr.split(',').map(Number);
+      google.script.run.withSuccessHandler(function(res) {
+        if (res.success) {
+          // Now insert new notes (reuse saveNote but pass rows to delete)
+          google.script.run.withSuccessHandler(function(res2) {
+            btn.disabled = false;
+            btn.innerText = 'Save Note';
+            if (res2.success) {
+              document.getElementById('n-edit-rows').value = '';
+              toggleNoteForm(false);
+              loadNotesData();
+            } else {
+              alert('Error: ' + res2.error);
+            }
+          }).saveNote(notes);
+        } else {
+          btn.disabled = false;
+          btn.innerText = 'Save Note';
+          alert('Error deleting old entries: ' + res.error);
+        }
+      }).deleteNotes(oldRows);
+    } else {
+      google.script.run.withSuccessHandler(function(res) {
+        btn.disabled = false;
+        btn.innerText = 'Save Note';
+        if (res.success) {
+          toggleNoteForm(false);
+          loadNotesData();
+        } else {
+          alert('Error: ' + res.error);
+        }
+      }).saveNote(notes);
+    }
   }
 
   function editNote(rowIdx) {
@@ -544,6 +573,50 @@
       if (res.success) loadNotesData();
       else alert('Error: ' + res.error);
     }).deleteNotes(ids);
+  }
+
+  /* ── Edit a multi-row group ── */
+  function editNoteGroup(fromDate, upToDate, rowIdsStr) {
+    var ids = rowIdsStr.split(',').map(Number);
+    // Find the most recent note from these rows
+    var groupNotes = _notesData.filter(function(x) { return ids.indexOf(x.row) !== -1; });
+    if (!groupNotes.length) return;
+    var n = groupNotes[groupNotes.length - 1]; // latest note
+
+    // Store all row IDs for multi-row update
+    document.getElementById('n-edit-rows').value = rowIdsStr;
+    document.getElementById('n-row').value = '';
+
+    document.getElementById('notes-form-title').innerText = 'Edit Group (' + ids.length + ' entries)';
+    document.getElementById('n-date').value = fromDate;
+
+    var sel = document.getElementById('n-cat-sel');
+    var inp = document.getElementById('n-cat-new');
+    if (_notesCats.indexOf(n.category) > -1 || !n.category) {
+      sel.value = n.category || '';
+      inp.style.display = 'none';
+    } else {
+      sel.value = 'NEW';
+      inp.value = n.category;
+      inp.style.display = 'block';
+    }
+
+    document.getElementById('n-ref').value = n.reference;
+    document.getElementById('n-yearly').checked = n.yearly;
+    document.getElementById('n-calendar').checked = n.calendar;
+
+    // Multi-day: if more than 1 date, enable multi-day
+    if (groupNotes.length > 1) {
+      document.getElementById('n-multiday').checked = true;
+      document.getElementById('n-multiday-fields').style.display = 'grid';
+      document.getElementById('n-date-upto').value = upToDate;
+    } else {
+      document.getElementById('n-multiday').checked = false;
+      document.getElementById('n-multiday-fields').style.display = 'none';
+      document.getElementById('n-date-upto').value = '';
+    }
+
+    toggleNoteForm(true);
   }
 
   function escHtml(s) {
