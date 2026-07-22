@@ -94,7 +94,13 @@
 .docs-view-empty i { font-size: 4em; display: block; margin-bottom: 15px; }
 
 #main-preview-frame { width: 100%; height: 100%; border: none; background: #fff; }
-#main-preview-img { max-width: 95%; max-height: 95%; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); object-fit: contain; }
+#main-preview-img { max-width: 95%; max-height: 95%; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); object-fit: contain; background: rgba(255,255,255,0.02); transition: opacity 0.4s ease; }
+#main-preview-img.loading { opacity: 0.3; }
+#main-preview-img.loaded { opacity: 1; }
+#main-preview-img.error { opacity: 0.5; filter: grayscale(1); }
+@media (max-width: 800px) {
+  #main-preview-img { max-width: 98%; max-height: 90%; border-radius: 8px; }
+}
 
 /* Floating Upload Button */
 .docs-fab {
@@ -144,7 +150,10 @@
 .preview-close:hover { background: rgba(255,77,109,0.2); border-color: rgba(255,77,109,0.3); }
 #preview-content { width: 92%; height: 88%; display: flex; align-items: center; justify-content: center; position: relative; }
 #preview-frame { width: 100%; height: 100%; border: none; background: #fff; border-radius: 20px; box-shadow: 0 30px 100px rgba(0,0,0,0.8); }
-#preview-img { max-width: 100%; max-height: 100%; border-radius: 20px; box-shadow: 0 30px 100px rgba(0,0,0,0.8); object-fit: contain; }
+#preview-img { max-width: 100%; max-height: 100%; border-radius: 20px; box-shadow: 0 30px 100px rgba(0,0,0,0.8); object-fit: contain; background: rgba(255,255,255,0.02); transition: opacity 0.4s ease; }
+#preview-img.loading { opacity: 0.3; }
+#preview-img.loaded { opacity: 1; }
+#preview-img.error { opacity: 0.5; filter: grayscale(1); }
 </style>
 
 <div id="docs-modal-bg">
@@ -274,7 +283,7 @@
         var dateStr = new Date(f.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
         var activeClass = (_selectedId === f.id) ? 'active' : '';
 
-        html += '<div class="doc-nav-item ' + activeClass + '" onclick="docsSelectItem(\'' + f.id + '\')">';
+        html += '<div class="doc-nav-item ' + activeClass + '" data-id="' + f.id + '" onclick="docsSelectItem(\'' + f.id + '\')">';
         html += '  <div class="doc-nav-icon">' + icon + '</div>';
         html += '  <div class="doc-nav-info">';
         html += '    <div class="doc-nav-name">' + f.name + '</div>';
@@ -337,7 +346,7 @@
         var dateStr = new Date(b.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
         var activeClass = (_selectedId === b.id) ? 'active' : '';
         
-        html += '<div class="doc-nav-item ' + activeClass + '" onclick="docsPreviewBill(\'' + b.id + '\')">';
+        html += '<div class="doc-nav-item ' + activeClass + '" data-id="' + b.id + '" onclick="docsPreviewBill(\'' + b.id + '\')">';
         html += '  <div class="doc-nav-icon">🖼️</div>';
         html += '  <div class="doc-nav-info">';
         html += '    <div class="doc-nav-name">' + displayName + '</div>';
@@ -354,14 +363,13 @@
       if (!bill) return;
 
       // Update sidebar active state
-      document.querySelectorAll('.doc-nav-item').forEach(function(el, idx) {
-        var billIdx = _billsData.findIndex(function(b) { return b.id === id; });
-        el.classList.toggle('active', idx === billIdx + 1);
+      document.querySelectorAll('.doc-nav-item').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.id === id);
       });
 
       var name = bill.name.replace(/\.png$/i, '').replace(/_/g, ' ');
 
-      // Show standard detail header — reuse same layout as regular files
+      // Show standard detail header
       document.getElementById('docs-layout').classList.add('item-open');
       document.getElementById('docs-detail-hdr').style.display = 'flex';
       var nameEl = document.getElementById('docs-selected-name');
@@ -373,10 +381,9 @@
       document.getElementById('docs-btn-download').onclick = function() { docsDownload(bill.id); };
       document.getElementById('docs-btn-delete').onclick = function() { docsDeleteBill(bill.id); };
 
-      // Show image preview — same as regular file image preview
+      // Show image preview with progressive loading
       var pane = document.getElementById('docs-view-pane');
-      var thumbUrl = 'https://drive.google.com/thumbnail?id=' + bill.id + '&sz=w1200';
-      pane.innerHTML = '<img id="main-preview-img" src="' + thumbUrl + '">';
+      pane.innerHTML = docsBuildImageTag(bill.id);
     };
 
     window.docsDeleteBill = function(id) {
@@ -392,8 +399,8 @@
       if (!file) return;
 
       // Update UI selection
-      document.querySelectorAll('.doc-nav-item').forEach(function(el, idx) {
-        el.classList.toggle('active', _docsData[idx] && _docsData[idx].id === id);
+      document.querySelectorAll('.doc-nav-item').forEach(function(el) {
+        el.classList.toggle('active', el.dataset.id === id);
       });
 
       // Show detail view
@@ -415,8 +422,7 @@
       google.script.run
         .withSuccessHandler(function(data) {
           if (data.mimeType.indexOf('image/') === 0) {
-            var thumbUrl = 'https://drive.google.com/thumbnail?id=' + data.id + '&sz=w1200';
-            pane.innerHTML = '<img id="main-preview-img" src="' + thumbUrl + '">';
+            pane.innerHTML = docsBuildImageTag(data.id);
           } else {
             pane.innerHTML = '<iframe id="main-preview-frame" src="' + data.viewUrl.replace(/\/view.*$/, '/preview') + '"></iframe>';
           }
@@ -544,6 +550,26 @@
       if (file && file.downloadUrl) {
         window.open(file.downloadUrl, '_blank');
       }
+    };
+
+    /* ── Image helper: responsive, lazy, error‑resilient ── */
+    window.docsBuildImageTag = function(fileId) {
+      var isMobile = window.innerWidth < 800;
+      var thumbSize = isMobile ? 'w600' : 'w1200';
+      var thumbUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=' + thumbSize;
+
+      return '<div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;">'
+        + '<img id="main-preview-img" class="loading" src="' + thumbUrl + '"'
+        + ' loading="lazy" decoding="async"'
+        + ' onload="this.classList.remove(\'loading\');this.classList.add(\'loaded\')"'
+        + ' onerror="this.classList.remove(\'loading\');this.classList.add(\'error\');'
+        + ' this.alt=\'Image failed to load. Tap to retry.\';'
+        + ' this.style.cursor=\'pointer\';'
+        + ' this.onclick=function(){var s=this.src;this.src=\'\';setTimeout(function(){this.src=s}.bind(this),100)};"'
+        + ' alt="Document preview"'
+        + ' style="background:rgba(255,255,255,0.03);border-radius:12px;max-width:95%;max-height:95%;object-fit:contain;"'
+        + '>'
+        + '</div>';
     };
 
 })();
