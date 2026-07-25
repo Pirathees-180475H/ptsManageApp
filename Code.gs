@@ -3398,10 +3398,22 @@ function createSplitwiseExpense(payload) {
       userIdx++;
     });
 
-    // 3. Submit expense — Splitwise expects URL-encoded form data, NOT JSON
+    // 3. Build curl command for debugging
+    var curlParts = ['curl -X POST "https://secure.splitwise.com/api/v3.0/create_expense"'];
+    curlParts.push('  -H "Authorization: Bearer ' + apiKey + '"');
+    var curlData = [];
+    for (var k in params) {
+      if (params.hasOwnProperty(k)) {
+        curlData.push(encodeURIComponent(k) + '=' + encodeURIComponent(params[k]));
+      }
+    }
+    curlParts.push('  -d "' + curlData.join('&') + '"');
+    var curlCmd = curlParts.join(' \\\n');
+
+    // 4. Submit expense — Splitwise expects URL-encoded form data
     var formPayload = {};
     for (var key in params) {
-      if (params.hasOwnProperty(key)) formPayload[key] = params[key];
+      if (params.hasOwnProperty(key)) formPayload[key] = String(params[key]);
     }
     var opts = {
       method:      'post',
@@ -3409,20 +3421,22 @@ function createSplitwiseExpense(payload) {
       payload:     formPayload,
       muteHttpExceptions: true
     };
-    var resp    = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/create_expense', opts);
-    var result  = JSON.parse(resp.getContentText());
+    var apiUrl  = 'https://secure.splitwise.com/api/v3.0/create_expense';
+    var resp    = UrlFetchApp.fetch(apiUrl, opts);
+    var respText = resp.getContentText();
+    var result  = JSON.parse(respText);
     var code    = resp.getResponseCode();
 
     if (code !== 200 && code !== 201) {
       var errMsg = (result.errors && (result.errors.base||[]).join(', ')) || ('HTTP '+code);
-      Logger.log('createSplitwiseExpense error: ' + errMsg);
-      return { success:false, error: errMsg };
+      Logger.log('createSplitwiseExpense error: ' + errMsg + ' | Response: ' + respText);
+      return { success:false, error: errMsg, curl: curlCmd, httpCode: code, responseBody: respText };
     }
 
     var expense = result.expense || (result.expenses && result.expenses[0]) || null;
     if (!expense) {
-      Logger.log('createSplitwiseExpense: No expense in response. Full response: ' + JSON.stringify(result));
-      return { success:false, error:'No expense returned by API. Check GAS logs for details.' };
+      Logger.log('createSplitwiseExpense: No expense in response. Full response: ' + respText);
+      return { success:false, error:'No expense returned by API. HTTP ' + code, curl: curlCmd, httpCode: code, responseBody: respText };
     }
 
     var expId = expense.id;

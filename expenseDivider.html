@@ -1714,7 +1714,7 @@ function edAddToSplitwise() {
     });
 
     splits.push({
-      userId: friend ? friend.id : null,
+      userId: friend && friend.isMe ? 'me' : (friend ? friend.id : null),
       name: displayName,
       initials: friend ? friend.initials : displayName.substring(0, 2).toUpperCase(),
       isMatched: !!friend,
@@ -1890,7 +1890,15 @@ function edSwReviewSubmit() {
         var swBtn = document.getElementById('ed-sw-add-btn');
         if (swBtn) { swBtn.textContent = '✅ Added to Splitwise'; swBtn.classList.add('ed-sw-done'); swBtn.disabled = true; }
       } else {
-        if (msgEl) { msgEl.textContent = '❌ ' + (res && res.error ? res.error : 'Unknown error. Check GAS logs.'); msgEl.className = 'ed-swr-msg err'; }
+        var errTxt = '❌ ' + (res && res.error ? res.error : 'Unknown error. Check GAS logs.');
+        // If backend returned a curl command for debugging, show it as a copyable block
+        if (res && res.curl) {
+          errTxt += '\n\n📋 cURL command to test manually:\n' + edAcEscape(res.curl);
+          if (res.responseBody) {
+            errTxt += '\n\n📨 Server response:\n' + edAcEscape(res.responseBody);
+          }
+        }
+        if (msgEl) { msgEl.style.whiteSpace = 'pre-wrap'; msgEl.style.fontFamily = 'monospace'; msgEl.style.fontSize = '0.7em'; msgEl.textContent = errTxt; msgEl.className = 'ed-swr-msg err'; }
       }
     })
     .withFailureHandler(function(e) {
