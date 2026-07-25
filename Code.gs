@@ -1662,7 +1662,7 @@ function getSplitwiseData() {
     var recentTransactions = [];
     try {
       var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-      var expUrl  = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=100&offset=0';
+      var expUrl  = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=20&offset=0';
       var expResp = UrlFetchApp.fetch(expUrl, opts);
       var allTxns = (JSON.parse(expResp.getContentText()).expenses || [])
                       .filter(function(e) { return !e.deleted_at; });
