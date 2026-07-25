@@ -1,0 +1,545 @@
+<!-- ═══════════════════════════════════════════════════════════
+     MAJOR EXPENSE ANALYZER
+     "Major EXP" sheet: Planed Date | Bought Date | Reference | Portfolio State | is usefull? | Usages | Bought?
+     Portfolio State = purchase price/value in LKR
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Major Exp Analyzer (mxa prefix) ── */
+.mxa-page{padding:14px;max-width:1400px;margin:0 auto;width:100%;box-sizing:border-box;}
+.mxa-header-sub{color:rgba(255,255,255,.3);font-size:.72em;margin:0 0 16px;}
+
+/* KPI row */
+.mxa-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;animation:fadeUp .4s ease both;}
+.mxa-kpi{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;backdrop-filter:blur(20px);position:relative;overflow:hidden;transition:transform .2s;}
+.mxa-kpi:hover{transform:translateY(-2px);}
+.mxa-kpi-icon{font-size:1.4em;margin-bottom:5px;display:block;}
+.mxa-kpi-label{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.33);margin-bottom:3px;}
+.mxa-kpi-value{font-size:1.3em;font-weight:800;letter-spacing:-.5px;line-height:1;color:#fff;}
+.mxa-kpi-sub{font-size:.6em;color:rgba(255,255,255,.25);margin-top:3px;}
+
+/* Charts row */
+.mxa-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;animation:fadeUp .4s ease .1s both;}
+.mxa-chart-box{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:16px;backdrop-filter:blur(20px);}
+.mxa-chart-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);}
+.mxa-chart-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.mxa-chart-title{font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+.mxa-chart-wrap{height:240px;position:relative;}
+
+/* Insights row */
+.mxa-insights{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;animation:fadeUp .4s ease .12s both;}
+.mxa-insight-box{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;backdrop-filter:blur(20px);display:flex;align-items:flex-start;gap:10px;transition:transform .2s;}
+.mxa-insight-box:hover{transform:translateY(-2px);}
+.mxa-ins-emoji{font-size:1.6em;flex-shrink:0;}
+.mxa-ins-label{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.33);margin-bottom:3px;}
+.mxa-ins-value{font-size:.95em;font-weight:700;color:#fff;}
+.mxa-ins-sub{font-size:.62em;color:var(--muted);margin-top:2px;}
+
+/* Filters */
+.mxa-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;align-items:center;animation:fadeUp .4s ease .05s both;}
+.mxa-filter-select{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:8px 32px 8px 12px;color:#fff;font-size:.75em;font-family:inherit;font-weight:500;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:border-color .2s;}
+.mxa-filter-select:focus{outline:none;border-color:var(--purple);}
+.mxa-filter-select option{background:#0d1220;color:#fff;}
+.mxa-add-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;border-radius:10px;background:linear-gradient(135deg,rgba(168,85,247,.2),rgba(0,212,255,.1));border:1px solid rgba(168,85,247,.35);color:#c084fc;font-size:.72em;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;margin-left:auto;}
+.mxa-add-btn:hover{background:rgba(168,85,247,.3);transform:translateY(-1px);box-shadow:0 4px 14px rgba(168,85,247,.2);}
+
+/* Table */
+.mxa-table-wrap{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;backdrop-filter:blur(20px);animation:fadeUp .4s ease .15s both;}
+.mxa-table-scroll{overflow-x:auto;}
+.mxa-table{width:100%;border-collapse:collapse;font-size:.78em;}
+.mxa-table th{padding:10px 12px;text-align:left;font-size:.62em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);white-space:nowrap;}
+.mxa-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.8);white-space:nowrap;}
+.mxa-table tr:hover td{background:rgba(255,255,255,.03);}
+.mxa-table td.mxa-cell-ref{font-weight:700;color:#fff;}
+.mxa-table td.mxa-cell-amt{font-weight:700;text-align:right;font-variant-numeric:tabular-nums;color:var(--gold);}
+.mxa-table td.mxa-cell-green{color:var(--green);}
+.mxa-table td.mxa-cell-red{color:var(--red);}
+.mxa-table td.mxa-cell-amber{color:var(--amber);}
+.mxa-table td.mxa-cell-blue{color:var(--blue);}
+.mxa-table td.mxa-cell-actions{text-align:right;}
+.mxa-action-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.75em;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;}
+.mxa-action-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.mxa-action-btn.edit:hover{background:rgba(59,130,246,.2);color:#93c5fd;border-color:rgba(59,130,246,.3);}
+.mxa-action-btn.delete:hover{background:rgba(239,68,68,.2);color:#fca5a5;border-color:rgba(239,68,68,.3);}
+.mxa-useful-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.65em;font-weight:700;letter-spacing:.5px;}
+.mxa-useful-badge.yes{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.2);}
+.mxa-useful-badge.no{background:rgba(255,77,109,.12);color:var(--red);border:1px solid rgba(255,77,109,.2);}
+.mxa-bought-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.65em;font-weight:700;letter-spacing:.5px;}
+.mxa-bought-badge.yes{background:rgba(0,212,255,.12);color:var(--blue);border:1px solid rgba(0,212,255,.2);}
+.mxa-bought-badge.no{background:rgba(255,255,255,.06);color:var(--muted);border:1px solid rgba(255,255,255,.1);}
+
+/* Modal */
+#mxa-modal{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.95);width:90%;max-width:500px;max-height:85vh;overflow:hidden;z-index:9000;background:#0f172a;border:1px solid rgba(255,255,255,.12);border-radius:20px;box-shadow:0 25px 50px -12px rgba(0,0,0,.5);display:none;flex-direction:column;opacity:0;transition:all .2s;}
+#mxa-modal.open{display:flex;opacity:1;transform:translate(-50%,-50%) scale(1);}
+#mxa-overlay{position:fixed;inset:0;z-index:8999;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:none;}
+#mxa-overlay.open{display:block;}
+.mxa-m-hdr{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;}
+.mxa-m-title{font-size:.72em;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#fff;}
+.mxa-m-close{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);width:28px;height:28px;border-radius:8px;cursor:pointer;transition:all .2s;font-size:.8em;display:flex;align-items:center;justify-content:center;}
+.mxa-m-close:hover{background:rgba(239,68,68,.2);color:#f87171;border-color:rgba(239,68,68,.3);}
+.mxa-m-body{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow-y:auto;}
+.mxa-m-field{display:flex;flex-direction:column;gap:4px;}
+.mxa-m-label{font-size:.58em;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.4);letter-spacing:.5px;}
+.mxa-m-input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;color:#fff;font-size:.78em;font-family:inherit;transition:border-color .15s;}
+.mxa-m-input:focus{outline:none;border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+.mxa-m-select{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;color:#fff;font-size:.78em;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,.4)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+.mxa-m-select:focus{outline:none;border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+.mxa-m-select option{background:#0d1220;color:#fff;}
+.mxa-m-footer{padding:12px 18px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:flex-end;gap:8px;}
+.mxa-m-btn{padding:8px 18px;border-radius:9px;font-size:.7em;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:.3px;text-transform:uppercase;}
+.mxa-m-btn.cancel{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);}
+.mxa-m-btn.cancel:hover{background:rgba(255,255,255,.1);color:#fff;}
+.mxa-m-btn.save{background:linear-gradient(135deg,var(--purple),#7c3aed);border:none;color:#fff;box-shadow:0 4px 12px rgba(168,85,247,.3);}
+.mxa-m-btn.save:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(168,85,247,.4);}
+.mxa-m-btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
+.mxa-m-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* Search + Pagination */
+.mxa-search-wrap{padding:0 16px 10px;}
+.mxa-search{width:100%;padding:8px 12px;border-radius:8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  color:#fff;font-size:.75em;font-family:inherit;outline:none;transition:border-color .15s;
+  box-sizing:border-box;}
+.mxa-search:focus{border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+.mxa-search::placeholder{color:rgba(255,255,255,.25);}
+.mxa-pagination{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;border-top:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.02);flex-shrink:0;}
+.mxa-pag-info{font-size:.65em;color:rgba(255,255,255,.3);}
+.mxa-pag-btns{display:flex;align-items:center;gap:6px;}
+.mxa-page-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);border-radius:9px;padding:5px 12px;cursor:pointer;
+  font-size:.65em;font-weight:600;transition:all .12s;font-family:inherit;text-transform:uppercase;letter-spacing:.3px;}
+.mxa-page-btn:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);}
+.mxa-page-btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
+.mxa-pag-num{font-size:.65em;font-weight:700;color:rgba(255,255,255,.5);min-width:60px;text-align:center;}
+
+@media(max-width:700px){
+  .mxa-charts{grid-template-columns:1fr;}
+  .mxa-kpi-row{grid-template-columns:repeat(2,1fr);}
+  .mxa-insights{grid-template-columns:1fr;}
+  .mxa-filters{flex-wrap:wrap;}
+  .mxa-add-btn{margin-left:0;width:100%;justify-content:center;}
+}
+</style>
+
+<div class="mxa-page" id="mxa-body">
+  <div class="loading">
+    <div class="spinner"></div>
+    <div class="loading-txt">Loading Major Expenses…</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   MAJOR EXPENSE ANALYZER JS
+   Sheet: "Major EXP"
+   A: Planed Date, B: Bought Date, C: Reference
+   D: Portfolio State (value), E: is usefull?
+   F: Usages, G: Bought?
+═══════════════════════════════════════════ */
+var mxaData = [];
+var mxaCharts = {};
+var _mxaPage = 0;
+var _mxaPageSize = 10;
+var _mxaFilteredData = [];
+
+function mxaLoad() {
+  if(typeof google !== 'undefined' && google.script && google.script.run){
+    google.script.run
+      .withSuccessHandler(mxaDisplayData)
+      .withFailureHandler(function(err) {
+        document.getElementById('mxa-body').innerHTML = '<div class="error-box">⚠️ ' + (err.message || err) + '</div>';
+      })
+      .getMajorExpData();
+  }
+}
+
+function mxaFmt(v) {
+  if (v === undefined || v === null || isNaN(v)) return '—';
+  return '₨ ' + Math.abs(v).toLocaleString('en-IN', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+}
+
+function mxaFormatDate(d) {
+  if (!d) return '—';
+  var dt = new Date(d);
+  if (isNaN(dt.getTime())) return String(d);
+  return (dt.getMonth() + 1) + '/' + dt.getFullYear();
+}
+
+function mxaDestroyCharts() {
+  Object.keys(mxaCharts).forEach(function(k) {
+    if (mxaCharts[k]) { mxaCharts[k].destroy(); delete mxaCharts[k]; }
+  });
+}
+
+function mxaDisplayData(res) {
+  if (!res || !res.success) {
+    document.getElementById('mxa-body').innerHTML = '<div class="error-box">⚠️ ' + (res ? res.error : 'Failed to load') + '</div>';
+    return;
+  }
+  mxaData = res.data || [];
+  mxaDestroyCharts();
+
+  // Compute KPIs
+  var totalPortfolio = mxaData.reduce(function(s, r) { return s + r.portfolioState; }, 0);
+  var count = mxaData.length;
+  var usefulCount = mxaData.filter(function(r) { return r.isUseful === true; }).length;
+  var notUsefulCount = count - usefulCount;
+  var boughtCount = mxaData.filter(function(r) { return r.bought === true; }).length;
+  var notBoughtCount = count - boughtCount;
+  var totalUsages = mxaData.reduce(function(s, r) { return s + r.usages; }, 0);
+  var avgUsage = count > 0 ? Math.round(totalUsages / count) : 0;
+
+  // Most valuable / least
+  var sortedByVal = mxaData.slice().sort(function(a,b) { return b.portfolioState - a.portfolioState; });
+  var mostValuable = sortedByVal[0] || null;
+  var totalBoughtVal = mxaData.filter(function(r) { return r.bought === true; }).reduce(function(s, r) { return s + r.portfolioState; }, 0);
+  var totalWishVal = mxaData.filter(function(r) { return r.bought !== true; }).reduce(function(s, r) { return s + r.portfolioState; }, 0);
+
+  // Bought filter options
+  var boughtOpts = '<option value="">All Status</option><option value="bought">✔ Bought</option><option value="wish">💭 Wishlist</option>';
+  var usefulOpts = '<option value="">All Usefulness</option><option value="yes">✅ Useful</option><option value="no">❌ Not Useful</option>';
+
+  // Insight: best value (most useful / highest usage ratio)
+  var boughtItems = mxaData.filter(function(r) { return r.bought === true && r.usages > 0; });
+  boughtItems.sort(function(a,b) { return b.usages - a.usages; });
+  var mostUsed = boughtItems[0] || null;
+
+  var notUsefulItems = mxaData.filter(function(r) { return r.isUseful === false; });
+  notUsefulItems.sort(function(a,b) { return b.portfolioState - a.portfolioState; });
+  var biggestRegret = notUsefulItems[0] || null;
+
+  // Useful items sorted by value
+  var usefulItems = mxaData.filter(function(r) { return r.isUseful === true; });
+  usefulItems.sort(function(a,b) { return b.portfolioState - a.portfolioState; });
+  var mostUseful = usefulItems[0] || null;
+
+  document.getElementById('mxa-body').innerHTML =
+    '<div class="pg-corner-title" style="margin-bottom:12px;">' +
+      '<span class="pg-ct-icon">💎</span>' +
+      '<span class="pg-ct-text">Major Expense Analyzer</span>' +
+    '</div>' +
+    '<p class="mxa-header-sub">Portfolio value · Usefulness · Usage tracking</p>' +
+
+    '<!-- KPIs -->' +
+    '<div class="mxa-kpi-row">' +
+      '<div class="mxa-kpi" style="border-color:rgba(168,85,247,.2)"><span class="mxa-kpi-icon">🏦</span><div class="mxa-kpi-label">Total Portfolio</div><div class="mxa-kpi-value" style="color:var(--purple)">' + mxaFmt(totalPortfolio) + '</div><div class="mxa-kpi-sub">across ' + count + ' items</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(0,212,255,.2)"><span class="mxa-kpi-icon">🛒</span><div class="mxa-kpi-label">Bought</div><div class="mxa-kpi-value" style="color:var(--blue)">' + mxaFmt(totalBoughtVal) + '</div><div class="mxa-kpi-sub">' + boughtCount + ' purchased · ' + notBoughtCount + ' wishlist</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(0,230,118,.2)"><span class="mxa-kpi-icon">✅</span><div class="mxa-kpi-label">Useful</div><div class="mxa-kpi-value" style="color:var(--green)">' + usefulCount + ' / ' + count + '</div><div class="mxa-kpi-sub">' + (count > 0 ? Math.round(usefulCount/count*100) : 0) + '% satisfaction</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(255,215,0,.2)"><span class="mxa-kpi-icon">🔄</span><div class="mxa-kpi-label">Total Usages</div><div class="mxa-kpi-value" style="color:var(--gold)">' + totalUsages + '</div><div class="mxa-kpi-sub">avg ' + avgUsage + ' uses / item</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(255,77,141,.2)"><span class="mxa-kpi-icon">💸</span><div class="mxa-kpi-label">Biggest Regret</div><div class="mxa-kpi-value" style="color:var(--red);font-size:.95em;">' + (biggestRegret ? biggestRegret.reference + ' ' + mxaFmt(biggestRegret.portfolioState) : '—') + '</div><div class="mxa-kpi-sub">not useful · highest value</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(0,230,118,.2)"><span class="mxa-kpi-icon">⭐</span><div class="mxa-kpi-label">Most Valuable</div><div class="mxa-kpi-value" style="color:#fff;font-size:.95em;">' + (mostValuable ? mostValuable.reference + ' ' + mxaFmt(mostValuable.portfolioState) : '—') + '</div><div class="mxa-kpi-sub">highest value item</div></div>' +
+    '</div>' +
+
+    '<!-- Charts -->' +
+    '<div class="mxa-charts">' +
+      '<div class="mxa-chart-box"><div class="mxa-chart-hdr"><div class="mxa-chart-dot" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></div><div class="mxa-chart-title">Portfolio Value by Item</div></div><div class="mxa-chart-wrap"><canvas id="mxaChartPortfolio"></canvas></div></div>' +
+      '<div class="mxa-chart-box"><div class="mxa-chart-hdr"><div class="mxa-chart-dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div><div class="mxa-chart-title">Bought vs Wishlist Value</div></div><div class="mxa-chart-wrap"><canvas id="mxaChartBought"></canvas></div></div>' +
+    '</div>' +
+
+    '<!-- Insights -->' +
+    '<div class="mxa-insights">' +
+      '<div class="mxa-insight-box" style="border-color:rgba(0,230,118,.15);">' +
+        '<span class="mxa-ins-emoji">🏆</span>' +
+        '<div><div class="mxa-ins-label">Most Used Item</div><div class="mxa-ins-value">' + (mostUsed ? mostUsed.reference : '—') + '</div><div class="mxa-ins-sub">' + (mostUsed ? mostUsed.usages + ' usages · ' + mxaFmt(mostUsed.portfolioState) : 'No data yet') + '</div></div>' +
+      '</div>' +
+      '<div class="mxa-insight-box" style="border-color:rgba(255,215,0,.15);">' +
+        '<span class="mxa-ins-emoji">📊</span>' +
+        '<div><div class="mxa-ins-label">Best Value Deal</div><div class="mxa-ins-value">' + (mostUseful ? mostUseful.reference : '—') + '</div><div class="mxa-ins-sub">Useful + ' + mxaFmt(mostUseful ? mostUseful.portfolioState : 0) + ' · worth it!</div></div>' +
+      '</div>' +
+      '<div class="mxa-insight-box" style="border-color:rgba(255,77,141,.15);">' +
+        '<span class="mxa-ins-emoji">⚠️</span>' +
+        '<div><div class="mxa-ins-label">Potential Savings</div><div class="mxa-ins-value">' + mxaFmt(totalWishVal) + '</div><div class="mxa-ins-sub">' + notBoughtCount + ' wishlist items · not yet purchased</div></div>' +
+      '</div>' +
+    '</div>' +
+
+    '<!-- Filters -->' +
+    '<div class="mxa-filters">' +
+      '<select class="mxa-filter-select" id="mxa-bought-filter" onchange="mxaFilter()">' + boughtOpts + '</select>' +
+      '<select class="mxa-filter-select" id="mxa-useful-filter" onchange="mxaFilter()">' + usefulOpts + '</select>' +
+      '<button class="mxa-add-btn" onclick="mxaOpenForm()">+ Add Item</button>' +
+    '</div>' +
+
+    '<!-- Table -->' +
+    '<div class="mxa-table-wrap">' +
+      '<div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);">' +
+        '<div style="font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);">📋 All Major Expenses</div>' +
+        '<div style="font-size:.65em;color:rgba(255,255,255,.25);">' + count + ' items</div>' +
+      '</div>' +
+      '<div class="mxa-search-wrap"><input class="mxa-search" id="mxa-search" type="text" placeholder="🔍 Search by reference, amount…" oninput="mxaSearch()"></div>' +
+      '<div class="mxa-table-scroll">' +
+        '<table class="mxa-table">' +
+          '<thead><tr><th>Plan Date</th><th>Bought Date</th><th>Reference</th><th style="text-align:right">Value</th><th>Useful?</th><th style="text-align:right">Usages</th><th>Bought?</th><th style="text-align:right">Actions</th></tr></thead>' +
+          '<tbody id="mxa-table-body"></tbody>' +
+        '</table>' +
+      '</div>' +
+      '<div class="mxa-pagination" id="mxa-pagination"><span class="mxa-pag-info" id="mxa-pag-info">—</span><div class="mxa-pag-btns"><button class="mxa-page-btn" id="mxa-pg-prev" onclick="mxaPage(-1)">◀ Prev</button><span class="mxa-pag-num" id="mxa-pg-num">1 / 1</span><button class="mxa-page-btn" id="mxa-pg-next" onclick="mxaPage(1)">Next ▶</button></div></div>' +
+    '</div>' +
+
+    '<!-- Modal -->' +
+    '<div id="mxa-overlay" class="" onclick="mxaCloseForm()"></div>' +
+    '<div id="mxa-modal" class="">' +
+      '<div class="mxa-m-hdr"><div class="mxa-m-title" id="mxa-m-title">Add Item</div><button class="mxa-m-close" onclick="mxaCloseForm()">✕</button></div>' +
+      '<div class="mxa-m-body">' +
+        '<div class="mxa-m-grid">' +
+          '<div class="mxa-m-field"><label class="mxa-m-label">Planned Date</label><input class="mxa-m-input" id="mxa-f-plan-date" placeholder="e.g. 2025-01-15"></div>' +
+          '<div class="mxa-m-field"><label class="mxa-m-label">Bought Date</label><input class="mxa-m-input" id="mxa-f-bought-date" placeholder="e.g. 2025-02-20"></div>' +
+        '</div>' +
+        '<div class="mxa-m-field"><label class="mxa-m-label">Reference / Item</label><input class="mxa-m-input" id="mxa-f-ref" placeholder="e.g. iPhone 15 ProMax"></div>' +
+        '<div class="mxa-m-field"><label class="mxa-m-label">Portfolio State (Value in LKR)</label><input class="mxa-m-input" id="mxa-f-portfolio" type="number" step="0.01" placeholder="0"></div>' +
+        '<div class="mxa-m-grid">' +
+          '<div class="mxa-m-field"><label class="mxa-m-label">Is Useful?</label><select class="mxa-m-select" id="mxa-f-useful"><option value="">—</option><option value="yes">✅ Yes</option><option value="no">❌ No</option></select></div>' +
+          '<div class="mxa-m-field"><label class="mxa-m-label">Usages (count)</label><input class="mxa-m-input" id="mxa-f-usages" type="number" placeholder="0"></div>' +
+        '</div>' +
+        '<div class="mxa-m-field"><label class="mxa-m-label">Bought?</label><select class="mxa-m-select" id="mxa-f-bought"><option value="">—</option><option value="yes">✔ Yes</option><option value="no">💭 No (Wishlist)</option></select></div>' +
+      '</div>' +
+      '<div class="mxa-m-footer"><button class="mxa-m-btn cancel" onclick="mxaCloseForm()">Cancel</button><button class="mxa-m-btn save" id="mxa-save-btn" onclick="mxaSaveEntry()">Save</button></div>' +
+    '</div>';
+
+  mxaRenderCharts();
+  mxaFilter();
+}
+
+function mxaRenderCharts() {
+  var TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:11};
+  if(typeof Chart === 'undefined') return;
+  Chart.defaults.color='rgba(255,255,255,0.4)';
+  Chart.defaults.font.family='Inter';
+
+  // 1. Portfolio Value by Item (horizontal bar)
+  var sortedItems = mxaData.slice().sort(function(a,b) { return a.portfolioState - b.portfolioState; });
+  var barLabels = sortedItems.map(function(r) { return r.reference || 'Unnamed'; });
+  var barVals = sortedItems.map(function(r) { return r.portfolioState; });
+
+  var el1 = document.getElementById('mxaChartPortfolio');
+  if (el1) {
+    mxaCharts.portfolio = new Chart(el1, {
+      type: 'bar',
+      data: {
+        labels: barLabels,
+        datasets: [{
+          label: 'Value (LKR)',
+          data: barVals,
+          backgroundColor: barVals.map(function(v) {
+            var max = Math.max.apply(null, barVals);
+            return v === max ? 'rgba(168,85,247,0.4)' : 'rgba(168,85,247,0.2)';
+          }),
+          borderColor: 'rgba(168,85,247,0.6)',
+          borderWidth: 1.5,
+          borderRadius: 6,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 1100 },
+        plugins: {
+          legend: { display: false },
+          tooltip: { ...TIP, callbacks: { label: function(ctx) { return ' ' + mxaFmt(ctx.parsed.x); } } }
+        },
+        scales: {
+          x: { ticks: { color: 'rgba(255,255,255,.4)', font: { size: 9 }, callback: function(v) { return '₨' + v.toLocaleString('en-IN'); } }, grid: { color: 'rgba(255,255,255,.04)' } },
+          y: { ticks: { color: 'rgba(255,255,255,.6)', font: { size: 10 } }, grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // 2. Bought vs Wishlist Value (doughnut)
+  var boughtVal = mxaData.filter(function(r) { return r.bought === true; }).reduce(function(s, r) { return s + r.portfolioState; }, 0);
+  var wishVal = mxaData.filter(function(r) { return r.bought !== true; }).reduce(function(s, r) { return s + r.portfolioState; }, 0);
+
+  var el2 = document.getElementById('mxaChartBought');
+  if (el2) {
+    mxaCharts.bought = new Chart(el2, {
+      type: 'doughnut',
+      data: {
+        labels: ['Bought (' + mxaFmt(boughtVal) + ')', 'Wishlist (' + mxaFmt(wishVal) + ')'],
+        datasets: [{
+          data: [boughtVal, wishVal],
+          backgroundColor: ['rgba(0,212,255,0.6)', 'rgba(255,255,255,0.1)'],
+          borderColor: ['#00d4ff', 'rgba(255,255,255,0.2)'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '60%',
+        animation: { animateRotate: true, duration: 1200 },
+        plugins: {
+          legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,.5)', font: { size: 11 }, padding: 14, usePointStyle: true } },
+          tooltip: { ...TIP, callbacks: { label: function(ctx) {
+            var total = ctx.dataset.data.reduce(function(a,b){return a+b;},0);
+            var pct = total > 0 ? ' (' + Math.round(ctx.parsed/total*100) + '%)' : '';
+            return ' ' + ctx.label + pct;
+          } } }
+        }
+      }
+    });
+  }
+}
+
+function mxaFilter() {
+  var boughtFilter = document.getElementById('mxa-bought-filter').value;
+  var usefulFilter = document.getElementById('mxa-useful-filter').value;
+  var query = (document.getElementById('mxa-search').value || '').trim().toLowerCase();
+
+  _mxaFilteredData = mxaData.filter(function(r) {
+    if (boughtFilter === 'bought' && r.bought !== true) return false;
+    if (boughtFilter === 'wish' && r.bought === true) return false;
+    if (usefulFilter === 'yes' && r.isUseful !== true) return false;
+    if (usefulFilter === 'no' && r.isUseful !== false) return false;
+    if (query) {
+      var matchStr = ((r.reference || '') + ' ' + (r.planDate || '') + ' ' + (r.boughtDate || '') + ' ' + r.portfolioState + ' ' + r.usages).toLowerCase();
+      if (matchStr.indexOf(query) < 0) return false;
+    }
+    return true;
+  });
+
+  _mxaPage = 0;
+  mxaRenderTable();
+}
+
+function mxaSearch() {
+  mxaFilter();
+}
+
+function mxaPage(dir) {
+  _mxaPage += dir;
+  mxaRenderTable();
+}
+
+function mxaRenderTable() {
+  var totalPages = Math.max(1, Math.ceil(_mxaFilteredData.length / _mxaPageSize));
+  if (_mxaPage >= totalPages) _mxaPage = totalPages - 1;
+  if (_mxaPage < 0) _mxaPage = 0;
+
+  var start = _mxaPage * _mxaPageSize;
+  var pageEntries = _mxaFilteredData.slice(start, start + _mxaPageSize);
+
+  var rowsHtml = pageEntries.map(function(r) {
+    var origIdx = mxaData.indexOf(r);
+    return '<tr>' +
+      '<td style="color:rgba(255,255,255,.5);font-weight:500;">' + mxaFormatDate(r.planDate) + '</td>' +
+      '<td style="color:rgba(255,255,255,.5);font-weight:500;">' + mxaFormatDate(r.boughtDate) + '</td>' +
+      '<td class="mxa-cell-ref">' + (r.reference || '—') + '</td>' +
+      '<td class="mxa-cell-amt">' + mxaFmt(r.portfolioState) + '</td>' +
+      '<td><span class="mxa-useful-badge ' + (r.isUseful ? 'yes' : 'no') + '">' + (r.isUseful ? '✅ Useful' : '❌ Not') + '</span></td>' +
+      '<td style="text-align:right;font-weight:700;color:var(--gold);">' + r.usages + '</td>' +
+      '<td><span class="mxa-bought-badge ' + (r.bought ? 'yes' : 'no') + '">' + (r.bought ? '✔ Bought' : '💭 Wishlist') + '</span></td>' +
+      '<td class="mxa-cell-actions">' +
+        '<button class="mxa-action-btn edit" onclick="mxaEditEntry(' + origIdx + ')" title="Edit">✎</button>' +
+        '<button class="mxa-action-btn delete" onclick="mxaDeleteEntry(' + origIdx + ')" title="Delete">✕</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  document.getElementById('mxa-table-body').innerHTML = rowsHtml || '<tr><td colspan="8" style="text-align:center;padding:30px;color:rgba(255,255,255,.3);">🔍 No items match.</td></tr>';
+
+  document.getElementById('mxa-pag-info').textContent = _mxaFilteredData.length > 0
+    ? 'Showing ' + (start + 1) + '–' + Math.min(start + _mxaPageSize, _mxaFilteredData.length) + ' of ' + _mxaFilteredData.length
+    : '0 items';
+  document.getElementById('mxa-pg-num').textContent = (_mxaPage + 1) + ' / ' + totalPages;
+  document.getElementById('mxa-pg-prev').disabled = (_mxaPage <= 0);
+  document.getElementById('mxa-pg-next').disabled = (_mxaPage >= totalPages - 1);
+}
+
+/* ── CRUD ── */
+var mxaEditingIndex = -1;
+
+function mxaOpenForm(data) {
+  mxaEditingIndex = (data && data !== true) ? mxaData.indexOf(data) : -1;
+  document.getElementById('mxa-m-title').textContent = mxaEditingIndex >= 0 ? 'Edit Item' : 'Add Item';
+  document.getElementById('mxa-f-plan-date').value = data ? (data.planDate || '') : '';
+  document.getElementById('mxa-f-bought-date').value = data ? (data.boughtDate || '') : '';
+  document.getElementById('mxa-f-ref').value = data ? (data.reference || '') : '';
+  document.getElementById('mxa-f-portfolio').value = data ? data.portfolioState : '';
+  document.getElementById('mxa-f-useful').value = data ? (data.isUseful ? 'yes' : (data.isUseful === false ? 'no' : '')) : '';
+  document.getElementById('mxa-f-usages').value = data ? (data.usages || 0) : '';
+  document.getElementById('mxa-f-bought').value = data ? (data.bought ? 'yes' : (data.bought === false ? 'no' : '')) : '';
+  document.getElementById('mxa-modal').classList.add('open');
+  document.getElementById('mxa-overlay').classList.add('open');
+}
+
+function mxaEditEntry(idx) {
+  mxaOpenForm(mxaData[idx]);
+}
+
+function mxaCloseForm() {
+  document.getElementById('mxa-modal').classList.remove('open');
+  document.getElementById('mxa-overlay').classList.remove('open');
+  mxaEditingIndex = -1;
+}
+
+function mxaDeleteEntry(idx) {
+  if (!confirm('Delete "' + (mxaData[idx].reference || 'this item') + '"?')) return;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.success) {
+        mxaData.splice(idx, 1);
+        mxaDisplayData({ success: true, data: mxaData });
+      } else {
+        alert('Delete failed: ' + (res ? res.error : 'Unknown'));
+      }
+    })
+    .withFailureHandler(function(err) {
+      alert('Error: ' + err.message);
+    })
+    .deleteMajorExpEntry(idx);
+}
+
+function mxaSaveEntry() {
+  var entry = {
+    planDate: document.getElementById('mxa-f-plan-date').value.trim(),
+    boughtDate: document.getElementById('mxa-f-bought-date').value.trim(),
+    reference: document.getElementById('mxa-f-ref').value.trim(),
+    portfolioState: parseFloat(document.getElementById('mxa-f-portfolio').value) || 0,
+    isUseful: document.getElementById('mxa-f-useful').value === 'yes' ? true : (document.getElementById('mxa-f-useful').value === 'no' ? false : null),
+    usages: parseInt(document.getElementById('mxa-f-usages').value) || 0,
+    bought: document.getElementById('mxa-f-bought').value === 'yes' ? true : (document.getElementById('mxa-f-bought').value === 'no' ? false : null)
+  };
+
+  if (!entry.reference) { alert('Please enter a reference/item name.'); return; }
+
+  var btn = document.getElementById('mxa-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  var isEdit = mxaEditingIndex >= 0;
+  if (isEdit) {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          mxaData[mxaEditingIndex] = entry;
+          mxaCloseForm();
+          mxaDisplayData({ success: true, data: mxaData });
+        } else {
+          alert('Save failed: ' + (res ? res.error : 'Unknown'));
+          btn.disabled = false; btn.textContent = 'Save';
+        }
+      })
+      .withFailureHandler(function(err) { alert('Error: ' + err.message); btn.disabled = false; btn.textContent = 'Save'; })
+      .updateMajorExpEntry(mxaEditingIndex, entry);
+  } else {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          mxaData.push(entry);
+          mxaCloseForm();
+          mxaDisplayData({ success: true, data: mxaData });
+        } else {
+          alert('Save failed: ' + (res ? res.error : 'Unknown'));
+          btn.disabled = false; btn.textContent = 'Save';
+        }
+      })
+      .withFailureHandler(function(err) { alert('Error: ' + err.message); btn.disabled = false; btn.textContent = 'Save'; })
+      .addMajorExpEntry(entry);
+  }
+}
+
+// Auto-load
+(function(){ mxaLoad(); })();
+</script>

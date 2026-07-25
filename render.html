@@ -2947,6 +2947,10 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #analyze-hm-body{display:none;flex-direction:column;overflow:hidden;flex:1;}
 #analyze-hm-body.open{display:flex;}
 
+/* Major EXP Analyzer content area inside analyze modal */
+#analyze-me-body{display:none;flex-direction:column;overflow-y:auto;flex:1;padding:0;}
+#analyze-me-body.open{display:flex;}
+
 /* Grid layouts */
 .hl-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:4px;}
 .hl-chart-row{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px;}
@@ -5281,6 +5285,7 @@ input[type=date].swae-input{color-scheme:dark;}
         <div class="analyze-toggle">
           <button class="analyze-toggle-btn active" id="analyze-tog-hm" onclick="analyzeSwitchView('heatmap')">🔥 Heatmap</button>
           <button class="analyze-toggle-btn" id="analyze-tog-hl" onclick="analyzeSwitchView('highlevel')">📈 High Level</button>
+          <button class="analyze-toggle-btn" id="analyze-tog-me" onclick="analyzeSwitchView('majorexp')">💎 Major EXP</button>
         </div>
         <button class="edm-close" onclick="analyzeExpModalClose()">✕</button>
       </div>
@@ -5291,6 +5296,9 @@ input[type=date].swae-input{color-scheme:dark;}
       </div>
       <div id="analyze-hl-body">
         <div class="edm-loading"><div class="edm-spin"></div>Fetching data…</div>
+      </div>
+      <div id="analyze-me-body">
+        <?!= include('majorExpAnalyzer'); ?>
       </div>
     </div>
   </div>
@@ -9299,28 +9307,38 @@ function analyzeSwitchView(view) {
   _analyzeView = view;
   var hmBody = document.getElementById('analyze-hm-body');
   var hlBody = document.getElementById('analyze-hl-body');
+  var meBody = document.getElementById('analyze-me-body');
   var title = document.getElementById('analyze-title');
   var sub = document.getElementById('analyze-sub');
   var togHm = document.getElementById('analyze-tog-hm');
   var togHl = document.getElementById('analyze-tog-hl');
+  var togMe = document.getElementById('analyze-tog-me');
+
+  // Hide all
+  hmBody.style.display = 'none';
+  hlBody.style.display = 'none';
+  if(meBody) meBody.style.display = 'none';
+  togHm.classList.remove('active');
+  togHl.classList.remove('active');
+  if(togMe) togMe.classList.remove('active');
 
   if(view === 'heatmap'){
     hmBody.style.display = 'flex';
-    hlBody.style.display = 'none';
     title.textContent = '🔥 Expense Heatmap';
     sub.textContent = 'Full year daily spend';
     togHm.classList.add('active');
-    togHl.classList.remove('active');
-    // Re-trigger heatmap load if needed
     if(typeof hmLoad === 'function') hmLoad();
+  } else if(view === 'majorexp'){
+    if(meBody) meBody.style.display = 'flex';
+    title.textContent = '💎 Major Expense Analyzer';
+    sub.textContent = 'Portfolio value · Usefulness · Usage tracking';
+    if(togMe) togMe.classList.add('active');
+    analyzeLoadMajorExp();
   } else {
-    hmBody.style.display = 'none';
     hlBody.style.display = 'flex';
     title.textContent = '📈 High Level Overview';
     sub.textContent = 'Income, Expenses, and Transfers (Since Jan 2026)';
-    togHm.classList.remove('active');
     togHl.classList.add('active');
-    // Load high level content
     analyzeLoadHighLevel();
   }
 }
@@ -9337,6 +9355,17 @@ function analyzeLoadHighLevel() {
         hlBody.innerHTML = '<div class="exp-err">⚠️ Error: ' + (err.message || String(err)) + '</div>';
       })
       .getHighLevelData();
+  }
+}
+
+function analyzeLoadMajorExp() {
+  // Major EXP content is already included via server-side include
+  // If data hasn't loaded yet (still shows loading), re-trigger
+  var meBody = document.getElementById('analyze-me-body');
+  if(!meBody) return;
+  var loadingEl = meBody.querySelector('.loading');
+  if(loadingEl && typeof mxaLoad === 'function') {
+    mxaLoad();
   }
 }
 

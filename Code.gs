@@ -929,6 +929,110 @@ function deleteCardAnalysisEntry(rowIndex) {
   }
 }
 
+/* ═══════════════════════════════════════════
+   MAJOR EXPENSE ANALYZER
+   Sheet: "Major EXP"
+   A: Planed Date, B: Bought Date, C: Reference
+   D: Portfolio State, E: is usefull?, F: Usages, G: Bought?
+═══════════════════════════════════════════ */
+function getMajorExpData() {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Major EXP');
+    if (!sheet) throw new Error('Sheet "Major EXP" not found');
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { success: true, data: [] };
+
+    var values = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+    var data = [];
+
+    for (var r = 0; r < values.length; r++) {
+      var row = values[r];
+      if (!row[0] && !row[1] && !row[2] && !row[3] && !row[4] && !row[5] && !row[6]) continue;
+
+      var isUsefulRaw = String(row[4] || '').trim().toLowerCase();
+      var boughtRaw = String(row[6] || '').trim().toLowerCase();
+
+      data.push({
+        planDate: String(row[0] || '').trim(),
+        boughtDate: String(row[1] || '').trim(),
+        reference: String(row[2] || '').trim(),
+        portfolioState: parseFloat(String(row[3] || '0').replace(/,/g, '')) || 0,
+        isUseful: isUsefulRaw === 'yes' || isUsefulRaw === 'true' || isUsefulRaw === '✔' ? true : (isUsefulRaw === 'no' || isUsefulRaw === 'false' || isUsefulRaw === '✘' ? false : null),
+        usages: parseInt(String(row[5] || '0').replace(/,/g, '')) || 0,
+        bought: boughtRaw === 'yes' || boughtRaw === 'true' || boughtRaw === '✔' ? true : (boughtRaw === 'no' || boughtRaw === 'false' || boughtRaw === '✘' ? false : null)
+      });
+    }
+
+    return { success: true, data: data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function addMajorExpEntry(entry) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Major EXP');
+    if (!sheet) throw new Error('Sheet "Major EXP" not found');
+
+    var lastRow = sheet.getLastRow();
+    var newRow = lastRow + 1;
+
+    sheet.getRange(newRow, 1).setValue(entry.planDate || '');
+    sheet.getRange(newRow, 2).setValue(entry.boughtDate || '');
+    sheet.getRange(newRow, 3).setValue(entry.reference || '');
+    sheet.getRange(newRow, 4).setValue(entry.portfolioState || 0);
+    sheet.getRange(newRow, 5).setValue(entry.isUseful === true ? 'yes' : (entry.isUseful === false ? 'no' : ''));
+    sheet.getRange(newRow, 6).setValue(entry.usages || 0);
+    sheet.getRange(newRow, 7).setValue(entry.bought === true ? 'yes' : (entry.bought === false ? 'no' : ''));
+
+    SpreadsheetApp.flush();
+    return { success: true, message: 'Entry added' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function updateMajorExpEntry(rowIndex, entry) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Major EXP');
+    if (!sheet) throw new Error('Sheet "Major EXP" not found');
+
+    var sheetRow = rowIndex + 2;
+
+    sheet.getRange(sheetRow, 1).setValue(entry.planDate || '');
+    sheet.getRange(sheetRow, 2).setValue(entry.boughtDate || '');
+    sheet.getRange(sheetRow, 3).setValue(entry.reference || '');
+    sheet.getRange(sheetRow, 4).setValue(entry.portfolioState || 0);
+    sheet.getRange(sheetRow, 5).setValue(entry.isUseful === true ? 'yes' : (entry.isUseful === false ? 'no' : ''));
+    sheet.getRange(sheetRow, 6).setValue(entry.usages || 0);
+    sheet.getRange(sheetRow, 7).setValue(entry.bought === true ? 'yes' : (entry.bought === false ? 'no' : ''));
+
+    SpreadsheetApp.flush();
+    return { success: true, message: 'Entry updated' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+function deleteMajorExpEntry(rowIndex) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Major EXP');
+    if (!sheet) throw new Error('Sheet "Major EXP" not found');
+
+    var sheetRow = rowIndex + 2;
+    sheet.deleteRow(sheetRow);
+    SpreadsheetApp.flush();
+    return { success: true, message: 'Entry deleted' };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 function getPortfolioData() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
