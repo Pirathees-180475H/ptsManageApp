@@ -1060,11 +1060,12 @@ function edCaptureTable(wrapper) {
     width: wrapper.scrollWidth,
     height: wrapper.scrollHeight
   }).then(function(canvas) {
+    var dataUrl = canvas.toDataURL('image/png');
     document.body.removeChild(wrapper);
     var imgContainer = document.getElementById('ed-image-container');
     if (imgContainer) {
       var img = document.createElement('img');
-      img.src = canvas.toDataURL('image/png');
+      img.src = dataUrl;
       img.alt = 'Expense Split Table';
       img.style.cssText = 'max-width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);';
       var inner = document.getElementById('ed-image-inner');
@@ -1073,6 +1074,15 @@ function edCaptureTable(wrapper) {
       imgContainer.style.display = 'block';
       // Scroll to show the image
       imgContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // Auto-set as receipt so Splitwise gets it
+      _edReceiptB64 = dataUrl;
+      var thumb = document.getElementById('ed-receipt-thumb');
+      if (thumb) { thumb.src = dataUrl; thumb.style.display = 'block'; }
+      var zone = document.getElementById('ed-receipt-zone');
+      if (zone) zone.classList.add('has-img');
+      var txt = document.getElementById('ed-receipt-txt');
+      if (txt) txt.textContent = 'Screenshot attached ✓';
     }
     edShowCopied('ed-copy-img-btn', '📸 Screenshot');
   }).catch(function() {
