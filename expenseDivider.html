@@ -1938,11 +1938,21 @@ function edSwReviewSubmit() {
   btn.disabled = true; btn.textContent = '⏳ Adding…';
   if (msgEl) { msgEl.textContent = ''; msgEl.className = 'ed-swr-msg'; }
 
+  // Debug log
+  console.log('📤 Splitwise payload:', JSON.stringify(payload, null, 2));
+  console.log('📷 receiptBase64 length:', payload.receiptBase64 ? payload.receiptBase64.length : 'NONE');
+
   google.script.run
     .withSuccessHandler(function(res) {
       btn.disabled = false; btn.textContent = '✅ Submit to Splitwise';
       if (res && res.success) {
-        if (msgEl) { msgEl.innerHTML = '✅ Expense added to Splitwise! ' + edAcEscape(payload.currency) + ' ' + payload.amount + ' — ' + edAcEscape(payload.description); msgEl.className = 'ed-swr-msg ok'; }
+        var okMsg = '✅ Expense added to Splitwise! ' + edAcEscape(payload.currency) + ' ' + payload.amount + ' — ' + edAcEscape(payload.description);
+        if (res.receiptUploaded) okMsg += '\n📷 Receipt uploaded ✓';
+        if (res.receiptError) {
+          okMsg += '\n⚠️ Receipt upload failed: ' + edAcEscape(res.receiptError);
+          if (res.receiptCurl) okMsg += '\n\n📋 Receipt cURL:\n' + edAcEscape(res.receiptCurl);
+        }
+        if (msgEl) { msgEl.style.whiteSpace = 'pre-wrap'; msgEl.style.fontFamily = 'monospace'; msgEl.style.fontSize = '0.7em'; msgEl.textContent = okMsg; msgEl.className = 'ed-swr-msg ok'; }
         btn.style.display = 'none';
         document.querySelector('.ed-swr-cancel').textContent = 'Close';
         // Also update the main sw button

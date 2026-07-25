@@ -3373,6 +3373,10 @@ function createSplitwiseExpense(payload) {
     var apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
     var headers = { 'Authorization': 'Bearer ' + apiKey };
 
+    // DEBUG: Log receipt presence
+    var hasReceipt = !!(payload.receiptBase64 && payload.receiptBase64.length > 100);
+    Logger.log('createSplitwiseExpense called. Has receipt: ' + hasReceipt + ', receipt length: ' + (payload.receiptBase64 ? payload.receiptBase64.length : 0));
+
     // 1. Get current user ID
     var meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', { method:'get', headers:headers });
     var meData = JSON.parse(meResp.getContentText());
@@ -3442,26 +3446,49 @@ function createSplitwiseExpense(payload) {
     var expId = expense.id;
 
     // 4. Attach receipt image if provided (multipart)
+    Logger.log('Receipt check: hasReceiptBase64=' + !!(payload.receiptBase64) + ', expId=' + expId);
     if (payload.receiptBase64 && expId) {
       try {
         var b64 = payload.receiptBase64;
+        Logger.log('Receipt raw length: ' + b64.length + ', first 50 chars: ' + b64.substring(0, 50));
         // strip data URL prefix if present
         var commaIdx = b64.indexOf(',');
         if (commaIdx >= 0) b64 = b64.slice(commaIdx + 1);
         var mimeMatch = payload.receiptBase64.match(/^data:([^;]+);/);
-        var mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        var mime = mimeMatch ? mimeMatch[1] : 'image/png';
+        var ext = mime === 'image/png' ? 'png' : 'jpg';
+        Logger.log('Receipt: mime=' + mime + ', ext=' + ext + ', clean base64 length=' + b64.length);
         var imgBytes = Utilities.base64Decode(b64);
-        var blob = Utilities.newBlob(imgBytes, mime, 'receipt.jpg');
+        Logger.log('Receipt: decoded bytes size=' + imgBytes.length);
+        var blob = Utilities.newBlob(imgBytes, mime, 'receipt.' + ext);
+        Logger.log('Receipt: blob name=' + blob.getName() + ', contentType=' + blob.getContentType() + ', size=' + blob.getBytes().length);
+
+        // Splitwise expects multipart with field name "receipt"
         var imgOpts = {
           method:  'post',
           headers: headers,
-          payload: { 'receipt[original]': blob },
+          payload: { 'receipt': blob },
           muteHttpExceptions: true
         };
-        UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/update_expense/'+expId, imgOpts);
+        var imgUrl = 'https://secure.splitwise.com/api/v3.0/update_expense/' + expId;
+        Logger.log('Receipt: uploading to ' + imgUrl);
+        var imgResp = UrlFetchApp.fetch(imgUrl, imgOpts);
+        var imgCode = imgResp.getResponseCode();
+        var imgBody = imgResp.getContentText();
+        Logger.log('Receipt upload HTTP ' + imgCode + ' | Body: ' + imgBody);
+
+        // Build curl for receipt upload
+        var receiptCurl = 'curl -X POST "' + imgUrl + '" \\\n  -H "Authorization: Bearer ' + apiKey + '" \\\n  -F "receipt=@receipt.' + ext + ';type=' + mime + '"';
+
+        if (imgCode !== 200) {
+          Logger.log('Receipt upload FAILED: HTTP ' + imgCode + ' | ' + imgBody);
+          return { success:true, expenseId: expId, receiptError: 'HTTP ' + imgCode + ': ' + imgBody, receiptCurl: receiptCurl };
+        }
+        Logger.log('Receipt uploaded successfully for expense ' + expId);
+        return { success:true, expenseId: expId, receiptUploaded: true };
       } catch(imgErr) {
-        Logger.log('Receipt upload warning: ' + imgErr);
-        // not fatal — expense was created
+        Logger.log('Receipt upload exception: ' + imgErr);
+        return { success:true, expenseId: expId, receiptError: imgErr.message || String(imgErr) };
       }
     }
 
