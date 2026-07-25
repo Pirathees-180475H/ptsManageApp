@@ -5728,6 +5728,11 @@ input[type=date].swae-input{color-scheme:dark;}
 ═══════════════════════════════════════════ */
 var _spaLoaded = {cse:false, cc:false, ca:false, exp:false, port:false, mf:false, sw:false};
 
+/* ── Background preload state for Analyze modal tabs ── */
+var _analyzePreloaded = { heatmap:false, highlevel:false, majorexp:false };
+var _analyzePreloadData = { highlevel:null, majorexp:null };
+/* heatmap uses _hmData/_hmYearTotals set directly & also a flag */
+
 var _activePage = 'exp';
 function _doShowPage(name){
   _activePage = name;
@@ -9248,6 +9253,63 @@ function expBuild(D){
   document.getElementById('exp-ig').innerHTML=expIns.map(function(x){
     return '<div class="ic"><div class="ic-ico">'+x.ico+'</div><div class="ic-lbl">'+x.lbl+'</div><div class="ic-val '+x.cls+'">'+x.val+'</div><div class="ic-desc">'+x.desc+'</div></div>';
   }).join('');
+
+  // ── Background preload: Heatmap + High Level + Major EXP data ──
+  preloadAnalyzeData();
+}
+
+/* ═══════════════════════════════════════════
+   BACKGROUND PRELOAD for Analyze modals
+   (heatmap, high level, major exp)
+═══════════════════════════════════════════ */
+function preloadAnalyzeData() {
+  // Heatmap data
+  if (typeof hmLoad === 'function' && !_analyzePreloaded.heatmap) {
+    _analyzePreloaded.heatmap = true;
+    try {
+      var yr = new Date().getFullYear();
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if (res && res.success) {
+            _hmData = res;
+            var yrs = [];
+            for (var y = yr - 4; y <= yr + 1; y++) { yrs.push(y); }
+            google.script.run
+              .withSuccessHandler(function(yrRes) {
+                if (yrRes && yrRes.success) _hmYearTotals = yrRes.totals;
+              })
+              .getExpenseYearTotals(yrs);
+          }
+        })
+        .getExpenseHeatmapData(yr);
+    } catch(e) { _analyzePreloaded.heatmap = false; }
+  }
+
+  // High Level data
+  if (!_analyzePreloaded.highlevel) {
+    _analyzePreloaded.highlevel = true;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _analyzePreloadData.highlevel = res;
+      })
+      .withFailureHandler(function() {
+        _analyzePreloaded.highlevel = false;
+      })
+      .getHighLevelData();
+  }
+
+  // Major EXP data
+  if (!_analyzePreloaded.majorexp) {
+    _analyzePreloaded.majorexp = true;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _analyzePreloadData.majorexp = res;
+      })
+      .withFailureHandler(function() {
+        _analyzePreloaded.majorexp = false;
+      })
+      .getMajorExpData();
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -9327,7 +9389,12 @@ function analyzeSwitchView(view) {
     title.textContent = '🔥 Expense Heatmap';
     sub.textContent = 'Full year daily spend';
     togHm.classList.add('active');
-    if(typeof hmLoad === 'function') hmLoad();
+    // Use preloaded data if available
+    if (_hmData) {
+      hmRender(_hmData);
+    } else {
+      if(typeof hmLoad === 'function') hmLoad();
+    }
   } else if(view === 'majorexp'){
     if(meBody) meBody.style.display = 'flex';
     title.textContent = '💎 Major Expense Analyzer';
@@ -9345,10 +9412,16 @@ function analyzeSwitchView(view) {
 
 function analyzeLoadHighLevel() {
   var hlBody = document.getElementById('analyze-hl-body');
-  // Only load if content hasn't been loaded yet
+  // Use preloaded data if available
+  if (_analyzePreloadData.highlevel) {
+    renderHlExpData(_analyzePreloadData.highlevel);
+    return;
+  }
+  // Fallback: fetch on demand
   if(hlBody.querySelector('.edm-loading') || hlBody.querySelector('.exp-err') || hlBody.children.length <= 1) {
     google.script.run
       .withSuccessHandler(function(res) {
+        _analyzePreloadData.highlevel = res;
         renderHlExpData(res);
       })
       .withFailureHandler(function(err) {
@@ -9359,10 +9432,16 @@ function analyzeLoadHighLevel() {
 }
 
 function analyzeLoadMajorExp() {
-  // Major EXP content is already included via server-side include
-  // If data hasn't loaded yet (still shows loading), re-trigger
   var meBody = document.getElementById('analyze-me-body');
   if(!meBody) return;
+  // Use preloaded data if available
+  if (_analyzePreloadData.majorexp) {
+    if (typeof mxaDisplayData === 'function') {
+      mxaDisplayData(_analyzePreloadData.majorexp);
+    }
+    return;
+  }
+  // Fallback: fetch on demand
   var loadingEl = meBody.querySelector('.loading');
   if(loadingEl && typeof mxaLoad === 'function') {
     mxaLoad();
