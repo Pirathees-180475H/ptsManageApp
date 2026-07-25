@@ -17,8 +17,10 @@
 .ed-page *{box-sizing:border-box;}
 
 /* ── Columns ── */
-.ed-col{overflow-y:auto;overflow-x:hidden;padding:14px 12px;display:flex;flex-direction:column;gap:12px;min-height:0;}
-.ed-col-left{border-right:1px solid var(--bdr);}
+.ed-col{overflow-y:auto;overflow-x:hidden;padding:14px 12px 80px;min-height:0;}
+.ed-col-left{border-right:1px solid var(--bdr);display:flex;flex-direction:column;gap:12px;}
+.ed-col-right > *{margin-bottom:12px;}
+.ed-col-right > :last-child{margin-bottom:0;}
 
 /* ── Section card ── */
 .ed-sec{background:var(--card);border:1px solid var(--bdr);border-radius:var(--ra);overflow:hidden;flex-shrink:0;}
@@ -84,7 +86,7 @@
 .ed-result{background:var(--card);border:1px solid var(--bdr);border-radius:var(--ra);overflow:hidden;animation:fadeUp .3s ease both;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .ed-result-title{padding:11px 14px;border-bottom:1px solid var(--bdr);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;background:rgba(31,111,235,.04);}
-.ed-copy-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:var(--font);transition:all .15s;display:flex;align-items:center;gap:3px;}
+.ed-copy-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:var(--font);transition:all .15s;display:inline-flex;align-items:center;gap:3px;}
 .ed-copy-btn:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);}
 .ed-copy-btn.copied{background:rgba(63,185,80,.15);border-color:rgba(63,185,80,.3);color:var(--green);}
 .ed-copy-row{display:flex;gap:5px;flex-wrap:wrap;}
@@ -336,13 +338,15 @@
 
     <!-- ═══ IMAGE CONTAINER ═══ -->
     <div id="ed-image-container" style="display:none;">
-      <div style="padding:8px 12px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;">
+      <div style="padding:8px 12px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
         <span>📸 Table Image</span>
-        <div style="display:flex;gap:6px;">
-          <button class="ed-copy-btn" onclick="edCopyContainerImage()">📋 Copy Image</button>
-          <button class="ed-copy-btn" onclick="document.getElementById('ed-image-container').style.display='none';">✕ Close</button>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button class="ed-copy-btn" style="font-size:9px;padding:3px 8px;" onclick="edCopyContainerImage()">📋 Copy</button>
+          <button class="ed-copy-btn ed-set-receipt-btn" style="font-size:9px;padding:3px 8px;" onclick="edSetImageAsReceipt()">📎 Receipt</button>
+          <button class="ed-copy-btn" style="font-size:9px;padding:3px 8px;" onclick="document.getElementById('ed-image-container').style.display='none';">✕</button>
         </div>
       </div>
+      <div id="ed-image-inner" style="padding:0 6px 6px;"></div>
     </div>
   </div>
 </div>
@@ -1031,7 +1035,8 @@ function edCopyAsImage() {
   // ── Loading indicator ──
   var imgContainer = document.getElementById('ed-image-container');
   if (imgContainer) {
-    imgContainer.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">⏳ Rendering image…</div>';
+    var inner = document.getElementById('ed-image-inner');
+    if (inner) inner.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">⏳ Rendering image…</div>';
     imgContainer.style.display = 'block';
   }
 
@@ -1062,16 +1067,21 @@ function edCaptureTable(wrapper) {
       img.src = canvas.toDataURL('image/png');
       img.alt = 'Expense Split Table';
       img.style.cssText = 'max-width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);';
-      imgContainer.innerHTML = '';
-      imgContainer.appendChild(img);
+      var inner = document.getElementById('ed-image-inner');
+      if (inner) { inner.innerHTML = ''; inner.appendChild(img); }
+      else { imgContainer.innerHTML = ''; imgContainer.appendChild(img); }
       imgContainer.style.display = 'block';
+      // Scroll to show the image
+      imgContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     edShowCopied('ed-copy-img-btn', '📸 Screenshot');
   }).catch(function() {
     document.body.removeChild(wrapper);
     var imgContainer = document.getElementById('ed-image-container');
     if (imgContainer) {
-      imgContainer.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">⚠️ Failed to render image</div>';
+      var inner = document.getElementById('ed-image-inner');
+      if (inner) inner.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">⚠️ Failed to render image</div>';
+      else imgContainer.innerHTML = '<div style="padding:20px;text-align:center;color:rgba(255,255,255,.3);font-size:.78em;">⚠️ Failed to render image</div>';
     }
   });
 }
@@ -1098,12 +1108,12 @@ function edCopyContainerImage() {
     ]).then(function() {
       var btns = imgContainer.querySelectorAll('.ed-copy-btn');
       for (var b = 0; b < btns.length; b++) {
-        if (btns[b].textContent.indexOf('📋') !== -1 || btns[b].textContent.indexOf('Copy Image') !== -1) {
+        if (btns[b].textContent.indexOf('📋') !== -1) {
           btns[b].textContent = '✅ Copied!';
           btns[b].classList.add('copied');
           (function(btn) {
             setTimeout(function() {
-              btn.textContent = '📋 Copy Image';
+              btn.textContent = '📋 Copy';
               btn.classList.remove('copied');
             }, 2000);
           })(btns[b]);
@@ -1126,6 +1136,38 @@ function edFallbackCopyImage(dataUrl) {
     w.document.title = 'Expense Split — Right-click → Copy Image';
   } else {
     alert('Clipboard copy not supported. Right-click the image above and select "Copy image".');
+  }
+}
+
+/* ── Set generated screenshot as Splitwise receipt ── */
+function edSetImageAsReceipt() {
+  var imgContainer = document.getElementById('ed-image-container');
+  var img = imgContainer ? imgContainer.querySelector('img') : null;
+  if (!img || !img.src) return;
+
+  _edReceiptB64 = img.src;
+
+  // Update the receipt thumbnail in the right column
+  var thumb = document.getElementById('ed-receipt-thumb');
+  if (thumb) {
+    thumb.src = _edReceiptB64;
+    thumb.style.display = 'block';
+  }
+  var zone = document.getElementById('ed-receipt-zone');
+  if (zone) zone.classList.add('has-img');
+  var txt = document.getElementById('ed-receipt-txt');
+  if (txt) txt.textContent = 'Screenshot attached ✓';
+
+  // Update the Splitwise review receipt status
+  var receiptDiv = document.getElementById('ed-swr-receipt');
+  if (receiptDiv) receiptDiv.innerHTML = '📷 Screenshot attached ✓';
+
+  // Flash the button
+  var btn = imgContainer.querySelector('.ed-set-receipt-btn');
+  if (btn) {
+    btn.textContent = '✅ Set!';
+    btn.classList.add('copied');
+    setTimeout(function() { btn.textContent = '📎 Receipt'; btn.classList.remove('copied'); }, 2000);
   }
 }
 
@@ -1252,8 +1294,9 @@ function edCaptureAndSave(wrapper, fileName) {
           img.src = dataUrl;
           img.alt = 'Expense Split Table';
           img.style.cssText = 'max-width:100%;height:auto;display:block;border-radius:6px;box-shadow:0 2px 12px rgba(0,0,0,.15);';
-          imgContainer.innerHTML = '';
-          imgContainer.appendChild(img);
+          var inner = document.getElementById('ed-image-inner');
+          if (inner) { inner.innerHTML = ''; inner.appendChild(img); }
+          else { imgContainer.innerHTML = ''; imgContainer.appendChild(img); }
           imgContainer.style.display = 'block';
         }
       })
@@ -1769,6 +1812,12 @@ function edAddToSplitwise() {
   // Show the inline review
   review.style.display = 'block';
   review.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Also scroll image container into view if visible
+  var imgCont = document.getElementById('ed-image-container');
+  if (imgCont && imgCont.style.display !== 'none') {
+    setTimeout(function() { imgCont.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, 300);
+  }
 
   // Clear messages
   var msg = document.getElementById('ed-swr-msg');
