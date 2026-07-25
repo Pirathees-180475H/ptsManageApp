@@ -1,173 +1,354 @@
 <!-- ═══════════════════════════════════════════════════════════
      EXPENSE DIVIDER — textarea input + copyable table output
+     Design: ADD_EXP style (dark cards, clean grid)
 ═══════════════════════════════════════════════════════════════ -->
 <style>
 /* ═══════════════════════════════════════════
-   EXPENSE DIVIDER — Bank Balances Design
+   EXPENSE DIVIDER — ADD_EXP Design Language
 ═══════════════════════════════════════════ */
-.ed-page{padding:14px;max-width:800px;margin:0 auto;width:100%;font-family:'Inter',system-ui,sans-serif;}
-.ed-page .pg-corner-title{margin-bottom:10px;}
+:root{
+  --bg:#0d1117;--card:#161b22;--card2:#1c2230;--bdr:rgba(255,255,255,.08);
+  --text:#e6edf3;--muted:#8b949e;--green:#3fb950;--red:#f85149;
+  --blue:#58a6ff;--yellow:#e3b341;--acc:#1f6feb;--amber:#f0883e;
+  --r:#3fb950;--nr:#f0883e;--sw:#bc8cff;--cc:#58a6ff;--ra:12px;
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;
+}
+.ed-page{font-family:var(--font);font-size:14px;color:var(--text);display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr;gap:0;height:100%;overflow:hidden;}
+.ed-page *{box-sizing:border-box;}
+
+/* ── Columns ── */
+.ed-col{overflow-y:auto;overflow-x:hidden;padding:14px 12px;display:flex;flex-direction:column;gap:12px;min-height:0;}
+.ed-col-left{border-right:1px solid var(--bdr);}
+
+/* ── Section card ── */
+.ed-sec{background:var(--card);border:1px solid var(--bdr);border-radius:var(--ra);overflow:hidden;flex-shrink:0;}
+.ed-sec-hd{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--bdr);user-select:none;}
+.ed-sec-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.ed-sec-title{font-size:12px;font-weight:700;flex:1;color:var(--text);}
+.ed-sec-bd{padding:12px 14px;display:flex;flex-direction:column;gap:10px;}
+
+/* ── Field rows ── */
+.ed-frow{display:flex;align-items:center;gap:10px;}
+.ed-frow-wrap{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;}
+.ed-flbl{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.ed-fsub{font-size:9px;color:var(--muted);}
 
 /* ── Inputs ── */
-.ed-field{margin-bottom:12px;display:flex;flex-direction:column;gap:4px;}
-.ed-label{font-size:.52em;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:rgba(255,255,255,.35);}
-.ed-input-wrap{display:flex;align-items:center;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:0 10px;gap:5px;transition:border-color .2s,box-shadow .2s;height:34px;}
-.ed-input-wrap:focus-within{border-color:rgba(99,102,241,.5);box-shadow:0 0 0 2px rgba(99,102,241,.1);}
-.ed-input{background:transparent;border:none;color:#fff;font-family:'Inter',sans-serif;font-size:.78em;font-weight:600;outline:none;width:100%;padding:0;letter-spacing:.2px;}
-.ed-input::placeholder{color:rgba(255,255,255,.15);}
+.ed-inp{width:100%;background:var(--card2);border:1px solid var(--bdr);color:var(--text);padding:8px 10px;border-radius:7px;font-size:12px;outline:none;transition:border-color .15s;font-family:var(--font);}
+.ed-inp:focus{border-color:var(--blue);}
+.ed-inp.mono{font-family:'Cascadia Code','Consolas','Courier New',monospace;font-size:11px;color:#d2a679;}
+.ed-inp.bad{border-color:rgba(248,81,73,.35)!important;}
+.ed-inp.good{border-color:rgba(63,185,80,.35)!important;}
 
-.ed-textarea-wrap{display:flex;align-items:flex-start;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:9px;padding:6px 10px;transition:border-color .2s,box-shadow .2s;}
-.ed-textarea-wrap:focus-within{border-color:rgba(99,102,241,.5);box-shadow:0 0 0 2px rgba(99,102,241,.1);}
-.ed-textarea{background:transparent;border:none;color:#fff;font-family:'Consolas','Courier New',monospace;font-size:.72em;outline:none;width:100%;resize:vertical;min-height:90px;line-height:1.6;padding:0;}
-.ed-textarea::placeholder{color:rgba(255,255,255,.15);}
+.ed-textarea-wrap{position:relative;}
+.ed-textarea{width:100%;background:var(--card2);border:1px solid var(--bdr);color:#d2a679;padding:9px 10px;border-radius:7px;font-size:11px;outline:none;resize:vertical;min-height:130px;line-height:1.6;font-family:'Cascadia Code','Consolas','Courier New',monospace;}
+.ed-textarea:focus{border-color:var(--blue);}
+.ed-textarea::placeholder{color:rgba(255,255,255,.13);font-family:var(--font);font-size:10px;}
 
-/* ── Percentage row ── */
-.ed-pct-row{display:flex;gap:12px;margin-bottom:16px;}
-.ed-pct-row .ed-field{flex:1;}
+/* ── Badge toggles ── */
+.ed-mode-badge{cursor:pointer;background:rgba(88,166,255,.1);border:1px solid rgba(88,166,255,.22);border-radius:20px;padding:2px 10px;font-size:9px;font-weight:700;color:var(--blue);text-transform:none;letter-spacing:0;white-space:nowrap;transition:all .15s;}
+.ed-mode-badge:hover{background:rgba(88,166,255,.18);}
+.ed-friends-badge{cursor:pointer;background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.22);border-radius:20px;padding:2px 10px;font-size:9px;font-weight:700;color:var(--green);text-transform:none;letter-spacing:0;display:none;white-space:nowrap;transition:all .15s;}
+.ed-friends-badge:hover{background:rgba(63,185,80,.18);}
 
-/* ── Section titles ── */
-.ed-section-title{font-size:.52em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.3);margin:18px 0 10px;display:flex;align-items:center;gap:6px;}
+/* ── Two-col row ── */
+.ed-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* ── Payer items ── */
+.ed-payer-item{display:flex;gap:6px;align-items:center;margin-bottom:5px;}
+.ed-payer-item .ed-frow-wrap{flex:1;min-width:0;}
+.ed-payer-item .ed-pay-amt-wrap{max-width:110px;}
+.ed-rm-btn{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.18);color:#f87171;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
+.ed-rm-btn:hover{background:rgba(248,81,73,.22);color:#fff;}
+.ed-add-btn{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:7px;background:var(--card2);border:1px dashed var(--bdr);color:var(--muted);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.ed-add-btn:hover{background:rgba(255,255,255,.05);color:var(--text);border-color:rgba(255,255,255,.15);}
 
 /* ── Calc button ── */
-.ed-calc-btn{width:100%;padding:11px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.85);font-size:.78em;font-weight:700;font-family:inherit;cursor:pointer;transition:all .25s ease;box-shadow:0 4px 15px rgba(0,0,0,.2);margin-bottom:16px;text-transform:uppercase;letter-spacing:.5px;}
-.ed-calc-btn:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,.35);}
+.ed-calc-btn{width:100%;padding:12px;border-radius:10px;background:rgba(31,111,235,.12);border:1px solid rgba(31,111,235,.25);color:var(--blue);font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;}
+.ed-calc-btn:hover{background:rgba(31,111,235,.22);border-color:var(--blue);color:#fff;transform:translateY(-1px);box-shadow:0 4px 16px rgba(31,111,235,.15);}
 
-/* ── Payer rows ── */
-.ed-payer-item{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
-.ed-payer-item .ed-input-wrap{flex:1;}
-.ed-payer-item .ed-input-wrap.ed-pay-amt-wrap{max-width:110px;}
-.ed-rm-btn{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.25);color:#fca5a5;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:.7em;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;}
-.ed-rm-btn:hover{background:rgba(239,68,68,.3);}
-.ed-add-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:9px;background:rgba(255,255,255,.04);border:1px dashed rgba(255,255,255,.12);color:rgba(255,255,255,.45);font-size:.7em;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;margin-top:4px;}
-.ed-add-btn:hover{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.2);}
+/* ── Receipt zone ── */
+.ed-receipt-zone{border:2px dashed rgba(255,255,255,.1);border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;}
+.ed-receipt-zone:hover{border-color:rgba(88,166,255,.35);background:rgba(88,166,255,.04);}
+.ed-receipt-zone.has-img{border-color:rgba(63,185,80,.3);background:rgba(63,185,80,.04);}
+.ed-receipt-ico{font-size:20px;margin-bottom:3px;}
+.ed-receipt-txt{font-size:10px;color:var(--muted);}
+.ed-receipt-thumb{max-width:100%;max-height:130px;border-radius:7px;margin-top:6px;display:none;}
 
-/* ── Sponsor grid ── */
-.ed-sponsor-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-@media(max-width:480px){.ed-sponsor-grid{grid-template-columns:1fr;}}
+/* ── Splitwise button ── */
+.ed-sw-add-btn{width:100%;padding:12px;border-radius:10px;background:rgba(188,140,255,.08);border:1px solid rgba(188,140,255,.2);color:var(--sw);font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px;display:none;align-items:center;justify-content:center;gap:6px;}
+.ed-sw-add-btn:hover{background:rgba(188,140,255,.18);border-color:rgba(188,140,255,.35);color:#fff;transform:translateY(-1px);box-shadow:0 4px 16px rgba(188,140,255,.15);}
+.ed-sw-add-btn:disabled{opacity:.4;pointer-events:none;}
 
 /* ── Result card ── */
-.ed-result{background:rgba(255,255,255,.032);border:1px solid rgba(255,255,255,.06);border-radius:16px;overflow:hidden;animation:fadeUp .3s ease both;position:relative;}
-.ed-result::after{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#6366f1;box-shadow:2px 0 10px #6366f1;opacity:.7;}
-.ed-result-title{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);font-size:.65em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.35);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(99,102,241,.07) 0%,transparent 100%);}
-.ed-copy-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);border-radius:7px;padding:4px 10px;font-size:.85em;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:4px;}
-.ed-copy-btn:hover{color:#fff;background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.2);}
-.ed-copy-btn.copied{background:rgba(16,185,129,.2);border-color:rgba(16,185,129,.4);color:#34d399;}
-.ed-copy-row{display:flex;gap:6px;}
+.ed-result{background:var(--card);border:1px solid var(--bdr);border-radius:var(--ra);overflow:hidden;animation:fadeUp .3s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.ed-result-title{padding:11px 14px;border-bottom:1px solid var(--bdr);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;background:rgba(31,111,235,.04);}
+.ed-copy-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer;font-family:var(--font);transition:all .15s;display:flex;align-items:center;gap:3px;}
+.ed-copy-btn:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);}
+.ed-copy-btn.copied{background:rgba(63,185,80,.15);border-color:rgba(63,185,80,.3);color:var(--green);}
+.ed-copy-row{display:flex;gap:5px;flex-wrap:wrap;}
 
-/* ── Result table ── */
-.ed-tbl{width:100%;border-collapse:collapse;font-size:.72em;font-family:'Inter',sans-serif;}
-.ed-tbl th{padding:10px 12px;text-align:left;font-weight:700;color:rgba(255,255,255,.3);font-size:9px;text-transform:uppercase;letter-spacing:1px;background:rgba(255,255,255,.03);border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap;}
-.ed-tbl td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top;line-height:1.5;}
+.ed-summary{display:flex;flex-wrap:wrap;gap:5px;padding:10px 14px;border-bottom:1px solid var(--bdr);}
+.ed-sum-chip{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:7px;padding:4px 10px;font-size:10px;display:flex;gap:5px;align-items:center;}
+.ed-sum-chip .sc-lbl{font-size:8px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:700;}
+.ed-sum-chip .sc-val{font-weight:700;color:var(--text);font-size:12px;}
+
+.ed-tbl-wrap{overflow-x:auto;}
+.ed-tbl{width:100%;border-collapse:collapse;font-size:11px;}
+.ed-tbl th{padding:8px 10px;text-align:left;font-weight:700;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--bdr);white-space:nowrap;}
+.ed-tbl td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top;line-height:1.4;}
 .ed-tbl tr:last-child td{border-bottom:none;}
-.ed-tbl tr:hover{background:rgba(255,255,255,.02);}
+.ed-tbl tr:hover td{background:rgba(255,255,255,.015);}
 .ed-tbl td:first-child{font-weight:700;color:#fff;white-space:nowrap;}
-.ed-tbl td:nth-child(2){color:rgba(255,255,255,.7);}
-.ed-tbl td:nth-child(3){color:rgba(255,255,255,.5);font-size:.9em;text-align:center;}
-.ed-tbl td:nth-child(4),
-.ed-tbl td:nth-child(5),
-.ed-tbl td:nth-child(6),
-.ed-tbl td:nth-child(7){font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
-.ed-tbl td:nth-child(4){color:rgba(255,255,255,.65);}
+.ed-tbl td:nth-child(2){color:rgba(255,255,255,.55);font-size:10px;}
+.ed-tbl td:nth-child(3){color:var(--muted);font-size:10px;text-align:center;}
+.ed-tbl td:nth-child(4),.ed-tbl td:nth-child(5),.ed-tbl td:nth-child(6),.ed-tbl td:nth-child(7){font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
+.ed-tbl td:nth-child(4){color:rgba(255,255,255,.55);}
 .ed-tbl td:nth-child(5){color:var(--amber);}
 .ed-tbl td:nth-child(6){color:var(--green);}
 .ed-tbl td:nth-child(7){font-weight:700;}
 .ed-tbl td.net-pos{color:var(--green)!important;}
 .ed-tbl td.net-neg{color:#f87171!important;}
 
-/* ── Summary chips ── */
-.ed-summary{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.05);}
-.ed-sum-chip{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:5px 14px;font-size:.68em;display:flex;gap:6px;align-items:center;}
-.ed-sum-chip .sc-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.3);font-weight:700;}
-.ed-sum-chip .sc-val{font-weight:700;color:#fff;font-size:13px;}
+.ed-payer-detail{background:rgba(255,255,255,.015);border-top:1px solid var(--bdr);padding:8px 14px;font-size:10px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;}
+.ed-payer-detail span{display:flex;align-items:center;gap:3px;}
+.ed-payer-detail strong{color:rgba(255,255,255,.55);}
+
+/* ── Autocomplete ── */
+.ed-ac-dd{position:fixed;z-index:99999;background:#151a2a;border:1px solid rgba(255,255,255,.12);border-radius:10px;max-height:170px;overflow-y:auto;display:none;box-shadow:0 8px 32px rgba(0,0,0,.6);}
+.ed-ac-item{padding:7px 12px;cursor:pointer;font-size:11px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:7px;transition:background .12s;}
+.ed-ac-item:hover,.ed-ac-item.active{background:rgba(88,166,255,.15);color:#fff;}
+.ed-ac-av{width:24px;height:24px;border-radius:6px;background:rgba(88,166,255,.15);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--blue);flex-shrink:0;}
+
+/* ── Friend chips ── */
+.ed-friend-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;}
+.ed-friend-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px 3px 5px;background:rgba(88,166,255,.08);border:1px solid rgba(88,166,255,.15);border-radius:14px;cursor:pointer;transition:all .15s;font-size:10px;color:rgba(255,255,255,.6);}
+.ed-friend-chip:hover{background:rgba(88,166,255,.2);border-color:rgba(88,166,255,.4);color:#fff;transform:translateY(-1px);}
+.ed-fc-av{width:18px;height:18px;border-radius:50%;background:rgba(88,166,255,.2);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--blue);flex-shrink:0;}
+.ed-fc-name{white-space:nowrap;}
+
+/* ── Splitwise Review ── */
+.ed-sw-review{background:var(--card);border:1px solid rgba(188,140,255,.2);border-radius:var(--ra);padding:14px;animation:fadeUp .25s ease both;}
+.ed-sw-review-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--bdr);}
+.ed-sw-review-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--sw);display:flex;align-items:center;gap:5px;}
+.ed-sw-review-close{width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.05);border:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;}
+.ed-sw-review-close:hover{background:rgba(248,81,73,.18);color:#f87171;}
+
+.ed-swr-split-hdr{display:flex;align-items:center;gap:8px;padding:2px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:2px;}
+.ed-swr-split-hdr>span:nth-child(1){flex:2;}
+.ed-swr-split-hdr>span:nth-child(2){flex:1;text-align:right;}
+.ed-swr-split-hdr>span:nth-child(3){flex:1;text-align:right;}
+
+.ed-swr-split-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;padding:6px 8px;background:rgba(255,255,255,.02);border-radius:7px;font-size:11px;}
+.ed-swr-split-row .ed-swr-name{flex:2;color:#fff;font-weight:600;display:flex;align-items:center;gap:5px;overflow:hidden;}
+.ed-swr-split-row .ed-swr-name .ed-swr-av{width:22px;height:22px;border-radius:5px;background:rgba(188,140,255,.15);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--sw);flex-shrink:0;}
+.ed-swr-split-row.ed-swr-unmatched .ed-swr-name .ed-swr-av{background:rgba(248,81,73,.12);color:#f87171;}
+.ed-swr-split-row.ed-swr-unmatched{background:rgba(248,81,73,.04);border:1px solid rgba(248,81,73,.1);}
+.ed-swr-split-row.ed-swr-payer{background:rgba(63,185,80,.04);border:1px solid rgba(63,185,80,.1);}
+.ed-swr-split-row input{background:var(--card2);border:1px solid var(--bdr);color:var(--text);border-radius:5px;padding:5px 7px;font-size:11px;width:85px;font-family:var(--font);text-align:right;flex-shrink:0;}
+.ed-swr-split-row input:focus{outline:none;border-color:var(--blue);}
+.ed-swr-split-row input.ed-swr-paid{color:var(--amber);}
+.ed-swr-split-row input.ed-swr-owed{color:var(--green);}
+
+.ed-swr-actions{display:flex;gap:8px;margin-top:12px;}
+.ed-swr-submit{flex:1;padding:9px;border-radius:8px;background:rgba(188,140,255,.12);border:1px solid rgba(188,140,255,.25);color:var(--sw);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.ed-swr-submit:hover{background:rgba(188,140,255,.22);color:#fff;}
+.ed-swr-submit:disabled{opacity:.4;pointer-events:none;}
+.ed-swr-cancel{padding:9px 16px;border-radius:8px;background:var(--card2);border:1px solid var(--bdr);color:var(--muted);font-size:11px;cursor:pointer;font-family:var(--font);transition:all .15s;}
+.ed-swr-cancel:hover{color:#fff;background:rgba(255,255,255,.05);}
+.ed-swr-msg{font-size:10px;margin-top:6px;min-height:16px;}
+.ed-swr-msg.err{color:#f87171;}
+.ed-swr-msg.ok{color:var(--green);}
 
 /* ── Image container ── */
-#ed-image-container img{max-width:100%;height:auto;display:block;border-radius:8px;box-shadow:0 2px 16px rgba(0,0,0,.25);}
-#ed-image-container{border-radius:16px;border:1px solid rgba(255,255,255,.06);overflow:hidden;background:rgba(255,255,255,.032);padding:8px;margin-top:12px;transition:all .3s ease;}
+#ed-image-container img{max-width:100%;height:auto;display:block;border-radius:7px;box-shadow:0 2px 12px rgba(0,0,0,.2);}
+#ed-image-container{border-radius:var(--ra);border:1px solid var(--bdr);overflow-y:auto;max-height:450px;background:var(--card);padding:6px;margin-top:10px;transition:all .3s;}
 
-/* ── Payer Detail footer ── */
-.ed-payer-detail{background:rgba(255,255,255,.02);border-top:1px solid rgba(255,255,255,.04);padding:10px 16px;font-size:.65em;color:rgba(255,255,255,.35);display:flex;gap:14px;flex-wrap:wrap;}
-.ed-payer-detail span{display:flex;align-items:center;gap:4px;}
-.ed-payer-detail strong{color:rgba(255,255,255,.6);}
+.ed-hint{font-size:9px;color:var(--muted);margin-top:1px;}
+.ed-hint.warn{color:var(--red);font-weight:600;}
+.ed-wp-hint{font-size:10px;font-weight:600;color:var(--muted);}
+.ed-wp-hint.ok{color:var(--green);}
+.ed-wp-hint.warn{color:var(--red);}
+
+/* ── Responsive ── */
+@media(max-width:700px){
+  .ed-page{grid-template-columns:1fr;grid-template-rows:auto;overflow:visible;}
+  .ed-col-left{border-right:none;border-bottom:1px solid var(--bdr);}
+  .ed-col{overflow-y:visible;}
+}
 </style>
 
 <div class="ed-page" id="ed-body">
-  <div class="pg-corner-title" style="margin-bottom:4px;">
-    <span class="pg-ct-icon">💰</span>
-    <span class="pg-ct-text">Expense Divider</span>
-  </div>
-
-  <!-- Title -->
-  <div class="ed-field">
-    <label class="ed-label">Expense Title</label>
-    <div class="ed-input-wrap">
-      <input class="ed-input" id="ed-title" placeholder="e.g. Dinner at Cool Planet">
-    </div>
-  </div>
-
-  <!-- Items textarea -->
-  <div class="ed-field">
-    <label class="ed-label">Items — one per line <span id="ed-mode-badge" onclick="edToggleInputMode()" style="cursor:pointer;background:rgba(99,102,241,.2);border:1px solid rgba(99,102,241,.3);border-radius:6px;padding:1px 8px;font-size:.85em;font-weight:600;color:#a5b4fc;text-transform:none;letter-spacing:0;">Item→Person</span></label>
-    <div class="ed-textarea-wrap">
-      <textarea class="ed-textarea" id="ed-items-input" oninput="edUpdateWhoPaidHint()" placeholder="Faluda(690)- Lithusan&#10;Rice(1590)- Pirathees,Sajee,Vasanth&#10;Kothu(1800)- Pirathees,Sajee,Vasanth&#10;Movie-NT(4250)- Pirathees,Sarma,Sajee,Vasant,Narthanan&#10;Melon-NT(330+330)- Sarma"></textarea>
-    </div>
-  </div>
-
-  <!-- Tax & Discount -->
-  <div class="ed-section-title">📊 Overall Adjustments</div>
-  <div class="ed-pct-row">
-    <div class="ed-field">
-      <label class="ed-label">Tax (%)</label>
-      <div class="ed-input-wrap">
-        <input class="ed-input" id="ed-tax" type="number" step="0.01" min="0" placeholder="0" oninput="edUpdateWhoPaidHint()">
+  <!-- ═══ LEFT COLUMN ═══ -->
+  <div class="ed-col ed-col-left">
+    <!-- ═══ TITLE ═══ -->
+    <div class="ed-sec">
+      <div class="ed-sec-hd">
+        <div class="ed-sec-dot" style="background:var(--blue)"></div>
+        <div class="ed-sec-title">📝 Expense</div>
+      </div>
+      <div class="ed-sec-bd">
+        <div class="ed-frow-wrap">
+          <div class="ed-flbl">Title</div>
+          <input class="ed-inp" id="ed-title" placeholder="e.g. Dinner at Cool Planet">
+        </div>
       </div>
     </div>
-    <div class="ed-field">
-      <label class="ed-label">Discount (%)</label>
-      <div class="ed-input-wrap">
-        <input class="ed-input" id="ed-disc" type="number" step="0.01" min="0" placeholder="0" oninput="edUpdateWhoPaidHint()">
+
+    <!-- ═══ ITEMS ═══ -->
+    <div class="ed-sec">
+      <div class="ed-sec-hd">
+        <div class="ed-sec-dot" style="background:var(--green)"></div>
+        <div class="ed-sec-title">🧾 Items</div>
+        <span id="ed-mode-badge" class="ed-mode-badge" onclick="edToggleInputMode()">Item→Person</span>
+        <span id="ed-friends-toggle" class="ed-friends-badge" onclick="edToggleFriends()">👥 Friends</span>
+      </div>
+      <div class="ed-sec-bd">
+        <div class="ed-textarea-wrap">
+          <textarea class="ed-textarea" id="ed-items-input" oninput="edUpdateWhoPaidHint();edAcOnInput(event)" onkeydown="edAcOnKeydown(event)" placeholder="Faluda(690)- Lithusan&#10;Rice(1590)- Pirathees,Sajee,Vasanth&#10;Kothu(1800)- Pirathees,Sajee,Vasanth&#10;Movie-NT(4250)- Pirathees,Sarma,Sajee,Vasant,Narthanan&#10;Melon-NT(330+330)- Sarma"></textarea>
+          <div class="ed-ac-dd" id="ed-ac-dropdown"></div>
+        </div>
+        <div class="ed-friend-chips" id="ed-friend-chips" style="display:none;max-height:0;overflow:hidden;transition:max-height .3s ease,opacity .3s ease;opacity:0;"></div>
       </div>
     </div>
+
+    <!-- ═══ ADJUSTMENTS ═══ -->
+    <div class="ed-sec">
+      <div class="ed-sec-hd">
+        <div class="ed-sec-dot" style="background:var(--amber)"></div>
+        <div class="ed-sec-title">📊 Adjustments</div>
+      </div>
+      <div class="ed-sec-bd">
+        <div class="ed-row2">
+          <div class="ed-frow-wrap">
+            <div class="ed-flbl">Tax (%)</div>
+            <input class="ed-inp" id="ed-tax" type="number" step="0.01" min="0" placeholder="0" oninput="edUpdateWhoPaidHint()">
+          </div>
+          <div class="ed-frow-wrap">
+            <div class="ed-flbl">Discount (%)</div>
+            <input class="ed-inp" id="ed-disc" type="number" step="0.01" min="0" placeholder="0" oninput="edUpdateWhoPaidHint()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SPONSOR ═══ -->
+    <div class="ed-sec">
+      <div class="ed-sec-hd">
+        <div class="ed-sec-dot" style="background:var(--blue)"></div>
+        <div class="ed-sec-title">🏅 Sponsor</div>
+      </div>
+      <div class="ed-sec-bd">
+        <div class="ed-row2">
+          <div class="ed-frow-wrap">
+            <div class="ed-flbl">Names <span class="ed-fsub" style="font-weight:400;text-transform:none;">— name or name + ref</span></div>
+            <input class="ed-inp" id="ed-sponsor-names" placeholder="e.g. John, Dany Birthday" oninput="edUpdateWhoPaidHint();edAcOnInput(event)" onkeydown="edAcOnKeydown(event)">
+          </div>
+          <div class="ed-frow-wrap">
+            <div class="ed-flbl">Amount <span class="ed-fsub" style="font-weight:400;text-transform:none;">— 100+200 math OK</span></div>
+            <input class="ed-inp" id="ed-sponsor-amounts" type="text" inputmode="decimal" placeholder="e.g. 100+200" oninput="edShowEval(this);edUpdateWhoPaidHint()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WHO PAID ═══ -->
+    <div class="ed-sec">
+      <div class="ed-sec-hd">
+        <div class="ed-sec-dot" style="background:var(--amber)"></div>
+        <div class="ed-sec-title">💵 Who Paid</div>
+        <span id="ed-who-paid-hint" class="ed-wp-hint">Gross − Sponsor</span>
+      </div>
+      <div class="ed-sec-bd">
+        <div id="ed-payers-container"></div>
+        <button class="ed-add-btn" onclick="edAddPayer()">+ Add Person Who Paid</button>
+      </div>
+    </div>
+
+    <!-- ═══ CALCULATE ═══ -->
+    <button class="ed-calc-btn" onclick="edCalculate()">🧮 Calculate Split</button>
   </div>
 
-  <!-- Sponsor -->
-  <div class="ed-section-title">💵 Sponsor</div>
-  <div class="ed-sponsor-grid">
-    <div class="ed-field" style="margin:0;">
-      <label class="ed-label">Sponsor Names <span style="font-weight:400;text-transform:none;color:rgba(255,255,255,.2);">— name or name + reference</span></label>
-      <div class="ed-input-wrap">
-        <input class="ed-input" id="ed-sponsor-names" placeholder="e.g. John, Dany Birthday" oninput="edUpdateWhoPaidHint()">
+  <!-- ═══ RIGHT COLUMN ═══ -->
+  <div class="ed-col ed-col-right">
+    <!-- ═══ RECEIPT ═══ -->
+    <div class="ed-sec">
+      <div class="ed-sec-hd">
+        <div class="ed-sec-dot" style="background:var(--muted)"></div>
+        <div class="ed-sec-title">📷 Receipt / Bill <span class="ed-fsub" style="font-weight:400;text-transform:none;">— optional</span></div>
       </div>
-    </div>
-    <div class="ed-field" style="margin:0;">
-      <label class="ed-label">Sponsor Amounts <span style="font-weight:400;text-transform:none;color:rgba(255,255,255,.2);">— 100+200, math supported</span></label>
-      <div class="ed-input-wrap">
-        <input class="ed-input" id="ed-sponsor-amounts" type="text" inputmode="decimal" placeholder="e.g. 100+200" oninput="edShowEval(this);edUpdateWhoPaidHint()">
+      <div class="ed-sec-bd">
+        <div class="ed-receipt-zone" id="ed-receipt-zone" onclick="document.getElementById('ed-receipt-file').click()">
+          <div class="ed-receipt-ico">📷</div>
+          <div class="ed-receipt-txt" id="ed-receipt-txt">Tap to add bill / receipt photo</div>
+          <img id="ed-receipt-thumb" class="ed-receipt-thumb">
+        </div>
       </div>
+      <input type="file" id="ed-receipt-file" accept="image/*" capture="environment" style="display:none" onchange="edPickReceipt(this)">
     </div>
-  </div>
 
-  <!-- Who Paid — remaining after sponsor -->
-  <div class="ed-section-title">💵 Who Paid <span style="font-weight:400;text-transform:none;color:rgba(255,255,255,.2);font-size:1em;">— <span id="ed-who-paid-hint">Gross − Sponsor</span></span></div>
-  <div id="ed-payers-container"></div>
-  <button class="ed-add-btn" onclick="edAddPayer()">+ Add Person Who Paid</button>
+    <!-- ═══ SPLITWISE ACTION ═══ -->
+    <button class="ed-sw-add-btn" id="ed-sw-add-btn" style="display:none;" onclick="edAddToSplitwise()">🤝 Add to Splitwise</button>
 
-  <!-- Calculate -->
-  <button class="ed-calc-btn" onclick="edCalculate()">🧮 Calculate Split</button>
+    <!-- ═══ INLINE SPLITWISE REVIEW ═══ -->
+    <div class="ed-sw-review" id="ed-sw-review" style="display:none;">
+      <div class="ed-sw-review-hd">
+        <div class="ed-sw-review-title"><span style="font-size:16px;">🤝</span> Splitwise Expense</div>
+        <button class="ed-sw-review-close" onclick="document.getElementById('ed-sw-review').style.display='none';">✕</button>
+      </div>
+      <div class="ed-row2" style="margin-bottom:10px;">
+        <div class="ed-frow-wrap">
+          <div class="ed-flbl">Description</div>
+          <input class="ed-inp" id="ed-swr-desc" placeholder="Expense description">
+        </div>
+        <div class="ed-frow-wrap">
+          <div class="ed-flbl">Amount</div>
+          <input class="ed-inp" id="ed-swr-amt" type="number" step="0.01" placeholder="0">
+        </div>
+      </div>
+      <div class="ed-row2" style="margin-bottom:12px;">
+        <div class="ed-frow-wrap">
+          <div class="ed-flbl">Currency</div>
+          <input class="ed-inp" id="ed-swr-cur" value="LKR" placeholder="LKR">
+        </div>
+        <div class="ed-frow-wrap">
+          <div class="ed-flbl">Date</div>
+          <input class="ed-inp" id="ed-swr-date" type="date">
+        </div>
+      </div>
+      <div class="ed-swr-split-hdr">
+        <span>Person</span>
+        <span>Paid</span>
+        <span>Owes</span>
+      </div>
+      <div id="ed-swr-splits"></div>
+      <div id="ed-swr-receipt" style="margin-top:8px;font-size:11px;color:var(--green);"></div>
+      <div class="ed-swr-actions">
+        <button class="ed-swr-cancel" onclick="document.getElementById('ed-sw-review').style.display='none';">Cancel</button>
+        <button class="ed-swr-submit" id="ed-swr-submit" onclick="edSwReviewSubmit()">✅ Submit to Splitwise</button>
+      </div>
+      <div class="ed-swr-msg" id="ed-swr-msg"></div>
+    </div>
 
-  <!-- Result -->
-  <div id="ed-result-area"></div>
+    <!-- ═══ RESULT ═══ -->
+    <div id="ed-result-area"></div>
 
-  <!-- Rendered image appears here for right-click copy -->
-  <div id="ed-image-container" style="display:none;">
-    <div style="padding:8px 12px 6px;font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:space-between;">
-      <span>📸 Table Image</span>
-      <div style="display:flex;gap:6px;">
-        <button class="ed-copy-btn" onclick="edCopyContainerImage()" style="font-size:.9em;">📋 Copy Image</button>
-        <button class="ed-copy-btn" onclick="document.getElementById('ed-image-container').style.display='none';" style="font-size:.9em;">✕ Close</button>
+    <!-- ═══ IMAGE CONTAINER ═══ -->
+    <div id="ed-image-container" style="display:none;">
+      <div style="padding:8px 12px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:flex;align-items:center;justify-content:space-between;">
+        <span>📸 Table Image</span>
+        <div style="display:flex;gap:6px;">
+          <button class="ed-copy-btn" onclick="edCopyContainerImage()">📋 Copy Image</button>
+          <button class="ed-copy-btn" onclick="document.getElementById('ed-image-container').style.display='none';">✕ Close</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Generic autocomplete dropdown for name inputs -->
+<div id="ed-ac-dropdown-gen" style="display:none;position:fixed;z-index:99999;background:#151a2a;border:1px solid rgba(255,255,255,.12);border-radius:10px;max-height:180px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6);"></div>
 
 <script>
 /* ═══════════════════════════════════════════
@@ -208,8 +389,8 @@ function edAddPayer() {
   div.className = 'ed-payer-item';
   div.id = 'ed-payer-' + idx;
   div.innerHTML =
-    '<div class="ed-input-wrap"><input class="ed-input" id="ed-payer-name-' + idx + '" placeholder="Person name" oninput="edUpdateWhoPaidHint()"></div>' +
-    '<div class="ed-input-wrap ed-pay-amt-wrap"><input class="ed-input" id="ed-payer-amt-' + idx + '" type="text" inputmode="decimal" placeholder="Amount" oninput="edShowEval(this);edUpdateWhoPaidHint()" onpaste="setTimeout(function(){edShowEval(document.getElementById(\'ed-payer-amt-' + idx + '\'));edUpdateWhoPaidHint();},10)"></div>' +
+    '<div class="ed-frow-wrap"><input class="ed-inp" id="ed-payer-name-' + idx + '" placeholder="Person name" oninput="edUpdateWhoPaidHint();edAcOnInput(event)" onkeydown="edAcOnKeydown(event)"></div>' +
+    '<div class="ed-frow-wrap ed-pay-amt-wrap"><input class="ed-inp" id="ed-payer-amt-' + idx + '" type="text" inputmode="decimal" placeholder="Amount" oninput="edShowEval(this);edUpdateWhoPaidHint()" onpaste="setTimeout(function(){edShowEval(document.getElementById(\'ed-payer-amt-' + idx + '\'));edUpdateWhoPaidHint();},10)"></div>' +
     '<button class="ed-rm-btn" onclick="edRemovePayer(' + idx + ')" title="Remove">✕</button>';
   document.getElementById('ed-payers-container').appendChild(div);
 }
@@ -222,10 +403,10 @@ function edRemovePayer(idx) {
 function edGetPayers() {
   var payers = [];
   var container = document.getElementById('ed-payers-container');
-  var rows = container.querySelectorAll('.ed-payer-item');
+  var rows = container ? container.querySelectorAll('.ed-payer-item') : [];
   rows.forEach(function(row) {
-    var nameInput = row.querySelector('.ed-input-wrap:first-child .ed-input');
-    var amtInput = row.querySelector('.ed-pay-amt-wrap .ed-input');
+    var nameInput = row.querySelector('input[id^="ed-payer-name"]');
+    var amtInput = row.querySelector('input[id^="ed-payer-amt"]');
     var name = (nameInput ? nameInput.value : '').trim();
     var amt = edEvalPrice(amtInput ? amtInput.value : '0');
     if (name || amt > 0) {
@@ -263,22 +444,28 @@ function edUpdateWhoPaidHint() {
   payers.forEach(function(p) { totalPaid += p.amount; });
   var hint = document.getElementById('ed-who-paid-hint');
   var hasSponsors = sponsorAmt > 0;
-  var hasPayers = payers.length > 0;
+  var hasPayers = payers.length > 0 && payers.some(function(p) { return p.amount > 0; });
+  if (!hint) return;
   if (total > 0) {
     if (!hasSponsors && !hasPayers) {
-      hint.innerHTML = '<span style="color:#f87171;font-size:1.15em;font-weight:700;">⚠️ Add Sponsor or Who Paid</span>';
+      hint.innerHTML = '⚠️ Add Sponsor or Who Paid';
+      hint.className = 'ed-wp-hint warn';
     } else {
       var combined = sponsorAmt + totalPaid;
       if (Math.abs(combined - total) > 0.01) {
-        hint.innerHTML = '<span style="color:#f87171;font-size:1.15em;font-weight:700;">⚠️ Sponsor+Paid ' + edFmt(combined) + ' ≠ Gross ' + edFmt(total) + '</span>';
+        hint.innerHTML = '⚠️ Sponsor+Paid ' + edFmt(combined) + ' ≠ Gross ' + edFmt(total);
+        hint.className = 'ed-wp-hint warn';
       } else if (hasSponsors) {
-        hint.innerHTML = '<span style="font-size:1.15em;font-weight:700;color:var(--green)">Remaining: ' + edFmt(remaining) + '</span> <span style="opacity:.5;font-size:.85em;">(Gross: ' + edFmt(total) + ' − Sponsor: ' + edFmt(sponsorAmt) + ')</span>';
+        hint.innerHTML = 'Remaining: ' + edFmt(remaining) + ' (Gross: ' + edFmt(total) + ' − Sponsor: ' + edFmt(sponsorAmt) + ')';
+        hint.className = 'ed-wp-hint ok';
       } else {
-        hint.innerHTML = '<span style="font-size:1.15em;font-weight:700;">' + edFmt(total) + ' to split</span>';
+        hint.innerHTML = edFmt(total) + ' to split';
+        hint.className = 'ed-wp-hint ok';
       }
     }
   } else {
     hint.textContent = 'Gross − Sponsor';
+    hint.className = 'ed-wp-hint';
   }
 }
 
@@ -293,14 +480,14 @@ function edEvalPrice(str) {
 
 function edShowEval(input) {
   var val = input.value.trim();
-  var wrap = input.closest('.ed-input-wrap');
   if (val.indexOf('+') !== -1) {
     var result = edEvalPrice(val);
-    if (wrap) wrap.style.borderColor = 'rgba(16,185,129,.5)';
     input.title = '= ' + result;
+    input.classList.add('good');
+    input.classList.remove('bad');
   } else {
-    if (wrap) wrap.style.borderColor = '';
     input.title = '';
+    input.classList.remove('good');
   }
 }
 
@@ -1134,4 +1321,588 @@ function edFmt(v) {
   if (v === undefined || v === null || isNaN(v)) return '—';
   return '₨ ' + v.toLocaleString('en-IN', {minimumFractionDigits: 0, maximumFractionDigits: 0});
 }
+
+/* ═══════════════════════════════════════════
+   AUTOCOMPLETE — friend names in textarea + inputs
+═══════════════════════════════════════════ */
+var _edAcIdx = -1;          // highlighted dropdown index
+var _edAcMatch = null;      // current cursor word being matched
+var _edAcItems = [];        // filtered friend list for current match
+var _edAcActiveInput = null;// which input element triggered autocomplete
+var _edFriendList = [];     // Splitwise friends loaded independently
+var _edFriendsVisible = false;
+
+function edAcEscape(s) {
+  return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Generic autocomplete: works on any input ── */
+function edAcOnInput(e) {
+  var inp = e.target;
+  _edAcActiveInput = inp;
+
+  // Pick the right dropdown
+  var dd;
+  if (inp.id === 'ed-items-input') {
+    dd = document.getElementById('ed-ac-dropdown');
+  } else {
+    dd = document.getElementById('ed-ac-dropdown-gen');
+  }
+  if (!dd) return;
+
+  if (!_edFriendList.length) {
+    dd.style.display = 'none'; _edAcIdx = -1; _edAcMatch = null; return;
+  }
+
+  var pos = inp.selectionStart;
+  var text = inp.value;
+  var before = text.substring(0, pos);
+  var after = text.substring(pos);
+  // word boundaries for comma-separated inputs
+  var wordStart = before.search(/[,\s\-\(\)][^,\s\-\(\)]*$/);
+  if (wordStart === -1) wordStart = 0; else wordStart += 1;
+  var wordEnd = after.search(/[,\s\-\(\)]/);
+  if (wordEnd === -1) wordEnd = after.length;
+  var word = text.substring(wordStart, pos + wordEnd).trim().toLowerCase();
+  if (word.length < 1) { dd.style.display = 'none'; _edAcIdx = -1; _edAcMatch = null; return; }
+
+  var matches = [];
+  for (var i = 0; i < _edFriendList.length; i++) {
+    var f = _edFriendList[i];
+    if (f.name.toLowerCase().indexOf(word) !== -1) matches.push(f);
+  }
+  if (matches.length === 0) { dd.style.display = 'none'; _edAcIdx = -1; _edAcMatch = null; return; }
+
+  _edAcIdx = -1;
+  _edAcMatch = { word: word, wordStart: wordStart, wordEnd: wordStart + word.length };
+  _edAcItems = matches;
+
+  var html = '';
+  for (var j = 0; j < matches.length; j++) {
+    var safeName = edAcEscape(matches[j].name);
+    var label = safeName + (matches[j].isMe ? ' (ME)' : '');
+    html += '<div class="ed-ac-item" data-idx="' + j + '" data-name="' + safeName + '">'
+      + '<div class="ed-ac-av">' + (matches[j].initials || matches[j].name.substring(0,2).toUpperCase()) + '</div>'
+      + label + '</div>';
+  }
+  dd.innerHTML = html;
+
+  // Position both dropdowns with fixed positioning (avoids clipping in overflow:auto columns)
+  var rect = inp.getBoundingClientRect();
+  dd.style.cssText = 'display:block;position:fixed;z-index:99999;background:#151a2a;border:1px solid rgba(255,255,255,.12);border-radius:10px;max-height:180px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.6);left:' + rect.left + 'px;top:' + (rect.bottom + 4) + 'px;width:' + rect.width + 'px;';
+
+  var items = dd.querySelectorAll('.ed-ac-item');
+  items.forEach(function(item) {
+    item.addEventListener('mousedown', function(ev) {
+      ev.preventDefault();
+      var idx = parseInt(item.getAttribute('data-idx'));
+      if (!isNaN(idx) && idx >= 0 && idx < _edAcItems.length) {
+        edAcSelect(_edAcItems[idx].name);
+      }
+    });
+  });
+}
+
+function edAcOnKeydown(e) {
+  var inp = _edAcActiveInput || e.target;
+  var dd = (inp.id === 'ed-items-input') ? document.getElementById('ed-ac-dropdown') : document.getElementById('ed-ac-dropdown-gen');
+  if (!dd || dd.style.display === 'none' || !_edAcItems.length) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _edAcIdx = Math.min(_edAcIdx + 1, _edAcItems.length - 1);
+    edAcHighlight(dd);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _edAcIdx = Math.max(_edAcIdx - 1, 0);
+    edAcHighlight(dd);
+  } else if (e.key === 'Enter' || e.key === 'Tab') {
+    if (_edAcIdx >= 0 && _edAcIdx < _edAcItems.length) {
+      e.preventDefault();
+      edAcSelect(_edAcItems[_edAcIdx].name);
+    } else {
+      dd.style.display = 'none';
+    }
+  } else if (e.key === 'Escape') {
+    dd.style.display = 'none'; _edAcIdx = -1;
+  }
+}
+
+function edAcHighlight(dd) {
+  var items = dd.querySelectorAll('.ed-ac-item');
+  items.forEach(function(item, i) { item.classList.toggle('active', i === _edAcIdx); });
+  var active = dd.querySelector('.ed-ac-item.active');
+  if (active) active.scrollIntoView({ block: 'nearest' });
+}
+
+function edAcSelect(name) {
+  var inp = _edAcActiveInput;
+  var dd = (inp && inp.id === 'ed-items-input') ? document.getElementById('ed-ac-dropdown') : document.getElementById('ed-ac-dropdown-gen');
+  if (!inp || !_edAcMatch) { if (dd) dd.style.display = 'none'; return; }
+
+  var text = inp.value;
+  var before = text.substring(0, _edAcMatch.wordStart);
+  var after = text.substring(_edAcMatch.wordEnd);
+  inp.value = before + name + after;
+  inp.focus();
+  var newPos = before.length + name.length;
+  inp.setSelectionRange(newPos, newPos);
+
+  if (dd) dd.style.display = 'none';
+  _edAcIdx = -1; _edAcMatch = null;
+  edUpdateWhoPaidHint();
+}
+
+// Close dropdowns on click outside
+document.addEventListener('click', function(e) {
+  var dd1 = document.getElementById('ed-ac-dropdown');
+  var dd2 = document.getElementById('ed-ac-dropdown-gen');
+  var ta = document.getElementById('ed-items-input');
+  [dd1, dd2].forEach(function(dd) {
+    if (dd && dd.style.display !== 'none' && !dd.contains(e.target) && e.target !== ta && e.target !== _edAcActiveInput) {
+      dd.style.display = 'none';
+    }
+  });
+  _edAcIdx = -1; _edAcMatch = null;
+});
+
+/* ═══════════════════════════════════════════
+   RECEIPT / BILL IMAGE HANDLING
+═══════════════════════════════════════════ */
+var _edReceiptB64 = null;
+
+function edPickReceipt(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    _edReceiptB64 = e.target.result;
+    var thumb = document.getElementById('ed-receipt-thumb');
+    thumb.src = _edReceiptB64;
+    thumb.style.display = 'block';
+    document.getElementById('ed-receipt-zone').classList.add('has-img');
+    document.getElementById('ed-receipt-txt').textContent = 'Receipt attached ✓';
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ═══════════════════════════════════════════
+   ADD TO SPLITWISE — from ED results
+══��════════════════════════════════════════ */
+// Load Splitwise friends independently (does NOT depend on swFriendsList)
+function edLoadFriends() {
+  // Always inject "Pirathees (ME)" so the user can always reference themselves
+  var meEntry = { id: null, name: 'Pirathees', initials: 'P', isMe: true };
+
+  if (typeof google === 'undefined' || !google.script || !google.script.run) {
+    _edFriendList = [meEntry];
+    edRenderFriendChips();
+    edTryShowSwBtn();
+    var toggle = document.getElementById('ed-friends-toggle');
+    if (toggle) toggle.style.display = 'inline';
+    setTimeout(edLoadFriends, 500);
+    return;
+  }
+  google.script.run
+    .withSuccessHandler(function(list) {
+      _edFriendList = list || [];
+      // Always prepend Pirathees(ME) if not already in the list
+      if (!_edFriendList.some(function(f) { return f.name.toLowerCase() === 'pirathees'; })) {
+        _edFriendList.unshift(meEntry);
+      }
+      edRenderFriendChips();
+      edTryShowSwBtn();
+      // Show the 👥 Friends toggle button
+      var toggle = document.getElementById('ed-friends-toggle');
+      if (toggle && _edFriendList.length) toggle.style.display = 'inline';
+    })
+    .withFailureHandler(function() {
+      if (typeof swFriendsList !== 'undefined' && swFriendsList.length) {
+        _edFriendList = swFriendsList;
+        if (!_edFriendList.some(function(f) { return f.name.toLowerCase() === 'pirathees'; })) {
+          _edFriendList.unshift(meEntry);
+        }
+        edRenderFriendChips();
+        edTryShowSwBtn();
+        var toggle = document.getElementById('ed-friends-toggle');
+        if (toggle) toggle.style.display = 'inline';
+      } else {
+        _edFriendList = [meEntry];
+        edRenderFriendChips();
+        edTryShowSwBtn();
+        var toggle = document.getElementById('ed-friends-toggle');
+        if (toggle) toggle.style.display = 'inline';
+        setTimeout(function() {
+          if (typeof swFriendsList !== 'undefined' && swFriendsList.length) {
+            _edFriendList = swFriendsList;
+            if (!_edFriendList.some(function(f) { return f.name.toLowerCase() === 'pirathees'; })) {
+              _edFriendList.unshift(meEntry);
+            }
+            edRenderFriendChips();
+          }
+          edTryShowSwBtn();
+          var toggle = document.getElementById('ed-friends-toggle');
+          if (toggle && _edFriendList.length) toggle.style.display = 'inline';
+        }, 2000);
+      }
+    })
+    .getSplitwiseFriendsOnly();
+}
+
+// Toggle friend chips visibility
+function edToggleFriends() {
+  _edFriendsVisible = !_edFriendsVisible;
+  var container = document.getElementById('ed-friend-chips');
+  var toggle = document.getElementById('ed-friends-toggle');
+  if (!container) return;
+  if (_edFriendsVisible) {
+    if (toggle) toggle.textContent = '👥 Hide';
+    container.style.display = 'flex';
+    container.style.maxHeight = '400px';
+    container.style.opacity = '1';
+    if (!container.innerHTML) edRenderFriendChips();
+  } else {
+    if (toggle) toggle.textContent = '👥 Friends';
+    container.style.maxHeight = '0';
+    container.style.opacity = '0';
+    setTimeout(function() { if (!_edFriendsVisible) container.style.display = 'none'; }, 300);
+  }
+}
+
+// Render clickable friend chips — hidden behind toggle
+function edRenderFriendChips() {
+  var chipContainer = document.getElementById('ed-friend-chips');
+  if (!chipContainer || !_edFriendList.length) {
+    if (chipContainer) chipContainer.style.display = 'none';
+    return;
+  }
+  var html = '<span style="font-size:.62em;color:rgba(255,255,255,.25);width:100%;margin-bottom:2px;">👥 Click a name to insert →</span>';
+  for (var i = 0; i < _edFriendList.length; i++) {
+    var f = _edFriendList[i];
+    var safeName = edAcEscape(f.name);
+    var label = safeName + (f.isMe ? ' (ME)' : '');
+    html += '<div class="ed-friend-chip" data-name="' + safeName + '" onclick="edInsertFriendName(this)" title="Click to insert &quot;' + safeName + '&quot;">'
+      + '<span class="ed-fc-av">' + (f.initials || safeName.substring(0,2).toUpperCase()) + '</span>'
+      + '<span class="ed-fc-name">' + label + '</span>'
+      + '</div>';
+  }
+  chipContainer.innerHTML = html;
+}
+
+// Insert friend name at cursor position in textarea when chip is clicked
+function edInsertFriendName(chip) {
+  var name = chip.getAttribute('data-name');
+  if (!name) return;
+  var ta = document.getElementById('ed-items-input');
+  if (!ta) return;
+
+  var pos = ta.selectionStart;
+  var text = ta.value;
+  // Insert the name at cursor position
+  var before = text.substring(0, pos);
+  var after = text.substring(pos);
+  // Add comma before if needed (not at start and previous char isn't comma/space/dash/newline)
+  var needSep = before.length > 0 && !/[,\s\-\n]/.test(before[before.length-1]);
+  var needSepAfter = after.length > 0 && !/[,\s\-\n]/.test(after[0]);
+  var insert = (needSep ? ', ' : '') + name + (needSepAfter ? ', ' : '');
+  ta.value = before + insert + after;
+  ta.focus();
+  var newPos = pos + insert.length;
+  ta.setSelectionRange(newPos, newPos);
+  edUpdateWhoPaidHint();
+}
+
+// Show the Splitwise button when friends are loaded
+function edTryShowSwBtn() {
+  var btn = document.getElementById('ed-sw-add-btn');
+  if (!btn) return;
+  // Always show the button — it tries to load friends itself
+  btn.style.display = 'flex';
+}
+
+// Run when ED is opened — load friends independently
+var _edOrigInit = edInit;
+edInit = function() {
+  _edOrigInit();
+  edTryShowSwBtn();
+  edLoadFriends();            // independent load, doesn't wait for Splitwise tab
+};
+
+function edAddToSplitwise() {
+  // Gather data from the expense divider result
+  var title = document.getElementById('ed-title').value.trim() || 'Untitled';
+  var taxPct = parseFloat(document.getElementById('ed-tax').value) || 0;
+  var discPct = parseFloat(document.getElementById('ed-disc').value) || 0;
+  var raw = document.getElementById('ed-items-input').value.trim();
+  var items = edParseItems(raw);
+  var sponsors = edGetSponsors();
+  var payers = edGetPayers();
+
+  if (items.length === 0) {
+    alert('Calculate the split first before adding to Splitwise.');
+    return;
+  }
+
+  // Calculate total (same logic as edCalculate)
+  var subtotal = 0, taxableSubtotal = 0;
+  items.forEach(function(item) { subtotal += item.price; if (item.taxable) taxableSubtotal += item.price; });
+  var taxAmt = taxableSubtotal * (taxPct / 100);
+  var discAmt = subtotal * (discPct / 100);
+  var totalAfterAdjustments = Math.round(subtotal + taxAmt - discAmt);
+
+  // Calculate each person's share
+  var personShares = {}, personTaxableShares = {}, nameDisplay = {};
+  items.forEach(function(item) {
+    if (item.persons.length === 0) return;
+    var sharePerPerson = item.price / item.persons.length;
+    item.persons.forEach(function(p) {
+      var key = p.toLowerCase();
+      if (!nameDisplay[key]) nameDisplay[key] = p;
+      if (!personShares[key]) { personShares[key] = 0; personTaxableShares[key] = 0; }
+      personShares[key] += sharePerPerson;
+      if (item.taxable) personTaxableShares[key] += sharePerPerson;
+    });
+  });
+
+  // Final owed
+  var finalOwed = {};
+  Object.keys(personShares).forEach(function(k) {
+    var taxableShare = personTaxableShares[k] || 0;
+    var nonTaxableShare = personShares[k] - taxableShare;
+    var shareAfterTax = Math.round(taxableShare * (1 + taxPct / 100) + nonTaxableShare);
+    var shareAfterDisc = Math.round(shareAfterTax - personShares[k] * (discPct / 100));
+    finalOwed[k] = shareAfterDisc;
+  });
+
+  var allKeys = Object.keys(finalOwed);
+
+  // Load friend list
+  var friendList = _edFriendList.length > 0 ? _edFriendList : (typeof swFriendsList !== 'undefined' ? swFriendsList : []);
+
+  /* ── Build splits: EVERY person from the expense MUST appear ── */
+  var splits = [];
+  allKeys.forEach(function(k) {
+    var displayName = nameDisplay[k];
+    var owed = finalOwed[k];
+    if (owed < 0) owed = 0; // don't allow negative owed
+
+    // Find matching Splitwise friend
+    var friend = null;
+    if (friendList.length > 0) {
+      for (var i = 0; i < friendList.length; i++) {
+        var f = friendList[i];
+        // Try exact/like match
+        var fLow = f.name.toLowerCase();
+        if (fLow === k || fLow.indexOf(k) !== -1 || k.indexOf(fLow) !== -1) { friend = f; break; }
+      }
+      if (!friend) {
+        for (var j = 0; j < friendList.length; j++) {
+          var f2 = friendList[j];
+          var firstName = f2.name.split(' ')[0].toLowerCase();
+          if (k.indexOf(firstName) !== -1 || firstName.indexOf(k) !== -1) { friend = f2; break; }
+        }
+      }
+    }
+
+    // How much this person paid (from Who Paid section)
+    var paidAmt = 0;
+    payers.forEach(function(payer) {
+      var pLow = payer.name.toLowerCase();
+      if (pLow === k || pLow.indexOf(k) !== -1 || k.indexOf(pLow) !== -1) {
+        paidAmt = Math.round(payer.amount);
+      }
+    });
+
+    splits.push({
+      userId: friend ? friend.id : null,
+      name: displayName,
+      initials: friend ? friend.initials : displayName.substring(0, 2).toUpperCase(),
+      isMatched: !!friend,
+      paidAmt: paidAmt,
+      owedAmt: owed
+    });
+  });
+
+  // ── Render the INLINE review panel ──
+  var review = document.getElementById('ed-sw-review');
+  if (!review) return;
+
+  // Fill form fields
+  var desc = title + ' (via ED)';
+  if (desc.length > 80) desc = title.substring(0, 76) + '…';
+  document.getElementById('ed-swr-desc').value = desc;
+  document.getElementById('ed-swr-amt').value = totalAfterAdjustments;
+  document.getElementById('ed-swr-cur').value = 'LKR';
+  var d = new Date();
+  document.getElementById('ed-swr-date').value = d.toISOString().split('T')[0];
+
+  // Build split rows HTML — all persons
+  var splitsHtml = '';
+  for (var si = 0; si < splits.length; si++) {
+    var s = splits[si];
+    var av = s.initials || s.name.substring(0, 2).toUpperCase();
+    var rowClass = '';
+    if (!s.isMatched) rowClass = ' ed-swr-unmatched';
+    if (s.paidAmt > 0) rowClass += ' ed-swr-payer';
+    splitsHtml += '<div class="ed-swr-split-row' + rowClass + '">'
+      + '<span class="ed-swr-name"><span class="ed-swr-av">' + edAcEscape(av) + '</span>'
+        + edAcEscape(s.name)
+        + (!s.isMatched ? ' <span style="font-size:9px;color:#f87171;font-weight:400;">(not on Splitwise)</span>' : '')
+      + '</span>'
+      + '<input type="number" step="0.01" class="ed-swr-paid" value="' + s.paidAmt + '" data-idx="' + si + '" data-field="paid">'
+      + '<input type="number" step="0.01" class="ed-swr-owed" value="' + s.owedAmt + '" data-idx="' + si + '" data-field="owed">'
+      + '</div>';
+  }
+  document.getElementById('ed-swr-splits').innerHTML = splitsHtml;
+
+  // Show receipt status
+  var receiptDiv = document.getElementById('ed-swr-receipt');
+  if (_edReceiptB64) {
+    receiptDiv.innerHTML = '📷 Receipt attached ✓';
+  } else {
+    receiptDiv.innerHTML = '';
+  }
+
+  // Store splits ref for submit
+  window._edSwrSplits = splits;
+
+  // Show the inline review
+  review.style.display = 'block';
+  review.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  // Clear messages
+  var msg = document.getElementById('ed-swr-msg');
+  if (msg) { msg.textContent = ''; msg.className = 'ed-swr-msg'; }
+
+  // Highlight unmatched warning
+  var unmatchedCount = 0;
+  splits.forEach(function(s) { if (!s.isMatched) unmatchedCount++; });
+  if (unmatchedCount > 0 && msg) {
+    msg.innerHTML = '⚠️ ' + unmatchedCount + ' person(s) not found in Splitwise friends. They <strong>won\'t be added</strong> to the expense.';
+    msg.className = 'ed-swr-msg err';
+  }
+}
+
+/* ── Submit the inline Splitwise expense ── */
+function edSwReviewSubmit() {
+  var btn = document.getElementById('ed-swr-submit');
+  var msgEl = document.getElementById('ed-swr-msg');
+  var splits = window._edSwrSplits || [];
+
+  if (!splits.length) { if (msgEl) { msgEl.textContent = 'No persons to split.'; msgEl.className = 'ed-swr-msg err'; } return; }
+  if (typeof google === 'undefined' || !google.script || !google.script.run) {
+    if (msgEl) { msgEl.textContent = 'Backend not ready. Try again in a moment.'; msgEl.className = 'ed-swr-msg err'; }
+    return;
+  }
+
+  // Read current values from the input fields (only actual split rows, not the header)
+  var splitRows = document.querySelectorAll('#ed-swr-splits .ed-swr-split-row');
+  var splitsPayload = [];
+  var totalPaid = 0;
+
+  splitRows.forEach(function(row) {
+    var paidInput = row.querySelector('.ed-swr-paid');
+    var owedInput = row.querySelector('.ed-swr-owed');
+    if (!paidInput || !owedInput) return;
+    var idx = parseInt(paidInput.getAttribute('data-idx'));
+    if (isNaN(idx) || idx < 0 || idx >= splits.length) return;
+
+    var s = splits[idx];
+    var paid = parseFloat(paidInput.value) || 0;
+    var owed = parseFloat(owedInput.value) || 0;
+
+    // Only include matched friends
+    if (!s.isMatched) {
+      if (owed > 0 && msgEl) {
+        msgEl.textContent = '"' + s.name + '" is not on Splitwise. Remove their owed amount or add them to Splitwise first.';
+        msgEl.className = 'ed-swr-msg err';
+      }
+      return;
+    }
+
+    splitsPayload.push({
+      userId: s.userId,
+      share: owed,
+      paid: paid,
+      name: s.name
+    });
+    totalPaid += paid;
+  });
+
+  // ═══ VALIDATION ═══
+  var totalAmt = parseFloat(document.getElementById('ed-swr-amt').value) || 0;
+
+  // 1. Must have at least one split
+  if (splitsPayload.length === 0) {
+    if (msgEl) { msgEl.textContent = 'No valid Splitwise friends selected. Make sure at least one person is matched.'; msgEl.className = 'ed-swr-msg err'; }
+    return;
+  }
+
+  // 2. Total owed must match expense amount
+  var totalOwed = 0;
+  splitsPayload.forEach(function(s) { totalOwed += s.share; });
+  if (totalOwed <= 0) {
+    if (msgEl) { msgEl.textContent = 'Total split amount is zero. Enter owed amounts.'; msgEl.className = 'ed-swr-msg err'; }
+    return;
+  }
+  if (Math.abs(totalOwed - totalAmt) > 1) {
+    if (msgEl) { msgEl.textContent = 'Split total (' + totalOwed + ') ≠ expense amount (' + totalAmt + '). Adjust owed values.'; msgEl.className = 'ed-swr-msg err'; }
+    return;
+  }
+
+  // 3. Payer validation — at least one person must have paid something, and total paid should ≈ total amount
+  if (totalPaid <= 0) {
+    if (msgEl) { msgEl.textContent = '⚠️ No payer specified! At least one person must have a "Paid" amount > 0. This indicates who actually paid the bill.'; msgEl.className = 'ed-swr-msg err'; }
+    return;
+  }
+
+  // Warn but don't block if paid doesn't equal total (some could be sponsors)
+  if (Math.abs(totalPaid - totalAmt) > 1 && msgEl) {
+    msgEl.innerHTML = '⚠️ Total paid (' + totalPaid + ') ≠ expense amount (' + totalAmt + '). The payer(s) amounts should equal the total bill. <strong>Continuing anyway...</strong>';
+    msgEl.className = 'ed-swr-msg err';
+  }
+
+  var payload = {
+    description: document.getElementById('ed-swr-desc').value.trim(),
+    amount: totalAmt,
+    currency: document.getElementById('ed-swr-cur').value || 'LKR',
+    date: document.getElementById('ed-swr-date').value,
+    splits: splitsPayload,
+    receiptBase64: _edReceiptB64 || null
+  };
+
+  if (!payload.description) {
+    if (msgEl) { msgEl.textContent = 'Please enter a description.'; msgEl.className = 'ed-swr-msg err'; }
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = '⏳ Adding…';
+  if (msgEl) { msgEl.textContent = ''; msgEl.className = 'ed-swr-msg'; }
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false; btn.textContent = '✅ Submit to Splitwise';
+      if (res && res.success) {
+        if (msgEl) { msgEl.innerHTML = '✅ Expense added to Splitwise! ' + edAcEscape(payload.currency) + ' ' + payload.amount + ' — ' + edAcEscape(payload.description); msgEl.className = 'ed-swr-msg ok'; }
+        btn.style.display = 'none';
+        document.querySelector('.ed-swr-cancel').textContent = 'Close';
+        // Also update the main sw button
+        var swBtn = document.getElementById('ed-sw-add-btn');
+        if (swBtn) { swBtn.textContent = '✅ Added to Splitwise'; swBtn.classList.add('ed-sw-done'); swBtn.disabled = true; }
+      } else {
+        if (msgEl) { msgEl.textContent = '❌ ' + (res && res.error ? res.error : 'Unknown error. Check GAS logs.'); msgEl.className = 'ed-swr-msg err'; }
+      }
+    })
+    .withFailureHandler(function(e) {
+      btn.disabled = false; btn.textContent = '✅ Submit to Splitwise';
+      if (msgEl) { msgEl.textContent = '❌ ' + (e.message || String(e)); msgEl.className = 'ed-swr-msg err'; }
+    })
+    .createSplitwiseExpense(payload);
+}
+
+// script loaded — try showing the sw button and load friends
+setTimeout(function() {
+  edTryShowSwBtn();
+  edLoadFriends();
+}, 300);
 </script>

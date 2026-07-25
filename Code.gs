@@ -1689,6 +1689,32 @@ function getSplitwiseExpenseDetails(expenseId) {
   }
 }
 
+/* ── Lightweight: just the Splitwise friends list (for autocomplete) ── */
+function getSplitwiseFriendsOnly() {
+  const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
+  const headers = { 'Authorization': 'Bearer ' + apiKey };
+  const opts = { method: 'get', headers: headers };
+
+  try {
+    const friendsResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_friends', opts);
+    const friends = JSON.parse(friendsResp.getContentText()).friends;
+
+    var result = [];
+    friends.forEach(function(friend) {
+      const fullName = (friend.first_name + ' ' + (friend.last_name || '')).trim();
+      result.push({
+        id: friend.id,
+        name: fullName,
+        initials: fullName.split(' ').map(function(w){ return w[0]||''; }).join('').toUpperCase().slice(0,2)
+      });
+    });
+    return result;
+  } catch(err) {
+    Logger.log('getSplitwiseFriendsOnly error: ' + err);
+    return [];
+  }
+}
+
 function getFriendBalances() {
   const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
   const headers = { 'Authorization': 'Bearer ' + apiKey };
@@ -3372,12 +3398,15 @@ function createSplitwiseExpense(payload) {
       userIdx++;
     });
 
-    // 3. Submit expense (JSON body is simpler than multipart for non-image)
-    var body = JSON.stringify(params);
+    // 3. Submit expense — Splitwise expects URL-encoded form data, NOT JSON
+    var formPayload = {};
+    for (var key in params) {
+      if (params.hasOwnProperty(key)) formPayload[key] = params[key];
+    }
     var opts = {
       method:      'post',
-      headers:     Object.assign({}, headers, { 'Content-Type': 'application/json' }),
-      payload:     body,
+      headers:     headers,
+      payload:     formPayload,
       muteHttpExceptions: true
     };
     var resp    = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/create_expense', opts);
@@ -3390,10 +3419,13 @@ function createSplitwiseExpense(payload) {
       return { success:false, error: errMsg };
     }
 
-    var expenses = result.expenses || [];
-    if (!expenses.length) return { success:false, error:'No expense returned by API' };
+    var expense = result.expense || (result.expenses && result.expenses[0]) || null;
+    if (!expense) {
+      Logger.log('createSplitwiseExpense: No expense in response. Full response: ' + JSON.stringify(result));
+      return { success:false, error:'No expense returned by API. Check GAS logs for details.' };
+    }
 
-    var expId = expenses[0].id;
+    var expId = expense.id;
 
     // 4. Attach receipt image if provided (multipart)
     if (payload.receiptBase64 && expId) {
