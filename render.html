@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <base target="_top">
@@ -13073,10 +13073,11 @@ function swaeSubmit(){
     // Add Notes
     (notes || []).forEach(function(n) {
       if (!n.calendar || !n.date) return;
-      var nDate = new Date(n.date.replace(/-/g, '/'));
-      var nYear = nDate.getFullYear();
-      var nMonth = nDate.getMonth() + 1;
-      var nDay = nDate.getDate();
+      // Parse yyyy-MM-dd explicitly to avoid Date() timezone ambiguity
+      var parts = n.date.split('-');
+      var nYear = parseInt(parts[0], 10);
+      var nMonth = parseInt(parts[1], 10);
+      var nDay = parseInt(parts[2], 10);
 
       if (n.yearly || nYear === year) {
         var key = year + '-' + String(nMonth).padStart(2,'0') + '-' + String(nDay).padStart(2,'0');

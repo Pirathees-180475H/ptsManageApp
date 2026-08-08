@@ -4075,7 +4075,9 @@ function getNotesData() {
       var date = row[0];
       var dateStr = '';
       if (date instanceof Date) {
-        dateStr = Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+        // Use the SPREADSHEET's timezone, not the script's timezone
+        var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+        dateStr = Utilities.formatDate(date, tz, 'yyyy-MM-dd');
       } else {
         dateStr = String(date);
       }
@@ -4118,8 +4120,13 @@ function saveNote(notes) {
     }
 
     var rows = notes.map(function(n) {
+      // Parse yyyy-MM-dd explicitly using UTC to avoid timezone shifts
+      var parts = (n.date || '').split('-');
+      var d = new Date();
+      d.setUTCFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      d.setUTCHours(0, 0, 0, 0);
       return [
-        n.date ? new Date(n.date.replace(/-/g, '/')) : new Date(),
+        d,
         n.yearly || false,
         n.reference || '',
         n.calendar || false,

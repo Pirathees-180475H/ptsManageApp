@@ -289,8 +289,9 @@
     }
 
     // Sort ascending by date for grouping
+    // Use date+'T00:00:00' (ISO local-time) to avoid UTC timezone shift
     var sorted = _notesData.slice().sort(function(a, b) {
-      return new Date(a.date.replace(/-/g, '/')) - new Date(b.date.replace(/-/g, '/'));
+      return new Date(a.date + 'T00:00:00') - new Date(b.date + 'T00:00:00');
     });
 
     // Group consecutive notes with the same reference
@@ -298,8 +299,8 @@
     sorted.forEach(function(n) {
       var last = groups[groups.length - 1];
       if (last && last.reference === n.reference) {
-        var lastDate = new Date(last.dates[last.dates.length - 1].replace(/-/g, '/'));
-        var curDate = new Date(n.date.replace(/-/g, '/'));
+        var lastDate = new Date(last.dates[last.dates.length - 1] + 'T00:00:00');
+        var curDate = new Date(n.date + 'T00:00:00');
         var diff = (curDate - lastDate) / (1000 * 60 * 60 * 24);
         if (diff === 1) {
           last.dates.push(n.date);
@@ -315,8 +316,8 @@
     var itemsHtml = '';
     for (var gi = groups.length - 1; gi >= 0; gi--) {
       var g = groups[gi];
-      var gStart = new Date(g.dates[0].replace(/-/g, '/'));
-      var gEnd = new Date(g.dates[g.dates.length - 1].replace(/-/g, '/'));
+      var gStart = new Date(g.dates[0] + 'T00:00:00');
+      var gEnd = new Date(g.dates[g.dates.length - 1] + 'T00:00:00');
       
       var dateStr;
       if (g.dates.length === 1) {
@@ -409,7 +410,8 @@
       card.classList.add('open');
       if (!document.getElementById('n-row').value && !document.getElementById('n-edit-rows').value) {
         document.getElementById('notes-form-title').innerText = 'New Note';
-        document.getElementById('n-date').value = new Date().toISOString().split('T')[0];
+        var td = new Date();
+        document.getElementById('n-date').value = td.getFullYear() + '-' + String(td.getMonth()+1).padStart(2,'0') + '-' + String(td.getDate()).padStart(2,'0');
         document.getElementById('n-cat-sel').value = '';
         document.getElementById('n-cat-new').value = '';
         document.getElementById('n-cat-new').style.display = 'none';
@@ -468,7 +470,9 @@
       var d = new Date(fromDate + 'T00:00:00');
       var end = new Date(upToDate + 'T00:00:00');
       while (d <= end) {
-        dates.push(d.toISOString().split('T')[0]);
+        // Format in local time (not UTC) to avoid timezone shift
+        var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+        dates.push(y + '-' + m + '-' + day);
         d.setDate(d.getDate() + 1);
       }
     } else {

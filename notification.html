@@ -121,15 +121,19 @@
 
     // Filter notes
     var toNotify = notes.filter(function(n) {
-      var noteDate = new Date(n.date.replace(/-/g, '/'));
+      // Parse yyyy-MM-dd explicitly to avoid timezone ambiguity
+      var parts = n.date.split('-');
+      var nYear = parseInt(parts[0], 10);
+      var nMonth = parseInt(parts[1], 10) - 1;
+      var nDay = parseInt(parts[2], 10);
       var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       var target;
 
       if (n.yearly) {
         // For yearly recurring notes, use the current year
-        target = new Date(now.getFullYear(), noteDate.getMonth(), noteDate.getDate());
+        target = new Date(now.getFullYear(), nMonth, nDay);
       } else {
-        target = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
+        target = new Date(nYear, nMonth, nDay);
       }
 
       var diffDays = (target - today) / (1000 * 60 * 60 * 24);
