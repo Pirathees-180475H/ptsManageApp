@@ -115,13 +115,9 @@
   function renderNotifications(notes) {
     var now = new Date();
     var container = document.getElementById('notif-container');
-    
-    // Clear existing to avoid duplicates if re-called (though checkNotifications handles it)
-    // container.innerHTML = ''; 
 
-    // Filter notes
+    // ── 1. Filter notes ──────────────────────────────────────────
     var toNotify = notes.filter(function(n) {
-      // Parse yyyy-MM-dd explicitly to avoid timezone ambiguity
       var parts = n.date.split('-');
       var nYear = parseInt(parts[0], 10);
       var nMonth = parseInt(parts[1], 10) - 1;
@@ -130,7 +126,6 @@
       var target;
 
       if (n.yearly) {
-        // For yearly recurring notes, use the current year
         target = new Date(now.getFullYear(), nMonth, nDay);
       } else {
         target = new Date(nYear, nMonth, nDay);
@@ -138,43 +133,82 @@
 
       var diffDays = (target - today) / (1000 * 60 * 60 * 24);
 
-      // If within 7 days and weeklyNotified is false, show it
       if (diffDays <= 7 && diffDays >= 0 && !n.weeklyNotified) return true;
-
-      // If within 30 days and monthlyNotified is false, show it
       if (diffDays <= 30 && diffDays >= 0 && !n.monthlyNotified) return true;
-
       return false;
     });
 
+    // ── 2. Group by reference ────────────────────────────────────
+    // Items with the same non-empty reference are treated as a single entity.
+    // Items with empty/blank reference stay as individual entries.
+    var groupMap = {};
     toNotify.forEach(function(n) {
-      createToast(n);
+      var refKey = (n.reference || '').trim();
+      if (!refKey) {
+        // No reference — treat as standalone, use "row" as unique key
+        refKey = '__single__' + n.row;
+      }
+      if (!groupMap[refKey]) {
+        groupMap[refKey] = {
+          reference: n.reference,
+          rows: [],
+          dates: [],
+          weeklyDone: true,
+          monthlyDone: true
+        };
+      }
+      groupMap[refKey].rows.push(n.row);
+      groupMap[refKey].dates.push(n.date);
+      // A group is "weekly not done" if ANY row is not weeklyNotified
+      if (!n.weeklyNotified) groupMap[refKey].weeklyDone = false;
+      if (!n.monthlyNotified) groupMap[refKey].monthlyDone = false;
+    });
+
+    // ── 3. Render one toast per group ────────────────────────────
+    Object.keys(groupMap).forEach(function(key) {
+      createToast(groupMap[key]);
     });
   }
 
-  function createToast(n) {
+  function createToast(group) {
     var container = document.getElementById('notif-container');
-    
-    // Check if toast for this row already exists
-    if (document.querySelector('[data-row="' + n.row + '"]')) return;
+
+    // Prevent duplicate: check by the first row in the group
+    var existingCheck = document.querySelector('[data-rows="' + group.rows.join(',') + '"]');
+    if (existingCheck) return;
 
     var toast = document.createElement('div');
     toast.className = 'notif-toast';
-    toast.dataset.row = n.row;
-    
-    var msg = n.date + ': ' + n.reference;
-    
-    var wClass = n.weeklyNotified ? 'success' : 'danger';
-    var mClass = n.monthlyNotified ? 'success' : 'danger';
-    
-    toast.innerHTML = 
-      '<div class="notif-toast-msg" title="' + n.reference + '"><span class="notif-marquee">' + msg + '</span></div>' +
+    toast.dataset.rows = group.rows.join(',');
+    toast.dataset.reference = group.reference;
+
+    // Build message: date range or single date, then reference
+    var dateDisplay;
+    if (group.dates.length === 1) {
+      dateDisplay = group.dates[0];
+    } else {
+      // Sort dates and show first → last
+      var sorted = group.dates.slice().sort();
+      dateDisplay = sorted[0] + ' → ' + sorted[sorted.length - 1];
+    }
+
+    var countBadge = group.rows.length > 1
+      ? ' <span style="background:rgba(255,255,255,0.1);border-radius:10px;padding:1px 6px;font-size:0.7em;">' + group.rows.length + '</span>'
+      : '';
+
+    var msg = dateDisplay + ': ' + group.reference + countBadge;
+
+    var wClass = group.weeklyDone ? 'success' : 'danger';
+    var mClass = group.monthlyDone ? 'success' : 'danger';
+
+    toast.innerHTML =
+      '<div class="notif-toast-msg" title="' + group.reference + ' (' + group.rows.length + ' entries)"><span class="notif-marquee">' + msg + '</span></div>' +
       '<div style="display:flex;gap:6px;">' +
-        '<button class="notif-toast-btn ' + wClass + '" onclick="notifToggleStatus(' + n.row + ', \'weeklyNotified\', this)">w-notification</button>' +
-        '<button class="notif-toast-btn ' + mClass + '" onclick="notifToggleStatus(' + n.row + ', \'monthlyNotified\', this)">m-notification</button>' +
+        '<button class="notif-toast-btn ' + wClass + '" onclick="notifToggleStatusBulk(\'' + group.rows.join(',') + '\', \'weeklyNotified\', this)">w-notified' + countBadge + '</button>' +
+        '<button class="notif-toast-btn ' + mClass + '" onclick="notifToggleStatusBulk(\'' + group.rows.join(',') + '\', \'monthlyNotified\', this)">m-notified' + countBadge + '</button>' +
       '</div>' +
       '<button class="notif-toast-close" onclick="closeToast(this)">✕</button>';
-      
+
     container.appendChild(toast);
   }
 
@@ -182,9 +216,9 @@
     if (!btn) return;
     var toast = btn.closest('.notif-toast');
     if (!toast) return;
-    
+
     if (toast.classList.contains('closing')) return;
-    
+
     toast.classList.add('closing');
     setTimeout(function() {
       if (toast && toast.parentNode) {
@@ -193,31 +227,32 @@
     }, 200);
   }
 
-  function notifToggleStatus(row, field, btn) {
+  function notifToggleStatusBulk(rowsCsv, field, btn) {
     if (!btn || !btn.classList) return;
     var isCurrentlyDone = btn.classList.contains('success');
     var newValue = !isCurrentlyDone;
-    
+
+    var rows = rowsCsv.split(',').map(function(r) { return parseInt(r, 10); });
+
     // Disable buttons to prevent double-clicks
     var parent = btn.parentElement;
     if (!parent) return;
-    
+
     var buttons = parent.querySelectorAll('button');
     buttons.forEach(function(b) { b.disabled = true; b.style.opacity = '0.5'; });
-    
+
     var originalText = btn.innerText;
     btn.innerText = 'Updating...';
 
     google.script.run
       .withSuccessHandler(function(res) {
-        // Safe check after async call
         if (!btn || !btn.classList) return;
 
         if (res.success) {
-          btn.innerText = 'notified...';
+          btn.innerText = 'notified ✓';
           btn.classList.remove('danger');
           btn.classList.add('success');
-          
+
           setTimeout(function() {
             closeToast(btn);
           }, 1000);
@@ -227,8 +262,7 @@
             var btns = btn.parentElement.querySelectorAll('button');
             btns.forEach(function(b) { b.disabled = false; b.style.opacity = '1'; });
           }
-          console.error('Update failed:', res.error);
-          alert('Failed to update status: ' + res.error);
+          console.error('Bulk update failed:', res.error);
         }
       })
       .withFailureHandler(function(err) {
@@ -239,9 +273,8 @@
           btns.forEach(function(b) { b.disabled = false; b.style.opacity = '1'; });
         }
         console.error('Script error:', err);
-        alert('Script error: ' + err);
       })
-      .updateNoteStatus(row, field, newValue);
+      .updateNoteStatusBulk(rows, field, newValue);
   }
 
   function checkNotifications() {

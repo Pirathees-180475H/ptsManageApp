@@ -4203,6 +4203,37 @@ function updateNoteStatus(row, field, value) {
   }
 }
 
+function updateNoteStatusBulk(rows, field, value) {
+  try {
+    var ss = SpreadsheetApp.getActive();
+    var sheet = ss.getSheetByName('note');
+    if (!sheet) return { success: false, error: 'Sheet "note" not found.' };
+
+    var col;
+    if (field === 'weeklyNotified') col = 6;
+    else if (field === 'monthlyNotified') col = 7;
+    else if (field === 'actionDone') col = 8;
+    else return { success: false, error: 'Invalid field: ' + field };
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return { success: false, error: 'No rows provided.' };
+    }
+
+    // Update each row individually — bulk Range.setValues would be faster
+    // but rows may not be contiguous, so one-by-one is safer
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r && r >= 2) {
+        sheet.getRange(r, col).setValue(value);
+      }
+    }
+    SpreadsheetApp.flush();
+    return { success: true, updated: rows.length };
+  } catch (e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
 function addSubscription(entry) {
   try {
     var ss = SpreadsheetApp.getActive();
