@@ -123,16 +123,23 @@
     var toNotify = notes.filter(function(n) {
       var noteDate = new Date(n.date.replace(/-/g, '/'));
       var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      var target = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
-      
+      var target;
+
+      if (n.yearly) {
+        // For yearly recurring notes, use the current year
+        target = new Date(now.getFullYear(), noteDate.getMonth(), noteDate.getDate());
+      } else {
+        target = new Date(noteDate.getFullYear(), noteDate.getMonth(), noteDate.getDate());
+      }
+
       var diffDays = (target - today) / (1000 * 60 * 60 * 24);
-      
+
       // If within 7 days and weeklyNotified is false, show it
-      if (diffDays <= 7 && !n.weeklyNotified) return true;
-      
+      if (diffDays <= 7 && diffDays >= 0 && !n.weeklyNotified) return true;
+
       // If within 30 days and monthlyNotified is false, show it
-      if (diffDays <= 30 && !n.monthlyNotified) return true;
-      
+      if (diffDays <= 30 && diffDays >= 0 && !n.monthlyNotified) return true;
+
       return false;
     });
 
