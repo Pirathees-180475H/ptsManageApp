@@ -944,12 +944,12 @@ function getMajorExpData() {
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return { success: true, data: [] };
 
-    var values = sheet.getRange(2, 1, lastRow - 1, 7).getValues();
+    var values = sheet.getRange(2, 1, lastRow - 1, 8).getValues();
     var data = [];
 
     for (var r = 0; r < values.length; r++) {
       var row = values[r];
-      if (!row[0] && !row[1] && !row[2] && !row[3] && !row[4] && !row[5] && !row[6]) continue;
+      if (!row[0] && !row[1] && !row[2] && !row[3] && !row[4] && !row[5] && !row[6] && !row[7]) continue;
 
       var isUsefulRaw = String(row[4] || '').trim().toLowerCase();
       var boughtRaw = String(row[6] || '').trim().toLowerCase();
@@ -960,8 +960,9 @@ function getMajorExpData() {
         reference: String(row[2] || '').trim(),
         portfolioState: parseFloat(String(row[3] || '0').replace(/,/g, '')) || 0,
         isUseful: isUsefulRaw === 'yes' || isUsefulRaw === 'true' || isUsefulRaw === '✔' ? true : (isUsefulRaw === 'no' || isUsefulRaw === 'false' || isUsefulRaw === '✘' ? false : null),
-        usages: parseInt(String(row[5] || '0').replace(/,/g, '')) || 0,
-        bought: boughtRaw === 'yes' || boughtRaw === 'true' || boughtRaw === '✔' ? true : (boughtRaw === 'no' || boughtRaw === 'false' || boughtRaw === '✘' ? false : null)
+        usages: String(row[5] || '').trim(),
+        bought: boughtRaw === 'yes' || boughtRaw === 'true' || boughtRaw === '✔' ? true : (boughtRaw === 'no' || boughtRaw === 'false' || boughtRaw === '✘' ? false : null),
+        price: parseFloat(String(row[7] || '0').replace(/,/g, '')) || 0
       });
     }
 
@@ -985,8 +986,9 @@ function addMajorExpEntry(entry) {
     sheet.getRange(newRow, 3).setValue(entry.reference || '');
     sheet.getRange(newRow, 4).setValue(entry.portfolioState || 0);
     sheet.getRange(newRow, 5).setValue(entry.isUseful === true ? 'yes' : (entry.isUseful === false ? 'no' : ''));
-    sheet.getRange(newRow, 6).setValue(entry.usages || 0);
+    sheet.getRange(newRow, 6).setValue(entry.usages || '');
     sheet.getRange(newRow, 7).setValue(entry.bought === true ? 'yes' : (entry.bought === false ? 'no' : ''));
+    sheet.getRange(newRow, 8).setValue(entry.price || 0);
 
     SpreadsheetApp.flush();
     return { success: true, message: 'Entry added' };
@@ -1008,8 +1010,9 @@ function updateMajorExpEntry(rowIndex, entry) {
     sheet.getRange(sheetRow, 3).setValue(entry.reference || '');
     sheet.getRange(sheetRow, 4).setValue(entry.portfolioState || 0);
     sheet.getRange(sheetRow, 5).setValue(entry.isUseful === true ? 'yes' : (entry.isUseful === false ? 'no' : ''));
-    sheet.getRange(sheetRow, 6).setValue(entry.usages || 0);
+    sheet.getRange(sheetRow, 6).setValue(entry.usages || '');
     sheet.getRange(sheetRow, 7).setValue(entry.bought === true ? 'yes' : (entry.bought === false ? 'no' : ''));
+    sheet.getRange(sheetRow, 8).setValue(entry.price || 0);
 
     SpreadsheetApp.flush();
     return { success: true, message: 'Entry updated' };

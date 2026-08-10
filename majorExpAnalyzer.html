@@ -134,8 +134,8 @@
    MAJOR EXPENSE ANALYZER JS
    Sheet: "Major EXP"
    A: Planed Date, B: Bought Date, C: Reference
-   D: Portfolio State (value), E: is usefull?
-   F: Usages, G: Bought?
+   D: Portfolio State, E: is usefull?
+   F: Usages (FREE TEXT), G: Bought?, H: Price (LKR)
 ═══════════════════════════════════════════ */
 var mxaData = [];
 var mxaCharts = {};
@@ -159,11 +159,40 @@ function mxaFmt(v) {
   return '₨ ' + Math.abs(v).toLocaleString('en-IN', {minimumFractionDigits: 0, maximumFractionDigits: 0});
 }
 
+function mxaFmtK(v) {
+  if (v === undefined || v === null || isNaN(v)) return '—';
+  var abs = Math.abs(v);
+  if (abs >= 10000000) return '₨ ' + (abs/10000000).toFixed(2) + 'Cr';
+  if (abs >= 100000) return '₨ ' + (abs/100000).toFixed(2) + 'L';
+  if (abs >= 1000) return '₨ ' + (abs/1000).toFixed(1) + 'K';
+  return '₨ ' + abs.toLocaleString('en-IN');
+}
+
 function mxaFormatDate(d) {
   if (!d) return '—';
   var dt = new Date(d);
   if (isNaN(dt.getTime())) return String(d);
-  return (dt.getMonth() + 1) + '/' + dt.getFullYear();
+  return dt.toLocaleDateString('en-US', {month:'short', year:'numeric'});
+}
+
+function mxaParseDate(d) {
+  if (!d) return null;
+  var dt = new Date(d);
+  if (isNaN(dt.getTime())) return null;
+  return dt;
+}
+
+function mxaDaysAgo(d) {
+  if (!d) return '—';
+  var dt = mxaParseDate(d);
+  if (!dt) return '—';
+  var days = Math.floor((new Date() - dt) / 86400000);
+  if (days < 0) return 'future';
+  if (days === 0) return 'today';
+  if (days === 1) return '1 day ago';
+  if (days < 30) return days + ' days ago';
+  if (days < 365) return Math.round(days/30) + 'mo ago';
+  return Math.round(days/365) + 'yr ago';
 }
 
 function mxaDestroyCharts() {
@@ -180,76 +209,100 @@ function mxaDisplayData(res) {
   mxaData = res.data || [];
   mxaDestroyCharts();
 
-  // Compute KPIs
-  var totalPortfolio = mxaData.reduce(function(s, r) { return s + r.portfolioState; }, 0);
+  // ── Compute KPIs using PRICE (H column) ──
+  var totalPrice = mxaData.reduce(function(s, r) { return s + (r.price || 0); }, 0);
   var count = mxaData.length;
   var usefulCount = mxaData.filter(function(r) { return r.isUseful === true; }).length;
   var notUsefulCount = count - usefulCount;
-  var boughtCount = mxaData.filter(function(r) { return r.bought === true; }).length;
+  var boughtItems = mxaData.filter(function(r) { return r.bought === true; });
+  var boughtCount = boughtItems.length;
   var notBoughtCount = count - boughtCount;
-  var totalUsages = mxaData.reduce(function(s, r) { return s + r.usages; }, 0);
-  var avgUsage = count > 0 ? Math.round(totalUsages / count) : 0;
+  var totalBoughtPrice = boughtItems.reduce(function(s, r) { return s + (r.price || 0); }, 0);
+  var totalWishPrice = mxaData.filter(function(r) { return r.bought !== true; }).reduce(function(s, r) { return s + (r.price || 0); }, 0);
 
-  // Most valuable / least
-  var sortedByVal = mxaData.slice().sort(function(a,b) { return b.portfolioState - a.portfolioState; });
-  var mostValuable = sortedByVal[0] || null;
-  var totalBoughtVal = mxaData.filter(function(r) { return r.bought === true; }).reduce(function(s, r) { return s + r.portfolioState; }, 0);
-  var totalWishVal = mxaData.filter(function(r) { return r.bought !== true; }).reduce(function(s, r) { return s + r.portfolioState; }, 0);
+  // Used items (non-empty usage text)
+  var usedItems = mxaData.filter(function(r) { return r.usages && r.usages.trim(); });
+  var unusedCount = count - usedItems.length;
 
-  // Bought filter options
-  var boughtOpts = '<option value="">All Status</option><option value="bought">✔ Bought</option><option value="wish">💭 Wishlist</option>';
-  var usefulOpts = '<option value="">All Usefulness</option><option value="yes">✅ Useful</option><option value="no">❌ Not Useful</option>';
-
-  // Insight: best value (most useful / highest usage ratio)
-  var boughtItems = mxaData.filter(function(r) { return r.bought === true && r.usages > 0; });
-  boughtItems.sort(function(a,b) { return b.usages - a.usages; });
-  var mostUsed = boughtItems[0] || null;
+  // Most valuable & biggest regret using PRICE
+  var sortedByPrice = mxaData.slice().sort(function(a,b) { return (b.price||0) - (a.price||0); });
+  var mostValuable = sortedByPrice[0] || null;
 
   var notUsefulItems = mxaData.filter(function(r) { return r.isUseful === false; });
-  notUsefulItems.sort(function(a,b) { return b.portfolioState - a.portfolioState; });
+  notUsefulItems.sort(function(a,b) { return (b.price||0) - (a.price||0); });
   var biggestRegret = notUsefulItems[0] || null;
 
-  // Useful items sorted by value
-  var usefulItems = mxaData.filter(function(r) { return r.isUseful === true; });
-  usefulItems.sort(function(a,b) { return b.portfolioState - a.portfolioState; });
-  var mostUseful = usefulItems[0] || null;
+  var usefulItemList = mxaData.filter(function(r) { return r.isUseful === true; });
+  usefulItemList.sort(function(a,b) { return (b.price||0) - (a.price||0); });
+  var bestValue = usefulItemList[0] || null;
+
+  // Value per use: bought + useful + has price > 0
+  var valPerUseItems = boughtItems.filter(function(r) { return r.isUseful === true && (r.price||0) > 0; });
+  var bestValPerUse = null;
+  var worstValPerUse = null;
+  if (valPerUseItems.length > 0) {
+    bestValPerUse = valPerUseItems.reduce(function(best, r) {
+      var vpu = r.price / (Math.max(1, r.usages ? r.usages.length : 0));
+      var bestVpu = best ? best.price / (Math.max(1, best.usages ? best.usages.length : 0)) : Infinity;
+      return vpu < bestVpu ? r : best;
+    }, null);
+    worstValPerUse = valPerUseItems.reduce(function(worst, r) {
+      var vpu = r.price / (Math.max(1, r.usages ? r.usages.length : 0));
+      var worstVpu = worst ? worst.price / (Math.max(1, worst.usages ? worst.usages.length : 0)) : 0;
+      return vpu > worstVpu ? r : worst;
+    }, null);
+  }
+
+  // Satisfaction rate
+  var satisfaction = count > 0 ? Math.round(usefulCount / count * 100) : 0;
+  var purchaseRate = count > 0 ? Math.round(boughtCount / count * 100) : 0;
+
+  // Filter options
+  var boughtOpts = '<option value="">All Status</option><option value="bought">✔ Bought</option><option value="wish">💭 Wishlist</option>';
+  var usefulOpts = '<option value="">All Usefulness</option><option value="yes">✅ Useful</option><option value="no">❌ Not Useful</option>';
 
   document.getElementById('mxa-body').innerHTML =
     '<div class="pg-corner-title" style="margin-bottom:12px;">' +
       '<span class="pg-ct-icon">💎</span>' +
       '<span class="pg-ct-text">Major Expense Analyzer</span>' +
     '</div>' +
-    '<p class="mxa-header-sub">Portfolio value · Usefulness · Usage tracking</p>' +
+    '<p class="mxa-header-sub">Track what you bought · measure value · avoid regret</p>' +
 
     '<!-- KPIs -->' +
     '<div class="mxa-kpi-row">' +
-      '<div class="mxa-kpi" style="border-color:rgba(168,85,247,.2)"><span class="mxa-kpi-icon">🏦</span><div class="mxa-kpi-label">Total Portfolio</div><div class="mxa-kpi-value" style="color:var(--purple)">' + mxaFmt(totalPortfolio) + '</div><div class="mxa-kpi-sub">across ' + count + ' items</div></div>' +
-      '<div class="mxa-kpi" style="border-color:rgba(0,212,255,.2)"><span class="mxa-kpi-icon">🛒</span><div class="mxa-kpi-label">Bought</div><div class="mxa-kpi-value" style="color:var(--blue)">' + mxaFmt(totalBoughtVal) + '</div><div class="mxa-kpi-sub">' + boughtCount + ' purchased · ' + notBoughtCount + ' wishlist</div></div>' +
-      '<div class="mxa-kpi" style="border-color:rgba(0,230,118,.2)"><span class="mxa-kpi-icon">✅</span><div class="mxa-kpi-label">Useful</div><div class="mxa-kpi-value" style="color:var(--green)">' + usefulCount + ' / ' + count + '</div><div class="mxa-kpi-sub">' + (count > 0 ? Math.round(usefulCount/count*100) : 0) + '% satisfaction</div></div>' +
-      '<div class="mxa-kpi" style="border-color:rgba(255,215,0,.2)"><span class="mxa-kpi-icon">🔄</span><div class="mxa-kpi-label">Total Usages</div><div class="mxa-kpi-value" style="color:var(--gold)">' + totalUsages + '</div><div class="mxa-kpi-sub">avg ' + avgUsage + ' uses / item</div></div>' +
-      '<div class="mxa-kpi" style="border-color:rgba(255,77,141,.2)"><span class="mxa-kpi-icon">💸</span><div class="mxa-kpi-label">Biggest Regret</div><div class="mxa-kpi-value" style="color:var(--red);font-size:.95em;">' + (biggestRegret ? biggestRegret.reference + ' ' + mxaFmt(biggestRegret.portfolioState) : '—') + '</div><div class="mxa-kpi-sub">not useful · highest value</div></div>' +
-      '<div class="mxa-kpi" style="border-color:rgba(0,230,118,.2)"><span class="mxa-kpi-icon">⭐</span><div class="mxa-kpi-label">Most Valuable</div><div class="mxa-kpi-value" style="color:#fff;font-size:.95em;">' + (mostValuable ? mostValuable.reference + ' ' + mxaFmt(mostValuable.portfolioState) : '—') + '</div><div class="mxa-kpi-sub">highest value item</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(168,85,247,.2)"><span class="mxa-kpi-icon">🏦</span><div class="mxa-kpi-label">Total Price</div><div class="mxa-kpi-value" style="color:var(--purple)">' + mxaFmt(totalPrice) + '</div><div class="mxa-kpi-sub">' + count + ' items tracked</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(0,212,255,.2)"><span class="mxa-kpi-icon">🛒</span><div class="mxa-kpi-label">Bought</div><div class="mxa-kpi-value" style="color:var(--blue)">' + mxaFmtK(totalBoughtPrice) + '</div><div class="mxa-kpi-sub">' + boughtCount + ' purchased · ' + purchaseRate + '% rate</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(0,230,118,.2)"><span class="mxa-kpi-icon">✅</span><div class="mxa-kpi-label">Satisfaction</div><div class="mxa-kpi-value" style="color:var(--green)">' + satisfaction + '%</div><div class="mxa-kpi-sub">' + usefulCount + ' useful / ' + count + ' items</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(251,191,36,.2)"><span class="mxa-kpi-icon">📝</span><div class="mxa-kpi-label">Used Items</div><div class="mxa-kpi-value" style="color:#fbbf24">' + usedItems.length + ' / ' + count + '</div><div class="mxa-kpi-sub">' + unusedCount + ' items unused</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(255,77,141,.2)"><span class="mxa-kpi-icon">💸</span><div class="mxa-kpi-label">Biggest Regret</div><div class="mxa-kpi-value" style="color:var(--red);font-size:.95em;">' + (biggestRegret ? (biggestRegret.reference||'Item') + ' ' + mxaFmtK(biggestRegret.price) : '—') + '</div><div class="mxa-kpi-sub">not useful · highest cost</div></div>' +
+      '<div class="mxa-kpi" style="border-color:rgba(0,230,118,.2)"><span class="mxa-kpi-icon">⭐</span><div class="mxa-kpi-label">Best Value</div><div class="mxa-kpi-value" style="color:#fff;font-size:.95em;">' + (bestValue ? (bestValue.reference||'Item') + ' ' + mxaFmtK(bestValue.price) : '—') + '</div><div class="mxa-kpi-sub">useful + affordable = win</div></div>' +
     '</div>' +
 
-    '<!-- Charts -->' +
+    '<!-- Charts row 1: Portfolio Over Time + Price Bar -->' +
     '<div class="mxa-charts">' +
-      '<div class="mxa-chart-box"><div class="mxa-chart-hdr"><div class="mxa-chart-dot" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></div><div class="mxa-chart-title">Portfolio Value by Item</div></div><div class="mxa-chart-wrap"><canvas id="mxaChartPortfolio"></canvas></div></div>' +
-      '<div class="mxa-chart-box"><div class="mxa-chart-hdr"><div class="mxa-chart-dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div><div class="mxa-chart-title">Bought vs Wishlist Value</div></div><div class="mxa-chart-wrap"><canvas id="mxaChartBought"></canvas></div></div>' +
+      '<div class="mxa-chart-box"><div class="mxa-chart-hdr"><div class="mxa-chart-dot" style="background:linear-gradient(135deg,var(--purple),#fb923c);box-shadow:0 0 8px rgba(168,85,247,.5)"></div><div class="mxa-chart-title">Portfolio Over Time</div><div style="font-size:.6em;color:var(--muted);margin-left:auto;">🐍 snakeflow</div></div><div class="mxa-chart-wrap"><canvas id="mxaChartOverTime"></canvas></div></div>' +
+      '<div class="mxa-chart-box"><div class="mxa-chart-hdr"><div class="mxa-chart-dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div><div class="mxa-chart-title">Price by Item</div></div><div class="mxa-chart-wrap"><canvas id="mxaChartPrice"></canvas></div></div>' +
+    '</div>' +
+
+    '<!-- Charts row 2: Bought vs Wishlist + Satisfaction Pie -->' +
+    '<div class="mxa-charts">' +
+      '<div class="mxa-chart-box"><div class="mxa-chart-hdr"><div class="mxa-chart-dot" style="background:#fbbf24;box-shadow:0 0 6px #fbbf24"></div><div class="mxa-chart-title">Bought vs Wishlist Price</div></div><div class="mxa-chart-wrap"><canvas id="mxaChartBought"></canvas></div></div>' +
+      '<div class="mxa-chart-box"><div class="mxa-chart-hdr"><div class="mxa-chart-dot" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><div class="mxa-chart-title">Usefulness Breakdown</div></div><div class="mxa-chart-wrap"><canvas id="mxaChartUseful"></canvas></div></div>' +
     '</div>' +
 
     '<!-- Insights -->' +
     '<div class="mxa-insights">' +
       '<div class="mxa-insight-box" style="border-color:rgba(0,230,118,.15);">' +
         '<span class="mxa-ins-emoji">🏆</span>' +
-        '<div><div class="mxa-ins-label">Most Used Item</div><div class="mxa-ins-value">' + (mostUsed ? mostUsed.reference : '—') + '</div><div class="mxa-ins-sub">' + (mostUsed ? mostUsed.usages + ' usages · ' + mxaFmt(mostUsed.portfolioState) : 'No data yet') + '</div></div>' +
+        '<div><div class="mxa-ins-label">Cheapest Per Use</div><div class="mxa-ins-value">' + (bestValPerUse ? (bestValPerUse.reference||'Item') : '—') + '</div><div class="mxa-ins-sub">' + (bestValPerUse ? mxaFmt(bestValPerUse.price) + ' · great deal!' : 'No data yet') + '</div></div>' +
       '</div>' +
       '<div class="mxa-insight-box" style="border-color:rgba(255,215,0,.15);">' +
-        '<span class="mxa-ins-emoji">📊</span>' +
-        '<div><div class="mxa-ins-label">Best Value Deal</div><div class="mxa-ins-value">' + (mostUseful ? mostUseful.reference : '—') + '</div><div class="mxa-ins-sub">Useful + ' + mxaFmt(mostUseful ? mostUseful.portfolioState : 0) + ' · worth it!</div></div>' +
+        '<span class="mxa-ins-emoji">🐢</span>' +
+        '<div><div class="mxa-ins-label">Oldest Wishlist</div><div class="mxa-ins-value" id="mxa-oldest-wish">—</div><div class="mxa-ins-sub" id="mxa-oldest-wish-sub">check wishlist</div></div>' +
       '</div>' +
       '<div class="mxa-insight-box" style="border-color:rgba(255,77,141,.15);">' +
         '<span class="mxa-ins-emoji">⚠️</span>' +
-        '<div><div class="mxa-ins-label">Potential Savings</div><div class="mxa-ins-value">' + mxaFmt(totalWishVal) + '</div><div class="mxa-ins-sub">' + notBoughtCount + ' wishlist items · not yet purchased</div></div>' +
+        '<div><div class="mxa-ins-label">Wasted Potential</div><div class="mxa-ins-value">' + mxaFmtK(totalWishPrice) + '</div><div class="mxa-ins-sub">' + notBoughtCount + ' wishlist · not purchased</div></div>' +
       '</div>' +
     '</div>' +
 
@@ -266,10 +319,10 @@ function mxaDisplayData(res) {
         '<div style="font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);">📋 All Major Expenses</div>' +
         '<div style="font-size:.65em;color:rgba(255,255,255,.25);">' + count + ' items</div>' +
       '</div>' +
-      '<div class="mxa-search-wrap"><input class="mxa-search" id="mxa-search" type="text" placeholder="🔍 Search by reference, amount…" oninput="mxaSearch()"></div>' +
+      '<div class="mxa-search-wrap"><input class="mxa-search" id="mxa-search" type="text" placeholder="🔍 Search by reference, price, usages…" oninput="mxaSearch()"></div>' +
       '<div class="mxa-table-scroll">' +
         '<table class="mxa-table">' +
-          '<thead><tr><th>Plan Date</th><th>Bought Date</th><th>Reference</th><th style="text-align:right">Value</th><th>Useful?</th><th style="text-align:right">Usages</th><th>Bought?</th><th style="text-align:right">Actions</th></tr></thead>' +
+          '<thead><tr><th>Plan Date</th><th>Bought Date</th><th>Reference</th><th style="text-align:right">Price</th><th>Useful?</th><th>Usages</th><th>Bought?</th><th style="text-align:right">Actions</th></tr></thead>' +
           '<tbody id="mxa-table-body"></tbody>' +
         '</table>' +
       '</div>' +
@@ -286,10 +339,13 @@ function mxaDisplayData(res) {
           '<div class="mxa-m-field"><label class="mxa-m-label">Bought Date</label><input class="mxa-m-input" id="mxa-f-bought-date" placeholder="e.g. 2025-02-20"></div>' +
         '</div>' +
         '<div class="mxa-m-field"><label class="mxa-m-label">Reference / Item</label><input class="mxa-m-input" id="mxa-f-ref" placeholder="e.g. iPhone 15 ProMax"></div>' +
-        '<div class="mxa-m-field"><label class="mxa-m-label">Portfolio State (Value in LKR)</label><input class="mxa-m-input" id="mxa-f-portfolio" type="number" step="0.01" placeholder="0"></div>' +
+        '<div class="mxa-m-grid">' +
+          '<div class="mxa-m-field"><label class="mxa-m-label">Portfolio State (Value)</label><input class="mxa-m-input" id="mxa-f-portfolio" type="number" step="0.01" placeholder="0"></div>' +
+          '<div class="mxa-m-field"><label class="mxa-m-label">Price (LKR)</label><input class="mxa-m-input" id="mxa-f-price" type="number" step="0.01" placeholder="0"></div>' +
+        '</div>' +
         '<div class="mxa-m-grid">' +
           '<div class="mxa-m-field"><label class="mxa-m-label">Is Useful?</label><select class="mxa-m-select" id="mxa-f-useful"><option value="">—</option><option value="yes">✅ Yes</option><option value="no">❌ No</option></select></div>' +
-          '<div class="mxa-m-field"><label class="mxa-m-label">Usages (count)</label><input class="mxa-m-input" id="mxa-f-usages" type="number" placeholder="0"></div>' +
+          '<div class="mxa-m-field"><label class="mxa-m-label">Usages (free text)</label><input class="mxa-m-input" id="mxa-f-usages" placeholder="e.g. daily driver, rarely used"></div>' +
         '</div>' +
         '<div class="mxa-m-field"><label class="mxa-m-label">Bought?</label><select class="mxa-m-select" id="mxa-f-bought"><option value="">—</option><option value="yes">✔ Yes</option><option value="no">💭 No (Wishlist)</option></select></div>' +
       '</div>' +
@@ -301,30 +357,119 @@ function mxaDisplayData(res) {
 }
 
 function mxaRenderCharts() {
-  var TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:11};
+  var TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:11,displayColors:false};
   if(typeof Chart === 'undefined') return;
   Chart.defaults.color='rgba(255,255,255,0.4)';
   Chart.defaults.font.family='Inter';
 
-  // 1. Portfolio Value by Item (horizontal bar)
-  var sortedItems = mxaData.slice().sort(function(a,b) { return a.portfolioState - b.portfolioState; });
-  var barLabels = sortedItems.map(function(r) { return r.reference || 'Unnamed'; });
-  var barVals = sortedItems.map(function(r) { return r.portfolioState; });
+  // 1. Portfolio Over Time — Snakeflow: single curve, bought + wishlist merged
+  var boughtWithDate = mxaData.filter(function(r) { return r.bought === true && r.boughtDate; });
+  boughtWithDate.sort(function(a,b) { return (new Date(a.boughtDate)) - (new Date(b.boughtDate)); });
 
-  var el1 = document.getElementById('mxaChartPortfolio');
+  var wishWithDate = mxaData.filter(function(r) { return r.bought !== true && r.planDate; });
+  wishWithDate.sort(function(a,b) { return (new Date(a.planDate)) - (new Date(b.planDate)); });
+
+  var allPoints = [];
+  boughtWithDate.forEach(function(r) {
+    allPoints.push({ date: new Date(r.boughtDate), val: r.portfolioState || 0, ref: r.reference || 'Item', type: 'bought' });
+  });
+  wishWithDate.forEach(function(r) {
+    allPoints.push({ date: new Date(r.planDate), val: r.portfolioState || 0, ref: r.reference || 'Item', type: 'wishlist' });
+  });
+  allPoints.sort(function(a,b) { return a.date - b.date; });
+
+  if (allPoints.length === 0) return;
+
+  var allLabels = allPoints.map(function(p) { return mxaFormatDate(p.date); });
+  var allVals = allPoints.map(function(p) { return p.val; });
+  var allRefs = allPoints.map(function(p) { return (p.type==='bought'?'✔ ':'💭 ') + p.ref; });
+  var allTypes = allPoints.map(function(p) { return p.type; });
+
+  var el0 = document.getElementById('mxaChartOverTime');
+  if (el0) {
+    mxaCharts.overTime = new Chart(el0, {
+      type: 'line',
+      data: {
+        labels: allLabels,
+        datasets: [{
+          data: allVals,
+          borderColor: '#a855f7',
+          backgroundColor: function(ctx) {
+            var g = ctx.chart.ctx.createLinearGradient(0,0,0,280);
+            g.addColorStop(0,'rgba(168,85,247,0.35)');
+            g.addColorStop(0.5,'rgba(251,146,60,0.15)');
+            g.addColorStop(1,'rgba(168,85,247,0.02)');
+            return g;
+          },
+          borderWidth: 3.5,
+          fill: true,
+          tension: 0.55,
+          pointBackgroundColor: allTypes.map(function(t) {
+            return t === 'bought' ? '#a855f7' : '#fb923c';
+          }),
+          pointBorderColor: allTypes.map(function(t) {
+            return t === 'bought' ? 'rgba(168,85,247,0.6)' : 'rgba(251,146,60,0.6)';
+          }),
+          pointBorderWidth: 2,
+          pointRadius: allTypes.map(function(t) { return t === 'bought' ? 5 : 4; }),
+          pointHoverRadius: 9,
+          pointStyle: allTypes.map(function(t) { return t === 'bought' ? 'circle' : 'triangle'; }),
+          segment: {
+            borderColor: function(ctx) {
+              var i = ctx.p0DataIndex;
+              return allTypes[i] === 'bought' ? '#a855f7' : '#fb923c';
+            },
+            borderDash: function(ctx) {
+              var i = ctx.p0DataIndex;
+              return allTypes[i] === 'wishlist' ? [4, 3] : undefined;
+            }
+          }
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 1600, easing: 'easeInOutQuart' },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            ...TIP,
+            callbacks: {
+              label: function(ctx) { return ' ' + mxaFmt(ctx.parsed.y); },
+              footer: function(ctx) { return ctx[0].dataIndex < allRefs.length ? allRefs[ctx[0].dataIndex] : ''; }
+            }
+          }
+        },
+        scales: {
+          x: { ticks: { color:'rgba(255,255,255,.35)', font:{size:9} }, grid: { display: false } },
+          y: { ticks: { color:'rgba(255,255,255,.35)', font:{size:9}, callback: function(v) { return mxaFmtK(v); } }, grid: { color:'rgba(255,255,255,.04)' } }
+        }
+      }
+    });
+  }
+
+  // 2. Price by Item (horizontal bar)
+  var sortedItems = mxaData.slice().sort(function(a,b) { return (a.price||0) - (b.price||0); });
+  var barLabels = sortedItems.map(function(r) { return r.reference || 'Unnamed'; });
+  var barVals = sortedItems.map(function(r) { return r.price || 0; });
+  var maxVal = Math.max.apply(null, barVals);
+
+  var el1 = document.getElementById('mxaChartPrice');
   if (el1) {
-    mxaCharts.portfolio = new Chart(el1, {
+    mxaCharts.priceBar = new Chart(el1, {
       type: 'bar',
       data: {
         labels: barLabels,
         datasets: [{
-          label: 'Value (LKR)',
+          label: 'Price (LKR)',
           data: barVals,
           backgroundColor: barVals.map(function(v) {
-            var max = Math.max.apply(null, barVals);
-            return v === max ? 'rgba(168,85,247,0.4)' : 'rgba(168,85,247,0.2)';
+            return v === maxVal ? 'rgba(0,212,255,0.45)' : 'rgba(0,212,255,0.18)';
           }),
-          borderColor: 'rgba(168,85,247,0.6)',
+          borderColor: barVals.map(function(v) {
+            return v === maxVal ? '#00d4ff' : 'rgba(0,212,255,0.3)';
+          }),
           borderWidth: 1.5,
           borderRadius: 6,
           borderSkipped: false
@@ -340,27 +485,28 @@ function mxaRenderCharts() {
           tooltip: { ...TIP, callbacks: { label: function(ctx) { return ' ' + mxaFmt(ctx.parsed.x); } } }
         },
         scales: {
-          x: { ticks: { color: 'rgba(255,255,255,.4)', font: { size: 9 }, callback: function(v) { return '₨' + v.toLocaleString('en-IN'); } }, grid: { color: 'rgba(255,255,255,.04)' } },
-          y: { ticks: { color: 'rgba(255,255,255,.6)', font: { size: 10 } }, grid: { display: false } }
+          x: { ticks: { color:'rgba(255,255,255,.35)', font:{size:9}, callback:function(v){return mxaFmtK(v);} }, grid: { color:'rgba(255,255,255,.04)' } },
+          y: { ticks: { color:'rgba(255,255,255,.5)', font:{size:10} }, grid: { display:false } }
         }
       }
     });
   }
 
-  // 2. Bought vs Wishlist Value (doughnut)
-  var boughtVal = mxaData.filter(function(r) { return r.bought === true; }).reduce(function(s, r) { return s + r.portfolioState; }, 0);
-  var wishVal = mxaData.filter(function(r) { return r.bought !== true; }).reduce(function(s, r) { return s + r.portfolioState; }, 0);
+  // 3. Bought vs Wishlist Price (doughnut)
+  var boughtValPrice = mxaData.filter(function(r) { return r.bought === true; }).reduce(function(s, r) { return s + (r.price||0); }, 0);
+  var wishValPrice = mxaData.filter(function(r) { return r.bought !== true; }).reduce(function(s, r) { return s + (r.price||0); }, 0);
+  var totalForDoughnut = Math.max(boughtValPrice + wishValPrice, 1);
 
   var el2 = document.getElementById('mxaChartBought');
   if (el2) {
     mxaCharts.bought = new Chart(el2, {
       type: 'doughnut',
       data: {
-        labels: ['Bought (' + mxaFmt(boughtVal) + ')', 'Wishlist (' + mxaFmt(wishVal) + ')'],
+        labels: ['Bought', 'Wishlist'],
         datasets: [{
-          data: [boughtVal, wishVal],
-          backgroundColor: ['rgba(0,212,255,0.6)', 'rgba(255,255,255,0.1)'],
-          borderColor: ['#00d4ff', 'rgba(255,255,255,0.2)'],
+          data: [boughtValPrice, wishValPrice],
+          backgroundColor: ['rgba(251,191,36,0.6)', 'rgba(255,255,255,0.1)'],
+          borderColor: ['#fbbf24', 'rgba(255,255,255,0.2)'],
           borderWidth: 2
         }]
       },
@@ -370,16 +516,71 @@ function mxaRenderCharts() {
         cutout: '60%',
         animation: { animateRotate: true, duration: 1200 },
         plugins: {
-          legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,.5)', font: { size: 11 }, padding: 14, usePointStyle: true } },
-          tooltip: { ...TIP, callbacks: { label: function(ctx) {
-            var total = ctx.dataset.data.reduce(function(a,b){return a+b;},0);
-            var pct = total > 0 ? ' (' + Math.round(ctx.parsed/total*100) + '%)' : '';
-            return ' ' + ctx.label + pct;
-          } } }
+          legend: { position:'bottom', labels:{ color:'rgba(255,255,255,.5)', font:{size:10}, padding:14, usePointStyle:true } },
+          tooltip: { ...TIP, callbacks: {
+            label: function(ctx) {
+              var pct = Math.round(ctx.parsed / totalForDoughnut * 100);
+              return ' ' + ctx.label + ': ' + mxaFmt(ctx.parsed) + ' (' + pct + '%)';
+            }
+          }}
         }
       }
     });
   }
+
+  // 4. Usefulness Breakdown (doughnut)
+  var usefulPrice = mxaData.filter(function(r) { return r.isUseful === true; }).reduce(function(s, r) { return s + (r.price||0); }, 0);
+  var notUsefulPrice = mxaData.filter(function(r) { return r.isUseful === false; }).reduce(function(s, r) { return s + (r.price||0); }, 0);
+  var unknownUsefulPrice = mxaData.filter(function(r) { return r.isUseful !== true && r.isUseful !== false; }).reduce(function(s, r) { return s + (r.price||0); }, 0);
+  var totalForUseful = Math.max(usefulPrice + notUsefulPrice + unknownUsefulPrice, 1);
+
+  var el3 = document.getElementById('mxaChartUseful');
+  if (el3) {
+    mxaCharts.useful = new Chart(el3, {
+      type: 'doughnut',
+      data: {
+        labels: ['✅ Useful', '❌ Not Useful', '❓ Unknown'],
+        datasets: [{
+          data: [usefulPrice, notUsefulPrice, unknownUsefulPrice],
+          backgroundColor: ['rgba(0,230,118,0.55)', 'rgba(255,77,109,0.5)', 'rgba(255,255,255,0.08)'],
+          borderColor: ['#00e676', '#ff4d6d', 'rgba(255,255,255,0.15)'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '60%',
+        animation: { animateRotate: true, duration: 1200 },
+        plugins: {
+          legend: { position:'bottom', labels:{ color:'rgba(255,255,255,.5)', font:{size:10}, padding:14, usePointStyle:true } },
+          tooltip: { ...TIP, callbacks: {
+            label: function(ctx) {
+              var pct = Math.round(ctx.parsed / totalForUseful * 100);
+              return ' ' + ctx.label + ': ' + mxaFmt(ctx.parsed) + ' (' + pct + '%)';
+            }
+          }}
+        }
+      }
+    });
+  }
+
+  // Post-render insights that need DOM IDs
+  setTimeout(function() {
+    // Oldest wishlist item
+    var wishItems = mxaData.filter(function(r) { return r.bought !== true && r.planDate; });
+    wishItems.sort(function(a,b) { return (new Date(a.planDate)) - (new Date(b.planDate)); });
+    var oldestWish = wishItems[0] || null;
+    var owEl = document.getElementById('mxa-oldest-wish');
+    var owsEl = document.getElementById('mxa-oldest-wish-sub');
+    if (owEl && oldestWish) {
+      owEl.textContent = (oldestWish.reference || 'Item');
+      owsEl.textContent = 'planned ' + mxaFormatDate(oldestWish.planDate) + ' · ' + mxaDaysAgo(oldestWish.planDate);
+    } else if (owEl) {
+      owEl.textContent = '—';
+      owsEl.textContent = 'nothing in wishlist';
+    }
+  }, 100);
 }
 
 function mxaFilter() {
@@ -393,7 +594,7 @@ function mxaFilter() {
     if (usefulFilter === 'yes' && r.isUseful !== true) return false;
     if (usefulFilter === 'no' && r.isUseful !== false) return false;
     if (query) {
-      var matchStr = ((r.reference || '') + ' ' + (r.planDate || '') + ' ' + (r.boughtDate || '') + ' ' + r.portfolioState + ' ' + r.usages).toLowerCase();
+      var matchStr = ((r.reference||'') + ' ' + (r.planDate||'') + ' ' + (r.boughtDate||'') + ' ' + (r.price||0) + ' ' + (r.usages||'') + ' ' + (r.portfolioState||0)).toLowerCase();
       if (matchStr.indexOf(query) < 0) return false;
     }
     return true;
@@ -422,13 +623,15 @@ function mxaRenderTable() {
 
   var rowsHtml = pageEntries.map(function(r) {
     var origIdx = mxaData.indexOf(r);
+    var usageText = r.usages || '';
+    var usageDisplay = usageText ? '<span style="font-size:.72em;color:rgba(255,255,255,.65);">' + usageText + '</span>' : '<span style="color:rgba(255,255,255,.2);">—</span>';
     return '<tr>' +
-      '<td style="color:rgba(255,255,255,.5);font-weight:500;">' + mxaFormatDate(r.planDate) + '</td>' +
-      '<td style="color:rgba(255,255,255,.5);font-weight:500;">' + mxaFormatDate(r.boughtDate) + '</td>' +
+      '<td style="color:rgba(255,255,255,.45);font-weight:500;">' + mxaFormatDate(r.planDate) + '</td>' +
+      '<td style="color:rgba(255,255,255,.45);font-weight:500;">' + mxaFormatDate(r.boughtDate) + '</td>' +
       '<td class="mxa-cell-ref">' + (r.reference || '—') + '</td>' +
-      '<td class="mxa-cell-amt">' + mxaFmt(r.portfolioState) + '</td>' +
-      '<td><span class="mxa-useful-badge ' + (r.isUseful ? 'yes' : 'no') + '">' + (r.isUseful ? '✅ Useful' : '❌ Not') + '</span></td>' +
-      '<td style="text-align:right;font-weight:700;color:var(--gold);">' + r.usages + '</td>' +
+      '<td class="mxa-cell-amt">' + mxaFmt(r.price) + '</td>' +
+      '<td><span class="mxa-useful-badge ' + (r.isUseful===true ? 'yes' : r.isUseful===false ? 'no' : '') + '">' + (r.isUseful===true ? '✅ Useful' : r.isUseful===false ? '❌ Not' : '—') + '</span></td>' +
+      '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + usageText + '">' + usageDisplay + '</td>' +
       '<td><span class="mxa-bought-badge ' + (r.bought ? 'yes' : 'no') + '">' + (r.bought ? '✔ Bought' : '💭 Wishlist') + '</span></td>' +
       '<td class="mxa-cell-actions">' +
         '<button class="mxa-action-btn edit" onclick="mxaEditEntry(' + origIdx + ')" title="Edit">✎</button>' +
@@ -457,8 +660,9 @@ function mxaOpenForm(data) {
   document.getElementById('mxa-f-bought-date').value = data ? (data.boughtDate || '') : '';
   document.getElementById('mxa-f-ref').value = data ? (data.reference || '') : '';
   document.getElementById('mxa-f-portfolio').value = data ? data.portfolioState : '';
-  document.getElementById('mxa-f-useful').value = data ? (data.isUseful ? 'yes' : (data.isUseful === false ? 'no' : '')) : '';
-  document.getElementById('mxa-f-usages').value = data ? (data.usages || 0) : '';
+  document.getElementById('mxa-f-price').value = data ? (data.price || '') : '';
+  document.getElementById('mxa-f-useful').value = data ? (data.isUseful === true ? 'yes' : (data.isUseful === false ? 'no' : '')) : '';
+  document.getElementById('mxa-f-usages').value = data ? (data.usages || '') : '';
   document.getElementById('mxa-f-bought').value = data ? (data.bought ? 'yes' : (data.bought === false ? 'no' : '')) : '';
   document.getElementById('mxa-modal').classList.add('open');
   document.getElementById('mxa-overlay').classList.add('open');
@@ -497,8 +701,9 @@ function mxaSaveEntry() {
     boughtDate: document.getElementById('mxa-f-bought-date').value.trim(),
     reference: document.getElementById('mxa-f-ref').value.trim(),
     portfolioState: parseFloat(document.getElementById('mxa-f-portfolio').value) || 0,
+    price: parseFloat(document.getElementById('mxa-f-price').value) || 0,
     isUseful: document.getElementById('mxa-f-useful').value === 'yes' ? true : (document.getElementById('mxa-f-useful').value === 'no' ? false : null),
-    usages: parseInt(document.getElementById('mxa-f-usages').value) || 0,
+    usages: document.getElementById('mxa-f-usages').value.trim(),
     bought: document.getElementById('mxa-f-bought').value === 'yes' ? true : (document.getElementById('mxa-f-bought').value === 'no' ? false : null)
   };
 
