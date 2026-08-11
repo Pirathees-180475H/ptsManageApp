@@ -580,6 +580,7 @@ document.title = 'EXP TRACK';
         <div class="analyze-toggle">
           <button class="analyze-toggle-btn active" id="analyze-tog-hm" onclick="analyzeSwitchView('heatmap')">🔥 Heatmap</button>
           <button class="analyze-toggle-btn" id="analyze-tog-me" onclick="analyzeSwitchView('majorexp')">💎 Major EXP</button>
+          <button class="analyze-toggle-btn" id="analyze-tog-mc" onclick="analyzeSwitchView('controller')">🔍 Inspector</button>
         </div>
         <button class="edm-close" onclick="analyzeExpModalClose()">✕</button>
       </div>
@@ -590,6 +591,9 @@ document.title = 'EXP TRACK';
       </div>
       <div id="analyze-me-body">
         <?!= include('majorExpAnalyzer'); ?>
+      </div>
+      <div id="analyze-mc-body">
+        <?!= include('monthlyControllerAnalyzer'); ?>
       </div>
     </div>
   </div>
@@ -1020,8 +1024,8 @@ document.title = 'EXP TRACK';
 var _spaLoaded = {cse:false, cc:false, ca:false, exp:false, port:false, mf:false, sw:false};
 
 /* ── Background preload state for Analyze modal tabs ── */
-var _analyzePreloaded = { heatmap:false, majorexp:false };
-var _analyzePreloadData = { majorexp:null };
+var _analyzePreloaded = { heatmap:false, majorexp:false, inspector:false };
+var _analyzePreloadData = { majorexp:null, inspector:null, allInspectors:null, expensesList:null };
 /* heatmap uses _hmData/_hmYearTotals set directly & also a flag */
 
 var _activePage = 'exp';
@@ -4588,6 +4592,40 @@ function preloadAnalyzeData() {
       })
       .getMajorExpData();
   }
+
+  // Financial Inspector data (current month + all past + expenses list)
+  if (!_analyzePreloaded.inspector) {
+    _analyzePreloaded.inspector = true;
+    var now = new Date();
+    var cm = now.getMonth() + 1, cy = now.getFullYear();
+    // Fetch current month inspector data
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _analyzePreloadData.inspector = res;
+      })
+      .withFailureHandler(function() {
+        _analyzePreloaded.inspector = false;
+      })
+      .getInspectorData(cm, cy);
+    // Fetch all past inspector data
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _analyzePreloadData.allInspectors = res;
+      })
+      .withFailureHandler(function() {
+        _analyzePreloaded.inspector = false;
+      })
+      .getAllInspectorData();
+    // Fetch current month expenses list (needed for Inspector table)
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _analyzePreloadData.expensesList = res;
+      })
+      .withFailureHandler(function() {
+        _analyzePreloaded.inspector = false;
+      })
+      .getCurrentMonthExpensesList(cm, cy);
+  }
 }
 
 /* ── Analyze Modal ── */
@@ -4623,16 +4661,20 @@ function analyzeSwitchView(view) {
   _analyzeView = view;
   var hmBody = document.getElementById('analyze-hm-body');
   var meBody = document.getElementById('analyze-me-body');
+  var mcBody = document.getElementById('analyze-mc-body');
   var title = document.getElementById('analyze-title');
   var sub = document.getElementById('analyze-sub');
   var togHm = document.getElementById('analyze-tog-hm');
   var togMe = document.getElementById('analyze-tog-me');
+  var togMc = document.getElementById('analyze-tog-mc');
 
   // Hide all
   hmBody.style.display = 'none';
   if(meBody) meBody.style.display = 'none';
+  if(mcBody) mcBody.style.display = 'none';
   togHm.classList.remove('active');
   if(togMe) togMe.classList.remove('active');
+  if(togMc) togMc.classList.remove('active');
 
   if(view === 'heatmap'){
     hmBody.style.display = 'flex';
@@ -4651,6 +4693,12 @@ function analyzeSwitchView(view) {
     sub.textContent = 'Portfolio value · Usefulness · Usage tracking';
     if(togMe) togMe.classList.add('active');
     analyzeLoadMajorExp();
+  } else if(view === 'controller'){
+    if(mcBody) mcBody.style.display = 'flex';
+    title.textContent = '🔍 Financial Inspector';
+    sub.textContent = 'Audit expenses · Tag recurring & mistakes · Track insights';
+    if(togMc) togMc.classList.add('active');
+    if(typeof finLoad === 'function') finLoad();
   }
 }
 

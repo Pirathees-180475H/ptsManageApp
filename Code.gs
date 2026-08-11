@@ -2561,6 +2561,199 @@ function saveControlPlan(updates) {
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   Monthly Controller Plans — Row 18 JSON storage
+   Row 18, Col A = "INSPECTOR_DATA" label
+   Each month column (same as row 6 headers) stores JSON inspector data
+───────────────────────────────────────────────────────────────── */
+function saveInspectorData(month, year, data) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var ROW = 18;
+    var dataJson = JSON.stringify(data);
+
+    // Ensure row 18 has the label in col A
+    var currentA = String(sheet.getRange(ROW, 1).getValue() || '').trim();
+    if (!currentA) sheet.getRange(ROW, 1).setValue('INSPECTOR_DATA');
+
+    // Read row 6 header to find the matching month column
+    var lastCol = Math.max(sheet.getLastColumn(), 30);
+    var hdrRow = sheet.getRange(6, 1, 1, lastCol).getValues()[0];
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var targetLabel = monthNames[month - 1] + ' ' + year;
+
+    var targetCol = -1;
+    for (var ci = 1; ci < hdrRow.length; ci++) {
+      var h = String(hdrRow[ci] || '').trim().toUpperCase();
+      if (h.indexOf(targetLabel.toUpperCase()) >= 0) {
+        targetCol = ci + 1; // 1-based
+        break;
+      }
+    }
+
+    if (targetCol < 0) {
+      // Try partial: just month name match
+      var shortLabel = monthNames[month - 1];
+      for (var ci2 = 1; ci2 < hdrRow.length; ci2++) {
+        var h2 = String(hdrRow[ci2] || '').trim().toUpperCase();
+        if (h2.indexOf(shortLabel.toUpperCase()) >= 0 && h2.indexOf(String(year)) >= 0) {
+          targetCol = ci2 + 1;
+          break;
+        }
+      }
+    }
+
+    if (targetCol < 0) {
+      return { success: false, error: 'Month column not found for ' + targetLabel };
+    }
+
+    sheet.getRange(ROW, targetCol).setValue(dataJson);
+    SpreadsheetApp.flush();
+    return { success: true, message: 'Inspector data saved for ' + targetLabel };
+  } catch(err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+function getInspectorData(month, year) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var ROW = 18;
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var targetLabel = monthNames[month - 1] + ' ' + year;
+
+    var lastCol = Math.max(sheet.getLastColumn(), 30);
+    var hdrRow = sheet.getRange(6, 1, 1, lastCol).getValues()[0];
+
+    var targetCol = -1;
+    for (var ci = 1; ci < hdrRow.length; ci++) {
+      var h = String(hdrRow[ci] || '').trim().toUpperCase();
+      if (h.indexOf(targetLabel.toUpperCase()) >= 0) {
+        targetCol = ci + 1;
+        break;
+      }
+    }
+
+    if (targetCol < 0) {
+      // Try partial: just month name match (same fallback as save)
+      var shortLabel = monthNames[month - 1];
+      for (var ci2 = 1; ci2 < hdrRow.length; ci2++) {
+        var h2 = String(hdrRow[ci2] || '').trim().toUpperCase();
+        if (h2.indexOf(shortLabel.toUpperCase()) >= 0 && h2.indexOf(String(year)) >= 0) {
+          targetCol = ci2 + 1;
+          break;
+        }
+      }
+    }
+
+    if (targetCol < 0) return { success: true, data: null }; // No column = no data
+
+    var raw = sheet.getRange(ROW, targetCol).getValue();
+    if (!raw || String(raw).trim() === '') return { success: true, data: null };
+
+    var data = JSON.parse(String(raw));
+    return { success: true, data: data };
+  } catch(err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+function getAllInspectorData() {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var ROW = 18;
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    var lastCol = Math.max(sheet.getLastColumn(), 30);
+    var hdrRow = sheet.getRange(6, 1, 1, lastCol).getValues()[0];
+    var row18 = sheet.getRange(ROW, 1, 1, lastCol).getValues()[0];
+
+    var results = [];
+    for (var ci = 1; ci < hdrRow.length; ci++) {
+      var h = String(hdrRow[ci] || '').trim().toUpperCase();
+      if (!h) continue;
+      // Skip non-month columns (label column, totals, etc)
+      if (h.indexOf('INSPECTOR') >= 0 || h.indexOf('CONTROLLER') >= 0 || h.indexOf('TOTAL') >= 0) continue;
+
+      var raw = row18[ci];
+      if (!raw || String(raw).trim() === '') continue;
+
+      // Parse month/year from header
+      var monthNum = -1, yearNum = 0;
+      for (var mi = 0; mi < monthNames.length; mi++) {
+        if (h.indexOf(monthNames[mi].toUpperCase()) >= 0) { monthNum = mi + 1; break; }
+      }
+      var yrMatch = h.match(/(\d{4})/);
+      if (yrMatch) yearNum = parseInt(yrMatch[1], 10);
+      if (monthNum < 0 || yearNum === 0) continue;
+
+      try {
+        var data = JSON.parse(String(raw));
+        results.push({ month: monthNum, year: yearNum, plan: data });
+      } catch(e) { /* skip invalid JSON */ }
+    }
+
+    // Sort newest first
+    results.sort(function(a,b) { return b.year !== a.year ? b.year - a.year : b.month - a.month; });
+    return { success: true, data: results };
+  } catch(err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+function deleteInspectorData(month, year) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var ROW = 18;
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var targetLabel = monthNames[month - 1] + ' ' + year;
+
+    var lastCol = Math.max(sheet.getLastColumn(), 30);
+    var hdrRow = sheet.getRange(6, 1, 1, lastCol).getValues()[0];
+
+    var targetCol = -1;
+    for (var ci = 1; ci < hdrRow.length; ci++) {
+      var h = String(hdrRow[ci] || '').trim().toUpperCase();
+      if (h.indexOf(targetLabel.toUpperCase()) >= 0) {
+        targetCol = ci + 1;
+        break;
+      }
+    }
+
+    if (targetCol < 0) {
+      // Try partial match fallback
+      var shortLabel2 = monthNames[month - 1];
+      for (var ci2 = 1; ci2 < hdrRow.length; ci2++) {
+        var h2 = String(hdrRow[ci2] || '').trim().toUpperCase();
+        if (h2.indexOf(shortLabel2.toUpperCase()) >= 0 && h2.indexOf(String(year)) >= 0) {
+          targetCol = ci2 + 1;
+          break;
+        }
+      }
+    }
+
+    if (targetCol < 0) return { success: false, error: 'Month column not found' };
+
+    sheet.getRange(ROW, targetCol).clearContent();
+    SpreadsheetApp.flush();
+    return { success: true, message: 'Inspector data deleted for ' + targetLabel };
+  } catch(err) {
+    return { success: false, error: err.message || String(err) };
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
    updateClaimStatus
    Toggles a reference cell between "claim" and "claimed".
    month/year/day identify the row (col A = "M-D").

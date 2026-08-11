@@ -1,0 +1,837 @@
+<!-- ═══════════════════════════════════════════════════════════
+     FINANCIAL INSPECTOR
+     "Monthly Expences" sheet: raw expense audit + tagging + insights
+     Row 18 JSON: { recurring, mistakes, insights, accountability, updatedAt }
+     Sections: 1) Raw Table with tags  2) Flagged summary  3) Insights + History
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Financial Inspector (fin prefix) ── */
+.fin-page{padding:14px;max-width:1400px;margin:0 auto;width:100%;box-sizing:border-box;min-height:0;}
+.fin-header-sub{color:rgba(255,255,255,.3);font-size:.72em;margin:0 0 14px;}
+
+/* Month nav */
+.fin-month-nav{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:14px;animation:fadeUp .4s ease both;flex-wrap:wrap;}
+.fin-nav-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);width:34px;height:34px;border-radius:10px;cursor:pointer;font-size:.85em;transition:all .15s;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.fin-nav-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.fin-month-label{font-size:.78em;font-weight:700;letter-spacing:1px;color:#fff;min-width:120px;text-align:center;}
+
+/* Top row: raw table (left) + flagged (right) */
+.fin-top-row{display:grid;grid-template-columns:1.2fr 0.8fr;gap:14px;margin-bottom:14px;animation:fadeUp .4s ease .05s both;}
+
+/* Section card */
+.fin-section{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:14px;backdrop-filter:blur(20px);display:flex;flex-direction:column;}
+.fin-section-hdr{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.05);flex-wrap:wrap;}
+.fin-section-icon{font-size:1.1em;flex-shrink:0;}
+.fin-section-title{font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+.fin-section-badge{font-size:.6em;color:var(--muted);margin-left:auto;white-space:nowrap;}
+
+/* ── Section 1: Raw table ── */
+.fin-table-wrap{flex:1;overflow-y:auto;max-height:420px;min-height:0;}
+.fin-table-scroll{width:100%;overflow-x:auto;}
+.fin-table{width:100%;border-collapse:collapse;font-size:.7em;min-width:400px;}
+.fin-table th{padding:7px 8px;text-align:left;font-size:.58em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.05);position:sticky;top:0;background:rgba(15,23,42,.97);z-index:2;}
+.fin-table td{padding:5px 8px;border-bottom:1px solid rgba(255,255,255,.025);color:rgba(255,255,255,.65);}
+.fin-table tr:hover td{background:rgba(255,255,255,.015);}
+.fin-table tr.row-recurring td{background:rgba(0,212,255,.04);}
+.fin-table tr.row-mistake td{background:rgba(255,77,109,.04);}
+.fin-table tr.row-both td{background:rgba(168,85,247,.05);}
+.fin-table td.fin-cell-day{color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;text-align:center;width:36px;}
+.fin-table td.fin-cell-cat{font-weight:600;color:rgba(255,255,255,.75);}
+.fin-table td.fin-cell-ref{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgba(255,255,255,.4);}
+.fin-table td.fin-cell-amt{text-align:right;font-weight:600;font-variant-numeric:tabular-nums;color:var(--gold);}
+.fin-table td.fin-cell-tags{text-align:center;white-space:nowrap;}
+
+/* Tag chips */
+.fin-tag{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:14px;font-size:.62em;font-weight:700;cursor:pointer;transition:all .12s;border:1px solid transparent;letter-spacing:.2px;margin:0 1px;}
+.fin-tag.recurring{background:rgba(0,212,255,.06);border-color:rgba(0,212,255,.15);color:rgba(0,212,255,.45);}
+.fin-tag.recurring:hover{background:rgba(0,212,255,.12);color:rgba(0,212,255,.7);}
+.fin-tag.recurring.on{background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.45);color:#00d4ff;box-shadow:0 0 8px rgba(0,212,255,.12);}
+.fin-tag.mistake{background:rgba(255,77,109,.06);border-color:rgba(255,77,109,.15);color:rgba(255,77,109,.45);}
+.fin-tag.mistake:hover{background:rgba(255,77,109,.12);color:rgba(255,77,109,.7);}
+.fin-tag.mistake.on{background:rgba(255,77,109,.18);border-color:rgba(255,77,109,.45);color:#ff4d6d;box-shadow:0 0 8px rgba(255,77,109,.12);}
+.fin-tag.note{background:rgba(168,85,247,.08);border-color:rgba(168,85,247,.2);color:#c084fc;font-size:.58em;padding:2px 6px;}
+
+/* Inline reason input */
+.fin-reason-row{display:none;}
+.fin-reason-row.open{display:table-row;}
+.fin-reason-row td{padding:4px 8px 8px 44px;border-bottom:1px solid rgba(255,255,255,.04);}
+.fin-reason-input{width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,77,109,.2);border-radius:7px;padding:5px 10px;color:rgba(255,255,255,.6);font-size:.65em;font-family:inherit;box-sizing:border-box;}
+.fin-reason-input:focus{outline:none;border-color:rgba(255,77,109,.5);}
+.fin-reason-input::placeholder{color:rgba(255,255,255,.2);}
+
+/* ── Section 2: Flagged summary ── */
+.fin-flagged-list{display:flex;flex-direction:column;gap:8px;overflow-y:auto;max-height:400px;min-height:0;}
+.fin-flag-group-title{font-size:.6em;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.fin-flag-group-title .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.fin-flag-item{display:flex;align-items:center;gap:6px;padding:6px 10px;background:rgba(255,255,255,.02);border-radius:8px;border:1px solid rgba(255,255,255,.04);font-size:.68em;transition:border-color .15s;flex-wrap:wrap;}
+.fin-flag-item:hover{border-color:rgba(255,255,255,.08);}
+.fin-flag-day{color:rgba(255,255,255,.3);min-width:28px;font-weight:600;flex-shrink:0;}
+.fin-flag-ref{flex:1;color:#fff;font-weight:600;min-width:80px;}
+.fin-flag-cat{font-size:.9em;color:rgba(255,255,255,.3);flex-shrink:0;}
+.fin-flag-amt{color:var(--gold);font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.fin-flag-reason{font-size:.85em;color:rgba(255,255,255,.3);font-style:italic;width:100%;padding-left:34px;}
+.fin-flag-remove{background:none;border:none;color:rgba(255,255,255,.2);cursor:pointer;font-size:.8em;padding:2px 4px;border-radius:4px;transition:all .12s;flex-shrink:0;margin-left:auto;}
+.fin-flag-remove:hover{color:#fca5a5;background:rgba(239,68,68,.1);}
+.fin-flagged-kpi{display:flex;gap:12px;padding:8px 0;border-top:1px solid rgba(255,255,255,.05);margin-top:4px;flex-wrap:wrap;}
+.fin-flagged-kpi-item{font-size:.6em;color:rgba(255,255,255,.35);}
+.fin-flagged-kpi-item strong{color:#fff;font-size:1.1em;}
+.fin-no-flags{padding:20px;text-align:center;color:rgba(255,255,255,.15);font-size:.65em;}
+
+/* ── Section 3: Insights ── */
+.fin-insights{animation:fadeUp .4s ease .1s both;margin-bottom:14px;}
+.fin-ins-list{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+.fin-ins-item{display:flex;align-items:center;gap:8px;padding:7px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:9px;font-size:.68em;transition:border-color .15s;word-break:break-word;}
+.fin-ins-item:hover{border-color:rgba(255,255,255,.1);}
+.fin-ins-bullet{color:rgba(168,85,247,.6);font-weight:700;flex-shrink:0;}
+.fin-ins-text{flex:1;color:rgba(255,255,255,.7);}
+.fin-ins-remove{background:none;border:none;color:rgba(255,255,255,.15);cursor:pointer;font-size:.75em;padding:2px 5px;border-radius:4px;transition:all .12s;flex-shrink:0;}
+.fin-ins-remove:hover{color:#fca5a5;background:rgba(239,68,68,.1);}
+.fin-ins-add-row{display:flex;gap:8px;}
+.fin-ins-add-input{flex:1;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 10px;color:#fff;font-size:.65em;font-family:inherit;min-width:0;}
+.fin-ins-add-input:focus{outline:none;border-color:rgba(168,85,247,.4);}
+.fin-ins-add-input::placeholder{color:rgba(255,255,255,.18);}
+.fin-ins-add-btn{padding:6px 14px;border-radius:8px;font-size:.6em;font-weight:700;cursor:pointer;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.25);color:#c084fc;transition:all .15s;font-family:inherit;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;flex-shrink:0;}
+.fin-ins-add-btn:hover{background:rgba(168,85,247,.22);}
+.fin-ins-save-row{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center;}
+.fin-btn{padding:7px 16px;border-radius:9px;font-size:.62em;font-weight:700;font-family:inherit;cursor:pointer;transition:all .15s;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap;}
+.fin-btn.reset{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.5);}
+.fin-btn.reset:hover{background:rgba(255,255,255,.08);color:#fff;}
+.fin-btn.save{background:linear-gradient(135deg,var(--purple),#7c3aed);border:none;color:#fff;box-shadow:0 4px 12px rgba(168,85,247,.3);}
+.fin-btn.save:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(168,85,247,.4);}
+.fin-btn.save:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
+.fin-saved-msg{font-size:.6em;color:var(--green);align-self:center;opacity:0;transition:opacity .3s;}
+.fin-saved-msg.show{opacity:1;}
+
+/* ── Accountability: past insights tracked in current month ── */
+.fin-accountability{margin-bottom:10px;}
+.fin-acct-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.04);border-radius:8px;font-size:.65em;margin-bottom:4px;flex-wrap:wrap;}
+.fin-acct-month{font-size:.85em;color:rgba(255,255,255,.25);min-width:48px;font-weight:600;flex-shrink:0;}
+.fin-acct-text{flex:1;color:rgba(255,255,255,.5);min-width:120px;word-break:break-word;}
+.fin-acct-done{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:12px;font-size:.7em;font-weight:700;cursor:pointer;border:1px solid rgba(0,230,118,.2);background:rgba(0,230,118,.04);color:rgba(0,230,118,.5);transition:all .12s;white-space:nowrap;flex-shrink:0;margin-left:auto;}
+.fin-acct-done:hover{background:rgba(0,230,118,.1);}
+.fin-acct-done.yes{background:rgba(0,230,118,.15);border-color:rgba(0,230,118,.5);color:#00e676;box-shadow:0 0 6px rgba(0,230,118,.1);}
+.fin-acct-done.no{background:rgba(255,77,109,.06);border-color:rgba(255,77,109,.2);color:rgba(255,77,109,.5);}
+
+/* ── Section 4: Past inspections history ── */
+.fin-history{animation:fadeUp .4s ease .15s both;padding-bottom:8px;}
+.fin-history-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;}
+.fin-hist-card{background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.05);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;}
+.fin-hist-card:hover{background:rgba(255,255,255,.03);border-color:rgba(168,85,247,.2);transform:translateY(-1px);}
+.fin-hist-card.active{border-color:rgba(168,85,247,.35);background:rgba(168,85,247,.04);}
+.fin-hist-month-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;}
+.fin-hist-month{font-size:.7em;font-weight:700;color:#fff;}
+.fin-hist-stats{display:flex;gap:8px;font-size:.58em;flex-wrap:wrap;}
+.fin-hist-stat{display:inline-flex;align-items:center;gap:3px;color:rgba(255,255,255,.3);}
+.fin-hist-stat.recurring{color:rgba(0,212,255,.6);}
+.fin-hist-stat.mistake{color:rgba(255,77,109,.6);}
+.fin-hist-insights{margin-top:6px;font-size:.58em;color:rgba(255,255,255,.35);line-height:1.4;max-height:50px;overflow:hidden;}
+.fin-hist-insights span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fin-hist-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.fin-hist-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.4);padding:4px 10px;border-radius:6px;font-size:.56em;font-weight:600;cursor:pointer;transition:all .12s;font-family:inherit;white-space:nowrap;}
+.fin-hist-btn:hover{background:rgba(255,255,255,.08);color:#fff;}
+.fin-hist-btn.delete:hover{background:rgba(239,68,68,.12);color:#fca5a5;border-color:rgba(239,68,68,.15);}
+
+/* ── Respected month total bar ── */
+.fin-total-bar{display:flex;justify-content:space-between;padding:8px 10px;border-top:1px solid rgba(255,255,255,.05);font-size:.68em;font-weight:700;flex-wrap:wrap;gap:4px;align-items:center;}
+.fin-total-bar-label{color:rgba(255,255,255,.35);}
+.fin-total-bar-amt{color:var(--gold);}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+═══════════════════════════════════════════ */
+
+/* Tablet / small desktop (≤1100px) */
+@media(max-width:1100px){
+  .fin-top-row{grid-template-columns:1fr 1fr;}
+  .fin-table-wrap{max-height:360px;}
+  .fin-flagged-list{max-height:360px;}
+}
+
+/* Compact tablet (≤900px) */
+@media(max-width:900px){
+  .fin-top-row{grid-template-columns:1fr;}
+  .fin-table-wrap{max-height:340px;}
+  .fin-flagged-list{max-height:none;overflow-y:visible;}
+  .fin-history-grid{grid-template-columns:repeat(auto-fill,minmax(220px,1fr));}
+}
+
+/* Small tablet / large phone (≤700px) */
+@media(max-width:700px){
+  .fin-page{padding:10px;}
+  .fin-section{padding:10px;border-radius:12px;}
+  .fin-section-hdr{gap:6px;}
+  .fin-section-title{font-size:.62em;letter-spacing:1px;}
+  .fin-table{font-size:.62em;}
+  .fin-table th{padding:5px 6px;font-size:.52em;}
+  .fin-table td{padding:4px 6px;}
+  .fin-table td.fin-cell-day{width:28px;}
+  .fin-table td.fin-cell-ref{max-width:80px;}
+  .fin-table td.fin-cell-tags{white-space:normal;}
+  .fin-tag{padding:2px 6px;font-size:.58em;margin:1px;}
+  .fin-reason-row td{padding:3px 6px 6px 30px;}
+  .fin-reason-input{font-size:.6em;padding:4px 8px;}
+  .fin-table-wrap{max-height:300px;}
+  .fin-flag-item{font-size:.62em;gap:4px;padding:5px 8px;}
+  .fin-history-grid{grid-template-columns:1fr;}
+  .fin-ins-save-row{justify-content:stretch;}
+  .fin-ins-save-row .fin-btn{flex:1;}
+  .fin-ins-save-row .fin-saved-msg{order:-1;width:100%;text-align:center;}
+  .fin-acct-done{margin-left:0;}
+}
+
+/* Phone (≤480px) */
+@media(max-width:480px){
+  .fin-page{padding:6px;}
+  .fin-section{padding:8px;border-radius:10px;}
+  .fin-month-label{font-size:.7em;min-width:90px;}
+  .fin-nav-btn{width:30px;height:30px;font-size:.75em;}
+  .fin-table{font-size:.55em;min-width:320px;}
+  .fin-table th{padding:4px 4px;font-size:.48em;}
+  .fin-table td{padding:3px 4px;}
+  .fin-table td.fin-cell-day{width:22px;}
+  .fin-table td.fin-cell-ref{max-width:60px;}
+  .fin-table td.fin-cell-tags{white-space:normal;}
+  .fin-tag{padding:2px 5px;font-size:.54em;margin:1px 0;}
+  .fin-reason-row td{padding:2px 4px 5px 22px;}
+  .fin-reason-input{font-size:.55em;padding:3px 6px;}
+  .fin-table-wrap{max-height:260px;}
+  .fin-flag-item{padding:4px 6px;font-size:.58em;gap:3px;}
+  .fin-flag-day{min-width:22px;}
+  .fin-flag-amt{font-size:.95em;}
+  .fin-flagged-kpi{gap:8px;}
+  .fin-flagged-kpi-item{font-size:.55em;}
+  .fin-ins-item{padding:5px 8px;font-size:.6em;gap:6px;}
+  .fin-ins-add-row{gap:6px;flex-wrap:wrap;}
+  .fin-ins-add-input{font-size:.58em;padding:6px 8px;}
+  .fin-ins-add-btn{font-size:.55em;padding:5px 10px;}
+  .fin-btn{padding:6px 12px;font-size:.58em;}
+  .fin-acct-item{padding:5px 8px;font-size:.58em;gap:5px;}
+  .fin-acct-month{min-width:36px;font-size:.78em;}
+  .fin-hist-card{padding:10px;}
+  .fin-hist-month{font-size:.64em;}
+  .fin-hist-stats{font-size:.54em;}
+  .fin-hist-btn{font-size:.52em;padding:3px 8px;}
+  .fin-total-bar{font-size:.6em;}
+}
+</style>
+
+<div class="fin-page" id="fin-body">
+  <div class="loading">
+    <div class="spinner"></div>
+    <div class="loading-txt">Loading Financial Inspector…</div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   FINANCIAL INSPECTOR JS
+   Sheet: "Monthly Expences" → Row 18 JSON
+   Data shape: { recurring:[], mistakes:[], insights:[], accountability:{}, updatedAt }
+═══════════════════════════════════════════ */
+var _finMonth, _finYear, _finExpData, _finInspector, _finAllInspectors;
+var _finRecurring = {};    // key → true
+var _finMistakes = {};     // key → reason string
+var _finInsights = [];     // string[]
+var _finAccountability = {}; // "month-year" → { month, year, insights: [{text, done:bool}] }
+
+var _finMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function finFmt(v) {
+  if (v === undefined || v === null || isNaN(v)) return '—';
+  return '₨ ' + Math.abs(v).toLocaleString('en-IN', {minimumFractionDigits:0, maximumFractionDigits:0});
+}
+
+function finFmtK(v) {
+  if (v === undefined || v === null || isNaN(v)) return '—';
+  var abs = Math.abs(v);
+  if (abs >= 100000) return '₨ ' + (abs/100000).toFixed(2) + 'L';
+  if (abs >= 1000) return '₨ ' + (abs/1000).toFixed(1) + 'K';
+  return '₨ ' + abs.toLocaleString('en-IN');
+}
+
+function finLoad() {
+  var now = new Date();
+  _finMonth = now.getMonth() + 1;
+  _finYear = now.getFullYear();
+  finFetchAll();
+}
+
+function finFetchAll() {
+  var body = document.getElementById('fin-body');
+  body.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-txt">Loading ' + _finMonthNames[_finMonth-1] + ' ' + _finYear + '…</div></div>';
+
+  var loaded = 0, total = 3;
+  function checkDone() {
+    loaded++;
+    if (loaded >= total) {
+      // Initialize state from saved inspector data (only on fresh data fetch)
+      _finRecurring = {};
+      _finMistakes = {};
+      _finInsights = [];
+      _finAccountability = {};
+      if (_finInspector) {
+        if (_finInspector.recurring) {
+          _finInspector.recurring.forEach(function(r) { _finRecurring[finEntryKey(r)] = true; });
+        }
+        if (_finInspector.mistakes) {
+          _finInspector.mistakes.forEach(function(m) { _finMistakes[finEntryKey(m)] = m.reason || ''; });
+        }
+        _finInsights = (_finInspector.insights || []).slice();
+        _finAccountability = _finInspector.accountability || {};
+      }
+      finRender();
+    }
+  }
+
+  // Use preloaded inspector data if available for current month
+  var preInsp = (typeof _analyzePreloadData !== 'undefined' && _analyzePreloadData.inspector && _analyzePreloadData.inspector.success) ? _analyzePreloadData.inspector : null;
+  var preAll = (typeof _analyzePreloadData !== 'undefined' && _analyzePreloadData.allInspectors && _analyzePreloadData.allInspectors.success) ? _analyzePreloadData.allInspectors : null;
+
+  // Use preloaded expenses list if available for current month
+  var preExp = (typeof _analyzePreloadData !== 'undefined' && _analyzePreloadData.expensesList && _analyzePreloadData.expensesList.success
+    && _finMonth === new Date().getMonth()+1 && _finYear === new Date().getFullYear()) ? _analyzePreloadData.expensesList : null;
+
+  if (preExp) {
+    _finExpData = preExp;
+    checkDone();
+  } else {
+    google.script.run
+      .withSuccessHandler(function(res) { _finExpData = res; checkDone(); })
+      .withFailureHandler(function(err) { _finExpData = { success:false, error:err.message }; checkDone(); })
+      .getCurrentMonthExpensesList(_finMonth, _finYear);
+  }
+
+  if (preInsp && preInsp.data && _finMonth === new Date().getMonth()+1 && _finYear === new Date().getFullYear()) {
+    // Use preloaded current month inspector data
+    _finInspector = preInsp.data;
+    checkDone();
+  } else {
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _finInspector = (res && res.success && res.data) ? res.data : null;
+        checkDone();
+      })
+      .withFailureHandler(function() { _finInspector = null; checkDone(); })
+      .getInspectorData(_finMonth, _finYear);
+  }
+
+  if (preAll) {
+    _finAllInspectors = preAll.data || [];
+    checkDone();
+  } else {
+    google.script.run
+      .withSuccessHandler(function(res) { _finAllInspectors = (res && res.success) ? res.data : []; checkDone(); })
+      .withFailureHandler(function() { _finAllInspectors = []; checkDone(); })
+      .getAllInspectorData();
+  }
+}
+
+function finNav(dir) {
+  _finMonth += dir;
+  if (_finMonth > 12) { _finMonth = 1; _finYear++; }
+  if (_finMonth < 1)  { _finMonth = 12; _finYear--; }
+  finFetchAll();
+}
+
+function finEntryKey(e) {
+  return e.day + '|' + e.category + '|' + (e.ref || e.reference || '') + '|' + e.amount;
+}
+
+/* ── MAIN RENDER ── */
+function finRender() {
+  var body = document.getElementById('fin-body');
+  if (!_finExpData || !_finExpData.success) {
+    body.innerHTML = '<div class="error-box">⚠️ ' + (_finExpData ? _finExpData.error : 'Failed to load') + '</div>';
+    return;
+  }
+
+  var entries = _finExpData.entries || [];
+
+  finMergeAccountability();
+
+  var grandTotal = entries.reduce(function(s,e) { return s + e.amount; }, 0);
+  var daySet = {};
+  entries.forEach(function(e) { daySet[e.day] = true; });
+  var dayCount = Object.keys(daySet).length;
+
+  body.innerHTML =
+    '<div class="pg-corner-title" style="margin-bottom:10px;">' +
+      '<span class="pg-ct-icon">🔍</span>' +
+      '<span class="pg-ct-text">Financial Inspector</span>' +
+    '</div>' +
+    '<p class="fin-header-sub">Tag recurring · flag mistakes · track insights month-over-month</p>' +
+
+    '<div class="fin-month-nav">' +
+      '<button class="fin-nav-btn" onclick="finNav(-1)">◀</button>' +
+      '<span class="fin-month-label">📋 ' + _finMonthNames[_finMonth-1] + ' ' + _finYear + '</span>' +
+      '<button class="fin-nav-btn" onclick="finNav(1)">▶</button>' +
+    '</div>' +
+
+    '<div class="fin-top-row">' +
+      finBuildRawTable(entries, grandTotal, dayCount) +
+      finBuildFlagged(entries, grandTotal) +
+    '</div>' +
+
+    finBuildInsights() +
+    finBuildHistory();
+}
+
+/* ── SECTION 1: Raw table ── */
+function finBuildRawTable(entries, grandTotal, dayCount) {
+  var rows = entries.map(function(e, idx) {
+    var key = finEntryKey(e);
+    var isRec = !!_finRecurring[key];
+    var isMis = _finMistakes.hasOwnProperty(key);
+    var rowClass = (isRec && isMis) ? 'row-both' : isRec ? 'row-recurring' : isMis ? 'row-mistake' : '';
+    var hasNote = isMis && _finMistakes[key] && _finMistakes[key].trim();
+    var escKey = key.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+    return '<tr class="' + rowClass + '" data-finkey="' + key.replace(/"/g,'&quot;') + '">' +
+      '<td class="fin-cell-day">' + e.day + '</td>' +
+      '<td class="fin-cell-cat">' + e.category + '</td>' +
+      '<td class="fin-cell-ref" title="' + (e.reference||'').replace(/"/g,'&quot;') + '">' + (e.reference || '—') + '</td>' +
+      '<td class="fin-cell-amt">' + finFmt(e.amount) + '</td>' +
+      '<td class="fin-cell-tags">' +
+        '<span class="fin-tag recurring' + (isRec ? ' on' : '') + '" onclick="finToggleRecurring(this,\'' + escKey + '\')" title="Recurring / Subscription / EMI">🔄</span>' +
+        '<span class="fin-tag mistake' + (isMis ? ' on' : '') + '" onclick="finToggleMistake(this,\'' + escKey + '\',' + idx + ')" title="Mistake / Waste">⚠️</span>' +
+        (hasNote ? ' <span class="fin-tag note" title="' + _finMistakes[key].replace(/"/g,'&quot;') + '">📝</span>' : '') +
+      '</td>' +
+    '</tr>' +
+    '<tr class="fin-reason-row' + (isMis ? ' open' : '') + '" id="fin-reason-' + idx + '">' +
+      '<td colspan="5">' +
+        '<input class="fin-reason-input" id="fin-reason-input-' + idx + '" type="text" placeholder="Why was this a mistake? (optional)" value="' + ((isMis && _finMistakes[key]) || '').replace(/"/g,'&quot;') + '" oninput="finReasonChanged(' + idx + ',\'' + escKey + '\')">' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  return '<div class="fin-section">' +
+    '<div class="fin-section-hdr">' +
+      '<span class="fin-section-icon">📊</span>' +
+      '<span class="fin-section-title">Raw Expenses</span>' +
+      '<span class="fin-section-badge">' + entries.length + ' entries · ' + dayCount + ' days</span>' +
+    '</div>' +
+    '<div class="fin-table-wrap">' +
+      '<div class="fin-table-scroll">' +
+      '<table class="fin-table">' +
+        '<thead><tr><th>Day</th><th>Category</th><th>Ref</th><th style="text-align:right">Amount</th><th style="text-align:center">Tags</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table>' +
+      '</div>' +
+    '</div>' +
+    '<div class="fin-total-bar">' +
+      '<span class="fin-total-bar-label">Month Total</span>' +
+      '<span class="fin-total-bar-amt">' + finFmt(grandTotal) + '</span>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ── SECTION 2: Flagged summary ── */
+function finBuildFlagged(entries, grandTotal) {
+  var recurringItems = [];
+  var mistakeItems = [];
+
+  entries.forEach(function(e) {
+    var key = finEntryKey(e);
+    if (_finRecurring[key]) recurringItems.push(e);
+    if (_finMistakes.hasOwnProperty(key)) mistakeItems.push({ entry: e, reason: _finMistakes[key] });
+  });
+
+  var recTotal = recurringItems.reduce(function(s,e) { return s + e.amount; }, 0);
+  var misTotal = mistakeItems.reduce(function(s,m) { return s + m.entry.amount; }, 0);
+
+  var recHtml = '';
+  if (recurringItems.length > 0) {
+    recHtml = '<div class="fin-flag-group-title"><span class="dot" style="background:var(--blue);box-shadow:0 0 5px var(--blue);"></span>🔄 Recurring (' + recurringItems.length + ' · ' + finFmt(recTotal) + ')</div>' +
+      recurringItems.map(function(e) {
+        var escKey = finEntryKey(e).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return '<div class="fin-flag-item">' +
+          '<span class="fin-flag-day">D' + e.day + '</span>' +
+          '<span class="fin-flag-ref">' + (e.reference || e.category) + '</span>' +
+          '<span class="fin-flag-cat">' + e.category + '</span>' +
+          '<span class="fin-flag-amt">' + finFmt(e.amount) + '</span>' +
+          '<button class="fin-flag-remove" onclick="finUntagRecurring(\'' + escKey + '\')" title="Untag">✕</button>' +
+        '</div>';
+      }).join('');
+  }
+
+  var misHtml = '';
+  if (mistakeItems.length > 0) {
+    misHtml = '<div class="fin-flag-group-title"><span class="dot" style="background:var(--red);box-shadow:0 0 5px var(--red);"></span>⚠️ Mistakes (' + mistakeItems.length + ' · ' + finFmt(misTotal) + ')</div>' +
+      mistakeItems.map(function(m) {
+        var escKey = finEntryKey(m.entry).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+        return '<div class="fin-flag-item">' +
+          '<span class="fin-flag-day">D' + m.entry.day + '</span>' +
+          '<span class="fin-flag-ref">' + (m.entry.reference || m.entry.category) + '</span>' +
+          '<span class="fin-flag-cat">' + m.entry.category + '</span>' +
+          '<span class="fin-flag-amt">' + finFmt(m.entry.amount) + '</span>' +
+          (m.reason ? '<span class="fin-flag-reason">"' + m.reason + '"</span>' : '') +
+          '<button class="fin-flag-remove" onclick="finUntagMistake(\'' + escKey + '\')" title="Untag">✕</button>' +
+        '</div>';
+      }).join('');
+  }
+
+  if (!recHtml && !misHtml) {
+    recHtml = '<div class="fin-no-flags">👆 Click 🔄 or ⚠️ on any row to tag it</div>';
+  }
+
+  return '<div class="fin-section">' +
+    '<div class="fin-section-hdr">' +
+      '<span class="fin-section-icon">🏷️</span>' +
+      '<span class="fin-section-title">Flagged This Month</span>' +
+      '<span class="fin-section-badge" id="fin-flag-badge">' + (recurringItems.length + mistakeItems.length) + ' flagged</span>' +
+    '</div>' +
+    '<div class="fin-flagged-list" id="fin-flagged-list">' +
+      recHtml + misHtml +
+      ((recurringItems.length + mistakeItems.length) > 0 ?
+        '<div class="fin-flagged-kpi">' +
+          '<div class="fin-flagged-kpi-item">🔄 Recurring <strong>' + finFmtK(recTotal) + '</strong></div>' +
+          '<div class="fin-flagged-kpi-item">⚠️ Mistakes <strong>' + finFmtK(misTotal) + '</strong></div>' +
+          '<div class="fin-flagged-kpi-item">📊 Total <strong>' + finFmtK(recTotal + misTotal) + '</strong> of ' + finFmtK(grandTotal) + '</div>' +
+        '</div>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+/* ── SECTION 3: Insights + Accountability ── */
+function finBuildInsights() {
+  var insightItems = _finInsights.map(function(ins, i) {
+    return '<div class="fin-ins-item">' +
+      '<span class="fin-ins-bullet">•</span>' +
+      '<span class="fin-ins-text">' + ins.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>' +
+      '<button class="fin-ins-remove" onclick="finRemoveInsight(' + i + ')" title="Remove">✕</button>' +
+    '</div>';
+  }).join('');
+
+  var acctHtml = finBuildAccountability();
+
+  return '<div class="fin-section fin-insights">' +
+    '<div class="fin-section-hdr">' +
+      '<span class="fin-section-icon">💡</span>' +
+      '<span class="fin-section-title">Insights to Avoid Next Month</span>' +
+      '<span class="fin-section-badge">' + _finInsights.length + ' insights</span>' +
+    '</div>' +
+    acctHtml +
+    '<div class="fin-ins-list" id="fin-ins-list">' + (insightItems || '<div class="fin-no-flags">No insights yet. Add some below.</div>') + '</div>' +
+    '<div class="fin-ins-add-row">' +
+      '<input class="fin-ins-add-input" id="fin-ins-input" type="text" placeholder="e.g. Cancel Netflix — use family plan instead…" onkeydown="if(event.key===\'Enter\')finAddInsight()">' +
+      '<button class="fin-ins-add-btn" onclick="finAddInsight()">➕ Add</button>' +
+    '</div>' +
+    '<div class="fin-ins-save-row">' +
+      '<span class="fin-saved-msg" id="fin-saved-msg">✅ Saved</span>' +
+      '<button class="fin-btn reset" onclick="finResetAll()">↺ Reset</button>' +
+      '<button class="fin-btn save" id="fin-save-btn" onclick="finSaveAll()">💾 Save Inspection</button>' +
+    '</div>' +
+  '</div>';
+}
+
+/* ── Accountability: past insights tracked this month ── */
+function finMergeAccountability() {
+  if (!_finAllInspectors) return;
+  _finAllInspectors.forEach(function(insp) {
+    if (insp.month === _finMonth && insp.year === _finYear) return;
+    var key = insp.month + '-' + insp.year;
+    if (!_finAccountability[key] && insp.plan && insp.plan.insights && insp.plan.insights.length > 0) {
+      _finAccountability[key] = {
+        month: insp.month,
+        year: insp.year,
+        insights: insp.plan.insights.map(function(ins) { return { text: ins, done: false }; })
+      };
+    }
+  });
+}
+
+function finBuildAccountability() {
+  var keys = Object.keys(_finAccountability);
+  if (keys.length === 0) return '';
+
+  keys.sort(function(a,b) {
+    var ap = a.split('-'), bp = b.split('-');
+    return (parseInt(bp[1])*100 + parseInt(bp[0])) - (parseInt(ap[1])*100 + parseInt(ap[0]));
+  });
+
+  var items = '';
+  keys.forEach(function(key) {
+    var acct = _finAccountability[key];
+    if (!acct || !acct.insights || acct.insights.length === 0) return;
+    acct.insights.forEach(function(ins, i) {
+      var doneClass = ins.done === true ? 'yes' : (ins.done === false ? 'no' : '');
+      var doneLabel = ins.done === true ? '✅ Done' : (ins.done === false ? '❌ Missed' : 'Mark done?');
+      items += '<div class="fin-acct-item">' +
+        '<span class="fin-acct-month">' + _finMonthNames[acct.month-1] + ' ' + String(acct.year).slice(-2) + '</span>' +
+        '<span class="fin-acct-text">' + ins.text.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>' +
+        '<span class="fin-acct-done ' + doneClass + '" onclick="finToggleAccountability(\'' + key + '\',' + i + ')">' + doneLabel + '</span>' +
+      '</div>';
+    });
+  });
+
+  if (!items) return '';
+
+  return '<div class="fin-accountability">' +
+    '<div style="font-size:.58em;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.25);margin-bottom:6px;">📋 Past Insights — Did you follow through this month?</div>' +
+    items +
+  '</div>';
+}
+
+/* ── SECTION 4: Past inspections history ── */
+function finBuildHistory() {
+  var plans = _finAllInspectors || [];
+  plans = plans.filter(function(p) { return !(p.month === _finMonth && p.year === _finYear); });
+
+  if (plans.length === 0) {
+    return '<div class="fin-section fin-history">' +
+      '<div class="fin-section-hdr">' +
+        '<span class="fin-section-icon">📚</span>' +
+        '<span class="fin-section-title">Past Inspections</span>' +
+        '<span class="fin-section-badge">0 saved</span>' +
+      '</div>' +
+      '<div class="fin-no-flags">No past inspections yet. Save this month first!</div>' +
+    '</div>';
+  }
+
+  var cards = plans.map(function(p) {
+    var plan = p.plan || {};
+    var recCount = (plan.recurring || []).length;
+    var misCount = (plan.mistakes || []).length;
+    var insCount = (plan.insights || []).length;
+    var recTotal = (plan.recurring || []).reduce(function(s,r) { return s + (r.amount||0); }, 0);
+    var misTotal = (plan.mistakes || []).reduce(function(s,m) { return s + (m.amount||0); }, 0);
+
+    var preview = (plan.insights || []).slice(0,2).map(function(ins) {
+      return '<span>• ' + ins.replace(/</g,'&lt;') + '</span>';
+    }).join('');
+
+    var acctKey = p.month + '-' + p.year;
+    var acct = _finAccountability[acctKey];
+    var doneCount = 0, totalAcct = 0;
+    if (acct && acct.insights) {
+      totalAcct = acct.insights.length;
+      doneCount = acct.insights.filter(function(i) { return i.done === true; }).length;
+    }
+
+    return '<div class="fin-hist-card" onclick="finLoadMonth(' + p.month + ',' + p.year + ')">' +
+      '<div class="fin-hist-month-row">' +
+        '<span class="fin-hist-month">📋 ' + _finMonthNames[p.month-1] + ' ' + p.year + '</span>' +
+      '</div>' +
+      '<div class="fin-hist-stats">' +
+        (recCount > 0 ? '<span class="fin-hist-stat recurring">🔄 ' + recCount + ' · ' + finFmtK(recTotal) + '</span>' : '') +
+        (misCount > 0 ? '<span class="fin-hist-stat mistake">⚠️ ' + misCount + ' · ' + finFmtK(misTotal) + '</span>' : '') +
+        (insCount > 0 ? '<span class="fin-hist-stat">💡 ' + insCount + ' insights</span>' : '') +
+        (totalAcct > 0 ? '<span class="fin-hist-stat" style="color:rgba(0,230,118,.5);">✅ ' + doneCount + '/' + totalAcct + ' done</span>' : '') +
+      '</div>' +
+      (preview ? '<div class="fin-hist-insights">' + preview + '</div>' : '') +
+      '<div class="fin-hist-actions">' +
+        '<button class="fin-hist-btn" onclick="event.stopPropagation();finLoadMonth(' + p.month + ',' + p.year + ')">📥 Load</button>' +
+        '<button class="fin-hist-btn delete" onclick="event.stopPropagation();finDeleteInspector(' + p.month + ',' + p.year + ')">🗑 Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  return '<div class="fin-section fin-history">' +
+    '<div class="fin-section-hdr">' +
+      '<span class="fin-section-icon">📚</span>' +
+      '<span class="fin-section-title">Past Inspections</span>' +
+      '<span class="fin-section-badge">' + plans.length + ' saved</span>' +
+    '</div>' +
+    '<div class="fin-history-grid">' + cards + '</div>' +
+  '</div>';
+}
+
+/* ── Tag toggles ── */
+function finToggleRecurring(el, key) {
+  if (_finRecurring[key]) { delete _finRecurring[key]; el.classList.remove('on'); }
+  else { _finRecurring[key] = true; el.classList.add('on'); }
+  finRefreshFlagged();
+}
+
+function finToggleMistake(el, key, idx) {
+  if (_finMistakes.hasOwnProperty(key)) {
+    delete _finMistakes[key];
+    el.classList.remove('on');
+    var rr = document.getElementById('fin-reason-' + idx);
+    if (rr) rr.classList.remove('open');
+    var nb = el.parentElement.querySelector('.fin-tag.note');
+    if (nb) nb.remove();
+  } else {
+    _finMistakes[key] = '';
+    el.classList.add('on');
+    var rr2 = document.getElementById('fin-reason-' + idx);
+    if (rr2) rr2.classList.add('open');
+  }
+  finRefreshFlagged();
+}
+
+function finUntagRecurring(key) { delete _finRecurring[key]; finRefreshFlagged(); }
+function finUntagMistake(key)  { delete _finMistakes[key];  finRefreshFlagged(); }
+
+function finReasonChanged(idx, key) {
+  var input = document.getElementById('fin-reason-input-' + idx);
+  if (!input) return;
+  _finMistakes[key] = input.value.trim();
+  finRefreshFlagged();
+}
+
+/* ── Insight CRUD ── */
+function finAddInsight() {
+  var input = document.getElementById('fin-ins-input');
+  if (!input) return;
+  var val = input.value.trim();
+  if (!val) return;
+  _finInsights.push(val);
+  input.value = '';
+  finRefreshInsights();
+}
+
+function finRemoveInsight(i) {
+  _finInsights.splice(i, 1);
+  finRefreshInsights();
+}
+
+/* ── Accountability toggle ── */
+function finToggleAccountability(key, idx) {
+  if (!_finAccountability[key] || !_finAccountability[key].insights) return;
+  var ins = _finAccountability[key].insights[idx];
+  if (ins.done === true) { ins.done = false; }
+  else if (ins.done === false) { ins.done = undefined; }
+  else { ins.done = true; }
+  finRefreshAll();
+}
+
+/* ── Partial refresh ── */
+function finRefreshFlagged() {
+  var entries = _finExpData ? (_finExpData.entries || []) : [];
+  var grandTotal = entries.reduce(function(s,e) { return s + e.amount; }, 0);
+  var newFlagged = finBuildFlaggedInner(entries, grandTotal);
+  var section = document.getElementById('fin-flagged-list');
+  if (section) section.innerHTML = newFlagged;
+  var badge = document.getElementById('fin-flag-badge');
+  if (badge) badge.textContent = (Object.keys(_finRecurring).length + Object.keys(_finMistakes).length) + ' flagged';
+  // Update row highlights in table
+  var rows = document.querySelectorAll('.fin-table tbody tr[data-finkey]');
+  rows.forEach(function(row) {
+    var key = row.getAttribute('data-finkey');
+    var isRec = !!_finRecurring[key];
+    var isMis = _finMistakes.hasOwnProperty(key);
+    row.className = (isRec && isMis) ? 'row-both' : isRec ? 'row-recurring' : isMis ? 'row-mistake' : '';
+  });
+}
+
+function finBuildFlaggedInner(entries, grandTotal) {
+  var recurringItems = [], mistakeItems = [];
+  entries.forEach(function(e) {
+    var key = finEntryKey(e);
+    if (_finRecurring[key]) recurringItems.push(e);
+    if (_finMistakes.hasOwnProperty(key)) mistakeItems.push({ entry: e, reason: _finMistakes[key] });
+  });
+  var recTotal = recurringItems.reduce(function(s,e) { return s + e.amount; }, 0);
+  var misTotal = mistakeItems.reduce(function(s,m) { return s + m.entry.amount; }, 0);
+
+  var html = '';
+  if (recurringItems.length > 0) {
+    html += '<div class="fin-flag-group-title"><span class="dot" style="background:var(--blue);box-shadow:0 0 5px var(--blue);"></span>🔄 Recurring (' + recurringItems.length + ' · ' + finFmt(recTotal) + ')</div>';
+    recurringItems.forEach(function(e) {
+      var escKey = finEntryKey(e).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      html += '<div class="fin-flag-item"><span class="fin-flag-day">D' + e.day + '</span><span class="fin-flag-ref">' + (e.reference||e.category) + '</span><span class="fin-flag-cat">' + e.category + '</span><span class="fin-flag-amt">' + finFmt(e.amount) + '</span><button class="fin-flag-remove" onclick="finUntagRecurring(\'' + escKey + '\')">✕</button></div>';
+    });
+  }
+  if (mistakeItems.length > 0) {
+    html += '<div class="fin-flag-group-title"><span class="dot" style="background:var(--red);box-shadow:0 0 5px var(--red);"></span>⚠️ Mistakes (' + mistakeItems.length + ' · ' + finFmt(misTotal) + ')</div>';
+    mistakeItems.forEach(function(m) {
+      var escKey = finEntryKey(m.entry).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      html += '<div class="fin-flag-item"><span class="fin-flag-day">D' + m.entry.day + '</span><span class="fin-flag-ref">' + (m.entry.reference||m.entry.category) + '</span><span class="fin-flag-cat">' + m.entry.category + '</span><span class="fin-flag-amt">' + finFmt(m.entry.amount) + '</span>' + (m.reason ? '<span class="fin-flag-reason">"' + m.reason + '"</span>' : '') + '<button class="fin-flag-remove" onclick="finUntagMistake(\'' + escKey + '\')">✕</button></div>';
+    });
+  }
+  if (!html) html = '<div class="fin-no-flags">👆 Click 🔄 or ⚠️ on any row to tag it</div>';
+  else html += '<div class="fin-flagged-kpi"><div class="fin-flagged-kpi-item">🔄 Recurring <strong>' + finFmtK(recTotal) + '</strong></div><div class="fin-flagged-kpi-item">⚠️ Mistakes <strong>' + finFmtK(misTotal) + '</strong></div><div class="fin-flagged-kpi-item">📊 Total <strong>' + finFmtK(recTotal+misTotal) + '</strong> of ' + finFmtK(grandTotal) + '</div></div>';
+  return html;
+}
+
+function finRefreshInsights() {
+  var list = document.getElementById('fin-ins-list');
+  if (!list) return;
+  if (_finInsights.length === 0) {
+    list.innerHTML = '<div class="fin-no-flags">No insights yet. Add some below.</div>';
+  } else {
+    list.innerHTML = _finInsights.map(function(ins, i) {
+      return '<div class="fin-ins-item"><span class="fin-ins-bullet">•</span><span class="fin-ins-text">' + ins.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span><button class="fin-ins-remove" onclick="finRemoveInsight(' + i + ')">✕</button></div>';
+    }).join('');
+  }
+}
+
+function finRefreshAll() { finRender(); }
+
+/* ── Navigation ── */
+function finLoadMonth(month, year) { _finMonth = month; _finYear = year; finFetchAll(); }
+
+/* ── Reset ── */
+function finResetAll() {
+  _finRecurring = {}; _finMistakes = {}; _finInsights = []; _finAccountability = {};
+  if (_finInspector) {
+    if (_finInspector.recurring) _finInspector.recurring.forEach(function(r) { _finRecurring[finEntryKey(r)] = true; });
+    if (_finInspector.mistakes) _finInspector.mistakes.forEach(function(m) { _finMistakes[finEntryKey(m)] = m.reason || ''; });
+    _finInsights = (_finInspector.insights || []).slice();
+    _finAccountability = _finInspector.accountability || {};
+    finMergeAccountability();
+  }
+  finRender();
+}
+
+/* ── SAVE ── */
+function finSaveAll() {
+  var entries = _finExpData ? (_finExpData.entries || []) : [];
+  var recurring = [], mistakes = [];
+
+  entries.forEach(function(e) {
+    var key = finEntryKey(e);
+    if (_finRecurring[key]) recurring.push({ day:e.day, category:e.category, ref:e.reference||'', amount:e.amount });
+    if (_finMistakes.hasOwnProperty(key)) mistakes.push({ day:e.day, category:e.category, ref:e.reference||'', amount:e.amount, reason:_finMistakes[key] });
+  });
+
+  var data = {
+    recurring: recurring,
+    mistakes: mistakes,
+    insights: _finInsights.slice(),
+    accountability: _finAccountability,
+    updatedAt: new Date().toISOString()
+  };
+
+  var btn = document.getElementById('fin-save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.success) {
+        _finInspector = data;
+        var msg = document.getElementById('fin-saved-msg');
+        if (msg) { msg.classList.add('show'); setTimeout(function() { msg.classList.remove('show'); }, 2000); }
+        google.script.run
+          .withSuccessHandler(function(r) { _finAllInspectors = (r && r.success) ? r.data : []; finRender(); })
+          .withFailureHandler(function() { finRender(); })
+          .getAllInspectorData();
+      } else {
+        alert('Save failed: ' + (res ? res.error : 'Unknown'));
+        btn.disabled = false; btn.textContent = '💾 Save Inspection';
+      }
+    })
+    .withFailureHandler(function(err) { alert('Error: ' + err.message); btn.disabled = false; btn.textContent = '💾 Save Inspection'; })
+    .saveInspectorData(_finMonth, _finYear, data);
+}
+
+/* ── DELETE ── */
+function finDeleteInspector(month, year) {
+  if (!confirm('Delete inspection for ' + _finMonthNames[month-1] + ' ' + year + '?')) return;
+  google.script.run
+    .withSuccessHandler(function(res) {
+      if (res && res.success) {
+        if (month === _finMonth && year === _finYear) {
+          _finInspector = null; _finRecurring = {}; _finMistakes = {}; _finInsights = []; _finAccountability = {};
+        }
+        google.script.run
+          .withSuccessHandler(function(r) { _finAllInspectors = (r && r.success) ? r.data : []; finRender(); })
+          .withFailureHandler(function() { finRender(); })
+          .getAllInspectorData();
+      } else { alert('Delete failed: ' + (res ? res.error : 'Unknown')); }
+    })
+    .withFailureHandler(function(err) { alert('Error: ' + err.message); })
+    .deleteInspectorData(month, year);
+}
+</script>
