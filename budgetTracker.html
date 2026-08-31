@@ -183,6 +183,34 @@
     font-weight: 700;
   }
 
+  /* Include / Exclude breakdown strip */
+  .budget-breakdown {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(255,255,255,0.07);
+  }
+  .breakdown-chip {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    flex: 1;
+    min-width: 90px;
+  }
+  .breakdown-chip .stat-label { letter-spacing: 0.5px; }
+  .breakdown-chip .stat-value { font-size: 0.8em; }
+  .chip-included { border-color: rgba(74,222,128,0.25); background: rgba(74,222,128,0.07); }
+  .chip-included .stat-value { color: #4ade80; }
+  .chip-excluded { border-color: rgba(250,204,21,0.25); background: rgba(250,204,21,0.06); }
+  .chip-excluded .stat-value { color: #facc15; }
+  .chip-total .stat-value { color: #fff; }
+
   /* Progress Bar (Remaining Chart) */
   .budget-progress-container {
     height: 6px;
@@ -215,11 +243,11 @@
   }
   .budget-item-card:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); }
   
-  .budget-item-info { display: flex; flex-direction: column; gap: 2px; }
-  .budget-item-desc { font-size: 0.85em; color: #eee; }
+  .budget-item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .budget-item-desc { font-size: 0.85em; color: #eee; overflow-wrap: anywhere; }
   .budget-item-type { font-size: 0.65em; font-weight: 700; color: #38bdf8; text-transform: uppercase; }
   
-  .budget-item-right { display: flex; align-items: center; gap: 16px; }
+  .budget-item-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
   .budget-item-amt { font-size: 0.9em; font-weight: 700; color: #fff; }
   
   .budget-item-actions { display: flex; gap: 4px; }
@@ -229,6 +257,41 @@
   }
   .budget-act-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
   .budget-act-btn.del:hover { background: rgba(255,80,80,0.1); color: #ff5050; }
+
+  /* Excluded item state */
+  .budget-item-card.is-excluded { background: rgba(250, 204, 21, 0.03); }
+  .budget-item-card.is-excluded .budget-item-desc { color: rgba(255,255,255,0.45); }
+  .budget-item-card.is-excluded .budget-item-amt { color: rgba(255,255,255,0.45); }
+  .budget-excl-tag {
+    font-size: 0.6em;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #facc15;
+    background: rgba(250, 204, 21, 0.12);
+    border: 1px solid rgba(250, 204, 21, 0.25);
+    padding: 1px 6px;
+    border-radius: 4px;
+    width: fit-content;
+    margin-top: 2px;
+  }
+
+  /* Include toggle in form */
+  .budget-toggle { display: flex; gap: 6px; }
+  .budget-toggle-opt {
+    flex: 1;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.55);
+    font-size: 0.75em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .budget-toggle-opt.active { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.45); color: #4ade80; }
+  .budget-toggle-opt.excl.active { background: rgba(250,204,21,0.15); border-color: rgba(250,204,21,0.45); color: #facc15; }
 
   .remaining-positive { color: #4ade80; }
   .remaining-negative { color: #ff4d6d; }
@@ -285,6 +348,14 @@
         <label class="budget-label">Expense Amount (₨)</label>
         <input type="number" id="b-exp-amt" class="budget-input" placeholder="0">
       </div>
+      <div class="budget-field">
+        <label class="budget-label">Actual Cost?</label>
+        <input type="hidden" id="b-include" value="true">
+        <div class="budget-toggle">
+          <button type="button" class="budget-toggle-opt active" id="b-include-yes" onclick="setBudgetInclude(true)">✓ Included</button>
+          <button type="button" class="budget-toggle-opt excl" id="b-include-no" onclick="setBudgetInclude(false)">✕ Excluded</button>
+        </div>
+      </div>
     </div>
 
     <div class="budget-form-actions">
@@ -310,6 +381,23 @@
   var _budgetParents = [];
   var _budgetTypes = [];
 
+  var BUDGET_DESC_MAX = 100;
+
+  function escBudget(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Long descriptions are cut at 100 chars; the full text stays in the tooltip.
+  function truncBudgetDesc(str) {
+    var full = String(str == null ? '' : str);
+    if (full.length <= BUDGET_DESC_MAX) return { text: full, truncated: false, full: full };
+    return { text: full.substring(0, BUDGET_DESC_MAX) + '…', truncated: true, full: full };
+  }
+
+  function money(n) { return '₨ ' + (Number(n) || 0).toLocaleString(); }
+
   function loadBudgetData() {
     google.script.run.withSuccessHandler(function(res) {
       if (res.success) {
@@ -333,11 +421,17 @@
           items: [],
           budget: item.budget || 0,
           type: item.type || '',
-          spent: 0
+          spent: 0,
+          included: 0,
+          excluded: 0
         };
       }
+      var amt = item.expenseAmount || 0;
       groups[p].items.push(item);
-      groups[p].spent += (item.expenseAmount || 0);
+      // Budget / spent / remaining ignore column F entirely.
+      groups[p].spent += amt;
+      if (item.isInclude === false) groups[p].excluded += amt;
+      else groups[p].included += amt;
     });
 
     // 2. Update Dropdowns
@@ -383,9 +477,9 @@
         + '      <div class="budget-group-title-area">'
         + '        <div class="budget-group-title">'
         + '           <div class="budget-group-icon">' + icon + '</div>'
-        +             p
+        +             escBudget(p)
         + '        </div>'
-        + '        <div class="budget-group-type-tag">' + (g.type || 'General') + '</div>'
+        + '        <div class="budget-group-type-tag">' + escBudget(g.type || 'General') + '</div>'
         + '      </div>'
         + '      <div class="budget-sum-val ' + (gRem >= 0 ? 'remaining-positive' : 'remaining-negative') + '" style="font-size:1.1em; text-align:right;">'
         + '        <div style="font-size:0.5em; color:rgba(255,255,255,0.4); text-transform:uppercase; font-weight:700;">' + (gRem >= 0 ? 'Remaining' : 'Overspent') + '</div>'
@@ -400,16 +494,26 @@
         + '    <div class="budget-progress-container">'
         + '      <div class="budget-progress-bar ' + progressClass + '" style="width: ' + usagePct + '%"></div>'
         + '    </div>'
+        + (g.excluded > 0
+            ? '    <div class="budget-breakdown">'
+              + '      <div class="breakdown-chip chip-included"><span class="stat-label">Actual (Included)</span><span class="stat-value">' + money(g.included) + '</span></div>'
+              + '      <div class="breakdown-chip chip-excluded"><span class="stat-label">Excluded</span><span class="stat-value">' + money(g.excluded) + '</span></div>'
+              + '      <div class="breakdown-chip chip-total"><span class="stat-label">Total</span><span class="stat-value">' + money(g.spent) + '</span></div>'
+              + '    </div>'
+            : '')
         + '  </div>';
       
       html += '<div class="budget-list">';
       g.items.forEach(function(item) {
-        html += '<div class="budget-item-card">'
+        var excluded = item.isInclude === false;
+        var d = truncBudgetDesc(item.expenseDesc || '---');
+        html += '<div class="budget-item-card' + (excluded ? ' is-excluded' : '') + '">'
           + '  <div class="budget-item-info">'
-          + '    <div class="budget-item-desc">' + (item.expenseDesc || '---') + '</div>'
+          + '    <div class="budget-item-desc"' + (d.truncated ? ' title="' + escBudget(d.full) + '"' : '') + '>' + escBudget(d.text) + '</div>'
+          + (excluded ? '    <div class="budget-excl-tag">Not actual cost</div>' : '')
           + '  </div>'
           + '  <div class="budget-item-right">'
-          + '    <div class="budget-item-amt">₨ ' + (item.expenseAmount || 0).toLocaleString() + '</div>'
+          + '    <div class="budget-item-amt">' + money(item.expenseAmount) + '</div>'
           + '    <div class="budget-item-actions">'
           + '      <button class="budget-act-btn" onclick="editBudgetEntry(' + item.row + ')" title="Edit">✏️</button>'
           + '      <button class="budget-act-btn del" onclick="deleteBudgetEntry(' + item.row + ')" title="Delete">🗑️</button>'
@@ -449,6 +553,12 @@
     }
   }
 
+  function setBudgetInclude(val) {
+    document.getElementById('b-include').value = val ? 'true' : 'false';
+    document.getElementById('b-include-yes').classList.toggle('active', !!val);
+    document.getElementById('b-include-no').classList.toggle('active', !val);
+  }
+
   function handleBudgetTypeChange() {
     var sel = document.getElementById('b-type-sel');
     var inp = document.getElementById('b-type-new');
@@ -477,6 +587,7 @@
         document.getElementById('b-budget').value = '';
         document.getElementById('b-exp-desc').value = '';
         document.getElementById('b-exp-amt').value = '';
+        setBudgetInclude(true);
       }
       card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
@@ -502,7 +613,8 @@
       type: type,
       budget: parseFloat(document.getElementById('b-budget').value) || 0,
       expenseDesc: document.getElementById('b-exp-desc').value.trim(),
-      expenseAmount: parseFloat(document.getElementById('b-exp-amt').value) || 0
+      expenseAmount: parseFloat(document.getElementById('b-exp-amt').value) || 0,
+      isInclude: document.getElementById('b-include').value !== 'false'
     };
 
     var btn = document.getElementById('b-save-btn');
@@ -553,7 +665,8 @@
     document.getElementById('b-budget').value = item.budget || 0;
     document.getElementById('b-exp-desc').value = item.expenseDesc || '';
     document.getElementById('b-exp-amt').value = item.expenseAmount || 0;
-    
+    setBudgetInclude(item.isInclude !== false);
+
     toggleBudgetForm(true);
   }
 

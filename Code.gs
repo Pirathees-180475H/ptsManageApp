@@ -4194,6 +4194,15 @@ function getSmokingData() {
 // BUDGET TRACKER
 // ═══════════════════════════════════════════════════════════════
 
+// Column F (isInclude): blank/missing counts as included so legacy rows keep working.
+function parseBudgetInclude(val) {
+  if (val === false) return false;
+  if (val === true) return true;
+  if (val === '' || val === null || val === undefined) return true;
+  var s = String(val).trim().toLowerCase();
+  return !(s === 'false' || s === 'no' || s === 'n' || s === '0');
+}
+
 function getBudgetData() {
   try {
     var ss = SpreadsheetApp.getActive();
@@ -4203,7 +4212,8 @@ function getBudgetData() {
     var lastRow = sheet.getLastRow();
     if (lastRow < 2) return { success: true, data: [], parents: [], types: [] };
 
-    var values = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+    var numCols = Math.max(5, Math.min(6, sheet.getLastColumn()));
+    var values = sheet.getRange(2, 1, lastRow - 1, numCols).getValues();
     var budgetData = [];
     var parentsMap = {}; // { parentName: budget }
     var types = new Set();
@@ -4213,14 +4223,15 @@ function getBudgetData() {
       var parent = row[0] || '';
       var type = row[1] || '';
       var budget = parseFloat(row[2]) || 0;
-      
+
       budgetData.push({
         row: i + 2,
         parent: parent,
         type: type,
         budget: budget,
         expenseDesc: row[3] || '',
-        expenseAmount: parseFloat(row[4]) || 0
+        expenseAmount: parseFloat(row[4]) || 0,
+        isInclude: parseBudgetInclude(row[5])
       });
 
       if (parent) {
@@ -4257,11 +4268,12 @@ function saveBudgetEntry(entry) {
       entry.type || '',
       entry.budget || 0,
       entry.expenseDesc || '',
-      entry.expenseAmount || 0
+      entry.expenseAmount || 0,
+      entry.isInclude === false ? false : true
     ];
 
     if (entry.row && entry.row >= 2) {
-      sheet.getRange(entry.row, 1, 1, 5).setValues([rowData]);
+      sheet.getRange(entry.row, 1, 1, 6).setValues([rowData]);
     } else {
       sheet.appendRow(rowData);
     }
