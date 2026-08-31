@@ -1625,7 +1625,7 @@ function sendMonthlyNotification() {
 const CONSUMER_KEY = 'Gdg3ICNvkIyre7PAYsj6FRrgxeaOdnHob0mSYtHp';
 const CONSUMER_SECRET = 'HGoLJOypYGNA1GA4pChql6uquVqzbVDuZ0LONrNZ';
 
-function getSplitwiseData() {
+function getSplitwiseData(limit) {
   const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
   const headers = { 'Authorization': 'Bearer ' + apiKey };
   const opts = { method: 'get', headers: headers };
@@ -1654,48 +1654,10 @@ function getSplitwiseData() {
       });
     });
 
-    // ── 2. Current user ID ──
-    var currentUserId = null;
-    try {
-      const meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', opts);
-      currentUserId = JSON.parse(meResp.getContentText()).user.id;
-    } catch(e) {}
+    // ── 2. Recent expenses ── (page size comes from the UI, default 20)
+    var recentTransactions = fetchSplitwiseRecentTxns_(limit, false);
 
-    // ── 3. Recent expenses — fetch latest 15 ──
-    var recentTransactions = [];
-    try {
-      var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-      var expUrl  = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=20&offset=0';
-      var expResp = UrlFetchApp.fetch(expUrl, opts);
-      var allTxns = (JSON.parse(expResp.getContentText()).expenses || [])
-                      .filter(function(e) { return !e.deleted_at; });
-      recentTransactions = allTxns.map(function(e) {
-        var myNet = 0, paidByMe = false;
-        if (currentUserId) {
-          for (var i = 0; i < e.users.length; i++) {
-            if (e.users[i].user_id === currentUserId) {
-              myNet    = parseFloat(e.users[i].net_balance || 0);
-              paidByMe = parseFloat(e.users[i].paid_share  || 0) > 0;
-              break;
-            }
-          }
-        }
-        var rawDate = new Date(e.date);
-        return {
-          id:          e.id,
-          description: e.description || '(no description)',
-          date:        Utilities.formatDate(rawDate, tz, 'dd MMM yyyy'),
-          rawDate:     rawDate.getTime(),
-          cost:        parseFloat(e.cost),
-          currency:    e.currency_code,
-          myNet:       myNet,
-          paidByMe:    paidByMe,
-          isPayment:   e.payment === true
-        };
-      });
-    } catch(e) {}
-
-    // ── 4. Validate LKR balance ──
+    // ── 3. Validate LKR balance ──
     const portfolioSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Portfolio');
     const sheetBalance = portfolioSheet ? portfolioSheet.getRange('B14').getValue() : 0;
     const lkrTotal = totals['LKR'] || 0;
@@ -1711,6 +1673,82 @@ function getSplitwiseData() {
     Logger.log('getSplitwiseData error: ' + error);
     return { balanceData: [], recentTransactions: [], validationResult: null };
   }
+}
+
+/**
+ * Recent Splitwise expenses for the Splitwise page.
+ * limit   – how many records to return (1–500, default 20)
+ * lkrOnly – when true, keeps paging until `limit` LKR expenses are collected
+ */
+function getSplitwiseTransactions(limit, lkrOnly) {
+  return fetchSplitwiseRecentTxns_(limit, lkrOnly === true);
+}
+
+function fetchSplitwiseRecentTxns_(limit, lkrOnly) {
+  var n = parseInt(limit, 10);
+  if (!n || n < 1) n = 20;
+  if (n > 500)     n = 500;
+
+  const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
+  const opts = { method: 'get', headers: { 'Authorization': 'Bearer ' + apiKey } };
+  var out = [];
+
+  try {
+    var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+
+    var currentUserId = null;
+    try {
+      var meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', opts);
+      currentUserId = JSON.parse(meResp.getContentText()).user.id;
+    } catch (e) {}
+
+    var MAX_SCAN = 1000;                   // never page past this many expenses
+    var pageSize = 100;                    // Splitwise caps a single get_expenses call
+    var offset = 0, scanned = 0;
+
+    while (out.length < n && scanned < MAX_SCAN) {
+      var url  = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=' + pageSize + '&offset=' + offset;
+      var page = JSON.parse(UrlFetchApp.fetch(url, opts).getContentText()).expenses || [];
+      if (!page.length) break;
+      scanned += page.length;
+      offset  += pageSize;
+
+      page.forEach(function(e) {
+        if (out.length >= n) return;
+        if (e.deleted_at) return;
+        if (lkrOnly && e.currency_code !== 'LKR') return;
+        out.push(mapSplitwiseTxn_(e, currentUserId, tz));
+      });
+    }
+  } catch (e) {
+    Logger.log('fetchSplitwiseRecentTxns_ error: ' + e);
+  }
+  return out;
+}
+
+function mapSplitwiseTxn_(e, currentUserId, tz) {
+  var myNet = 0, paidByMe = false;
+  if (currentUserId) {
+    for (var i = 0; i < e.users.length; i++) {
+      if (e.users[i].user_id === currentUserId) {
+        myNet    = parseFloat(e.users[i].net_balance || 0);
+        paidByMe = parseFloat(e.users[i].paid_share  || 0) > 0;
+        break;
+      }
+    }
+  }
+  var rawDate = new Date(e.date);
+  return {
+    id:          e.id,
+    description: e.description || '(no description)',
+    date:        Utilities.formatDate(rawDate, tz, 'dd MMM yyyy'),
+    rawDate:     rawDate.getTime(),
+    cost:        parseFloat(e.cost),
+    currency:    e.currency_code,
+    myNet:       myNet,
+    paidByMe:    paidByMe,
+    isPayment:   e.payment === true
+  };
 }
 
 function getSplitwiseExpenseDetails(expenseId) {

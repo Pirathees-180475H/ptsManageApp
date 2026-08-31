@@ -6777,51 +6777,32 @@ function swRender(data){
   /* ── Recent transactions (paginated) ── */
   var txnHtml = '';
   if(TRANSACTIONS && TRANSACTIONS.length > 0){
-    _swMainTxns = TRANSACTIONS;
-    _swMainPage = 0;
-    var total = TRANSACTIONS.length;
-    var pages = Math.ceil(total / _swMainPs);
-    var start = _swMainPage * _swMainPs;
-    var shown = TRANSACTIONS.slice(start, start + _swMainPs);
+    _swMainAllTxns = TRANSACTIONS;
+    _swMainPage    = 0;
+    swApplyTxnFilter();
 
-    txnHtml = '<div class="txn-section"><div class="section-hdr">Recent Transactions</div>'
-      +'<div id="sw-analysisBox"></div><div id="sw-txnList">';
-    shown.forEach(function(tx){
-      var icon    = tx.isPayment ? '💸' : (tx.paidByMe ? '🧾' : '📋');
-      var netCls  = tx.myNet > 0 ? 'owed' : (tx.myNet < 0 ? 'owe' : 'zero');
-      var netLbl  = tx.myNet > 0 ? '+'+tx.myNet.toFixed(2)
-                  : tx.myNet < 0 ? tx.myNet.toFixed(2) : '—';
-      var payBadge= tx.isPayment ? '<span class="txn-badge payment">Payment</span>' : '';
-      txnHtml +=
-        '<div class="txn-row" data-net="'+(tx.myNet||0)+'" data-currency="'+(tx.currency||'')+'" data-id="'+(tx.id||'')+'">'
-          +'<div class="txn-icon">'+icon+'</div>'
-          +'<div class="txn-info">'
-            +'<div class="txn-desc"><span class="txn-desc-inner">'+swEscHtml(tx.description)+'</span></div>'
-            +'<div class="txn-date">'+(tx.date||'')+'</div>'
-          +'</div>'
-          +'<div class="txn-cost">'+(tx.currency||'')+' '+tx.cost.toFixed(2)+'</div>'
-          +payBadge
-          +'<div class="txn-net '+netCls+'">'+netLbl+'</div>'
-        +'</div>';
-    });
-    txnHtml += '</div>';
-
-    // Pagination controls
-    if(pages > 1){
-      txnHtml += '<div class="sw-main-pager" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 0 4px">'
-        +'<button class="sw-page-btn" onclick="swMainPage('+(_swMainPage-1)+')" '+
-          (_swMainPage===0?'disabled':'')+'>‹</button>';
-      var s = Math.max(0, _swMainPage-2), e = Math.min(pages-1, _swMainPage+2);
-      if(s > 0) txnHtml += '<button class="sw-page-btn" onclick="swMainPage(0)">1</button>'+(s>1?'<span class="sw-page-info" style="color:rgba(255,255,255,.3);font-size:.72em;padding:0 4px">…</span>':'');
-      for(var i=s; i<=e; i++)
-        txnHtml += '<button class="sw-page-btn'+(i===_swMainPage?' cur':'')+'" onclick="swMainPage('+i+')">'+(i+1)+'</button>';
-      if(e < pages-1) txnHtml += (e<pages-2?'<span class="sw-page-info" style="color:rgba(255,255,255,.3);font-size:.72em;padding:0 4px">…</span>':'')+'<button class="sw-page-btn" onclick="swMainPage('+(pages-1)+')">'+pages+'</button>';
-      txnHtml += '<button class="sw-page-btn" onclick="swMainPage('+(_swMainPage+1)+')" '+
-        (_swMainPage>=pages-1?'disabled':'')+'>›</button>'
+    txnHtml = '<div class="txn-section">'
+      +'<div class="sw-txn-hdrbar">'
+        +'<div class="section-hdr sw-txn-hdr">Recent Transactions</div>'
+        +'<div class="sw-txn-ctrls">'
+          +'<label class="sw-ctrl" for="sw-pageSizeInput">'
+            +'<span class="sw-ctrl-lbl">Page size</span>'
+            +'<input id="sw-pageSizeInput" class="sw-ps-input" type="number" min="1" max="500" step="1" value="'+_swMainPs+'"'
+              +' onchange="swSetPageSize(this.value)"'
+              +' onkeydown="if(event.key===\'Enter\'){event.preventDefault();swSetPageSize(this.value);}">'
+          +'</label>'
+          +'<label class="sw-ctrl sw-lkr-toggle" title="Show only LKR transactions">'
+            +'<input type="checkbox" id="sw-lkrOnly"'+(_swLkrOnly?' checked':'')+' onchange="swToggleLkrOnly(this.checked)">'
+            +'<span class="sw-tgl-track"><span class="sw-tgl-knob"></span></span>'
+            +'<span class="sw-ctrl-lbl">Load LKR only</span>'
+          +'</label>'
         +'</div>'
-        +'<div class="sw-page-info-bottom" style="text-align:center;color:rgba(255,255,255,.3);font-size:.72em;padding:2px 0 6px">Page '+(_swMainPage+1)+' of '+pages+' · '+total+' total</div>';
-    }
-    txnHtml += '</div>';
+      +'</div>'
+      +'<div id="sw-analysisBox"></div>'
+      +'<div id="sw-txnList"></div>'
+      +'<div class="sw-main-pager" style="display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 0 4px;flex-wrap:wrap"></div>'
+      +'<div class="sw-page-info-bottom" style="text-align:center;color:rgba(255,255,255,.3);font-size:.72em;padding:2px 0 6px"></div>'
+    +'</div>';
   }
 
   /* ── Friend cards ── */
@@ -6882,6 +6863,9 @@ function swRender(data){
     +'</div>';
   buildSWTicker(RAW);
 
+  /* paint page 1 of the transaction list (respects page size + LKR toggle) */
+  swMainPage(0);
+
   /* ── Post-render: charts, analysis, bars, click handlers ── */
   swBuildCharts(RAW, totalOwe, totalOwed);
   swBuildAnalysis(TRANSACTIONS, VALIDATION);
@@ -6899,16 +6883,6 @@ function swRender(data){
     });
   },350);
 
-  /* wire up transaction row clicks */
-  document.querySelectorAll('#page-sw .txn-row').forEach(function(row){
-    row.style.cursor = 'pointer';
-    row.addEventListener('click', function(){
-      var txId = row.dataset.id;
-      var tx = (TRANSACTIONS||[]).find(function(t){ return (t.id||'').toString() === txId.toString(); });
-      if(tx) swOpenTxnDetail(tx);
-    });
-  });
-
   /* wire up friend card clicks */
   document.querySelectorAll('#page-sw .friend-card[data-sw-friend-id]').forEach(function(card){
     card.addEventListener('click',function(){
@@ -6924,16 +6898,78 @@ function swRender(data){
 }
 
 /* ── SW main page pagination ── */
+function swApplyTxnFilter(){
+  _swMainTxns = _swLkrOnly
+    ? _swMainAllTxns.filter(function(t){ return (t.currency||'').toUpperCase()==='LKR'; })
+    : _swMainAllTxns.slice();
+}
+
+function swSetPageSize(val){
+  var n = parseInt(val,10);
+  if(!n || n < 1) n = 20;
+  if(n > 500)     n = 500;
+  var inp = document.getElementById('sw-pageSizeInput');
+  if(inp) inp.value = n;
+  if(n === _swMainPs) return;      // nothing changed — skip the round trip
+  _swMainPs = n;
+  swFetchTxns();
+}
+
+function swToggleLkrOnly(on){
+  _swLkrOnly = !!on;
+  swFetchTxns();
+}
+
+/* Reload the transaction list from Splitwise with the current page size / LKR filter */
+function swFetchTxns(){
+  var list = document.getElementById('sw-txnList');
+  if(!list) return;
+  swTxnCtrlsBusy(true);
+  list.innerHTML =
+    '<div class="sw-txn-loading"><span class="sw-txn-loading-ring"></span>'
+    +'Loading '+_swMainPs+(_swLkrOnly?' LKR':'')+' transactions…</div>';
+
+  google.script.run
+    .withSuccessHandler(function(txns){
+      _swMainAllTxns = txns || [];
+      window._swAllTransactions = _swMainAllTxns;
+      swApplyTxnFilter();
+      swTxnCtrlsBusy(false);
+      swMainPage(0);
+    })
+    .withFailureHandler(function(err){
+      swTxnCtrlsBusy(false);
+      list.innerHTML = '<div class="sw-txn-loading" style="color:#ff4d6d">⚠ Failed to load: '
+        +swEscHtml((err && err.message) || err)+'</div>';
+    })
+    .getSplitwiseTransactions(_swMainPs, _swLkrOnly);
+}
+
+function swTxnCtrlsBusy(busy){
+  var inp = document.getElementById('sw-pageSizeInput');
+  var tgl = document.getElementById('sw-lkrOnly');
+  if(inp) inp.disabled = busy;
+  if(tgl) tgl.disabled = busy;
+}
+
 function swMainPage(page){
-  _swMainPage = page;
+  var list = document.getElementById('sw-txnList');
+  if(!list) return;
+
   var total = _swMainTxns.length;
-  var pages = Math.ceil(total / _swMainPs);
+  var pages = Math.max(1, Math.ceil(total / _swMainPs));
+  if(page < 0)       page = 0;
+  if(page > pages-1) page = pages-1;
+  _swMainPage = page;
+
   var start = page * _swMainPs;
   var shown = _swMainTxns.slice(start, start + _swMainPs);
 
-  var list = document.getElementById('sw-txnList');
-  if(!list) return;
   list.innerHTML = '';
+  if(shown.length === 0){
+    list.innerHTML = '<div class="empty" style="padding:24px 0;text-align:center;color:rgba(255,255,255,.3);font-size:.8em">'
+      +(_swLkrOnly ? 'No LKR transactions found.' : 'No transactions found.')+'</div>';
+  }
   shown.forEach(function(tx){
     var icon    = tx.isPayment ? '💸' : (tx.paidByMe ? '🧾' : '📋');
     var netCls  = tx.myNet > 0 ? 'owed' : (tx.myNet < 0 ? 'owe' : 'zero');
@@ -6975,7 +7011,8 @@ function swMainPage(page){
     }
     pager.innerHTML = pHtml;
   }
-  if(info) info.textContent = 'Page '+(page+1)+' of '+pages+' · '+total+' total';
+  if(info) info.textContent = 'Page '+(page+1)+' of '+pages+' · '+total+' '
+    +(_swLkrOnly?'LKR ':'')+'total'+(_swLkrOnly?' (of '+_swMainAllTxns.length+')':'');
 }
 
 function swBuildCharts(RAW, totalOwe, totalOwed){
@@ -7077,7 +7114,8 @@ function swBuildAnalysis(TRANSACTIONS, VALIDATION){
   var analysisBox = document.getElementById('sw-analysisBox');
   if(!VALIDATION || VALIDATION.match || !TRANSACTIONS || !TRANSACTIONS.length || !analysisBox) return;
   var gap     = VALIDATION.difference;
-  var lkrTxns = TRANSACTIONS.filter(function(t){ return t.currency==='LKR' && t.myNet!==0; });
+  // O(2^n) subset search below — cap the input so a large page size can't freeze the tab
+  var lkrTxns = TRANSACTIONS.filter(function(t){ return t.currency==='LKR' && t.myNet!==0; }).slice(0,20);
   var n       = lkrTxns.length;
   var TOL     = 15;
   var bestSubset = null, bestDiff = Infinity;
@@ -7163,9 +7201,11 @@ function swCloseDrawer(){
 }
 
 /* ── SW main page pagination state ── */
-var _swMainTxns    = [];
+var _swMainAllTxns = [];   // everything returned by the server
+var _swMainTxns    = [];   // current view (all, or LKR-only)
 var _swMainPage    = 0;
-var _swMainPs      = 20;
+var _swMainPs      = 20;   // default page size
+var _swLkrOnly     = false;
 
 /* ── SW drawer state ── */
 var _swAllTxns   = [];
