@@ -398,12 +398,12 @@ document.title = 'EXP TRACK';
       <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>
     </div>
   </div>
-  <div id="sw-root" class="sw-scroll-wrap">
+  <div id="sw-root" class="sw-scroll-wrap" style="display:flex;flex-direction:column;height:100%;">
     <div id="sw-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
       <div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div>
       <div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Splitwise…</div>
     </div>
-    <iframe id="sw-iframe" style="display:none;width:100%;min-height:50vh;border:0" src="about:blank"></iframe>
+    <iframe id="sw-iframe" style="display:none;width:100%;flex:1;border:0" src="about:blank"></iframe>
   </div>
 </section>
 
@@ -6524,7 +6524,7 @@ document.addEventListener('click',function(){
     '    var o={_s:null,_f:null};',
     '    o.withSuccessHandler=function(c){o._s=c;return o;};',
     '    o.withFailureHandler=function(c){o._f=c;return o;};',
-    '    var fns=["getSplitwiseSheetBalance"];',
+    '    var fns=["getSplitwiseSheetBalance","getSplitwiseLedger","getSplitwiseMonthEntries"];',
     '    fns.forEach(function(fn){',
     '      o[fn]=function(){',
     '        var id=Math.random().toString(36).slice(2);',
@@ -6539,7 +6539,9 @@ document.addEventListener('click',function(){
     '  window.google={script:{run:{',
     '    withSuccessHandler:function(c){_runner=mk();_runner._s=c;return _runner;},',
     '    withFailureHandler:function(c){_runner._f=c;return _runner;},',
-    '    getSplitwiseSheetBalance:function(){_runner.getSplitwiseSheetBalance.apply(_runner,arguments);_runner=mk();}',
+    '    getSplitwiseSheetBalance:function(){_runner.getSplitwiseSheetBalance.apply(_runner,arguments);_runner=mk();},',
+    '    getSplitwiseLedger:function(){_runner.getSplitwiseLedger.apply(_runner,arguments);_runner=mk();},',
+    '    getSplitwiseMonthEntries:function(){_runner.getSplitwiseMonthEntries.apply(_runner,arguments);_runner=mk();}',
     '  }}};',
     '})();'
   ].join('\n');

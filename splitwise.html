@@ -4,95 +4,543 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Splitwise</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root{
-    --bg:#060b18; --red:#ff4d6d; --green:#00e676; --muted:rgba(255,255,255,.3);
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  html,body{height:100%;}
-  body{
-    background:var(--bg); color:#fff; font-family:'Inter',system-ui,sans-serif;
-    padding:18px; padding-bottom:16px;
-  }
+:root{
+  --bg:#060b18; --card:rgba(255,255,255,0.04); --bdr:rgba(255,255,255,0.07);
+  --red:#ff4d6d; --green:#00e676; --blue:#00d4ff; --purple:#a855f7;
+  --gold:#ffd700; --amber:#fb923c;
+  --muted:rgba(255,255,255,0.3); --dim:rgba(255,255,255,0.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+/* This page fills the whole iframe and scrolls its own content internally —
+   the iframe is the single scroll owner, so the outer page never fights it
+   for scroll on mobile. */
+body{background:var(--bg);color:#fff;font-family:'Inter',system-ui,sans-serif;padding:16px 16px 28px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 
-  .pg-corner-title{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
-  .pg-ct-icon{font-size:1.15em;line-height:1;}
-  .pg-ct-text{font-size:.72em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.38);}
+/* ── Corner title ── */
+.pg-corner-title{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.pg-ct-icon{font-size:1.15em;line-height:1;}
+.pg-ct-text{font-size:.72em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.38);}
+.sw-header-sub{color:rgba(255,255,255,.3);font-size:.72em;margin:0 0 16px;}
 
-  .hero-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px;}
-  .hero-card{border-radius:18px;padding:18px;border:1px solid;backdrop-filter:blur(20px);position:relative;overflow:hidden;transition:transform .25s ease;max-width:320px;}
-  .hero-card.owe{background:linear-gradient(135deg,rgba(255,77,109,.09),rgba(255,77,109,.04));border-color:rgba(255,77,109,.25);}
-  .hero-card.owed{background:linear-gradient(135deg,rgba(0,230,118,.09),rgba(0,230,118,.04));border-color:rgba(0,230,118,.25);}
-  .hero-card.settled{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.08);}
-  .hero-card-glow{position:absolute;right:-30px;bottom:-30px;width:120px;height:120px;border-radius:50%;filter:blur(50px);opacity:.2;}
-  .hero-card.owe .hero-card-glow{background:#ff4d6d;}
-  .hero-card.owed .hero-card-glow{background:#00e676;}
-  .hero-icon{font-size:1.6em;margin-bottom:7px;display:block;}
-  .hero-label{font-size:.66em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.38);margin-bottom:4px;}
-  .hero-amount{font-size:1.6em;font-weight:800;letter-spacing:-1px;line-height:1;}
-  .hero-card.owe .hero-amount{color:#ff4d6d;text-shadow:0 0 24px rgba(255,77,109,.4);}
-  .hero-card.owed .hero-amount{color:#00e676;text-shadow:0 0 24px rgba(0,230,118,.4);}
-  .hero-card.settled .hero-amount{color:rgba(255,255,255,.4);}
-  .hero-sub{font-size:.7em;color:rgba(255,255,255,.3);margin-top:4px;}
+/* ── Loading / error ── */
+.sw-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;min-height:40vh;}
+.sw-spinner{width:40px;height:40px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite;}
+.sw-loading-txt{color:rgba(255,255,255,.3);font-size:.78em;letter-spacing:2px;text-transform:uppercase;}
+.error-box{text-align:center;padding:48px;color:var(--red);font-size:.88em;}
 
-  .sw-footnote{color:var(--muted);font-size:.7em;padding-top:6px;}
+/* ── KPI row ── */
+.sw-kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;animation:fadeUp .4s ease both;}
+.sw-kpi{background:var(--card);border:1px solid var(--bdr);border-radius:14px;padding:14px 16px;backdrop-filter:blur(20px);position:relative;overflow:hidden;transition:transform .2s;}
+.sw-kpi:hover{transform:translateY(-2px);}
+.sw-kpi-icon{font-size:1.4em;margin-bottom:5px;display:block;}
+.sw-kpi-label{font-size:.58em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.33);margin-bottom:3px;}
+.sw-kpi-value{font-size:1.3em;font-weight:800;letter-spacing:-.5px;line-height:1;color:#fff;}
+.sw-kpi-sub{font-size:.6em;color:rgba(255,255,255,.25);margin-top:3px;}
 
-  .sw-spin-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:40vh;gap:14px;}
-  .sw-spin{width:40px;height:40px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite;}
-  @keyframes spin{to{transform:rotate(360deg);}}
+/* ── Charts row ── */
+.sw-charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;animation:fadeUp .4s ease .1s both;}
+.sw-chart-box{background:var(--card);border:1px solid var(--bdr);border-radius:16px;padding:16px;backdrop-filter:blur(20px);}
+.sw-chart-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.05);}
+.sw-chart-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sw-chart-title{font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}
+.sw-chart-wrap{height:220px;position:relative;}
+.sw-chart-wrap.small{height:170px;}
+.sw-chart-empty{display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.25);font-size:.75em;}
 
-  .sw-err{color:var(--red);text-align:center;padding:40px 16px;font-size:.9em;}
+/* ── Section header ── */
+.section-hdr{font-size:.7em;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);margin:26px 0 12px;display:flex;align-items:center;gap:10px;}
+.section-hdr::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.05);}
+
+/* ── Table (matches CardAnalysis .ca-table) ── */
+.sw-table-wrap{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;backdrop-filter:blur(20px);animation:fadeUp .4s ease .15s both;}
+.sw-table-hdr{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);}
+.sw-table-hdr-title{font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+.sw-table-hdr-count{font-size:.65em;color:rgba(255,255,255,.25);}
+.sw-search-wrap{padding:0 16px 10px;}
+.sw-search{width:100%;padding:8px 12px;border-radius:8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  color:#fff;font-size:.75em;font-family:inherit;outline:none;transition:border-color .15s;box-sizing:border-box;}
+.sw-search:focus{border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.06);}
+.sw-search::placeholder{color:rgba(255,255,255,.25);}
+.sw-table-scroll{overflow-x:auto;}
+.sw-table{width:100%;border-collapse:collapse;font-size:.78em;}
+.sw-table th{padding:10px 12px;text-align:left;font-size:.62em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);white-space:nowrap;}
+.sw-table th:last-child,.sw-table td:last-child{text-align:right;}
+.sw-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.8);}
+.sw-table tr:hover td{background:rgba(255,255,255,.03);}
+.sw-cell-date{color:rgba(255,255,255,.5);font-weight:500;white-space:nowrap;}
+.sw-cell-amt{font-weight:700;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.sw-cell-green{color:var(--green);}
+.sw-cell-red{color:var(--red);}
+.sw-cell-gold{color:var(--gold)!important;font-weight:700;}
+.sw-cat-badge{font-size:.62em;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.5);
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;
+  padding:2px 8px;white-space:nowrap;}
+.sw-pagination{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;border-top:1px solid rgba(255,255,255,.06);
+  background:rgba(255,255,255,.02);flex-shrink:0;flex-wrap:wrap;gap:8px;}
+.sw-pag-info{font-size:.65em;color:rgba(255,255,255,.3);}
+.sw-pag-btns{display:flex;align-items:center;gap:6px;}
+.sw-page-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);border-radius:9px;padding:5px 12px;cursor:pointer;
+  font-size:.65em;font-weight:600;transition:all .12s;font-family:inherit;text-transform:uppercase;letter-spacing:.3px;}
+.sw-page-btn:hover:not(:disabled){color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.15);}
+.sw-page-btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
+.sw-pag-num{font-size:.65em;font-weight:700;color:rgba(255,255,255,.5);min-width:60px;text-align:center;}
+
+/* ── Monthly detail block ── */
+.sw-month-label{font-size:.72em;font-weight:700;color:rgba(255,255,255,.5);margin-right:4px;}
+.sw-month-nav{display:flex;align-items:center;gap:6px;}
+.sw-nav-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.55);border-radius:8px;width:28px;height:28px;
+  cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:background .12s,color .12s;}
+.sw-nav-btn:hover{color:#fff;background:rgba(255,255,255,.12);}
+.sw-nav-btn:disabled{opacity:.25;cursor:not-allowed;pointer-events:none;}
+.sw-month-total-row{display:flex;justify-content:space-between;align-items:center;
+  padding:11px 12px 0;border-top:1px solid rgba(255,255,255,.07);margin:4px 12px 12px;
+  font-size:.78em;font-weight:700;color:var(--muted);}
+.sw-month-total-val{font-size:1.05em;color:#8b5cf6;}
+.sw-empty{text-align:center;padding:36px;color:var(--dim);font-size:.8em;}
+.sw-day{font-size:.65em;color:var(--dim);font-weight:500;}
+.sw-dayname{display:block;font-size:.58em;color:rgba(255,255,255,.28);font-weight:500;letter-spacing:.5px;margin-top:1px;}
+.sw-ref{color:var(--muted);font-size:.75em;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
+
+/* ── Side-by-side layout: Ledger | Monthly Detail (laptop+) ── */
+.sw-main-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;}
+.sw-main-grid .sw-table-wrap{margin:0;}
+.sw-month-card{background:var(--card);border:1px solid var(--bdr);border-radius:16px;overflow:hidden;backdrop-filter:blur(20px);animation:fadeUp .4s ease .15s both;}
+.sw-month-card .sw-chart-wrap{padding:16px 16px 0;}
+
+@media(max-width:980px){
+  .sw-main-grid{grid-template-columns:1fr;}
+}
+@media(max-width:760px){
+  .sw-charts{grid-template-columns:1fr;}
+  .sw-kpi-row{grid-template-columns:repeat(2,1fr);}
+}
 </style>
 </head>
 <body>
 
   <div id="sw-body">
-    <div class="sw-spin-wrap">
-      <div class="sw-spin"></div>
-      <div style="color:var(--muted);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading…</div>
-    </div>
+    <div class="sw-loading"><div class="sw-spinner"></div><div class="sw-loading-txt">Loading Splitwise…</div></div>
   </div>
 
 <script>
+/* ═══════════════════════════════════════════
+   SHARED HELPERS
+═══════════════════════════════════════════ */
+var swCharts = {};
 function swEscErr(e){ return (e && e.message) || e || 'Unknown error'; }
+function swEsc(s){ return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtAmt(n){ return '₨ ' + Math.abs(Math.round(n||0)).toLocaleString('en-IN'); }
+function swDestroyChart(key){ if (swCharts[key]) { swCharts[key].destroy(); delete swCharts[key]; } }
+var SW_TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:11};
 
-function swRender(data){
-  var body = document.getElementById('sw-body');
-  var ok      = data && data.success;
-  var balance = ok ? (parseFloat(data.sheetBalance)||0) : 0;
+var CAT_COLORS = {
+  'Initial Entry':'#00d4ff', 'Monthly':'#a855f7', 'Adjustment':'#ffd700'
+};
+function catColor(cat){ return CAT_COLORS[cat] || '#6366f1'; }
 
-  if(!ok){
-    body.innerHTML = '<div class="sw-err">⚠ Failed to load sheet balance'
-      + ((data && data.error) ? ': ' + data.error : '') + '</div>';
-    return;
-  }
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
+var _swBalance   = null;   // {success, sheetBalance}
+var _swLedger    = [];     // all ledger entries
+var _swLedgerFiltered = [];
+var _swLedgerPage = 0;
+var _swLedgerPs   = 20;
+var _swMonth = null, _swYear = null;
+var _swMonthCache = {};
+var _swMonthData    = null;  // last-rendered month payload (for totals/net)
+var _swMonthEntries = [];    // day entries for the currently rendered month
+var _swMonthPage    = 0;
+var _swMonthPs       = 10;
+var MON_NAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-  var cls = balance < 0 ? 'owe' : (balance > 0 ? 'owed' : 'settled');
-  var ico = balance < 0 ? '📤' : (balance > 0 ? '📥' : '✅');
-  var sub = balance < 0 ? 'You owe this' : balance > 0 ? 'You are owed' : 'All settled up!';
-
-  body.innerHTML =
-    '<div class="pg-corner-title"><span class="pg-ct-icon">👥</span><span class="pg-ct-text">Manage Fund Between Friends</span></div>'
-    + '<div class="hero-row">'
-      + '<div class="hero-card ' + cls + '">'
-        + '<div class="hero-card-glow"></div>'
-        + '<span class="hero-icon">' + ico + '</span>'
-        + '<div class="hero-label">LKR Balance (Sheet)</div>'
-        + '<div class="hero-amount">' + Math.abs(balance).toFixed(2) + '</div>'
-        + '<div class="hero-sub">' + sub + '</div>'
-      + '</div>'
+/* ═══════════════════════════════════════════
+   PAGE SHELL
+═══════════════════════════════════════════ */
+function swShell(){
+  return '<div class="pg-corner-title"><span class="pg-ct-icon">🤝</span><span class="pg-ct-text">Splitwise</span></div>'
+    + '<p class="sw-header-sub">Manage fund between friends · Sheet-tracked, no API</p>'
+    + '<div id="sw-kpis"><div class="sw-loading" style="min-height:120px"><div class="sw-spinner"></div></div></div>'
+    + '<div class="sw-charts">'
+      + '<div class="sw-chart-box"><div class="sw-chart-hdr"><div class="sw-chart-dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div><div class="sw-chart-title">Balance Trend</div></div><div class="sw-chart-wrap"><canvas id="swChartTrend"></canvas></div></div>'
+      + '<div class="sw-chart-box"><div class="sw-chart-hdr"><div class="sw-chart-dot" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></div><div class="sw-chart-title">Monthly Net</div></div><div class="sw-chart-wrap"><canvas id="swChartMonthly"></canvas></div></div>'
     + '</div>'
-    + '<div class="sw-footnote">Sourced from Portfolio sheet · Splitwise API integration removed</div>';
+    + '<div class="sw-main-grid">'
+
+      + '<div class="sw-table-wrap">'
+        + '<div class="sw-table-hdr"><div class="sw-table-hdr-title">📒 Splitwise Ledger</div><div class="sw-table-hdr-count" id="sw-ledger-count">—</div></div>'
+        + '<div class="sw-search-wrap"><input class="sw-search" id="sw-search" type="text" placeholder="🔍 Search by description or category…" oninput="swSearch()"></div>'
+        + '<div class="sw-table-scroll"><table class="sw-table"><thead><tr><th>Date</th><th>Description</th><th>Category</th><th style="text-align:right">Amount</th></tr></thead><tbody id="sw-ledger-tbody"></tbody></table></div>'
+        + '<div class="sw-pagination" id="sw-ledger-pagination"><span class="sw-pag-info" id="sw-pag-info">—</span><div class="sw-pag-btns"><button class="sw-page-btn" id="sw-pg-prev" onclick="swLedgerPage(_swLedgerPage-1)">◀ Prev</button><span class="sw-pag-num" id="sw-pg-num">1 / 1</span><button class="sw-page-btn" id="sw-pg-next" onclick="swLedgerPage(_swLedgerPage+1)">Next ▶</button></div></div>'
+      + '</div>'
+
+      + '<div class="sw-month-card" id="sw-month-body">'
+        + '<div class="sw-loading" style="min-height:160px"><div class="sw-spinner"></div></div>'
+      + '</div>'
+
+    + '</div>';
 }
 
-function swLoad(){
+/* ═══════════════════════════════════════════
+   KPI ROW
+═══════════════════════════════════════════ */
+function swRenderKpis(){
+  var kpiBox = document.getElementById('sw-kpis');
+  if(!kpiBox) return;
+
+  var ok      = _swBalance && _swBalance.success;
+  var balance = ok ? (parseFloat(_swBalance.sheetBalance)||0) : 0;
+  var balCls  = balance < 0 ? 'var(--red)' : balance > 0 ? 'var(--green)' : '#fff';
+  var balSub  = balance < 0 ? 'You owe this' : balance > 0 ? 'You are owed' : 'All settled up';
+  var balSign = balance < 0 ? '−' : balance > 0 ? '+' : '';
+
+  var validEntries = _swLedger.filter(function(e){ return !e.isError; });
+  var errorCount   = _swLedger.length - validEntries.length;
+  var net       = validEntries.reduce(function(s,e){ return s + e.amount; }, 0);
+  var owedToMe  = validEntries.reduce(function(s,e){ return s + (e.amount > 0 ? e.amount : 0); }, 0);
+  var iOwe      = validEntries.reduce(function(s,e){ return s + (e.amount < 0 ? Math.abs(e.amount) : 0); }, 0);
+  var latest    = _swLedger.length ? _swLedger[0].date : '—';
+
+  kpiBox.innerHTML = '<div class="sw-kpi-row">'
+    + '<div class="sw-kpi" style="border-color:rgba(0,212,255,.2)"><span class="sw-kpi-icon">💼</span><div class="sw-kpi-label">Sheet Balance</div><div class="sw-kpi-value" style="color:' + balCls + '">' + balSign + ' ' + fmtAmt(balance) + '</div><div class="sw-kpi-sub">' + balSub + '</div></div>'
+    + '<div class="sw-kpi" style="border-color:rgba(168,85,247,.2)"><span class="sw-kpi-icon">📒</span><div class="sw-kpi-label">Ledger Net</div><div class="sw-kpi-value" style="color:var(--purple)">' + fmtAmt(net) + '</div><div class="sw-kpi-sub">across ' + validEntries.length + ' entries</div></div>'
+    + '<div class="sw-kpi" style="border-color:rgba(0,230,118,.2)"><span class="sw-kpi-icon">📥</span><div class="sw-kpi-label">You Are Owed</div><div class="sw-kpi-value" style="color:var(--green)">' + fmtAmt(owedToMe) + '</div><div class="sw-kpi-sub">positive entries</div></div>'
+    + '<div class="sw-kpi" style="border-color:rgba(255,77,109,.2)"><span class="sw-kpi-icon">📤</span><div class="sw-kpi-label">You Owe</div><div class="sw-kpi-value" style="color:var(--red)">' + fmtAmt(iOwe) + '</div><div class="sw-kpi-sub">negative entries</div></div>'
+    + '<div class="sw-kpi" style="border-color:rgba(255,215,0,.2)"><span class="sw-kpi-icon">🧾</span><div class="sw-kpi-label">Last Entry</div><div class="sw-kpi-value" style="color:var(--gold);font-size:1em">' + latest + '</div><div class="sw-kpi-sub">' + (errorCount ? '⚠ ' + errorCount + ' formula error' + (errorCount>1?'s':'') : 'no formula errors') + '</div></div>'
+    + '</div>';
+}
+
+/* ═══════════════════════════════════════════
+   CHARTS
+═══════════════════════════════════════════ */
+function swRenderCharts(){
+  Chart.defaults.color = 'rgba(255,255,255,0.4)';
+  Chart.defaults.font.family = 'Inter';
+
+  var validEntries = _swLedger.filter(function(e){ return !e.isError; })
+    .slice().sort(function(a,b){ return a.rawDate - b.rawDate; });
+
+  swDestroyChart('trend');
+  var elTrend = document.getElementById('swChartTrend');
+  if (elTrend) {
+    if (!validEntries.length) {
+      elTrend.parentNode.innerHTML = '<div class="sw-chart-empty">No ledger data yet</div>';
+    } else {
+      var cum = 0;
+      var labels = [], points = [];
+      validEntries.forEach(function(e){
+        cum += e.amount;
+        labels.push(e.date);
+        points.push(Math.round(cum * 100) / 100);
+      });
+      swCharts.trend = new Chart(elTrend, {
+        type: 'line',
+        data: { labels: labels, datasets: [{
+          label: 'Cumulative Balance', data: points,
+          borderColor: '#00d4ff', backgroundColor: 'rgba(0,212,255,0.08)',
+          borderWidth: 2, pointBackgroundColor: '#00d4ff', pointBorderColor: '#00d4ff',
+          pointRadius: 2, pointHoverRadius: 5, tension: 0.3, fill: true
+        }]},
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: { duration: 1000 },
+          plugins: {
+            legend: { display: false },
+            tooltip: Object.assign({}, SW_TIP, { callbacks: { label: function(ctx){ return ' ' + fmtAmt(ctx.parsed.y); } } })
+          },
+          scales: {
+            x: { ticks: { color: 'rgba(255,255,255,.35)', font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: 'rgba(255,255,255,.04)' } },
+            y: { ticks: { color: 'rgba(255,255,255,.4)', font: { size: 9 }, callback: function(v){ return '₨' + v.toLocaleString('en-IN'); } }, grid: { color: 'rgba(255,255,255,.04)' } }
+          }
+        }
+      });
+    }
+  }
+
+  swDestroyChart('monthly');
+  var elMonthly = document.getElementById('swChartMonthly');
+  if (elMonthly) {
+    if (!validEntries.length) {
+      elMonthly.parentNode.innerHTML = '<div class="sw-chart-empty">No ledger data yet</div>';
+    } else {
+      var monthMap = {};
+      validEntries.forEach(function(e){
+        var d = new Date(e.rawDate);
+        var key = MON_NAMES[d.getMonth()+1] + ' ' + d.getFullYear();
+        monthMap[key] = (monthMap[key] || 0) + e.amount;
+      });
+      var mLabels = Object.keys(monthMap);
+      var mVals   = mLabels.map(function(k){ return Math.round(monthMap[k]*100)/100; });
+      var mColors = mVals.map(function(v){ return v < 0 ? 'rgba(255,77,109,0.35)' : 'rgba(0,230,118,0.35)'; });
+      var mBorders= mVals.map(function(v){ return v < 0 ? '#ff4d6d' : '#00e676'; });
+      swCharts.monthly = new Chart(elMonthly, {
+        type: 'bar',
+        data: { labels: mLabels, datasets: [{ label: 'Net', data: mVals, backgroundColor: mColors, borderColor: mBorders, borderWidth: 1.5, borderRadius: 6, borderSkipped: false }]},
+        options: {
+          responsive: true, maintainAspectRatio: false, animation: { duration: 1100 },
+          plugins: {
+            legend: { display: false },
+            tooltip: Object.assign({}, SW_TIP, { callbacks: { label: function(ctx){ return (ctx.parsed.y<0?' You owe ':' Owed to you ') + fmtAmt(ctx.parsed.y); } } })
+          },
+          scales: {
+            x: { ticks: { color: 'rgba(255,255,255,.35)', font: { size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 6 }, grid: { color: 'rgba(255,255,255,.04)' } },
+            y: { ticks: { color: 'rgba(255,255,255,.4)', font: { size: 9 }, callback: function(v){ return '₨' + v.toLocaleString('en-IN'); } }, grid: { color: 'rgba(255,255,255,.04)' } }
+          }
+        }
+      });
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════
+   LEDGER TABLE (search + paginate 20/page)
+═══════════════════════════════════════════ */
+function swSearch(){
+  var q = (document.getElementById('sw-search').value || '').trim().toLowerCase();
+  _swLedgerFiltered = !q ? _swLedger.slice() : _swLedger.filter(function(e){
+    return ((e.description||'') + ' ' + (e.category||'') + ' ' + (e.date||'')).toLowerCase().indexOf(q) >= 0;
+  });
+  swLedgerPage(0);
+}
+
+function swLedgerPage(page){
+  var totalPages = Math.max(1, Math.ceil(_swLedgerFiltered.length / _swLedgerPs));
+  if (page < 0) page = 0;
+  if (page > totalPages - 1) page = totalPages - 1;
+  _swLedgerPage = page;
+
+  var start = page * _swLedgerPs;
+  var shown = _swLedgerFiltered.slice(start, start + _swLedgerPs);
+
+  var rowsHtml = shown.map(function(e){
+    var amtCls = e.isError ? 'sw-cell-gold' : (e.amount < 0 ? 'sw-cell-red' : e.amount > 0 ? 'sw-cell-green' : '');
+    var amtTxt = e.isError ? '⚠ #ERROR!' : (e.amount < 0 ? '-' : '') + fmtAmt(e.amount);
+    return '<tr>'
+      + '<td class="sw-cell-date">' + e.date + '</td>'
+      + '<td>' + swEsc(e.description) + '</td>'
+      + '<td>' + (e.category ? '<span class="sw-cat-badge" style="color:' + catColor(e.category) + '">' + swEsc(e.category) + '</span>' : '—') + '</td>'
+      + '<td class="sw-cell-amt ' + amtCls + '">' + amtTxt + '</td>'
+      + '</tr>';
+  }).join('');
+
+  document.getElementById('sw-ledger-tbody').innerHTML = rowsHtml
+    || '<tr><td colspan="4" style="text-align:center;padding:30px;color:rgba(255,255,255,.3);">🔍 No entries match.</td></tr>';
+
+  document.getElementById('sw-ledger-count').textContent = _swLedger.length + ' entries';
+  document.getElementById('sw-pag-info').textContent = _swLedgerFiltered.length > 0
+    ? 'Showing ' + (start+1) + '–' + Math.min(start+_swLedgerPs, _swLedgerFiltered.length) + ' of ' + _swLedgerFiltered.length
+    : '0 entries';
+  document.getElementById('sw-pg-num').textContent = (page+1) + ' / ' + totalPages;
+  document.getElementById('sw-pg-prev').disabled = (page <= 0);
+  document.getElementById('sw-pg-next').disabled = (page >= totalPages - 1);
+}
+
+function swLoadLedger(){
   google.script.run
-    .withSuccessHandler(function(data){ swRender(data); })
-    .withFailureHandler(function(err){
-      document.getElementById('sw-body').innerHTML =
-        '<div class="sw-err">⚠ Failed to load: ' + swEscErr(err) + '</div>';
+    .withSuccessHandler(function(data){
+      if (!data || !data.success) {
+        document.getElementById('sw-ledger-tbody').innerHTML =
+          '<tr><td colspan="4" class="error-box">⚠ ' + swEsc((data&&data.error) || 'Failed to load ledger') + '</td></tr>';
+        return;
+      }
+      _swLedger = data.entries || [];
+      _swLedgerFiltered = _swLedger.slice();
+      swRenderKpis();
+      swRenderCharts();
+      swLedgerPage(0);
     })
+    .withFailureHandler(function(err){
+      document.getElementById('sw-ledger-tbody').innerHTML =
+        '<tr><td colspan="4" class="error-box">⚠ ' + swEscErr(err) + '</td></tr>';
+    })
+    .getSplitwiseLedger();
+}
+
+/* ═══════════════════════════════════════════
+   MONTHLY DETAIL (Monthly Expences: I Paid / Others Paid / Ref)
+   with prev/next month navigation
+═══════════════════════════════════════════ */
+function swMonthCardShell(){
+  return '<div class="sw-table-hdr">'
+      + '<div class="sw-table-hdr-title">📅 Monthly Splitwise Detail</div>'
+      + '<div class="sw-month-nav">'
+        + '<span class="sw-month-label" id="sw-month-label">Loading…</span>'
+        + '<button class="sw-nav-btn" id="sw-nav-prev" onclick="swMonthNav(-1)" title="Previous month">◀</button>'
+        + '<button class="sw-nav-btn" id="sw-nav-next" onclick="swMonthNav(1)" title="Next month">▶</button>'
+      + '</div>'
+    + '</div>'
+    + '<div id="sw-month-inner"><div class="sw-loading" style="min-height:160px"><div class="sw-spinner"></div></div></div>';
+}
+
+function swMonthNav(dir){
+  _swMonth += dir;
+  if (_swMonth > 12) { _swMonth = 1;  _swYear++; }
+  if (_swMonth < 1)  { _swMonth = 12; _swYear--; }
+  swLoadMonth();
+}
+
+function swLoadMonth(){
+  var key  = _swYear + '-' + _swMonth;
+  var now  = new Date();
+  var nowM = now.getMonth() + 1, nowY = now.getFullYear();
+
+  var card = document.getElementById('sw-month-body');
+  if (card && !document.getElementById('sw-month-inner')) {
+    card.innerHTML = swMonthCardShell();
+  }
+
+  var labelEl = document.getElementById('sw-month-label');
+  if (labelEl) labelEl.textContent = MON_NAMES[_swMonth] + ' ' + _swYear;
+
+  var nextBtn = document.getElementById('sw-nav-next');
+  if (nextBtn) nextBtn.disabled = (_swYear > nowY || (_swYear === nowY && _swMonth >= nowM));
+
+  _swMonthPage = 0;
+
+  if (_swMonthCache[key]) { swRenderMonth(_swMonthCache[key]); return; }
+
+  var inner = document.getElementById('sw-month-inner');
+  if (inner) inner.innerHTML = '<div class="sw-loading" style="min-height:160px"><div class="sw-spinner"></div></div>';
+
+  var reqM = _swMonth, reqY = _swYear;
+  google.script.run
+    .withSuccessHandler(function(data){
+      _swMonthCache[reqY + '-' + reqM] = data;
+      if (_swMonth === reqM && _swYear === reqY) swRenderMonth(data);
+    })
+    .withFailureHandler(function(err){
+      var b = document.getElementById('sw-month-inner');
+      if (b) b.innerHTML = '<div class="error-box">⚠ ' + swEscErr(err) + '</div>';
+    })
+    .getSplitwiseMonthEntries(_swMonth, _swYear);
+}
+
+function swRenderMonth(data){
+  var inner = document.getElementById('sw-month-inner');
+  if (!inner) return;
+  if (!data || !data.success) {
+    inner.innerHTML = '<div class="error-box">⚠ ' + swEsc((data&&data.error) || 'Failed to load') + '</div>';
+    return;
+  }
+  _swMonthData    = data;
+  _swMonthEntries = data.entries || [];
+
+  inner.innerHTML =
+      '<div class="sw-chart-wrap small"><canvas id="swChartMonthSplit"></canvas></div>'
+    + '<div class="sw-table-scroll"><table class="sw-table"><thead><tr><th>Day</th><th style="text-align:right">I Paid</th><th style="text-align:right">Others Paid Me</th><th>Reference</th></tr></thead><tbody id="sw-month-tbody"></tbody></table></div>'
+    + '<div class="sw-month-total-row" id="sw-month-total-row"></div>'
+    + '<div class="sw-pagination" id="sw-month-pagination"><span class="sw-pag-info" id="sw-month-pag-info">—</span><div class="sw-pag-btns"><button class="sw-page-btn" id="sw-month-pg-prev" onclick="swMonthTablePage(_swMonthPage-1)">◀ Prev</button><span class="sw-pag-num" id="sw-month-pg-num">1 / 1</span><button class="sw-page-btn" id="sw-month-pg-next" onclick="swMonthTablePage(_swMonthPage+1)">Next ▶</button></div></div>';
+
+  swMonthTablePage(0);
+
+  swDestroyChart('monthSplit');
+  var el = document.getElementById('swChartMonthSplit');
+  if (el) {
+    if (!data.totalIPaid && !data.totalOther) {
+      el.parentNode.innerHTML = '<div class="sw-chart-empty">No data this month</div>';
+    } else {
+      swCharts.monthSplit = new Chart(el, {
+        type: 'doughnut',
+        data: {
+          labels: ['I Paid', 'Others Paid Me'],
+          datasets: [{
+            data: [data.totalIPaid||0, data.totalOther||0],
+            backgroundColor: ['rgba(0,230,118,0.7)', 'rgba(255,77,109,0.7)'],
+            borderColor: ['#00e676', '#ff4d6d'], borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '60%', animation: { animateRotate: true, duration: 1100 },
+          plugins: {
+            legend: { position: 'bottom', labels: { color: 'rgba(255,255,255,.5)', font: { size: 10 }, padding: 12, usePointStyle: true } },
+            tooltip: Object.assign({}, SW_TIP, { callbacks: { label: function(ctx){
+              var total = ctx.dataset.data.reduce(function(a,b){return a+b;},0);
+              var pct = total > 0 ? ' (' + Math.round(ctx.parsed/total*100) + '%)' : '';
+              return ' ' + ctx.label + ': ' + fmtAmt(ctx.parsed) + pct;
+            } } })
+          }
+        }
+      });
+    }
+  }
+}
+
+function swMonthTablePage(page){
+  var data    = _swMonthData;
+  var entries = _swMonthEntries;
+  if (!data) return;
+
+  var totalPages = Math.max(1, Math.ceil(entries.length / _swMonthPs));
+  if (page < 0) page = 0;
+  if (page > totalPages - 1) page = totalPages - 1;
+  _swMonthPage = page;
+
+  var tbody = document.getElementById('sw-month-tbody');
+  if (!tbody) return;
+
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:30px;color:rgba(255,255,255,.3);">No Splitwise entries for ' + MON_NAMES[data.month] + ' ' + data.year + '.</td></tr>';
+  } else {
+    var start = page * _swMonthPs;
+    var shown = entries.slice(start, start + _swMonthPs);
+    tbody.innerHTML = shown.map(function(e){
+      var dayName = DAY_NAMES[new Date(data.year, data.month - 1, e.day).getDay()];
+      return '<tr>'
+        + '<td><span class="sw-day">' + e.day + '</span><span class="sw-dayname">' + dayName + '</span></td>'
+        + '<td class="sw-cell-amt' + (e.iPaid>0?' sw-cell-green':'') + '">' + (e.iPaid>0?fmtAmt(e.iPaid):'—') + '</td>'
+        + '<td class="sw-cell-amt' + (e.otherPaid>0?' sw-cell-red':'') + '">' + (e.otherPaid>0?fmtAmt(e.otherPaid):'—') + '</td>'
+        + '<td style="text-align:left"><span class="sw-ref" title="' + swEsc(e.reference) + '">' + (e.reference ? swEsc(e.reference) : '—') + '</span></td>'
+        + '</tr>';
+    }).join('');
+  }
+
+  var net = (data.totalIPaid||0) - (data.totalOther||0);
+  var totalRow = document.getElementById('sw-month-total-row');
+  if (totalRow) totalRow.innerHTML = entries.length
+    ? '<span>Month Net · ' + entries.length + ' entries</span><span class="sw-month-total-val">' + fmtAmt(net) + '</span>'
+    : '';
+
+  var start2 = page * _swMonthPs;
+  var pagInfo = document.getElementById('sw-month-pag-info');
+  if (pagInfo) pagInfo.textContent = entries.length > 0
+    ? 'Showing ' + (start2+1) + '–' + Math.min(start2+_swMonthPs, entries.length) + ' of ' + entries.length
+    : '0 entries';
+  var pgNum = document.getElementById('sw-month-pg-num');
+  if (pgNum) pgNum.textContent = (page+1) + ' / ' + totalPages;
+  var prevBtn = document.getElementById('sw-month-pg-prev');
+  if (prevBtn) prevBtn.disabled = (page <= 0);
+  var nextPgBtn = document.getElementById('sw-month-pg-next');
+  if (nextPgBtn) nextPgBtn.disabled = (page >= totalPages - 1);
+}
+
+/* ═══════════════════════════════════════════
+   PAGE INIT
+═══════════════════════════════════════════ */
+function swLoad(){
+  var now = new Date();
+  _swMonth = now.getMonth() + 1;
+  _swYear  = now.getFullYear();
+
+  document.getElementById('sw-body').innerHTML = swShell();
+
+  google.script.run
+    .withSuccessHandler(function(data){ _swBalance = data; swRenderKpis(); })
+    .withFailureHandler(function(err){ _swBalance = { success:false, error: swEscErr(err) }; swRenderKpis(); })
     .getSplitwiseSheetBalance();
+
+  swLoadLedger();
+  swLoadMonth();
 }
 
 swLoad();

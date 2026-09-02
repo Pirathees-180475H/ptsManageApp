@@ -1645,6 +1645,115 @@ function getSplitwiseHtmlContent() {
   return HtmlService.createHtmlOutputFromFile('splitwise').getContent();
 }
 
+/**
+ * getSplitwiseLedger
+ * Reads the manually-kept "splitWise" sheet: A=Date, B=Description,
+ * C=Amount (+/-), D=Category. Row 1 = header, data from row 2.
+ * Returns every entry sorted newest-date-first; pagination happens client-side.
+ */
+function getSplitwiseLedger() {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('splitWise');
+    if (!sheet) return { success: false, error: 'Sheet "splitWise" not found' };
+
+    var lastRow = sheet.getLastRow();
+    if (lastRow < 2) return { success: true, entries: [] };
+
+    var tz     = ss.getSpreadsheetTimeZone();
+    var values = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+    var entries = [];
+
+    values.forEach(function(row) {
+      var rawDate = row[0];
+      if (!rawDate) return;
+      var dateObj  = rawDate instanceof Date ? rawDate : new Date(rawDate);
+      var validDate = !isNaN(dateObj.getTime());
+      var dateLabel = validDate ? Utilities.formatDate(dateObj, tz, 'dd MMM yyyy') : String(rawDate);
+
+      var rawAmt  = row[2];
+      var isError = typeof rawAmt === 'string' && rawAmt.trim().indexOf('#') === 0;
+      var amount  = isError ? 0 : (parseFloat(rawAmt) || 0);
+
+      entries.push({
+        date:        dateLabel,
+        rawDate:     validDate ? dateObj.getTime() : 0,
+        description: String(row[1] || '').trim(),
+        amount:      amount,
+        isError:     isError,
+        category:    String(row[3] || '').trim()
+      });
+    });
+
+    entries.sort(function(a, b) { return b.rawDate - a.rawDate; });
+    return { success: true, entries: entries };
+  } catch (e) {
+    Logger.log('getSplitwiseLedger error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * getSplitwiseMonthEntries
+ * Per-day "I Paid" / "Others Paid Me" / "Reference" entries from the
+ * Monthly Expences sheet for one month — same column layout ADD_EXP.html
+ * uses for the Splitwise section: T(20)=I Paid, U(21)=Others Paid Me, W(23)=Reference.
+ */
+function getSplitwiseMonthEntries(month, year) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+
+    var tz       = ss.getSpreadsheetTimeZone();
+    var now      = new Date();
+    var curMonth = (month >= 1 && month <= 12) ? parseInt(month, 10) : parseInt(Utilities.formatDate(now, tz, 'M'), 10);
+    var curYear  = (year >= 2000) ? parseInt(year, 10) : parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
+
+    var IPAID_COL = 20; // T — I Paid
+    var OTHER_COL = 21; // U — Others Paid Me
+    var REF_COL   = 23; // W — Reference
+
+    var lastRow = sheet.getLastRow();
+    var numCols = Math.max(IPAID_COL, OTHER_COL, REF_COL);
+    var allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+
+    var entries = [], totalIPaid = 0, totalOther = 0;
+
+    for (var r = 0; r < allData.length; r++) {
+      var row = allData[r];
+      var dateKey = _cellStr(row[0], true).trim();
+      var parts = dateKey.match(/^(\d{1,2})-(\d{1,2})$/);
+      if (!parts) continue;
+      if (parseInt(parts[1], 10) !== curMonth) continue;
+
+      if (row[0] instanceof Date && !isNaN(row[0])) {
+        var rowYear = parseInt(Utilities.formatDate(row[0], tz, 'yyyy'), 10);
+        if (rowYear !== curYear) continue;
+      }
+
+      var rawIPaid = row[IPAID_COL - 1];
+      var iPaid = (typeof rawIPaid === 'number') ? rawIPaid : (parseFloat(String(rawIPaid).replace(/[^0-9.+-]/g, '')) || 0);
+
+      var rawOther = row[OTHER_COL - 1];
+      var otherPaid = (typeof rawOther === 'number') ? rawOther : (parseFloat(String(rawOther).replace(/[^0-9.+-]/g, '')) || 0);
+
+      if (iPaid <= 0 && otherPaid <= 0) continue;
+
+      var ref = String(row[REF_COL - 1] || '').trim();
+      entries.push({ day: parseInt(parts[2], 10), iPaid: iPaid, otherPaid: otherPaid, reference: ref });
+      totalIPaid += iPaid;
+      totalOther += otherPaid;
+    }
+
+    entries.sort(function(a, b) { return a.day - b.day; });
+    return { success: true, entries: entries, totalIPaid: totalIPaid, totalOther: totalOther, month: curMonth, year: curYear };
+  } catch (e) {
+    Logger.log('getSplitwiseMonthEntries error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 /* ── Lightweight: just the Splitwise friends list (for autocomplete) ── */
 function getSplitwiseFriendsOnly() {
   const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
