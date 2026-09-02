@@ -1625,213 +1625,24 @@ function sendMonthlyNotification() {
 const CONSUMER_KEY = 'Gdg3ICNvkIyre7PAYsj6FRrgxeaOdnHob0mSYtHp';
 const CONSUMER_SECRET = 'HGoLJOypYGNA1GA4pChql6uquVqzbVDuZ0LONrNZ';
 
-function getSplitwiseData(limit) {
-  const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
-  const headers = { 'Authorization': 'Bearer ' + apiKey };
-  const opts = { method: 'get', headers: headers };
-
+/**
+ * Splitwise page now shows only the manually-tracked sheet balance —
+ * the Splitwise API is unreliable, so nothing here calls it any more.
+ */
+function getSplitwiseSheetBalance() {
   try {
-    // ── 1. Friend balances ──
-    const friendsResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_friends', opts);
-    const friends = JSON.parse(friendsResp.getContentText()).friends;
-
-    const balanceData = [];
-    const totals = {};
-
-    friends.forEach(function(friend) {
-      const fullName = (friend.first_name + ' ' + (friend.last_name || '')).trim();
-      friend.balance.forEach(function(bal) {
-        const amount = parseFloat(bal.amount);
-        const currency = bal.currency_code;
-        balanceData.push({
-          name: fullName,
-          friendId: friend.id,
-          amount: amount,
-          currency: currency,
-          status: amount < 0 ? 'I need to pay' : amount > 0 ? 'They need to pay' : 'Settled up'
-        });
-        totals[currency] = (totals[currency] || 0) + amount;
-      });
-    });
-
-    // ── 2. Recent expenses ── (page size comes from the UI, default 20)
-    var recentTransactions = fetchSplitwiseRecentTxns_(limit, false);
-
-    // ── 3. Validate LKR balance ──
     const portfolioSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Portfolio');
     const sheetBalance = portfolioSheet ? portfolioSheet.getRange('B14').getValue() : 0;
-    const lkrTotal = totals['LKR'] || 0;
-    const validationResult = validateBalance(lkrTotal, sheetBalance);
-
-    return {
-      balanceData: balanceData,
-      recentTransactions: recentTransactions,
-      validationResult: validationResult
-    };
-
+    return { success: true, sheetBalance: parseFloat(sheetBalance) || 0 };
   } catch (error) {
-    Logger.log('getSplitwiseData error: ' + error);
-    return { balanceData: [], recentTransactions: [], validationResult: null };
+    Logger.log('getSplitwiseSheetBalance error: ' + error);
+    return { success: false, sheetBalance: 0, error: error.message };
   }
 }
 
-/**
- * Recent Splitwise expenses for the Splitwise page.
- * limit   – how many records to return (1–500, default 20)
- * lkrOnly – when true, keeps paging until `limit` LKR expenses are collected
- */
-function getSplitwiseTransactions(limit, lkrOnly) {
-  return fetchSplitwiseRecentTxns_(limit, lkrOnly === true);
-}
-
-function fetchSplitwiseRecentTxns_(limit, lkrOnly) {
-  var n = parseInt(limit, 10);
-  if (!n || n < 1) n = 20;
-  if (n > 500)     n = 500;
-
-  const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
-  const opts = { method: 'get', headers: { 'Authorization': 'Bearer ' + apiKey } };
-  var out = [];
-
-  try {
-    var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-
-    var currentUserId = null;
-    try {
-      var meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', opts);
-      currentUserId = JSON.parse(meResp.getContentText()).user.id;
-    } catch (e) {}
-
-    var MAX_SCAN = 1000;                   // never page past this many expenses
-    var pageSize = 100;                    // Splitwise caps a single get_expenses call
-    var offset = 0, scanned = 0;
-
-    while (out.length < n && scanned < MAX_SCAN) {
-      var url  = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=' + pageSize + '&offset=' + offset;
-      var page = JSON.parse(UrlFetchApp.fetch(url, opts).getContentText()).expenses || [];
-      if (!page.length) break;
-      scanned += page.length;
-      offset  += pageSize;
-
-      page.forEach(function(e) {
-        if (out.length >= n) return;
-        if (e.deleted_at) return;
-        if (lkrOnly && e.currency_code !== 'LKR') return;
-        out.push(mapSplitwiseTxn_(e, currentUserId, tz));
-      });
-    }
-  } catch (e) {
-    Logger.log('fetchSplitwiseRecentTxns_ error: ' + e);
-  }
-  return out;
-}
-
-function mapSplitwiseTxn_(e, currentUserId, tz) {
-  var myNet = 0, paidByMe = false;
-  if (currentUserId) {
-    for (var i = 0; i < e.users.length; i++) {
-      if (e.users[i].user_id === currentUserId) {
-        myNet    = parseFloat(e.users[i].net_balance || 0);
-        paidByMe = parseFloat(e.users[i].paid_share  || 0) > 0;
-        break;
-      }
-    }
-  }
-  var rawDate = new Date(e.date);
-  return {
-    id:          e.id,
-    description: e.description || '(no description)',
-    date:        Utilities.formatDate(rawDate, tz, 'dd MMM yyyy'),
-    rawDate:     rawDate.getTime(),
-    cost:        parseFloat(e.cost),
-    currency:    e.currency_code,
-    myNet:       myNet,
-    paidByMe:    paidByMe,
-    isPayment:   e.payment === true
-  };
-}
-
-function getSplitwiseExpenseDetails(expenseId) {
-  const apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
-  const headers = { 'Authorization': 'Bearer ' + apiKey };
-  const opts = { method: 'get', headers: headers, muteHttpExceptions: true };
-
-  try {
-    const url = 'https://secure.splitwise.com/api/v3.0/get_expense/' + expenseId;
-    const resp = UrlFetchApp.fetch(url, opts);
-    const content = resp.getContentText();
-    const data = JSON.parse(content);
-    if (resp.getResponseCode() !== 200) {
-      throw new Error(data.errors ? JSON.stringify(data.errors) : 'Error ' + resp.getResponseCode());
-    }
-    const e = data.expense;
-
-    // Get current user ID to determine roles
-    var currentUserId = null;
-    try {
-      const meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', opts);
-      currentUserId = JSON.parse(meResp.getContentText()).user.id;
-    } catch(err) {}
-
-    var myNet = 0, paidByMe = false;
-    var users = [];
-    if (e.users) {
-      users = e.users.map(function(u) {
-        var isMe = currentUserId && (u.user_id === currentUserId);
-        var firstName = u.user ? (u.user.first_name || '') : '';
-        var lastName = u.user ? (u.user.last_name || '') : '';
-        var fullName = (firstName + ' ' + lastName).trim() || 'Unknown';
-        
-        if (isMe) {
-          myNet = parseFloat(u.net_balance || 0);
-          paidByMe = parseFloat(u.paid_share || 0) > 0;
-        }
-        
-        return {
-          userId: u.user_id,
-          name: fullName,
-          isMe: isMe,
-          paidShare: parseFloat(u.paid_share || 0),
-          owedShare: parseFloat(u.owed_share || 0),
-          netBalance: parseFloat(u.net_balance || 0)
-        };
-      });
-    }
-
-    var createdBy = 'Unknown';
-    if (e.created_by) {
-      createdBy = ((e.created_by.first_name || '') + ' ' + (e.created_by.last_name || '')).trim() || 'Unknown';
-      if (currentUserId && e.created_by.id === currentUserId) {
-        createdBy += ' (You)';
-      }
-    }
-
-    var rawDate = new Date(e.date);
-    var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-
-    return {
-      success: true,
-      expense: {
-        id:          e.id,
-        description: e.description || '(no description)',
-        details:     e.details || '',
-        date:        Utilities.formatDate(rawDate, tz, 'dd MMM yyyy HH:mm'),
-        cost:        parseFloat(e.cost),
-        currency:    e.currency_code,
-        myNet:       myNet,
-        paidByMe:    paidByMe,
-        isPayment:   e.payment === true,
-        createdBy:   createdBy,
-        users:       users,
-        category:    e.category ? e.category.name : '',
-        createdAt:   e.created_at,
-        updatedAt:   e.updated_at
-      }
-    };
-  } catch(err) {
-    Logger.log('getSplitwiseExpenseDetails error: ' + err.message);
-    return { success: false, error: err.message };
-  }
+// Returns raw splitwise.html content so render.html can embed it in an iframe
+function getSplitwiseHtmlContent() {
+  return HtmlService.createHtmlOutputFromFile('splitwise').getContent();
 }
 
 /* ── Lightweight: just the Splitwise friends list (for autocomplete) ── */
@@ -3010,71 +2821,6 @@ function getHighLevelData() {
   } catch (e) {
     Logger.log('getHighLevelData error: ' + e.message);
     return { success: false, error: e.message };
-  }
-}
-
-function getExpensesForFriend(friendId) {
-  var apiKey = 'Lo46GCiwIVipgzU3aV64dM5YysVZkLP3nY6vxtWv';
-  var headers = { 'Authorization': 'Bearer ' + apiKey };
-  var opts = { method: 'get', headers: headers, muteHttpExceptions: true };
-
-  try {
-    // ── 1. Current user ID ──
-    var currentUserId = null;
-    try {
-      var meResp = UrlFetchApp.fetch('https://secure.splitwise.com/api/v3.0/get_current_user', opts);
-      currentUserId = JSON.parse(meResp.getContentText()).user.id;
-    } catch(e) {}
-
-    // ── 2. Fetch ALL expenses for this friend (up to 200 per Splitwise API limit) ──
-    var allExpenses = [];
-    var offset = 0;
-    var pageLimit = 200;
-    while (true) {
-      var url = 'https://secure.splitwise.com/api/v3.0/get_expenses?limit=' + pageLimit
-              + '&offset=' + offset + '&friend_id=' + friendId;
-      var expResp = UrlFetchApp.fetch(url, opts);
-      var page = JSON.parse(expResp.getContentText()).expenses || [];
-      var active = page.filter(function(e) { return !e.deleted_at; });
-      allExpenses = allExpenses.concat(active);
-      if (page.length < pageLimit) break;   // last page
-      offset += pageLimit;
-      if (offset >= 1000) break;            // safety cap
-    }
-
-    var tz = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
-    var transactions = allExpenses.map(function(e) {
-        var myNet = 0, paidByMe = false;
-        if (currentUserId) {
-          for (var i = 0; i < e.users.length; i++) {
-            if (e.users[i].user_id === currentUserId) {
-              myNet = parseFloat(e.users[i].net_balance || 0);
-              paidByMe = parseFloat(e.users[i].paid_share || 0) > 0;
-              break;
-            }
-          }
-        }
-        var participants = (e.users || []).map(function(u) {
-          return (u.user && u.user.first_name) ? u.user.first_name : 'User';
-        });
-        var rawDate = new Date(e.date);
-        return {
-          id:           e.id,
-          description:  e.description || '(no description)',
-          date:         Utilities.formatDate(rawDate, tz, 'dd MMM yyyy'),
-          rawDate:      rawDate.getTime(),   // ms timestamp for suspect analysis
-          cost:         parseFloat(e.cost),
-          currency:     e.currency_code,
-          myNet:        myNet,
-          paidByMe:     paidByMe,
-          isPayment:    e.payment === true,
-          participants: participants
-        };
-      });
-
-    return { success: true, transactions: transactions };
-  } catch(err) {
-    return { success: false, error: err.message };
   }
 }
 
