@@ -3033,7 +3033,7 @@ function ccExpLoad() {
 
   // Disable next button if viewing current month
   var nextBtn = document.getElementById('cc-exp-next');
-  nextBtn.disabled = (m >= curM && y >= curY);
+  nextBtn.disabled = (y > curY || (y === curY && m >= curM));
 
   google.script.run
     .withSuccessHandler(function(res) { ccExpRender(res); })

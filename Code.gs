@@ -5040,6 +5040,13 @@ function getCardExpenses(cardName, month, year) {
       if (!parts) continue;
       if (parseInt(parts[1], 10) !== curMonth) continue;
 
+      // Column A stores real Date cells — filter by year so we don't pick up
+      // the same month/day from a previous year.
+      if (row[0] instanceof Date && !isNaN(row[0])) {
+        var rowYear = parseInt(Utilities.formatDate(row[0], tz, 'yyyy'), 10);
+        if (rowYear !== curYear) continue;
+      }
+
       // Parse expense amount
       var rawExp = row[expCol - 1];
       var exp = (typeof rawExp === 'number') ? rawExp : parseFloat(String(rawExp).replace(/[^0-9.+-]/g, '')) || 0;
