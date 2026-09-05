@@ -3021,6 +3021,16 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-port .port-aims-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--purple);}
 #page-port .port-aims-title{font-size:.65em;font-weight:700;letter-spacing:2px;
   text-transform:uppercase;color:rgba(255,255,255,.4);}
+#page-port .port-aims-body{display:flex;flex-direction:column;flex:1;min-height:0;}
+#page-port .port-phase-sel{margin-left:auto;font-size:.6em;padding:3px 22px 3px 8px;}
+#page-port .port-phase-strip{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-bottom:12px;padding:6px 9px;border-radius:10px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.06);}
+#page-port .port-phase-tag{font-size:.58em;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:rgba(255,255,255,.45);}
+#page-port .port-phase-state{font-size:.58em;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap;}
+#page-port .port-phase-state.done{background:rgba(0,255,136,.14);color:#00ff88;}
+#page-port .port-phase-state.open{background:rgba(255,215,0,.12);color:var(--gold);}
 #page-port .port-aims-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;flex:1;
   scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent;}
 #page-port .port-aim-row{display:flex;flex-direction:column;gap:4px;}

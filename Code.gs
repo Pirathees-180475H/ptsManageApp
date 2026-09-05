@@ -1036,6 +1036,14 @@ function deleteMajorExpEntry(rowIndex) {
   }
 }
 
+// ── Parse a sheet value that may carry thousand separators / currency text ──
+function portNum_(v) {
+  if (v === null || v === undefined || v === '') return 0;
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  var n = parseFloat((v + '').replace(/[^0-9.\-]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+
 function getPortfolioData() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -1093,31 +1101,45 @@ function getPortfolioData() {
       Logger.log('EPF ETF read failed: ' + ee.message);
     }
 
-    // ── Aims / Remaining: A1:D15 (row1=headers, row15=total, rows2-14=data) ──
+    // ── Aims / Remaining: T:W (T=Category, U=amount, V=aim, W=phase) ──
+    //    Row 1 = headers, rows 2+ = data. Remaining is derived (aim - amount).
     var aims = [];
+    var aimsTotal = { amount: 0, aim: 0, remaining: 0 };
     try {
-      var aimVals = sheet.getRange('A1:D15').getValues();
-      // row 0 = headers, rows 1-13 = data, row 14 = total
-      for (var ai = 1; ai <= 13; ai++) {
-        var row = aimVals[ai];
-        var cat  = (row[0] + '').trim();
-        var amt  = parseFloat(row[1]) || 0;
-        var aim  = parseFloat(row[2]) || 0;
-        var rem  = parseFloat(row[3]) || 0;
-        if (!cat || cat === '') continue;
-        if (aim <= 0 && rem <= 0) continue; // skip rows with no aim and no remaining
-        aims.push({ category: cat, amount: amt, aim: aim, remaining: rem });
+      var aLastRow = sheet.getLastRow();
+      var aMaxCol  = sheet.getLastColumn();
+      if (aLastRow >= 2 && aMaxCol >= 20) {
+        var aNumCols = Math.min(4, aMaxCol - 19); // how many of T/U/V/W actually exist
+        var aVals = sheet.getRange(2, 20, aLastRow - 1, aNumCols).getValues();
+        aVals.forEach(function(row) {
+          var cat = (row[0] === null || row[0] === undefined) ? '' : (row[0] + '').trim();
+          if (!cat) return;
+          if (cat.toLowerCase().indexOf('total') === 0) return; // ignore any total row
+          var amt   = portNum_(row[1]);
+          var aim   = portNum_(aNumCols >= 3 ? row[2] : 0);
+          var phase = aNumCols >= 4 ? Math.round(portNum_(row[3])) : 1;
+          if (!phase) phase = 1;
+          if (aim <= 0 && amt <= 0) return;
+          aims.push({
+            category:  cat,
+            amount:    amt,
+            aim:       aim,
+            phase:     phase,
+            remaining: Math.max(aim - amt, 0)
+          });
+        });
       }
-      // Total row (A15:D15)
-      var totRow = aimVals[14];
-      var aimsTotal = {
-        amount:    parseFloat(totRow[1]) || 0,
-        aim:       parseFloat(totRow[2]) || 0,
-        remaining: parseFloat(totRow[3]) || 0
-      };
+      // Totals for the highest (latest) phase — client recomputes per selected phase
+      var maxPhase = 0;
+      aims.forEach(function(a) { if (a.phase > maxPhase) maxPhase = a.phase; });
+      aims.forEach(function(a) {
+        if (a.phase !== maxPhase) return;
+        aimsTotal.amount    += a.amount;
+        aimsTotal.aim       += a.aim;
+        aimsTotal.remaining += a.remaining;
+      });
     } catch(ea) {
       Logger.log('Aims data read failed: ' + ea.message);
-      var aimsTotal = { amount: 0, aim: 0, remaining: 0 };
     }
 
     return { assets: assets, growth: growth, epfEtf: epfEtf, aims: aims, aimsTotal: aimsTotal };

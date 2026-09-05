@@ -4683,16 +4683,52 @@ function portShowError(err){
   document.getElementById('port-root').innerHTML='<div class="error-box">⚠️ Error loading portfolio<br><small style="opacity:.6">'+(err.message||err)+'</small></div>';
 }
 
-function portBuildAimsCol(aims, aimsTotal){
-  var fmt = portFmt;
-  if(!aims||!aims.length) return '<div class="port-aims-col"><div class="port-aims-card"><div class="port-aims-hdr"><div class="port-aims-dot"></div><span class="port-aims-title">🎯 Remaining to Collect</span></div><div style="color:rgba(255,255,255,.25);font-size:.7em;padding:20px 0;text-align:center;">No aim data</div></div></div>';
+var portAimsAll   = [];   /* every aim row from the sheet (T:W), phase included */
+var portAimsPhases = [];  /* sorted list of distinct phases, ascending           */
+var portAimsPhase  = null;/* currently displayed phase                           */
 
-  var rows = aims.map(function(a){
-    var pct    = a.aim > 0 ? Math.min(a.amount / a.aim * 100, 100) : 0;
+function portAimsEmptyCard(){
+  return '<div class="port-aims-col"><div class="port-aims-card">'+
+    '<div class="port-aims-hdr"><div class="port-aims-dot"></div><span class="port-aims-title">🎯 Remaining to Collect</span></div>'+
+    '<div style="color:rgba(255,255,255,.25);font-size:.7em;padding:20px 0;text-align:center;">No aim data</div>'+
+  '</div></div>';
+}
+
+/* ── Totals for one phase ── */
+function portAimsPhaseTotal(phase){
+  var t={amount:0,aim:0,remaining:0,count:0,done:0};
+  portAimsAll.forEach(function(a){
+    if(a.phase!==phase)return;
+    t.amount+=a.amount; t.aim+=a.aim; t.remaining+=a.remaining; t.count++;
+    if(a.aim>0&&a.remaining<=0)t.done++;
+  });
+  return t;
+}
+
+/* ── Body (status strip + rows + overall) for the selected phase ── */
+function portAimsBodyHtml(phase){
+  var fmt  = portFmt;
+  var list = portAimsAll.filter(function(a){return a.phase===phase;});
+  if(!list.length) return '<div style="color:rgba(255,255,255,.25);font-size:.7em;padding:20px 0;text-align:center;">No aims in phase '+phase+'</div>';
+
+  var tot      = portAimsPhaseTotal(phase);
+  var isDone   = tot.aim>0 && tot.remaining<=0;
+  var isLatest = phase===portAimsPhases[portAimsPhases.length-1];
+  var totPct   = tot.aim>0 ? Math.min(tot.amount/tot.aim*100,100) : 0;
+
+  var statusHtml = '<div class="port-phase-strip">'+
+    '<span class="port-phase-tag">Phase '+phase+(isLatest?' · Latest':'')+'</span>'+
+    '<span class="port-phase-state '+(isDone?'done':'open')+'">'+
+      (isDone?'✅ Completed':'⏳ '+tot.done+'/'+tot.count+' targets met')+
+    '</span>'+
+  '</div>';
+
+  var rows = list.map(function(a){
+    var pct    = a.aim>0 ? Math.min(a.amount/a.aim*100,100) : 0;
     var pctRnd = pct.toFixed(1);
-    var barClr = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--gold)' : 'var(--blue)';
-    var remClr = pct >= 80 ? 'var(--green)' : pct >= 50 ? 'var(--gold)' : '#94a3b8';
-    var remLbl = a.remaining > 0 ? fmt(a.remaining) : (a.aim > 0 ? '✅ Done' : '—');
+    var barClr = pct>=100?'var(--green)':pct>=80?'var(--green)':pct>=50?'var(--gold)':'var(--blue)';
+    var remClr = pct>=80?'var(--green)':pct>=50?'var(--gold)':'#94a3b8';
+    var remLbl = a.remaining>0 ? fmt(a.remaining) : (a.aim>0?'✅ Done':'—');
     return '<div class="port-aim-row">'+
       '<div class="port-aim-top">'+
         '<span class="port-aim-cat" title="'+a.category+'">'+a.category+'</span>'+
@@ -4706,25 +4742,62 @@ function portBuildAimsCol(aims, aimsTotal){
     '</div>';
   }).join('');
 
-  var totPct = aimsTotal&&aimsTotal.aim>0 ? Math.min(aimsTotal.amount/aimsTotal.aim*100,100) : 0;
-  var totHtml = (aimsTotal&&aimsTotal.aim>0) ?
+  var totHtml = tot.aim>0 ?
     '<div class="port-aims-total">'+
       '<div style="display:flex;justify-content:space-between">'+
-        '<span class="port-aims-tot-lbl">Overall Progress</span>'+
+        '<span class="port-aims-tot-lbl">Phase '+phase+' Progress</span>'+
         '<span class="port-aims-tot-lbl" style="color:var(--blue)">'+totPct.toFixed(1)+'%</span>'+
       '</div>'+
       '<div class="port-aims-tot-bar"><div class="port-aims-tot-fill" style="width:'+totPct.toFixed(1)+'%"></div></div>'+
       '<div style="display:flex;justify-content:space-between">'+
-        '<span class="port-aims-tot-val">'+fmt(aimsTotal.amount)+' collected</span>'+
-        '<span class="port-aims-tot-val" style="color:rgba(255,77,141,.85)">'+fmt(aimsTotal.remaining)+' left</span>'+
+        '<span class="port-aims-tot-val">'+fmt(tot.amount)+' collected</span>'+
+        '<span class="port-aims-tot-val" style="color:'+(isDone?'rgba(0,255,136,.85)':'rgba(255,77,141,.85)')+'">'+
+          (isDone?'✅ Target reached':fmt(tot.remaining)+' left')+'</span>'+
       '</div>'+
     '</div>' : '';
 
+  return statusHtml+'<div class="port-aims-list">'+rows+'</div>'+totHtml;
+}
+
+/* ── Swap phase from the dropdown ── */
+function portSwitchAimPhase(val){
+  var phase=parseInt(val,10);
+  if(isNaN(phase))return;
+  portAimsPhase=phase;
+  var body=document.getElementById('portAimsBody');
+  if(body)body.innerHTML=portAimsBodyHtml(phase);
+}
+
+function portBuildAimsCol(aims, aimsTotal){
+  portAimsAll=(aims||[]).slice();
+  if(!portAimsAll.length) return portAimsEmptyCard();
+
+  /* distinct phases, ascending — highest phase is the default view */
+  var seen={};
+  portAimsPhases=[];
+  portAimsAll.forEach(function(a){
+    var p=a.phase||1;
+    a.phase=p;
+    if(!seen[p]){seen[p]=1;portAimsPhases.push(p);}
+  });
+  portAimsPhases.sort(function(x,y){return x-y;});
+  portAimsPhase=portAimsPhases[portAimsPhases.length-1];
+
+  var opts=portAimsPhases.slice().reverse().map(function(p){
+    var t=portAimsPhaseTotal(p);
+    var mark=(t.aim>0&&t.remaining<=0)?' ✅':'';
+    return '<option value="'+p+'"'+(p===portAimsPhase?' selected':'')+'>Phase '+p+mark+'</option>';
+  }).join('');
+
+  var selHtml = portAimsPhases.length>1 ?
+    '<select class="port-chart-sel port-phase-sel" onchange="portSwitchAimPhase(this.value)">'+opts+'</select>' : '';
+
   return '<div class="port-aims-col">'+
     '<div class="port-aims-card">'+
-      '<div class="port-aims-hdr"><div class="port-aims-dot"></div><span class="port-aims-title">🎯 Remaining to Collect</span></div>'+
-      '<div class="port-aims-list">'+rows+'</div>'+
-      totHtml+
+      '<div class="port-aims-hdr"><div class="port-aims-dot"></div>'+
+        '<span class="port-aims-title">🎯 Remaining to Collect</span>'+selHtml+
+      '</div>'+
+      '<div id="portAimsBody" class="port-aims-body">'+portAimsBodyHtml(portAimsPhase)+'</div>'+
     '</div>'+
   '</div>';
 }
