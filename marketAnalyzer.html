@@ -1,0 +1,445 @@
+<!-- ═══════════════════════════════════════════════════════════
+     MARKET ANALYZER  (mka prefix)
+     Market-wide CSE analysis — does NOT use personal holdings.
+     Data: getMarketAnalysis() in Code.gs
+       · LOLC stock screener  → fundamentals for the whole market
+       · cse.lk               → ASPI, gainers/losers, most active, news
+═══════════════════════════════════════════════════════════════ -->
+<style>
+.mka-wrap{padding:14px;max-width:1500px;margin:0 auto;width:100%;box-sizing:border-box;}
+.mka-sub{color:rgba(255,255,255,.3);font-size:.72em;margin:0 0 14px;}
+
+/* ── loading / error ── */
+.mka-load{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:60px 0;color:rgba(255,255,255,.4);font-size:.78em;}
+.mka-spin{width:30px;height:30px;border:3px solid rgba(255,255,255,.08);border-top-color:var(--blue,#00d4ff);border-radius:50%;animation:mkaSpin .8s linear infinite;}
+@keyframes mkaSpin{to{transform:rotate(360deg);}}
+.mka-err{background:rgba(255,77,141,.1);border:1px solid rgba(255,77,141,.3);color:#ff9ec0;border-radius:12px;padding:14px 16px;font-size:.75em;}
+
+/* ── KPI row ── */
+.mka-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px;}
+.mka-kpi{background:var(--card,rgba(255,255,255,.04));border:1px solid var(--bdr,rgba(255,255,255,.07));border-radius:14px;padding:13px 15px;position:relative;overflow:hidden;}
+.mka-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--blue,#00d4ff);opacity:.7;}
+.mka-kpi.g::before{background:#10b981;} .mka-kpi.r::before{background:#ef4444;}
+.mka-kpi.y::before{background:#f59e0b;} .mka-kpi.p::before{background:#a855f7;}
+.mka-kpi-lbl{font-size:.56em;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.33);margin-bottom:4px;}
+.mka-kpi-val{font-size:1.3em;font-weight:800;letter-spacing:-.5px;line-height:1;color:#fff;}
+.mka-kpi-sub{font-size:.58em;color:rgba(255,255,255,.28);margin-top:4px;}
+
+/* ── section heading ── */
+.mka-sec{font-size:.62em;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.32);
+  margin:20px 0 10px;display:flex;align-items:center;gap:10px;}
+.mka-sec::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06);}
+.mka-sec-note{font-size:.85em;letter-spacing:0;text-transform:none;color:rgba(255,255,255,.22);font-weight:500;}
+
+/* ── pick tabs ── */
+.mka-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.mka-tab{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:10px;
+  color:rgba(255,255,255,.5);font-family:inherit;font-size:.66em;font-weight:700;letter-spacing:.5px;
+  padding:7px 13px;cursor:pointer;transition:all .2s;}
+.mka-tab:hover{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.75);}
+.mka-tab.active{background:rgba(0,212,255,.14);border-color:rgba(0,212,255,.4);color:#7fe3ff;}
+
+/* ── stock cards ── */
+.mka-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:11px;}
+.mka-card{background:var(--card,rgba(255,255,255,.04));border:1px solid var(--bdr,rgba(255,255,255,.07));
+  border-radius:14px;padding:13px 14px;position:relative;overflow:hidden;transition:transform .18s,border-color .18s;}
+.mka-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.16);}
+.mka-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:3px;}
+.mka-sym{font-size:.86em;font-weight:800;color:#fff;letter-spacing:.3px;}
+.mka-co{font-size:.6em;color:rgba(255,255,255,.34);line-height:1.35;margin-bottom:9px;
+  display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;}
+.mka-rate{font-size:.55em;font-weight:800;letter-spacing:.8px;padding:3px 7px;border-radius:6px;white-space:nowrap;flex-shrink:0;}
+.mka-rate.sb{background:rgba(16,185,129,.18);color:#34d399;}
+.mka-rate.b {background:rgba(0,212,255,.15);color:#67e8f9;}
+.mka-rate.h {background:rgba(245,158,11,.15);color:#fbbf24;}
+.mka-rate.w {background:rgba(148,163,184,.15);color:#cbd5e1;}
+.mka-rate.a {background:rgba(239,68,68,.15);color:#f87171;}
+
+.mka-price{display:flex;align-items:baseline;gap:8px;margin-bottom:9px;}
+.mka-price-v{font-size:1.05em;font-weight:800;color:#fff;}
+.mka-price-l{font-size:.55em;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:1px;}
+.mka-score-pill{margin-left:auto;font-size:.62em;font-weight:800;color:#fff;background:rgba(255,255,255,.07);
+  border-radius:8px;padding:2px 8px;}
+
+/* score bars */
+.mka-bars{display:flex;flex-direction:column;gap:5px;margin-bottom:9px;}
+.mka-bar-row{display:flex;align-items:center;gap:7px;}
+.mka-bar-lbl{font-size:.53em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.3);width:66px;flex-shrink:0;}
+.mka-bar{flex:1;height:4px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;}
+.mka-bar-f{height:100%;border-radius:3px;transition:width .6s ease;}
+.mka-bar-v{font-size:.53em;font-weight:700;color:rgba(255,255,255,.45);width:22px;text-align:right;flex-shrink:0;}
+
+/* metric chips */
+.mka-mets{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;}
+.mka-met{background:rgba(255,255,255,.05);border-radius:7px;padding:3px 7px;font-size:.55em;color:rgba(255,255,255,.55);}
+.mka-met b{color:#fff;font-weight:700;}
+.mka-met.good b{color:#34d399;} .mka-met.bad b{color:#f87171;}
+
+/* dividends paid this calendar year */
+.mka-div{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.05);}
+.mka-div-lbl{font-size:.53em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.3);}
+.mka-div-val{font-size:.6em;font-weight:700;color:rgba(255,255,255,.4);text-align:right;}
+.mka-div.paid{background:rgba(16,185,129,.07);border-color:rgba(16,185,129,.18);}
+.mka-div.paid .mka-div-val{color:#34d399;}
+
+/* year range (52-week) — loads asynchronously per card */
+.mka-yr{margin-bottom:9px;padding:7px 9px;border-radius:9px;background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.05);}
+.mka-yr-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-bottom:5px;}
+.mka-yr-lbl{font-size:.53em;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.3);}
+.mka-yr-verdict{font-size:.55em;font-weight:800;}
+.mka-yr-track{position:relative;height:5px;border-radius:3px;
+  background:linear-gradient(90deg,rgba(0,212,255,.35),rgba(255,255,255,.08),rgba(245,158,11,.35));}
+.mka-yr-mark{position:absolute;top:-3px;width:3px;height:11px;border-radius:2px;background:#fff;
+  box-shadow:0 0 5px rgba(255,255,255,.6);transform:translateX(-1.5px);transition:left .5s ease;}
+.mka-yr-ends{display:flex;justify-content:space-between;margin-top:4px;font-size:.52em;color:rgba(255,255,255,.3);}
+/* loading state — blinks until its request comes back */
+.mka-yr.pending{position:relative;overflow:hidden;}
+.mka-yr.pending .mka-yr-lbl{color:rgba(255,255,255,.22);}
+.mka-yr.pending::after{content:'';position:absolute;inset:0;border-radius:9px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+  animation:mkaBlink 1.15s ease-in-out infinite;}
+@keyframes mkaBlink{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+.mka-yr-wait{font-size:.55em;color:rgba(255,255,255,.25);}
+.mka-yr.failed .mka-yr-wait{color:rgba(255,255,255,.2);}
+
+.mka-why{display:flex;flex-direction:column;gap:3px;}
+.mka-why div{font-size:.56em;line-height:1.45;color:rgba(255,255,255,.42);display:flex;gap:5px;}
+.mka-why .ok::before {content:'✓';color:#34d399;font-weight:800;}
+.mka-why .no::before {content:'!';color:#fbbf24;font-weight:800;}
+
+/* ── sector table ── */
+.mka-tbl-wrap{overflow-x:auto;border:1px solid var(--bdr,rgba(255,255,255,.07));border-radius:14px;background:var(--card,rgba(255,255,255,.03));}
+.mka-tbl{width:100%;border-collapse:collapse;font-size:.62em;min-width:620px;}
+.mka-tbl th{text-align:right;padding:9px 12px;font-size:.92em;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap;}
+.mka-tbl th:first-child,.mka-tbl td:first-child{text-align:left;}
+.mka-tbl td{padding:8px 12px;text-align:right;color:rgba(255,255,255,.6);border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap;}
+.mka-tbl tr:last-child td{border-bottom:none;}
+.mka-tbl tr:hover td{background:rgba(255,255,255,.025);}
+.mka-tbl td.n{color:#fff;font-weight:700;}
+
+/* ── movers / news ── */
+.mka-two{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:900px){.mka-two{grid-template-columns:1fr;}}
+.mka-box{background:var(--card,rgba(255,255,255,.04));border:1px solid var(--bdr,rgba(255,255,255,.07));border-radius:14px;padding:13px 15px;}
+.mka-box-t{font-size:.6em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.35);
+  margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.05);}
+.mka-mv{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;font-size:.63em;}
+.mka-mv-s{font-weight:700;color:rgba(255,255,255,.7);}
+.mka-mv-p{font-weight:800;}
+.mka-mv-p.up{color:#34d399;} .mka-mv-p.dn{color:#f87171;}
+.mka-news{font-size:.62em;color:rgba(255,255,255,.5);line-height:1.5;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.mka-news:last-child{border-bottom:none;}
+.mka-news span{color:rgba(255,255,255,.25);font-size:.9em;}
+
+.mka-foot{margin-top:18px;padding:11px 14px;border-radius:12px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.06);font-size:.58em;line-height:1.6;color:rgba(255,255,255,.3);}
+.mka-refresh{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:9px;
+  color:rgba(255,255,255,.6);font-family:inherit;font-size:.64em;font-weight:700;padding:6px 12px;cursor:pointer;}
+.mka-refresh:hover{border-color:rgba(255,255,255,.28);color:#fff;}
+.mka-refresh:disabled{opacity:.45;cursor:default;}
+</style>
+
+<div class="mka-wrap" id="mka-root">
+  <div class="mka-load"><div class="mka-spin"></div>Loading market analysis…</div>
+</div>
+
+<script>
+/* ═══ Market Analyzer ═══ */
+var _mkaData = null, _mkaLoading = false, _mkaPick = 'longTerm';
+
+var MKA_PICK_TABS = [
+  { key:'longTerm', label:'🏛️ Long Term',  note:'Quality-first names, priced at or below their sector, big enough to hold for years.' },
+  { key:'overall',  label:'⭐ Top Rated',   note:'Highest composite score across value, quality, income and size.' },
+  { key:'value',    label:'💎 Value',       note:'Cheapest against their own sector on P/E and price-to-book.' },
+  { key:'quality',  label:'🏆 Quality',     note:'Best profitability — ROE, positive EPS and positive earnings.' },
+  { key:'dividend', label:'💰 Dividend',    note:'Highest yields among profitable companies.' },
+  { key:'avoid',    label:'⚠️ Avoid',       note:'Lowest scoring — losses, stretched valuations or weak returns.' }
+];
+
+function mkaNum(n, d){
+  if(n===null||n===undefined||!isFinite(n)) return '—';
+  return Number(n).toLocaleString('en-IN',{minimumFractionDigits:d||0,maximumFractionDigits:d||0});
+}
+function mkaMn(n){
+  if(!n) return '—';
+  if(n >= 1000) return (n/1000).toFixed(1)+'Bn';
+  return Math.round(n)+'Mn';
+}
+function mkaEsc(s){
+  return String(s===null||s===undefined?'':s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function mkaRateCls(r){
+  return r==='STRONG BUY'?'sb':r==='BUY'?'b':r==='HOLD'?'h':r==='WATCH'?'w':'a';
+}
+/* Plain-English version of each rating */
+function mkaRateWord(r){
+  return r==='STRONG BUY' ? 'GREAT DEAL'
+       : r==='BUY'        ? 'GOOD DEAL'
+       : r==='HOLD'       ? 'FAIR PRICE'
+       : r==='WATCH'      ? 'BE CAREFUL'
+       : 'STAY AWAY';
+}
+function mkaBarClr(v){
+  return v>=70?'#10b981':v>=50?'#00d4ff':v>=32?'#f59e0b':'#ef4444';
+}
+
+function mkaLoad(force){
+  if(_mkaLoading) return;
+  _mkaLoading = true;
+  var root = document.getElementById('mka-root');
+  if(root) root.innerHTML = '<div class="mka-load"><div class="mka-spin"></div>Analyzing the whole market…</div>';
+  google.script.run
+    .withSuccessHandler(function(d){ _mkaLoading=false; _mkaData=d; mkaRender(); })
+    .withFailureHandler(function(e){
+      _mkaLoading=false;
+      if(root) root.innerHTML='<div class="mka-err">⚠ '+mkaEsc(e && e.message ? e.message : e)+'</div>';
+    })
+    .getMarketAnalysis(force===true);
+}
+
+function mkaSwitchPick(k){
+  _mkaPick = k;
+  var tabs = document.querySelectorAll('.mka-tab');
+  for(var i=0;i<tabs.length;i++){
+    tabs[i].classList.toggle('active', tabs[i].getAttribute('data-pick')===k);
+  }
+  var host = document.getElementById('mka-picks');
+  var note = document.getElementById('mka-pick-note');
+  var picked = ( _mkaData.picks || {} )[k] || [];
+  if(host) host.innerHTML = mkaCards(picked);
+  mkaQueueYears(picked);
+  if(note){
+    for(var j=0;j<MKA_PICK_TABS.length;j++){
+      if(MKA_PICK_TABS[j].key===k) note.textContent = MKA_PICK_TABS[j].note;
+    }
+  }
+}
+
+function mkaMet(label, value, cls, help){
+  return '<span class="mka-met'+(cls?' '+cls:'')+'" title="'+mkaEsc(help)+'">'+
+    mkaEsc(label)+' <b>'+mkaEsc(value)+'</b></span>';
+}
+
+function mkaBar(lbl, v, help){
+  return '<div class="mka-bar-row" title="'+mkaEsc(help||'')+'"><span class="mka-bar-lbl">'+lbl+'</span>'+
+    '<span class="mka-bar"><span class="mka-bar-f" style="width:'+v+'%;background:'+mkaBarClr(v)+'"></span></span>'+
+    '<span class="mka-bar-v">'+v+'</span></div>';
+}
+
+/* ══ 52-week price range ══
+   The screener has no yearly data, so each symbol is fetched one at a time
+   from cse.lk in the background. Cards render immediately with a blinking
+   placeholder; each slot fills in the moment its own request returns. */
+var _mkaYear   = {};     /* symbol -> {high, low} | 'failed'  */
+var _mkaYearQ  = [];     /* symbols still waiting              */
+var _mkaYearBusy = 0;
+var MKA_YEAR_PARALLEL = 3;
+
+function mkaYearId(sym){ return 'mka-yr-'+String(sym).replace(/[^A-Za-z0-9]/g,'_'); }
+
+/* Placeholder (or cached result) for one card */
+function mkaYearSlot(sym){
+  var cached = _mkaYear[sym];
+  if(cached && cached!=='failed') return mkaYearHtml(sym, cached);
+  if(cached==='failed')           return mkaYearFailedHtml(sym);
+  return '<div class="mka-yr pending" id="'+mkaYearId(sym)+'">'+
+    '<div class="mka-yr-top"><span class="mka-yr-lbl">Past year</span>'+
+    '<span class="mka-yr-wait">checking…</span></div>'+
+    '<div class="mka-yr-track"></div></div>';
+}
+
+function mkaYearFailedHtml(sym){
+  return '<div class="mka-yr failed" id="'+mkaYearId(sym)+'">'+
+    '<div class="mka-yr-top"><span class="mka-yr-lbl">Past year</span>'+
+    '<span class="mka-yr-wait">no yearly data</span></div></div>';
+}
+
+/* Rendered range once the data is in */
+function mkaYearHtml(sym, d){
+  var lo = d.low, hi = d.high, px = d.price;
+  if(!(hi>0 && lo>0 && hi>lo)) return mkaYearFailedHtml(sym);
+  var pos = Math.max(0, Math.min((px-lo)/(hi-lo)*100, 100));
+  var verdict, colour;
+  if(pos <= 25){ verdict='Near its lowest of the year'; colour='#67e8f9'; }
+  else if(pos >= 75){ verdict='Near its highest of the year'; colour='#fbbf24'; }
+  else { verdict='Middle of its yearly range'; colour='rgba(255,255,255,.5)'; }
+
+  return '<div class="mka-yr" id="'+mkaYearId(sym)+'" '+
+      'title="Where today’s price sits between the cheapest and dearest it has been in the last 12 months.">'+
+    '<div class="mka-yr-top"><span class="mka-yr-lbl">Past year</span>'+
+      '<span class="mka-yr-verdict" style="color:'+colour+'">'+verdict+'</span></div>'+
+    '<div class="mka-yr-track"><span class="mka-yr-mark" style="left:'+pos.toFixed(1)+'%"></span></div>'+
+    '<div class="mka-yr-ends"><span>low ₨'+mkaNum(lo,2)+'</span>'+
+      '<span>'+Math.round(pos)+'% up the range</span>'+
+      '<span>high ₨'+mkaNum(hi,2)+'</span></div>'+
+  '</div>';
+}
+
+/* Queue every symbol on screen, then drain a few requests at a time */
+function mkaQueueYears(list){
+  (list||[]).forEach(function(s){
+    if(_mkaYear[s.symbol]) return;                 /* already known  */
+    if(_mkaYearQ.indexOf(s.symbol) >= 0) return;   /* already queued */
+    _mkaYearQ.push(s.symbol);
+  });
+  for(var i=_mkaYearBusy; i<MKA_YEAR_PARALLEL; i++) mkaYearNext();
+}
+
+function mkaYearNext(){
+  if(!_mkaYearQ.length) return;
+  var sym = _mkaYearQ.shift();
+  _mkaYearBusy++;
+  google.script.run
+    .withSuccessHandler(function(r){
+      _mkaYearBusy--;
+      if(r && r.success && r.yearHigh > 0 && r.yearLow > 0){
+        _mkaYear[sym] = { high:r.yearHigh, low:r.yearLow, price:r.currentPrice||0 };
+      } else {
+        _mkaYear[sym] = 'failed';
+      }
+      mkaYearPaint(sym);
+      mkaYearNext();
+    })
+    .withFailureHandler(function(){
+      _mkaYearBusy--;
+      _mkaYear[sym] = 'failed';
+      mkaYearPaint(sym);
+      mkaYearNext();
+    })
+    .getCSELivePrice(sym);
+}
+
+/* Swap one card's placeholder for the finished result */
+function mkaYearPaint(sym){
+  var el = document.getElementById(mkaYearId(sym));
+  if(!el) return;                                  /* card no longer on screen */
+  var d = _mkaYear[sym];
+  var html = (d && d!=='failed') ? mkaYearHtml(sym, d) : mkaYearFailedHtml(sym);
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  el.parentNode.replaceChild(tmp.firstChild, el);
+}
+
+function mkaCards(list){
+  if(!list || !list.length) return '<div class="mka-err">Nothing matched this screen today.</div>';
+  return '<div class="mka-grid">'+list.map(function(s){
+    /* Only the four things asked for: price, dividend this year,
+       past-year price position, and the long-term read. */
+    var divTxt = s.divCount
+      ? s.divCount+' payout'+(s.divCount>1?'s':'')+' · ₨'+mkaNum(s.divDps,2)+' per share'
+      : 'No dividend yet this year';
+
+    return '<div class="mka-card">'+
+      '<div class="mka-card-top"><div><div class="mka-sym">'+mkaEsc(s.symbol)+'</div></div>'+
+        '<span class="mka-rate '+mkaRateCls(s.rating)+'" title="'+mkaEsc(s.rating)+'">'+mkaRateWord(s.rating)+'</span></div>'+
+      '<div class="mka-co">'+mkaEsc(s.name||'')+' · '+mkaEsc(s.sector)+'</div>'+
+      '<div class="mka-price"><span class="mka-price-v">₨'+mkaNum(s.price,2)+'</span>'+
+        '<span class="mka-price-l">price now</span></div>'+
+      mkaYearSlot(s.symbol)+
+      '<div class="mka-div'+(s.divCount?' paid':'')+'" title="Cash dividends actually paid out during '+
+        (new Date().getFullYear())+', from the CSE dividend calendar.">'+
+        '<span class="mka-div-lbl">Dividend '+(new Date().getFullYear())+'</span>'+
+        '<span class="mka-div-val">'+divTxt+'</span></div>'+
+    '</div>';
+  }).join('')+'</div>';
+}
+
+function mkaMovers(title, list, dir){
+  if(!list || !list.length) return '';
+  var rows = list.slice(0,8).map(function(m){
+    var sym = m.symbol || m.name || m.id || '—';
+    var pct = m.changePercentage!==undefined ? m.changePercentage
+            : (m.change!==undefined ? m.change : (m.percentageChange!==undefined ? m.percentageChange : null));
+    var pTxt = (pct===null||!isFinite(pct)) ? '' : (pct>0?'+':'')+Number(pct).toFixed(2)+'%';
+    return '<div class="mka-mv"><span class="mka-mv-s">'+mkaEsc(sym)+'</span>'+
+           '<span class="mka-mv-p '+dir+'">'+mkaEsc(pTxt)+'</span></div>';
+  }).join('');
+  return '<div class="mka-box"><div class="mka-box-t">'+title+'</div>'+rows+'</div>';
+}
+
+function mkaRender(){
+  var root = document.getElementById('mka-root');
+  var d = _mkaData;
+  if(!root) return;
+  if(!d || !d.success){
+    root.innerHTML='<div class="mka-err">⚠ '+mkaEsc(d && d.error ? d.error : 'Market analysis failed')+'</div>';
+    return;
+  }
+  var b = d.breadth, med = d.medians;
+  var buyPct = b.total ? ((b.strongBuy+b.buy)/b.total*100) : 0;
+
+  var html = '';
+
+  /* header */
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px;">'+
+    '<p class="mka-sub" style="margin:0">'+b.total+' listed companies screened · as of '+mkaEsc(d.asOf)+(d.cached?' · cached':'')+'</p>'+
+    '<button class="mka-refresh" onclick="mkaLoad(true)">↺ Re-analyze</button></div>';
+
+  /* KPIs */
+  html += '<div class="mka-kpis">'+
+    '<div class="mka-kpi g"><div class="mka-kpi-lbl">Buy Signals</div><div class="mka-kpi-val">'+(b.strongBuy+b.buy)+'</div><div class="mka-kpi-sub">'+buyPct.toFixed(0)+'% of market · '+b.strongBuy+' strong</div></div>'+
+    '<div class="mka-kpi y"><div class="mka-kpi-lbl">Hold / Watch</div><div class="mka-kpi-val">'+(b.hold+b.watch)+'</div><div class="mka-kpi-sub">no clear edge</div></div>'+
+    '<div class="mka-kpi r"><div class="mka-kpi-lbl">Avoid</div><div class="mka-kpi-val">'+b.avoid+'</div><div class="mka-kpi-sub">weak fundamentals</div></div>'+
+    '<div class="mka-kpi"><div class="mka-kpi-lbl">Median P/E</div><div class="mka-kpi-val">'+med.pe.toFixed(1)+'</div><div class="mka-kpi-sub">PBV '+med.pbv.toFixed(2)+'</div></div>'+
+    '<div class="mka-kpi p"><div class="mka-kpi-lbl">Median Yield</div><div class="mka-kpi-val">'+med.dy.toFixed(2)+'%</div><div class="mka-kpi-sub">'+b.dividendPay+' pay a dividend</div></div>'+
+    '<div class="mka-kpi g"><div class="mka-kpi-lbl">Profitable</div><div class="mka-kpi-val">'+b.profitable+'</div><div class="mka-kpi-sub">of '+b.total+' companies</div></div>'+
+    '<div class="mka-kpi"><div class="mka-kpi-lbl">Below Sector P/E</div><div class="mka-kpi-val">'+b.belowSecPe+'</div><div class="mka-kpi-sub">cheaper than peers</div></div>'+
+    '<div class="mka-kpi p"><div class="mka-kpi-lbl">Below Book</div><div class="mka-kpi-val">'+b.belowBook+'</div><div class="mka-kpi-sub">PBV under 1.0</div></div>'+
+  '</div>';
+
+  /* picks */
+  html += '<div class="mka-sec">Recommendations</div>';
+  html += '<div class="mka-tabs">'+MKA_PICK_TABS.map(function(t){
+    return '<button class="mka-tab'+(t.key===_mkaPick?' active':'')+'" data-pick="'+t.key+'" onclick="mkaSwitchPick(\''+t.key+'\')">'+t.label+'</button>';
+  }).join('')+'</div>';
+  html += '<p class="mka-sub" id="mka-pick-note">'+MKA_PICK_TABS[0].note+'</p>';
+  var firstPicks = (d.picks||{})[_mkaPick]||[];
+  html += '<div id="mka-picks">'+mkaCards(firstPicks)+'</div>';
+
+  /* sectors */
+  html += '<div class="mka-sec">Sector Valuations <span class="mka-sec-note">median of each sector</span></div>';
+  html += '<div class="mka-tbl-wrap"><table class="mka-tbl"><thead><tr>'+
+    '<th>Sector</th><th>Cos</th><th>Mkt Cap</th><th>P/E</th><th>PBV</th><th>Yield</th><th>ROE</th>'+
+    '</tr></thead><tbody>'+
+    d.sectors.map(function(s){
+      return '<tr><td>'+mkaEsc(s.name)+'</td><td>'+s.count+'</td><td class="n">'+mkaMn(s.mcap)+'</td>'+
+        '<td class="n">'+(s.medPe?s.medPe.toFixed(1):'—')+'</td>'+
+        '<td>'+(s.medPbv?s.medPbv.toFixed(2):'—')+'</td>'+
+        '<td>'+(s.medDy?s.medDy.toFixed(2)+'%':'—')+'</td>'+
+        '<td>'+(s.medRoe?s.medRoe.toFixed(1)+'%':'—')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+
+  /* market pulse */
+  var m = d.market || {};
+  var gainers = mkaMovers('📈 Top Gainers', m.gainers, 'up');
+  var losers  = mkaMovers('📉 Top Losers',  m.losers,  'dn');
+  if(gainers || losers){
+    html += '<div class="mka-sec">Today’s Movers</div><div class="mka-two">'+gainers+losers+'</div>';
+  }
+  if(m.news && m.news.length){
+    html += '<div class="mka-sec">Market News</div><div class="mka-box">'+
+      m.news.map(function(n){
+        var t = n.name || n.title || n.newsTitle || '';
+        var dt = n.dateOfNews || n.date || n.publishedDate || '';
+        if(!t) return '';
+        return '<div class="mka-news">'+mkaEsc(t)+(dt?' <span>· '+mkaEsc(dt)+'</span>':'')+'</div>';
+      }).join('')+'</div>';
+  }
+
+  html += '<div class="mka-foot"><strong>What each card shows:</strong> the share price right now, '+
+    'where that price sits between the cheapest and dearest it has been over the last 12 months, '+
+    'and the cash dividends the company has actually paid out so far this year. '+
+    'The badge at the top is our overall read on whether it looks worth holding, based on how the '+
+    'company is priced and how much money it really makes. '+
+    'The yearly range loads company by company, so a few cards keep blinking until their data arrives. '+
+    'This is a helper for finding ideas, not financial advice \u2014 always check the company yourself before buying.</div>';
+
+  root.innerHTML = html;
+  mkaQueueYears(firstPicks);   /* fills the blinking year slots in the background */
+}
+</script>

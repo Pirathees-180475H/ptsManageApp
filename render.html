@@ -168,6 +168,7 @@ document.title = 'EXP TRACK';
     <div class="tab"        data-tab="6" onclick="switchTab(6)">💎 Unit Trust</div>
     <div class="tab"        data-tab="5" onclick="switchTab(5)">📊 Performance</div>
     <div class="tab"        data-tab="3" onclick="switchTab(3)">💡 Insights</div>
+    <div class="tab"        data-tab="7" onclick="switchTab(7)">🔎 Market</div>
   </div>
   <div class="panels">
     <div class="panel active" id="p0">
@@ -202,6 +203,9 @@ document.title = 'EXP TRACK';
     <div class="panel" id="p6">
       <div class="loading" id="l6"><div class="mini-line"></div><div>Click tab to load Unit Trust data…</div></div>
       <div id="c6" style="display:none"></div>
+    </div>
+    <div class="panel" id="p7">
+      <?!= include('marketAnalyzer'); ?>
     </div>
   </div>
   <div class="pf-cse-toast" id="pfCseToast"></div>
@@ -1343,6 +1347,7 @@ function switchTab(i){
   if(i===4&&!_fdLoaded)   loadFDData();
   if(i===5&&!_perfLoaded) csePerfLoad();
   if(i===6&&!_utLoaded)   cseUTLoad();
+  if(i===7&&!_mkaData&&!_mkaLoading) mkaLoad();
 }
 function tdot(i,s){var d=document.getElementById('td'+i);if(d)d.className='tdot'+(s?' '+s:'');}
 

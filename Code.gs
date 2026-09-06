@@ -3441,8 +3441,13 @@ function getCSELivePrice(symbol) {
       pe:           Number(si.pe)               || Number(si.priceToEarnings) || 0,
       dividendYield:Number(si.dividendYield)    || 0,
       marketCap:    Number(si.marketCap)        || 0,
-      yearHigh:     Number(si.yearHigh)         || Number(si['52WeekHigh'])   || 0,
-      yearLow:      Number(si.yearLow)          || Number(si['52WeekLow'])    || 0,
+      // cse.lk names the 12-month range p12HiPrice / p12LowPrice — there is no
+      // yearHigh/yearLow field. ytd* is calendar year-to-date, used as a fallback.
+      yearHigh:     Number(si.p12HiPrice)       || Number(si.ytdHiPrice)      || 0,
+      yearLow:      Number(si.p12LowPrice)      || Number(si.ytdLowPrice)     || 0,
+      ytdHigh:      Number(si.ytdHiPrice)       || 0,
+      ytdLow:       Number(si.ytdLowPrice)      || 0,
+      prevClose:    Number(si.previousClose)    || 0,
       companyName:  si.companyName || si.name   || '',
       allFields:    si
     };
@@ -6143,6 +6148,274 @@ function deleteInsuranceClaim(rowIndex) {
     return { success: true };
   } catch (e) {
     Logger.log('deleteInsuranceClaim error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════
+   MARKET ANALYZER  (market-wide — ignores personal holdings)
+   Source: LOLC stock screener (fundamentals for the whole CSE)
+           + cse.lk market endpoints (ASPI, gainers/losers, news)
+   Scoring is deterministic and fully explainable — every stock gets
+   Value / Quality / Income / Size sub-scores and a composite rating.
+   ═══════════════════════════════════════════════════════════════ */
+
+function mkaMedian_(arr) {
+  var a = arr.filter(function(v) { return typeof v === 'number' && isFinite(v); })
+             .sort(function(x, y) { return x - y; });
+  if (!a.length) return 0;
+  var m = Math.floor(a.length / 2);
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+}
+
+function mkaClamp_(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+// Map a value onto 0-100 where `good` scores 100 and `bad` scores 0
+function mkaScale_(v, bad, good) {
+  if (!isFinite(v)) return 50;
+  if (good === bad) return 50;
+  return mkaClamp_((v - bad) / (good - bad) * 100, 0, 100);
+}
+
+
+/* Dividends announced/paid in the current calendar year, keyed by ticker.
+   Reads the full LOLC dividend CSV (not the 2-month-filtered view). */
+function mkaDividendsThisYear_() {
+  var map = {};
+  try {
+    var res = UrlFetchApp.fetch('https://www.lolcsecurities.lk/dividend-calendar/dividends_db.csv', {
+      method: 'get', muteHttpExceptions: true, followRedirects: true,
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+    if (res.getResponseCode() !== 200) return map;
+
+    var year  = new Date().getFullYear();
+    var lines = res.getContentText('UTF-8').split('\n');
+    for (var i = 1; i < lines.length; i++) {
+      var ln = lines[i].trim();
+      if (!ln) continue;
+      var c = ln.split(',');
+      if (c.length < 5) continue;
+      var pay  = (c[2] || '').replace(/"/g, '').trim();   // yyyy-MM-dd
+      var code = (c[3] || '').replace(/"/g, '').trim().toUpperCase();
+      var dps  = parseFloat((c[4] || '').replace(/"/g, '')) || 0;
+      if (!code || pay.indexOf(year + '-') !== 0) continue;
+
+      if (!map[code]) map[code] = { count: 0, dps: 0, last: '', next: '' };
+      map[code].count++;
+      map[code].dps += dps;
+      if (!map[code].last || pay > map[code].last) map[code].last = pay;
+      if (!map[code].next || pay < map[code].next) map[code].next = pay;
+    }
+  } catch (e) {
+    Logger.log('Dividend map failed: ' + e.message);
+  }
+  return map;
+}
+
+function getMarketAnalysis(force) {
+  try {
+    var cache = CacheService.getScriptCache();
+    if (!force) {
+      var hit = cache.get('mkaAnalysis_v2');
+      if (hit) { var c = JSON.parse(hit); c.cached = true; return c; }
+    }
+
+    var raw = getLOLCScreenerAll() || [];
+    var tz  = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+
+    // ── Keep only tradable rows with a real price ──
+    var univ = raw.filter(function(r) {
+      return r && r.symbol && r.currentPrice > 0;
+    });
+    if (!univ.length) return { success: false, error: 'Screener returned no usable rows' };
+
+    // ── Market-wide medians ──
+    var medPe   = mkaMedian_(univ.filter(function(r){return r.pe  > 0;}).map(function(r){return r.pe;}));
+    var medPbv  = mkaMedian_(univ.filter(function(r){return r.pbv > 0;}).map(function(r){return r.pbv;}));
+    var medDy   = mkaMedian_(univ.filter(function(r){return r.dy  > 0;}).map(function(r){return r.dy;}));
+    var medRoe  = mkaMedian_(univ.filter(function(r){return r.roe !== 0;}).map(function(r){return r.roe;}));
+    var medMcap = mkaMedian_(univ.filter(function(r){return r.marketCap > 0;}).map(function(r){return r.marketCap;}));
+
+    // ── Sector aggregates (own medians, used when the feed's sector PE is blank) ──
+    var secMap = {};
+    univ.forEach(function(r) {
+      var sec = r.sector || 'Unclassified';
+      if (!secMap[sec]) secMap[sec] = { name: sec, pes: [], pbvs: [], dys: [], roes: [], mcap: 0, count: 0 };
+      var g = secMap[sec];
+      g.count++;
+      g.mcap += r.marketCap || 0;
+      if (r.pe  > 0) g.pes.push(r.pe);
+      if (r.pbv > 0) g.pbvs.push(r.pbv);
+      if (r.dy  > 0) g.dys.push(r.dy);
+      if (r.roe !== 0) g.roes.push(r.roe);
+    });
+    var sectors = Object.keys(secMap).map(function(k) {
+      var g = secMap[k];
+      return {
+        name:   g.name,
+        count:  g.count,
+        mcap:   g.mcap,
+        medPe:  mkaMedian_(g.pes),
+        medPbv: mkaMedian_(g.pbvs),
+        medDy:  mkaMedian_(g.dys),
+        medRoe: mkaMedian_(g.roes)
+      };
+    }).sort(function(a, b) { return b.mcap - a.mcap; });
+
+    var secIdx = {};
+    sectors.forEach(function(s) { secIdx[s.name] = s; });
+
+    // ── Dividends paid/announced this calendar year, by ticker ──
+    var divYear = mkaDividendsThisYear_();
+
+    // ── Score every stock ──
+    var scored = univ.map(function(r) {
+      var sec     = secIdx[r.sector || 'Unclassified'] || {};
+      var refPe   = r.sectorPe  > 0 ? r.sectorPe  : (sec.medPe  || medPe);
+      var refPbv  = r.sectorPbv > 0 ? r.sectorPbv : (sec.medPbv || medPbv);
+      var reasons = [], flags = [];
+
+      /* ── Value: cheap vs its own sector ── */
+      var valueScore = 50, peRel = 0, pbvRel = 0;
+      var vParts = [];
+      if (r.pe > 0 && refPe > 0) {
+        peRel = r.pe / refPe;                      // <1 = cheaper than sector
+        vParts.push(mkaScale_(peRel, 1.6, 0.5));
+        if (peRel <= 0.7)      reasons.push('Cheaper than similar companies — you pay ' + Math.round((1 - peRel) * 100) + '% less for the same profit');
+        else if (peRel >= 1.5) flags.push('Priced much higher than similar companies');
+      } else if (r.pe <= 0) {
+        flags.push('Not making a profit right now');
+      }
+      if (r.pbv > 0 && refPbv > 0) {
+        pbvRel = r.pbv / refPbv;
+        vParts.push(mkaScale_(pbvRel, 1.6, 0.5));
+        if (r.pbv < 1) reasons.push('Share price is below what the company actually owns');
+      }
+      if (vParts.length) {
+        valueScore = vParts.reduce(function(a, b) { return a + b; }, 0) / vParts.length;
+      }
+
+      /* ── Quality: profitability ── */
+      var qParts = [mkaScale_(r.roe, 0, 25)];
+      if (r.eps > 0) qParts.push(75); else qParts.push(10);
+      if (r.earnings > 0) qParts.push(70); else qParts.push(20);
+      var qualityScore = qParts.reduce(function(a, b) { return a + b; }, 0) / qParts.length;
+      if (r.roe >= 20)      reasons.push('Earns about LKR ' + Math.round(r.roe) + ' a year for every LKR 100 the company holds');
+      else if (r.roe > 0 && r.roe < 5) flags.push('Makes very little profit from the money it holds');
+      if (r.eps <= 0)       flags.push('No profit per share — the business is losing money');
+
+      /* ── Income ── */
+      var incomeScore = mkaScale_(r.dy, 0, Math.max(medDy * 2.5, 8));
+      if (r.dy >= Math.max(medDy * 1.5, 5)) reasons.push('Pays you ' + r.dy.toFixed(1) + '% cash a year, while most shares pay only ' + medDy.toFixed(1) + '%');
+      if (r.dy > 15) flags.push('Payout looks too good — check the company can keep paying it');
+
+      /* ── Size / liquidity proxy ── */
+      var sizeScore = r.marketCap > 0
+        ? mkaScale_(Math.log(r.marketCap), Math.log(100), Math.log(200000))
+        : 20;
+      if (r.marketCap > 0 && r.marketCap < 1000) flags.push('Small company — shares can be hard to sell quickly');
+
+      /* ── Composite ── */
+      var score = valueScore * 0.35 + qualityScore * 0.35 + incomeScore * 0.20 + sizeScore * 0.10;
+      // A loss-maker can never rank as a buy, however cheap it looks
+      if (r.eps <= 0) score = Math.min(score, 42);
+
+      var rating = score >= 75 ? 'STRONG BUY'
+                 : score >= 62 ? 'BUY'
+                 : score >= 45 ? 'HOLD'
+                 : score >= 32 ? 'WATCH'
+                 : 'AVOID';
+
+      if (r.foreignHolding >= 20) reasons.push('Foreign investors own ' + Math.round(r.foreignHolding) + '% of it — they see value here');
+
+      var dv = divYear[(r.symbol || '').toUpperCase()] || null;
+      if (dv && dv.count > 0) {
+        reasons.push('Paid ' + dv.count + ' dividend' + (dv.count > 1 ? 's' : '') +
+                     ' this year, LKR ' + (Math.round(dv.dps * 100) / 100) + ' per share in total');
+      }
+
+      return {
+        symbol: r.symbol, name: r.companyName, sector: r.sector || 'Unclassified',
+        divCount: dv ? dv.count : 0,
+        divDps:   dv ? Math.round(dv.dps * 100) / 100 : 0,
+        divLast:  dv ? dv.last : '',
+        price: r.currentPrice, pe: r.pe, sectorPe: refPe, pbv: r.pbv, sectorPbv: refPbv,
+        dy: r.dy, dps: r.dps, eps: r.eps, nav: r.nav, roe: r.roe,
+        marketCap: r.marketCap, foreignHolding: r.foreignHolding,
+        peRel: peRel, pbvRel: pbvRel,
+        value: Math.round(valueScore), quality: Math.round(qualityScore),
+        income: Math.round(incomeScore), size: Math.round(sizeScore),
+        score: Math.round(score * 10) / 10,
+        rating: rating, reasons: reasons.slice(0, 4), flags: flags.slice(0, 3)
+      };
+    });
+
+    function topBy(list, key, n) {
+      return list.slice().sort(function(a, b) { return b[key] - a[key]; }).slice(0, n);
+    }
+
+    /* ── Long-term candidates: quality first, priced sensibly, big enough ── */
+    var ltPool = scored.filter(function(s) {
+      return s.eps > 0 && s.roe >= 10 && s.pe > 0 &&
+             s.pe <= s.sectorPe * 1.15 &&
+             s.marketCap >= medMcap;
+    }).map(function(s) {
+      var o = {};
+      for (var k in s) o[k] = s[k];
+      o.ltScore = Math.round((s.quality * 0.45 + s.value * 0.30 + s.income * 0.25) * 10) / 10;
+      return o;
+    });
+    var longTerm = topBy(ltPool, 'ltScore', 12);
+
+    /* ── Market breadth ── */
+    var breadth = {
+      total:        scored.length,
+      profitable:   scored.filter(function(s) { return s.eps > 0; }).length,
+      belowSecPe:   scored.filter(function(s) { return s.pe > 0 && s.pe < s.sectorPe; }).length,
+      belowBook:    scored.filter(function(s) { return s.pbv > 0 && s.pbv < 1; }).length,
+      dividendPay:  scored.filter(function(s) { return s.dy > 0; }).length,
+      strongBuy:    scored.filter(function(s) { return s.rating === 'STRONG BUY'; }).length,
+      buy:          scored.filter(function(s) { return s.rating === 'BUY'; }).length,
+      hold:         scored.filter(function(s) { return s.rating === 'HOLD'; }).length,
+      watch:        scored.filter(function(s) { return s.rating === 'WATCH'; }).length,
+      avoid:        scored.filter(function(s) { return s.rating === 'AVOID'; }).length
+    };
+
+    /* ── Live market pulse (best effort — never fatal) ── */
+    var market = {};
+    try { market = getCSEMarketData() || {}; } catch (em) { market = {}; }
+
+    var out = {
+      success: true,
+      asOf:    Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH:mm'),
+      medians: { pe: medPe, pbv: medPbv, dy: medDy, roe: medRoe, mcap: medMcap },
+      breadth: breadth,
+      sectors: sectors,
+      picks: {
+        longTerm: longTerm,
+        value:    topBy(scored.filter(function(s){return s.eps>0 && s.pe>0;}), 'value',   12),
+        quality:  topBy(scored.filter(function(s){return s.eps>0;}),           'quality', 12),
+        dividend: topBy(scored.filter(function(s){return s.dy>0 && s.eps>0;}), 'income',  12),
+        overall:  topBy(scored, 'score', 15),
+        avoid:    scored.slice().sort(function(a,b){return a.score-b.score;}).slice(0, 10)
+      },
+      all:    scored.sort(function(a, b) { return b.score - a.score; }),
+      market: {
+        index:      market.market ? market.market.index      : null,
+        summary:    market.market ? market.market.summary    : null,
+        gainers:    market.market ? market.market.gainers    : null,
+        losers:     market.market ? market.market.losers     : null,
+        mostActive: market.market ? market.market.mostActive : null,
+        news:       (market.news || []).slice(0, 8)
+      }
+    };
+
+    try { cache.put('mkaAnalysis_v2', JSON.stringify(out), 600); } catch (ec) {}
+    return out;
+
+  } catch (e) {
     return { success: false, error: e.message };
   }
 }
