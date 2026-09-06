@@ -4205,13 +4205,17 @@ function expBuild(D){
   var cur=totals[li]||0,prev=totals[li-1]||0;
   var mom=prev>0?(cur-prev)/prev*100:0;
   var avg=totals.reduce(function(a,b){return a+b;},0)/(n||1);
-  var bestI=totals.indexOf(Math.min.apply(null,totals));
   var worstI=totals.indexOf(Math.max.apply(null,totals));
   var catCur=cats.map(function(c,i){return {name:c.name,val:c.values[li]||0,i:i};}).sort(function(a,b){return b.val-a.val;});
   var topCat=catCur[0]||{name:'–',val:0};
   var rentObj=cats.find(function(c){return c.name.toLowerCase()==='rent';});
   var rentVal=rentObj?rentObj.values[li]||0:0;
-  var varSpd=cur-rentVal,rentPct=cur>0?rentVal/cur*100:0;
+  /* Subscriptions & non-regulars: entries whose reference matches a keyword
+     from 'Monthly Expences'!H1, e.g. [PS5,claude,command code] */
+  var subs=D.subsLatest||{total:0,count:0,keywords:[],items:[]};
+  var subsVal=subs.total||0;
+  var subsPct=cur>0?subsVal/cur*100:0;
+  var varSpd=cur-rentVal-subsVal,rentPct=cur>0?rentVal/cur*100:0;
   var foodObj=cats.find(function(c){return c.name.toLowerCase()==='food';});
   var foodVal=foodObj?foodObj.values[li]||0:0,foodPct=cur>0?foodVal/cur*100:0;
   var discNames=['movies & outing','party','dress and appearance'];
@@ -4240,6 +4244,19 @@ function expBuild(D){
       '</div>'+yoyHtml+'</div>';
   }).join('');
 
+  /* Sub-label + hover breakdown for the subscriptions KPI */
+  var subsNote, subsTip='';
+  if(!subs.keywords||!subs.keywords.length){
+    subsNote='Set keywords in H1';
+  }else if(!subsVal){
+    subsNote='None this month';
+  }else{
+    subsNote=subs.count+' item'+(subs.count===1?'':'s')+' \u00b7 '+subsPct.toFixed(1)+'% of total';
+    subsTip=(subs.items||[]).map(function(it){
+      return it.reference+' \u2014 '+expFr(it.amount)+' ('+it.category+', day '+it.day+')';
+    }).join('&#10;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  }
+
   var root=document.getElementById('exp-root');
   root.innerHTML=
     '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><button class="analyze-exp-btn" onclick="analyzeExpModalOpen()"><svg class="aeb-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="8" width="4" height="12" rx="1"/><rect x="16" y="2" width="4" height="18" rx="1"/></svg>Analyze<span class="aeb-arrow">▾</span></button><div class="exp-badge" id="exp-badge">–</div></div></div>'+
@@ -4248,9 +4265,9 @@ function expBuild(D){
       '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div><button class="kpi-detail-btn" onclick="expDetailOpen()">📋 View Details</button></div>'+
       '<div class="kpi c1"><div class="kpi-lbl">Avg Monthly</div><div class="kpi-val">'+expFr(avg)+'</div><div class="kpi-sub">Over '+n+' months</div></div>'+
       '<div class="kpi c2"><div class="kpi-lbl">Top Category</div><div class="kpi-val" style="font-size:13px">'+topCat.name+'</div><div class="kpi-sub">'+expFr(topCat.val)+' this month</div></div>'+
-      '<div class="kpi c3"><div class="kpi-lbl">Best Month</div><div class="kpi-val" style="font-size:13px">'+expSl(months[bestI]||'–')+'</div><div class="kpi-sub">'+expFr(totals[bestI]||0)+'</div></div>'+
+      '<div class="kpi c3"><div class="kpi-lbl">Subscriptions &amp; Non-Regulars</div><div class="kpi-val">'+expFr(subsVal)+'</div><div class="kpi-sub"'+(subsTip?' title="'+subsTip+'"':'')+'>'+subsNote+'</div></div>'+
       '<div class="kpi c4"><div class="kpi-lbl">Rent</div><div class="kpi-val">'+expFr(rentVal)+'</div><div class="kpi-sub">'+rentPct.toFixed(1)+'% of total</div></div>'+
-      '<div class="kpi c5"><div class="kpi-lbl">Variable Spend</div><div class="kpi-val">'+expFr(varSpd)+'</div><div class="kpi-sub">Excl. rent</div></div>'+
+      '<div class="kpi c5"><div class="kpi-lbl">Variable Spend</div><div class="kpi-val">'+expFr(varSpd)+'</div><div class="kpi-sub">Excl. rent &amp; subs</div></div>'+
     '</div>'+
     '<div class="pills">'+
       '<div class="pill '+(rentPct>40?'warn':'good')+'"><em>🏠 Rent</em><strong>'+rentPct.toFixed(1)+'%</strong></div>'+

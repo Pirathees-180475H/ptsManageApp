@@ -2103,6 +2103,114 @@ function showExpenseDashboard() {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────────
+   Subscriptions & non-regulars
+   Keyword list lives in 'Monthly Expences'!H1, e.g. [PS5,claude,command code]
+   Any daily entry whose reference contains one of those keywords counts.
+   ───────────────────────────────────────────────────────────────── */
+
+// Daily-entry column map (1-based): amount col + its reference col (0 = none)
+var EXP_DAILY_CATS_ = [
+  { name: 'Food',                amtCol: 3,  refCol: 4  },  // C / D
+  { name: 'Supermarket',         amtCol: 5,  refCol: 6  },  // E / F
+  { name: 'Uber',                amtCol: 7,  refCol: 0  },  // G
+  { name: 'Uber Work',           amtCol: 8,  refCol: 0  },  // H
+  { name: 'Movies & Outing',     amtCol: 10, refCol: 9  },  // J / I
+  { name: 'Other',               amtCol: 12, refCol: 11 },  // L / K
+  { name: 'Bus Fair',            amtCol: 13, refCol: 0  },  // M
+  { name: 'Party',               amtCol: 15, refCol: 14 },  // O / N
+  { name: 'Dress & Appearance',  amtCol: 17, refCol: 16 },  // Q / P
+  { name: 'Rent',                amtCol: 18, refCol: 0  }   // R
+];
+
+// Read + parse the keyword list from H1: "[PS5,claude,command code]"
+function getSubscriptionKeywords_(sheet) {
+  try {
+    var raw = sheet.getRange('H1').getValue();
+    var str = (raw === null || raw === undefined) ? '' : (raw + '').trim();
+    if (!str) return [];
+    str = str.replace(/^\[/, '').replace(/\]$/, '');
+    return str.split(/[,;\n]/).map(function(k) {
+      return k.replace(/^["'\s]+|["'\s]+$/g, '').toLowerCase();
+    }).filter(function(k) { return k.length > 0; });
+  } catch (e) {
+    return [];
+  }
+}
+
+// "JUNE 2025" / "Jan 2026" → { month: 6, year: 2025 }; null when unparseable
+function expLabelToMonthYear_(label) {
+  var s = (label || '').toString().trim().toLowerCase();
+  if (!s) return null;
+  var names = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  var month = 0;
+  for (var i = 0; i < names.length; i++) {
+    if (s.indexOf(names[i]) >= 0) { month = i + 1; break; }
+  }
+  if (!month) return null;
+  var ym = s.match(/20\d{2}/);
+  return { month: month, year: ym ? parseInt(ym[0], 10) : 0 };
+}
+
+/*
+  Sum every daily entry in the given month whose reference matches a keyword.
+  Returns { total, count, keywords, items:[{day,category,reference,amount,keyword}] }
+*/
+function getSubscriptionSpendForMonth_(sheet, tz, month, year) {
+  var out = { total: 0, count: 0, keywords: [], items: [] };
+  try {
+    var keywords = getSubscriptionKeywords_(sheet);
+    out.keywords = keywords;
+    if (!keywords.length || !month) return out;
+
+    var lastRow = sheet.getLastRow();
+    var numCols = Math.min(35, sheet.getLastColumn());
+    if (lastRow < 1 || numCols < 1) return out;
+    var allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+
+    for (var r = 0; r < allData.length; r++) {
+      var row = allData[r];
+      var dateKey = _cellStr(row[0], true).trim();
+      if (!dateKey) continue;
+      var parts = dateKey.match(/^(\d{1,2})-(\d{1,2})$/);
+      if (!parts) continue;
+      if (parseInt(parts[1], 10) !== month) continue;
+      var rowDay = parseInt(parts[2], 10);
+
+      // Only enforce the year when col A really holds a Date
+      if (year && row[0] instanceof Date && !isNaN(row[0])) {
+        if (parseInt(Utilities.formatDate(row[0], tz, 'yyyy'), 10) !== year) continue;
+      }
+
+      EXP_DAILY_CATS_.forEach(function(cat) {
+        if (cat.refCol <= 0) return;                       // no reference → can't match
+        var ref = String(row[cat.refCol - 1] || '').trim();
+        if (!ref) return;
+        var refLc = ref.toLowerCase();
+        var hit = null;
+        for (var k = 0; k < keywords.length; k++) {
+          if (refLc.indexOf(keywords[k]) >= 0) { hit = keywords[k]; break; }
+        }
+        if (!hit) return;
+
+        var rawAmt = row[cat.amtCol - 1];
+        var amt = (typeof rawAmt === 'number')
+          ? rawAmt
+          : parseFloat(String(rawAmt).replace(/[^0-9.+-]/g, '')) || 0;
+        if (isNaN(amt) || amt <= 0) return;
+
+        out.total += amt;
+        out.count++;
+        out.items.push({ day: rowDay, category: cat.name, reference: ref, amount: amt, keyword: hit });
+      });
+    }
+    out.items.sort(function(a, b) { return b.amount - a.amount; });
+  } catch (e) {
+    Logger.log('Subscription spend read failed: ' + e.message);
+  }
+  return out;
+}
+
 function getExpenseData() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -2164,12 +2272,28 @@ function getExpenseData() {
       });
     });
 
+    // ── Subscriptions & non-regulars for the latest month ──
+    var latestLabel = monthCols.length > 0 ? monthCols[monthCols.length - 1].label : '';
+    var subsLatest  = { total: 0, count: 0, keywords: [], items: [] };
+    try {
+      var my = expLabelToMonthYear_(latestLabel);
+      if (my) {
+        subsLatest = getSubscriptionSpendForMonth_(
+          sheet, ss.getSpreadsheetTimeZone(), my.month, my.year);
+      } else {
+        subsLatest.keywords = getSubscriptionKeywords_(sheet);
+      }
+    } catch (es) {
+      Logger.log('Subs latest month failed: ' + es.message);
+    }
+
     return {
       months:        monthCols.map(function(m) { return m.label; }),
       monthlyTotals: monthlyTotals,
       categories:    categories,
       yearGroups:    yearGroups,
-      latestMonth:   monthCols.length > 0 ? monthCols[monthCols.length - 1].label : ''
+      latestMonth:   latestLabel,
+      subsLatest:    subsLatest
     };
 
   } catch (error) {
