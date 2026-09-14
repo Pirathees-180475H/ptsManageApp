@@ -1,0 +1,522 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     CARD DECK  —  the credit cards, rendered as actual cards
+     ───────────────────────────────────────────────────────────
+     Four real 1.586:1 card faces in their brand gradients, fanned
+     out like a hand of cards by default so every card is visible
+     at a glance.
+
+       • tap a card      → it comes to the front and its detail
+                           panel swaps in (the fan stays open)
+       • ▤ Stack / ⤢ Fan → switch between the fan and a Wallet-style
+                           stack
+       • drag sideways   → flick through the cards
+       • hover (desktop) → parallax tilt + a holo sheen that
+                           tracks the cursor across the face
+
+     The detail panel holds the ORIGINAL .cc-top markup verbatim,
+     so every existing id and handler — toggleStatus(i),
+     saveStatus(i), saveBalance(i), bal-input-N, alert-N — keeps
+     working untouched.
+
+     Included from render.html via:  <?!= include('cardDeck'); ?>
+     Driven by cardDeckInit() at the end of ccDisplayData().
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ═══ Deck shell ═══════════════════════════════════════════ */
+/* --cd-w lives here so the wide-screen grid can size its deck
+   column from the same value the deck and toolbar use. */
+.cd-wrap{ --cd-w:360px; margin-bottom:14px; animation:fadeUp .5s ease .12s both; }
+
+.cd-deck{
+  position:relative;
+  width:100%;
+  max-width:var(--cd-w,360px);
+  margin:0 auto;
+  height:var(--cd-deck-h,300px);
+  perspective:1400px;
+  touch-action:pan-y;
+  -webkit-tap-highlight-color:transparent;
+  transition:height .42s cubic-bezier(.34,1.4,.64,1);
+}
+
+/* ═══ A card ═══════════════════════════════════════════════ */
+.cd-card{
+  position:absolute;
+  left:0; right:0; top:0;
+  height:var(--cd-h,227px);
+  border-radius:16px;
+  cursor:pointer;
+  transform-style:preserve-3d;
+  transform:translate3d(0,var(--cd-y,0px),0) scale(var(--cd-s,1)) rotate(var(--cd-r,0deg));
+  transition:transform .46s cubic-bezier(.34,1.4,.64,1),
+             opacity .3s ease, filter .3s ease;
+  will-change:transform;
+}
+.cd-card.cd-dragging{ transition:none; }
+
+/* the physical face */
+.cd-face{
+  position:absolute;inset:0;
+  border-radius:16px;
+  overflow:hidden;
+  background:var(--brand-bg,linear-gradient(135deg,#a855f7,#7c3aed));
+  box-shadow:0 10px 30px rgba(0,0,0,.45),
+             0 2px 6px rgba(0,0,0,.4),
+             inset 0 1px 0 rgba(255,255,255,.22),
+             inset 0 -1px 0 rgba(0,0,0,.25);
+  transform:rotateX(var(--cd-rx,0deg)) rotateY(var(--cd-ry,0deg));
+  transition:transform .3s cubic-bezier(.2,.8,.3,1), box-shadow .3s ease;
+  will-change:transform;
+}
+.cd-card.cd-tilting .cd-face{ transition:box-shadow .3s ease; }
+.cd-card.cd-active .cd-face{
+  box-shadow:0 18px 46px rgba(0,0,0,.55),
+             0 0 0 1px var(--brand-soft,rgba(255,255,255,.18)),
+             0 0 34px var(--brand-glow,rgba(168,85,247,.28)),
+             inset 0 1px 0 rgba(255,255,255,.28),
+             inset 0 -1px 0 rgba(0,0,0,.3);
+}
+
+/* darkening veil so cards behind recede */
+.cd-face::before{
+  content:'';position:absolute;inset:0;border-radius:16px;
+  background:rgba(3,6,14,var(--cd-dim,0));
+  transition:background .36s ease;
+  pointer-events:none;z-index:3;
+}
+
+/* holo sheen — a moving specular band, follows the cursor */
+.cd-sheen{
+  position:absolute;inset:-40%;
+  background:
+    radial-gradient(circle at var(--mx,50%) var(--my,50%),
+      rgba(255,255,255,.34) 0%, rgba(255,255,255,.10) 22%, rgba(255,255,255,0) 48%),
+    linear-gradient(105deg, transparent 38%, rgba(255,255,255,.16) 46%,
+      rgba(255,255,255,.30) 50%, rgba(255,255,255,.16) 54%, transparent 62%);
+  opacity:0;
+  transition:opacity .3s ease;
+  pointer-events:none;
+  mix-blend-mode:overlay;
+  z-index:2;
+}
+.cd-card.cd-tilting .cd-sheen{ opacity:1; }
+
+/* engraved guilloche pattern, so the face isn't a flat gradient */
+.cd-guilloche{
+  position:absolute;inset:0;
+  opacity:.16;pointer-events:none;z-index:1;
+  background-image:
+    repeating-radial-gradient(circle at 118% -12%,
+      transparent 0 16px, rgba(255,255,255,.5) 16px 17px),
+    repeating-radial-gradient(circle at -18% 112%,
+      transparent 0 21px, rgba(0,0,0,.45) 21px 22px);
+}
+
+/* ═══ Face contents ════════════════════════════════════════ */
+.cd-body{ position:absolute;inset:0;z-index:4;padding:16px 18px;
+          display:flex;flex-direction:column;color:#fff; }
+
+.cd-row1{ display:flex;align-items:flex-start;justify-content:space-between;gap:10px; }
+/* brand + bank sit at the bottom left, where a cardholder name would */
+.cd-brand{
+  font-size:14px;font-weight:900;letter-spacing:2.4px;
+  text-shadow:0 1px 3px rgba(0,0,0,.55);
+  line-height:1;
+}
+.cd-bank{
+  margin-top:4px;
+  font-size:9px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
+  color:rgba(255,255,255,.58);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;
+}
+.cd-chip{
+  width:34px;height:26px;border-radius:5px;flex-shrink:0;
+  background:linear-gradient(135deg,#f3d98b 0%,#c9a84c 42%,#f7e6a8 62%,#b8912f 100%);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.22), 0 1px 2px rgba(0,0,0,.35);
+  position:relative;
+}
+.cd-chip::before,.cd-chip::after{
+  content:'';position:absolute;background:rgba(0,0,0,.28);
+}
+.cd-chip::before{ left:0;right:0;top:50%;height:1px; }
+.cd-chip::after { top:4px;bottom:4px;left:50%;width:1px; }
+
+.cd-mid{ flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:2px; }
+.cd-due-lbl{
+  font-size:8.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;
+  color:rgba(255,255,255,.58);margin-bottom:3px;
+}
+.cd-due{
+  font-size:26px;font-weight:900;letter-spacing:-.9px;line-height:1;
+  text-shadow:0 2px 8px rgba(0,0,0,.45);
+  font-variant-numeric:tabular-nums;
+}
+.cd-avail{
+  margin-top:7px;font-size:10px;font-weight:700;letter-spacing:.3px;
+  color:rgba(255,255,255,.64);
+}
+.cd-avail b{ color:rgba(255,255,255,.95);font-weight:800; }
+
+.cd-row3{ display:flex;align-items:flex-end;justify-content:space-between;gap:10px; }
+.cd-due-date{ text-align:right;flex-shrink:0; }
+.cd-dd-lbl{
+  font-size:7.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
+  color:rgba(255,255,255,.5);
+}
+.cd-dd-val{ font-size:11px;font-weight:800;color:#fff;margin-top:1px;white-space:nowrap; }
+
+/* status pip — sits top-right of the face, opposite the chip */
+.cd-pip{
+  z-index:5;flex-shrink:0;
+  display:flex;align-items:center;gap:5px;
+  padding:3px 8px;border-radius:999px;
+  font-size:8.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
+  background:rgba(0,0,0,.3);backdrop-filter:blur(4px);
+  border:1px solid rgba(255,255,255,.16);
+}
+.cd-pip i{ width:5px;height:5px;border-radius:50%;display:block;font-style:normal; }
+.cd-pip.settled{ color:#7cffb2; } .cd-pip.settled i{ background:#00e676;box-shadow:0 0 6px #00e676; }
+.cd-pip.pending{ color:#ffd08a; } .cd-pip.pending i{ background:#ff9800;box-shadow:0 0 6px #ff9800;
+                                                     animation:cdPulse 1.7s ease-in-out infinite; }
+@keyframes cdPulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* "watch out" ring — an inset overlay, so it composes with the
+   active card's glow instead of replacing its box-shadow */
+.cd-card.cd-warn .cd-face::after{
+  content:'';position:absolute;inset:0;border-radius:16px;
+  box-shadow:inset 0 0 0 1.5px rgba(255,77,109,.6),
+             inset 0 0 24px rgba(255,77,109,.2);
+  pointer-events:none;z-index:5;
+}
+
+/* ═══ Deck toolbar ═════════════════════════════════════════ */
+.cd-bar{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin:12px auto 0;max-width:var(--cd-w,360px);
+}
+.cd-dots{ display:flex;align-items:center;gap:6px;flex:1; }
+.cd-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:rgba(255,255,255,.16);cursor:pointer;padding:0;border:none;
+  transition:all .25s ease;
+}
+.cd-dot.on{ width:20px;border-radius:4px;background:var(--dot,#a855f7);
+            box-shadow:0 0 10px var(--dot,#a855f7); }
+.cd-fan-btn{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.6);border-radius:8px;padding:5px 11px;
+  font-size:10px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;
+  font-family:inherit;cursor:pointer;transition:all .18s;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+}
+.cd-fan-btn:hover{ background:rgba(255,255,255,.1);color:#fff; }
+.cd-fan-btn.on{ background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.45);color:#67e8f9; }
+
+/* ═══ Detail panel ═════════════════════════════════════════ */
+.cd-details{ margin-top:14px;position:relative; }
+.cd-detail{ display:none; }
+.cd-detail.on{
+  display:block;
+  animation:cdDetailIn .34s cubic-bezier(.34,1.4,.64,1) both;
+}
+@keyframes cdDetailIn{
+  from{ opacity:0; transform:translateY(-12px) scale(.985); }
+  to  { opacity:1; transform:none; }
+}
+/* colour the detail card to match the active brand */
+.cd-detail.on > .cc-card{ border-color:var(--brand-soft,var(--bdr)) !important; }
+
+/* ═══ Responsive ═══════════════════════════════════════════ */
+/* Laptop and up: deck + toolbar on the left, the active card's
+   detail panel beside it, instead of a tall column of dead space. */
+@media(min-width:900px){
+  .cd-wrap{
+    --cd-w:420px;
+    display:grid;
+    grid-template-columns:var(--cd-w) minmax(0,1fr);
+    grid-template-rows:auto auto;
+    column-gap:22px;
+    align-items:start;
+  }
+  .cd-deck   { grid-column:1; grid-row:1; margin:0; }
+  .cd-bar    { grid-column:1; grid-row:2; margin:12px 0 0; }
+  .cd-details{ grid-column:2; grid-row:1 / span 2; margin-top:0; min-width:0; }
+}
+@media(min-width:1500px){
+  .cd-wrap{ --cd-w:470px; column-gap:28px; }
+}
+@media(max-width:420px){
+  .cd-due{ font-size:23px; }
+  .cd-brand{ font-size:12.5px;letter-spacing:1.8px; }
+  .cd-body{ padding:14px 15px; }
+}
+@media(prefers-reduced-motion:reduce){
+  .cd-card,.cd-face,.cd-deck{ transition-duration:.01ms !important; }
+  .cd-detail.on{ animation:none; }
+  .cd-pip.pending i{ animation:none; }
+}
+</style>
+
+<script>
+(function(){
+  'use strict';
+
+  var buzz = function(k){ if(typeof window.haptic === 'function') window.haptic(k); };
+
+  var deck, details, dotsWrap, fanBtn;
+  var cards   = [];       // { el, i, brand }
+  var active  = 0;
+  var fanned  = true;     // fan is the default view — every card visible at once
+  var order   = [];       // stack order, front → back
+
+  var STEP_Y  = 26;       // px each card behind drops
+  var STEP_S  = 0.045;    // scale falloff per card behind
+  var CARD_AR = 1.586;    // ISO/IEC 7810 ID-1 — a real credit card
+
+  var FAN_ROT   = 7;      // degrees between neighbours when fanned
+  var FAN_LIFT  = 10;     // px each step out from centre rises
+  var FAN_BASE  = 16;     // px the whole fan sits down from the top
+  var FAN_SCALE = 0.88;   // shrink when fanned so rotated cards stay in width
+
+  /* ── Layout ───────────────────────────────────────────── */
+  var curW = 360, curH = 227, curRot = FAN_ROT;
+
+  function maxOff(){ return Math.max(0, (cards.length - 1) / 2); }
+
+  /* Rotating a card this wide swings its corners past its own box, so
+     with enough cards the outermost one would poke out of the deck and
+     give the page a horizontal scrollbar. Back the angle off until the
+     widest rotated card fits. */
+  function fanRot(w, h){
+    var mo = maxOff();
+    if(mo <= 0) return 0;
+    var rot = FAN_ROT;
+    while(rot > 1){
+      var rad = mo * rot * Math.PI / 180;
+      if(w * FAN_SCALE * Math.cos(rad) + h * FAN_SCALE * Math.sin(rad) <= w - 4) break;
+      rot -= 0.5;
+    }
+    return rot;
+  }
+
+  /* Vertical room the fan needs beyond the plain card height. */
+  function fanExtent(w, h, rot){
+    var rad  = Math.abs(maxOff() * rot) * Math.PI / 180;
+    var rotH = w * FAN_SCALE * Math.sin(rad) + h * FAN_SCALE * Math.cos(rad);
+    var half = Math.max(0, (rotH - h) / 2);
+    return maxOff() * FAN_LIFT + FAN_BASE + half + 10;
+  }
+
+  function sizeDeck(){
+    if(!deck) return;
+    curW   = deck.clientWidth || 360;
+    curH   = Math.round(curW / CARD_AR);
+    curRot = fanRot(curW, curH);
+    deck.style.setProperty('--cd-h', curH + 'px');
+    var behind = Math.max(0, cards.length - 1);
+    deck.style.setProperty('--cd-deck-h',
+      Math.round(fanned ? curH + fanExtent(curW, curH, curRot)
+                        : curH + behind * STEP_Y) + 'px');
+  }
+
+  function layout(){
+    if(!deck) return;
+    sizeDeck();
+
+    // order: active first, then the rest in their natural order
+    order = [active];
+    for(var k = 0; k < cards.length; k++) if(k !== active) order.push(k);
+
+    order.forEach(function(idx, depth){
+      var c = cards[idx], el = c.el;
+      if(fanned){
+        var off = idx - maxOff();
+        el.style.setProperty('--cd-y', (Math.abs(off) * FAN_LIFT + FAN_BASE).toFixed(1) + 'px');
+        el.style.setProperty('--cd-s', (idx === active ? FAN_SCALE + 0.05 : FAN_SCALE).toFixed(3));
+        el.style.setProperty('--cd-r', (off * curRot).toFixed(2) + 'deg');
+        // z-index must be an integer — off is fractional for even card counts
+        el.style.zIndex = idx === active ? 100 : Math.round(50 - Math.abs(off) * 2);
+        el.querySelector('.cd-face').style.setProperty('--cd-dim', idx === active ? '0' : '0.14');
+      } else {
+        el.style.setProperty('--cd-y', (depth * STEP_Y) + 'px');
+        el.style.setProperty('--cd-s', (1 - depth * STEP_S).toFixed(3));
+        el.style.setProperty('--cd-r', '0deg');
+        el.style.zIndex = 100 - depth;
+        el.querySelector('.cd-face').style.setProperty('--cd-dim',
+          depth === 0 ? '0' : Math.min(0.46, 0.16 + depth * 0.1).toFixed(2));
+      }
+      el.classList.toggle('cd-active', idx === active);
+    });
+
+    // detail panels
+    if(details){
+      details.querySelectorAll('.cd-detail').forEach(function(d){
+        var on = (+d.getAttribute('data-i') === active);
+        d.classList.toggle('on', on);
+        if(on && cards[active]) d.style.setProperty('--brand-soft', cards[active].soft);
+      });
+    }
+
+    // dots
+    if(dotsWrap){
+      dotsWrap.querySelectorAll('.cd-dot').forEach(function(d, i){
+        d.classList.toggle('on', i === active);
+        d.style.setProperty('--dot', cards[i] ? cards[i].brand : '#a855f7');
+      });
+    }
+  }
+
+  function setActive(i, quiet){
+    if(i < 0 || i >= cards.length || i === active) return;
+    active = i;
+    if(!quiet) buzz('pop');
+    layout();
+  }
+
+  /* ── Tilt + sheen (pointer parallax) ──────────────────── */
+  function bindTilt(c){
+    var el = c.el, face = el.querySelector('.cd-face'), sheen = el.querySelector('.cd-sheen');
+    if(!face) return;
+
+    function move(e){
+      var r  = el.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width;
+      var py = (e.clientY - r.top)  / r.height;
+      face.style.setProperty('--cd-ry', ((px - .5) *  16).toFixed(2) + 'deg');
+      face.style.setProperty('--cd-rx', ((py - .5) * -12).toFixed(2) + 'deg');
+      if(sheen){
+        sheen.style.setProperty('--mx', (px * 100).toFixed(1) + '%');
+        sheen.style.setProperty('--my', (py * 100).toFixed(1) + '%');
+      }
+    }
+    el.addEventListener('mouseenter', function(){ el.classList.add('cd-tilting'); });
+    el.addEventListener('mousemove', move);
+    el.addEventListener('mouseleave', function(){
+      el.classList.remove('cd-tilting');
+      face.style.setProperty('--cd-ry','0deg');
+      face.style.setProperty('--cd-rx','0deg');
+    });
+  }
+
+  /* ── Horizontal drag → fan / cycle ──────────────────────
+     Deck-level listeners are rebound on every init (they die with the
+     old markup), but the window-level ones are bound exactly once —
+     ccDisplayData() re-renders on each reload, and stacking duplicate
+     window handlers would fire every gesture twice. */
+  var sx = 0, sy = 0, dragging = false, moved = false, decided = false, horiz = false;
+  var windowDragBound = false, resizeBound = false;
+
+  function dragDown(x, y){ sx = x; sy = y; dragging = true; moved = false; decided = false; horiz = false; }
+  function dragMove(x, y, e){
+    if(!dragging) return;
+    var dx = x - sx, dy = y - sy;
+    if(!decided && (Math.abs(dx) > 6 || Math.abs(dy) > 6)){
+      decided = true;
+      horiz = Math.abs(dx) > Math.abs(dy);
+      if(!horiz) dragging = false;      // it's a page scroll — let go of it
+    }
+    if(!horiz) return;
+    if(e && e.cancelable) e.preventDefault();   // we own this gesture now
+    moved = true;
+    if(!fanned && Math.abs(dx) > 26) setFanned(true);
+  }
+  function dragUp(x){
+    if(!dragging) return;
+    var dx = x - sx;
+    dragging = false;
+    if(horiz && Math.abs(dx) > 44 && cards.length > 1){
+      // a decisive flick cycles the active card
+      setActive((active + (dx < 0 ? 1 : cards.length - 1)) % cards.length);
+    }
+    setTimeout(function(){ moved = false; }, 0);
+  }
+
+  function bindDrag(){
+    deck.addEventListener('mousedown', function(e){ dragDown(e.clientX, e.clientY); });
+    deck.addEventListener('touchstart', function(e){
+      var t = e.touches[0]; if(t) dragDown(t.clientX, t.clientY);
+    }, { passive:true });
+    deck.addEventListener('touchmove', function(e){
+      var t = e.touches[0]; if(t) dragMove(t.clientX, t.clientY, e);
+    }, { passive:false });
+    deck.addEventListener('touchend', function(e){
+      var t = e.changedTouches[0]; if(t) dragUp(t.clientX);
+    }, { passive:true });
+    deck.addEventListener('touchcancel', function(){ dragging = false; moved = false; }, { passive:true });
+
+    // suppress the click that follows a drag
+    deck.addEventListener('click', function(e){
+      if(moved){ e.stopPropagation(); e.preventDefault(); }
+    }, true);
+
+    if(!windowDragBound){
+      windowDragBound = true;
+      window.addEventListener('mousemove', function(e){ dragMove(e.clientX, e.clientY, e); });
+      window.addEventListener('mouseup',   function(e){ dragUp(e.clientX); });
+    }
+  }
+
+  function syncFanBtn(){
+    if(!fanBtn) return;
+    fanBtn.classList.toggle('on', fanned);
+    fanBtn.textContent = fanned ? '▤ Stack' : '⤢ Fan';
+  }
+
+  function setFanned(v){
+    if(fanned === v) return;
+    fanned = v;
+    syncFanBtn();
+    buzz('step');
+    layout();
+  }
+
+  /* ── Public entry point, called by ccDisplayData() ────── */
+  function init(){
+    deck     = document.getElementById('cd-deck');
+    details  = document.getElementById('cd-details');
+    dotsWrap = document.getElementById('cd-dots');
+    fanBtn   = document.getElementById('cd-fan-btn');
+    if(!deck) return;
+
+    active = 0; fanned = true; cards = [];
+
+    deck.querySelectorAll('.cd-card').forEach(function(el, i){
+      var c = {
+        el:    el,
+        i:     i,
+        brand: el.getAttribute('data-brand') || '#a855f7',
+        soft:  el.getAttribute('data-soft')  || 'rgba(255,255,255,.18)'
+      };
+      cards.push(c);
+      bindTilt(c);
+      // tapping a card selects it; the fan stays open, since it is the
+      // default view and collapsing it on the first tap would fight the user
+      el.addEventListener('click', function(){ setActive(i); });
+    });
+    if(!cards.length) return;
+
+    if(dotsWrap){
+      dotsWrap.querySelectorAll('.cd-dot').forEach(function(d, i){
+        d.addEventListener('click', function(){ setActive(i); });
+      });
+    }
+    if(fanBtn){
+      syncFanBtn();
+      fanBtn.addEventListener('click', function(){ setFanned(!fanned); });
+    }
+
+    bindDrag();
+    layout();
+    // re-measure once fonts/layout settle, and on resize (bound once only)
+    setTimeout(layout, 60);
+    if(!resizeBound){
+      resizeBound = true;
+      window.addEventListener('resize', function(){ if(deck && deck.isConnected !== false) layout(); });
+    }
+  }
+
+  window.cardDeckInit      = init;
+  window.cardDeckSetActive = function(i){ setActive(i); };
+  window.cardDeckActive    = function(){ return active; };
+})();
+</script>

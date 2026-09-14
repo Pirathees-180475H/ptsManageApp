@@ -1,10 +1,26 @@
 <!-- ═══════════════════════════════════════════════════════════════
-     TOOL WHEEL  —  GTA / RDR2 style radial weapon-wheel selector
+     TOOL WHEEL  —  GTA / RDR2 style radial selector
      ───────────────────────────────────────────────────────────
-     Desktop : hover the trigger → wheel opens under the cursor,
+     Desktop : hover a trigger → wheel blooms open centred on it,
                point in a direction to highlight, click to fire.
-     Mobile  : tap the trigger → wheel springs open, tap a wedge.
-               (drag-out-and-release from the trigger also works)
+     Mobile  : tap a trigger → wheel springs open, tap a wedge
+               (or drag out from the trigger and release on one).
+
+     Any number of wheels can share the engine. Register a provider:
+
+       toolWheelRegister('cards', function(){
+         return { title:'CARDS', rich:true, items:[
+           { ico:'💳', name:'AMEX', sub:'₨ 84,200', sub2:'due in 6d',
+             color:'#006fcf', live:true, run:function(){ … } }
+         ]};
+       });
+
+     …then point a trigger at it:  <button class="tw-trigger"
+                                       data-tw-wheel="cards">
+
+     Item fields: ico, name, sub, sub2, color, desc,
+                  run (fn) | fn (global name), live (bool|fn|{sel,cls}),
+                  disabled.
 
      Included from render.html via:  <?!= include('toolWheel'); ?>
      Hides the old .pg-hdr-* emoji buttons (they stay in the DOM so
@@ -37,7 +53,14 @@
 .tw-trigger:active{transform:scale(.9);}
 .tw-trigger.tw-open{background:rgba(168,85,247,.3);border-color:rgba(168,85,247,.7);color:#d8b4fe;}
 .tw-trigger.tw-open svg{transform:rotate(180deg);}
-/* pulsing dot when any tool panel is currently open */
+
+/* card-flavoured trigger */
+.tw-trigger.tw-cards:hover{background:rgba(0,212,255,.16);border-color:rgba(0,212,255,.45);color:#67e8f9;}
+.tw-trigger.tw-cards:hover svg{transform:rotate(0deg) scale(1.12);}
+.tw-trigger.tw-cards.tw-open{background:rgba(0,212,255,.3);border-color:rgba(0,212,255,.7);color:#a5f3fc;}
+.tw-trigger.tw-cards.tw-open svg{transform:rotate(0deg) scale(1.12);}
+
+/* pulsing dot when something behind this wheel is live */
 .tw-trigger.tw-live::after{
   content:'';position:absolute;top:-3px;right:-3px;
   width:6px;height:6px;border-radius:50%;background:#00e676;
@@ -75,6 +98,7 @@
 #tw-wheel svg{width:100%;height:100%;overflow:visible;display:block;}
 
 .tw-seg{ cursor:pointer; transition:transform .17s cubic-bezier(.34,1.56,.64,1); }
+.tw-seg.tw-disabled{ cursor:default; opacity:.35; }
 .tw-seg-shape{
   transition:fill .15s ease, stroke .15s ease, filter .15s ease;
   stroke-width:1.5;
@@ -91,14 +115,32 @@
   fill:rgba(255,255,255,.42);
   transition:fill .15s ease;
 }
+.tw-seg-sub{
+  font-size:13.5px;font-weight:800;letter-spacing:-.2px;
+  text-anchor:middle;dominant-baseline:central;
+  pointer-events:none;user-select:none;
+  transition:fill .15s ease, opacity .15s ease;
+  opacity:.82;
+}
+.tw-seg-sub2{
+  font-size:9.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;
+  text-anchor:middle;dominant-baseline:central;
+  pointer-events:none;user-select:none;
+  fill:rgba(255,255,255,.34);
+  transition:fill .15s ease;
+}
 .tw-seg.tw-hot .tw-seg-ico{ font-size:44px; }
 .tw-seg.tw-hot .tw-seg-lbl{ fill:#fff; }
+.tw-seg.tw-hot .tw-seg-sub{ opacity:1; }
+.tw-seg.tw-hot .tw-seg-sub2{ fill:rgba(255,255,255,.6); }
+.tw-rich .tw-seg-ico{ font-size:27px; }
+.tw-rich .tw-seg.tw-hot .tw-seg-ico{ font-size:33px; }
 .tw-seg-key{
   font-size:9.5px;font-weight:800;text-anchor:middle;dominant-baseline:central;
   fill:rgba(255,255,255,.22);pointer-events:none;user-select:none;
 }
 .tw-seg.tw-hot .tw-seg-key{ fill:rgba(255,255,255,.5); }
-/* live dot = that tool's panel is currently open */
+/* live pip = that wedge's thing is currently open / settled */
 .tw-seg-live{ opacity:0; transition:opacity .2s; }
 .tw-seg.tw-active .tw-seg-live{ opacity:1; }
 
@@ -143,10 +185,11 @@
 }
 
 @media(max-width:768px){
-  #tw-wheel{ --tw-size:min(86vw,360px); }
+  #tw-wheel{ --tw-size:min(88vw,370px); }
   .tw-seg-ico{ font-size:31px; }
   .tw-seg.tw-hot .tw-seg-ico{ font-size:38px; }
   .tw-seg-lbl{ font-size:10.5px;letter-spacing:.9px; }
+  .tw-seg-sub{ font-size:12.5px; }
   .tw-seg-key{ display:none; }
   #tw-hub-name{ font-size:12.5px; }
   #tw-hub-desc{ font-size:9.5px; }
@@ -179,130 +222,156 @@
 (function(){
   'use strict';
 
-  /* ── The wheel's contents. Order runs clockwise from 12 o'clock. ──
-     `live` = selector whose active-class means that tool is already open,
-     so the wedge shows a green dot (same idea as the RDR ammo pip).      */
+  var buzz = function(k){ if(typeof window.haptic === 'function') window.haptic(k); };
+
+  /* ═══ Wheel registry ═══════════════════════════════════════
+     A provider returns { title, rich, items } (or just an items
+     array) and is re-run on every open, so wedges always show
+     current numbers.                                          */
+  var WHEELS = {};
+  function register(key, provider){ WHEELS[key] = provider; }
+
+  /* ── The default tools wheel. Order runs clockwise from 12 o'clock. ──
+     `live` marks the wedge with a green pip when that tool is open.   */
   var TOOLS = [
-    { ico:'💵', name:'Money',      desc:'Bank balances',      fn:'moneyToggle',   color:'#00e676',
+    { ico:'💵', name:'Money',      desc:'Bank balances',         fn:'moneyToggle',   color:'#00e676',
       live:{ sel:'#bank-modal',     cls:'open' } },
     { ico:'📋', name:'Tracker',    desc:'Subs · budget · notes', fn:'trackerToggle', color:'#3b82f6',
       live:{ sel:'.pg-tracker-btn', cls:'tracker-active' } },
-    { ico:'📂', name:'Docs',       desc:'Document vault',     fn:'docsToggle',    color:'#cbd5e1',
+    { ico:'📂', name:'Docs',       desc:'Document vault',        fn:'docsToggle',    color:'#cbd5e1',
       live:{ sel:'.pg-docs-btn',    cls:'docs-active' } },
-    { ico:'📅', name:'Calendar',   desc:'Dates & heatmap',    fn:'calToggle',     color:'#00d4ff',
+    { ico:'📅', name:'Calendar',   desc:'Dates & heatmap',       fn:'calToggle',     color:'#00d4ff',
       live:{ sel:'.pg-cal-btn',     cls:'cal-active' } },
-    { ico:'🧮', name:'Calculator', desc:'Quick maths',        fn:'calcToggle',    color:'#a855f7',
+    { ico:'🧮', name:'Calculator', desc:'Quick maths',           fn:'calcToggle',    color:'#a855f7',
       live:{ sel:'.pg-calc-btn',    cls:'calc-active' } },
-    { ico:'⚖️', name:'Divider',    desc:'Split an expense',   fn:'edToggle',      color:'#fbbf24',
+    { ico:'⚖️', name:'Divider',    desc:'Split an expense',      fn:'edToggle',      color:'#fbbf24',
       live:{ sel:'#ed-overlay',     cls:'open' } }
   ];
+  register('tools', function(){
+    return { title:'Tools', rich:false, items:TOOLS };
+  });
 
-  var N      = TOOLS.length;
-  var SPAN   = 360 / N;      // 60° per wedge
-  var GAP    = 1.7;          // degrees trimmed off each side
-  var R_IN   = 78;           // inner radius  (viewBox units)
-  var R_OUT  = 183;          // outer radius
-  var R_ICO  = 136;          // icon ring
-  var R_LBL  = 166;          // label ring
-  var R_KEY  = 96;           // number-key ring
-  var CX     = 200, CY = 200;
+  /* ═══ Geometry ═════════════════════════════════════════════
+     Two bands: the plain one (icon + one label) and the "rich"
+     one, which pulls the icon inward to make room for a value
+     and a sub-line stacked beneath the name.                  */
+  var GEO_PLAIN = { R_IN:78, R_OUT:183, R_ICO:126, R_TXT:158, R_KEY:96,  LINE:0  };
+  /* Rich wedges usually carry no icon (the card wheel only shows one to flag
+     an urgent card), so the text block sits centred in the band rather than
+     pushed outward to clear a glyph that is not there. */
+  var GEO_RICH  = { R_IN:72, R_OUT:190, R_ICO:92,  R_TXT:126, R_KEY:88,  LINE:15 };
 
-  var bg, wheel, svg, hub, hubName, hubDesc;
+  var CX = 200, CY = 200;
+  var GAP = 1.7;              // degrees trimmed off each side of a wedge
+
+  var bg, wheel, svg, hub, hubName, hubDesc, hint;
+  var items   = [];           // the wedge set currently rendered
   var segEls  = [];
-  var open    = false;
-  var hot     = -1;          // currently highlighted index
-  var armed   = false;       // pointer has entered the wheel at least once
-  var openedAt= 0;
-  var pointer = 'mouse';     // 'mouse' | 'touch'
-  var anchor  = null;        // trigger element that opened us
-  var hoverTimer = null;
-  var cx = 0, cy = 0;        // wheel centre, in viewport px
+  var geo     = GEO_PLAIN;
+  var N       = 0;
+  var SPAN    = 60;
+  var sig     = '';           // signature of the rendered wedge set
+  var title   = 'Tools';
+  var needFit = false;        // labels want measuring (only possible once visible)
 
-  /* ── Geometry ─────────────────────────────────────────── */
+  var open    = false;
+  var hot     = -1;           // highlighted index
+  var armed   = false;        // pointer has entered the wheel at least once
+  var openedAt= 0;
+  var pointer = 'mouse';
+  var anchor  = null;
+  var hoverTimer = null;
+  var cx = 0, cy = 0;         // wheel centre in viewport px
+
+  /* ── Geometry helpers ─────────────────────────────────── */
   function pt(r, deg){
     var a = deg * Math.PI / 180;
     return [ CX + r * Math.cos(a), CY + r * Math.sin(a) ];
   }
-  // wedge i is centred on -90 + i*SPAN  (i.e. index 0 points straight up)
+  // wedge i is centred on -90 + i*SPAN → index 0 always points straight up
   function midAngle(i){ return -90 + i * SPAN; }
 
   function wedgePath(i){
     var a0 = midAngle(i) - SPAN/2 + GAP;
     var a1 = midAngle(i) + SPAN/2 - GAP;
     var big = (a1 - a0) > 180 ? 1 : 0;
-    var o0 = pt(R_OUT, a0), o1 = pt(R_OUT, a1);
-    var i1 = pt(R_IN,  a1), i0 = pt(R_IN,  a0);
+    var o0 = pt(geo.R_OUT, a0), o1 = pt(geo.R_OUT, a1);
+    var i1 = pt(geo.R_IN,  a1), i0 = pt(geo.R_IN,  a0);
     return 'M' + o0[0].toFixed(2) + ',' + o0[1].toFixed(2) +
-           'A' + R_OUT + ',' + R_OUT + ' 0 ' + big + ' 1 ' + o1[0].toFixed(2) + ',' + o1[1].toFixed(2) +
+           'A' + geo.R_OUT + ',' + geo.R_OUT + ' 0 ' + big + ' 1 ' + o1[0].toFixed(2) + ',' + o1[1].toFixed(2) +
            'L' + i1[0].toFixed(2) + ',' + i1[1].toFixed(2) +
-           'A' + R_IN  + ',' + R_IN  + ' 0 ' + big + ' 0 ' + i0[0].toFixed(2) + ',' + i0[1].toFixed(2) +
+           'A' + geo.R_IN  + ',' + geo.R_IN  + ' 0 ' + big + ' 0 ' + i0[0].toFixed(2) + ',' + i0[1].toFixed(2) +
            'Z';
   }
 
-  /* ── Build the SVG once ───────────────────────────────── */
+  var NS = 'http://www.w3.org/2000/svg';
+  function mk(tag, attrs){
+    var el = document.createElementNS(NS, tag);
+    for(var k in attrs) if(attrs.hasOwnProperty(k)) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  /* ── (Re)build the wedges for the current item set ────── */
   function build(){
-    var NS = 'http://www.w3.org/2000/svg';
-    var defs = document.createElementNS(NS, 'defs');
-    svg.appendChild(defs);
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    segEls = [];
 
-    // soft outer ring so the wheel reads as one object
-    var ring = document.createElementNS(NS, 'circle');
-    ring.setAttribute('cx', CX); ring.setAttribute('cy', CY);
-    ring.setAttribute('r', R_OUT + 7);
-    ring.setAttribute('fill', 'none');
-    ring.setAttribute('stroke', 'rgba(255,255,255,.055)');
-    ring.setAttribute('stroke-width', '1');
-    svg.appendChild(ring);
+    N    = items.length;
+    SPAN = 360 / N;
 
-    var hubRing = document.createElementNS(NS, 'circle');
-    hubRing.setAttribute('cx', CX); hubRing.setAttribute('cy', CY);
-    hubRing.setAttribute('r', R_IN - 9);
-    hubRing.setAttribute('fill', 'rgba(6,11,24,.82)');
-    hubRing.setAttribute('stroke', 'rgba(255,255,255,.09)');
-    hubRing.setAttribute('stroke-width', '1');
-    svg.appendChild(hubRing);
+    wheel.classList.toggle('tw-rich', geo === GEO_RICH);
 
-    TOOLS.forEach(function(t, i){
-      var g = document.createElementNS(NS, 'g');
-      g.setAttribute('class', 'tw-seg');
+    // faint outer hoop so the wheel reads as a single object
+    svg.appendChild(mk('circle', { cx:CX, cy:CY, r:geo.R_OUT + 7, fill:'none',
+                                   stroke:'rgba(255,255,255,.055)', 'stroke-width':1 }));
+    // hub disc
+    svg.appendChild(mk('circle', { cx:CX, cy:CY, r:geo.R_IN - 9, fill:'rgba(6,11,24,.82)',
+                                   stroke:'rgba(255,255,255,.09)', 'stroke-width':1 }));
 
-      var shape = document.createElementNS(NS, 'path');
-      shape.setAttribute('class', 'tw-seg-shape');
-      shape.setAttribute('d', wedgePath(i));
+    items.forEach(function(t, i){
+      var g = mk('g', { 'class':'tw-seg' + (t.disabled ? ' tw-disabled' : '') });
+
+      var shape = mk('path', { 'class':'tw-seg-shape', d:wedgePath(i) });
       g.appendChild(shape);
 
-      var ip = pt(R_ICO, midAngle(i));
-      var ico = document.createElementNS(NS, 'text');
-      ico.setAttribute('class', 'tw-seg-ico');
-      ico.setAttribute('x', ip[0].toFixed(2));
-      ico.setAttribute('y', ip[1].toFixed(2));
-      ico.textContent = t.ico;
+      var ip = pt(geo.R_ICO, midAngle(i));
+      var ico = mk('text', { 'class':'tw-seg-ico', x:ip[0].toFixed(2), y:ip[1].toFixed(2) });
+      ico.textContent = t.ico || '';
       g.appendChild(ico);
 
-      var lp = pt(R_LBL, midAngle(i));
-      var lbl = document.createElementNS(NS, 'text');
-      lbl.setAttribute('class', 'tw-seg-lbl');
-      lbl.setAttribute('x', lp[0].toFixed(2));
-      lbl.setAttribute('y', lp[1].toFixed(2));
-      lbl.textContent = t.name;
+      // text block: lines stack downward in SCREEN space from the anchor,
+      // which stays legible in every direction (unlike stacking radially)
+      var tp   = pt(geo.R_TXT, midAngle(i));
+      var line = geo.LINE;
+      var y    = tp[1];
+      var hasSub = (t.sub !== undefined && t.sub !== null && t.sub !== '');
+      if(hasSub) y -= line * 0.55;   // recentre the block on the anchor
+
+      var lbl = mk('text', { 'class':'tw-seg-lbl', x:tp[0].toFixed(2), y:y.toFixed(2) });
+      lbl.textContent = t.name || '';
       g.appendChild(lbl);
 
-      var kp = pt(R_KEY, midAngle(i));
-      var key = document.createElementNS(NS, 'text');
-      key.setAttribute('class', 'tw-seg-key');
-      key.setAttribute('x', kp[0].toFixed(2));
-      key.setAttribute('y', kp[1].toFixed(2));
-      key.textContent = (i + 1);
-      g.appendChild(key);
+      if(hasSub){
+        var sub = mk('text', { 'class':'tw-seg-sub', x:tp[0].toFixed(2), y:(y + line).toFixed(2),
+                               fill:t.color || '#fff' });
+        sub.textContent = t.sub;
+        g.appendChild(sub);
+        if(t.sub2){
+          var sub2 = mk('text', { 'class':'tw-seg-sub2', x:tp[0].toFixed(2),
+                                  y:(y + line * 2 - 2).toFixed(2) });
+          sub2.textContent = t.sub2;
+          g.appendChild(sub2);
+        }
+      }
 
-      var dp = pt(R_LBL + 13, midAngle(i));
-      var dot = document.createElementNS(NS, 'circle');
-      dot.setAttribute('class', 'tw-seg-live');
-      dot.setAttribute('cx', dp[0].toFixed(2));
-      dot.setAttribute('cy', dp[1].toFixed(2));
-      dot.setAttribute('r', '3');
-      dot.setAttribute('fill', '#00e676');
-      g.appendChild(dot);
+      var kp = mk('text', { 'class':'tw-seg-key', x:pt(geo.R_KEY, midAngle(i))[0].toFixed(2),
+                                                 y:pt(geo.R_KEY, midAngle(i))[1].toFixed(2) });
+      kp.textContent = (i + 1);
+      g.appendChild(kp);
+
+      var dp = pt(geo.R_OUT - 14, midAngle(i));
+      g.appendChild(mk('circle', { 'class':'tw-seg-live', cx:dp[0].toFixed(2), cy:dp[1].toFixed(2),
+                                   r:3.2, fill:'#00e676' }));
 
       g.addEventListener('click', function(e){ e.stopPropagation(); fire(i); });
       g.addEventListener('mouseenter', function(){ if(pointer === 'mouse') setHot(i); });
@@ -311,20 +380,55 @@
       segEls.push({ g:g, shape:shape });
     });
 
+    // keyboard hint reflects the actual wedge count
+    var kb = hint && hint.querySelector('kbd');
+    if(kb) kb.textContent = N > 1 ? ('1-' + N) : '1';
+
+    needFit = true;
     paint();
+  }
+
+  /* ── Keep every label inside its wedge ─────────────────
+     A horizontal label on a diagonal wedge runs almost radially,
+     so a long one ("Calculator") can overshoot the outer arc.
+     Measure once the wheel is visible and squeeze anything that
+     would spill. Needs a rendered element, hence not in build(). */
+  function fitText(){
+    if(!needFit) return;
+    needFit = false;
+    var lim = geo.R_OUT - 9;
+    for(var i = 0; i < segEls.length; i++){
+      var a  = pt(geo.R_TXT, midAngle(i));
+      var ax = a[0] - CX, ay = a[1] - CY;
+      // widest |dx| from the anchor that still sits inside the outer arc
+      var span = Math.sqrt(Math.max(0, lim*lim - ay*ay)) - Math.abs(ax);
+      var allow = Math.max(24, span * 2);
+      var texts = segEls[i].g.querySelectorAll('.tw-seg-lbl,.tw-seg-sub,.tw-seg-sub2');
+      for(var t = 0; t < texts.length; t++){
+        var el = texts[t];
+        el.removeAttribute('textLength');
+        var w = 0;
+        try { w = el.getComputedTextLength(); } catch(e){ w = 0; }
+        if(w > allow && allow > 0){
+          el.setAttribute('textLength', allow.toFixed(1));
+          el.setAttribute('lengthAdjust', 'spacingAndGlyphs');
+        }
+      }
+    }
   }
 
   /* ── Paint wedge colours for the current `hot` ────────── */
   function paint(){
-    TOOLS.forEach(function(t, i){
-      var s = segEls[i];
+    items.forEach(function(t, i){
+      var s = segEls[i]; if(!s) return;
       var on = (i === hot);
-      s.shape.setAttribute('fill', on ? hexA(t.color, .26) : 'rgba(255,255,255,.035)');
-      s.shape.setAttribute('stroke', on ? hexA(t.color, .85) : 'rgba(255,255,255,.07)');
-      s.shape.style.filter = on ? 'drop-shadow(0 0 14px ' + hexA(t.color, .45) + ')' : 'none';
+      var c  = t.color || '#a855f7';
+      s.shape.setAttribute('fill',   on ? hexA(c, .26) : 'rgba(255,255,255,.035)');
+      s.shape.setAttribute('stroke', on ? hexA(c, .85) : 'rgba(255,255,255,.07)');
+      s.shape.style.filter = on ? 'drop-shadow(0 0 14px ' + hexA(c, .45) + ')' : 'none';
       s.g.classList.toggle('tw-hot', on);
       if(on){
-        var p = pt(9, midAngle(i));           // nudge the hot wedge outward
+        var p = pt(9, midAngle(i));              // nudge the hot wedge outward
         s.g.setAttribute('transform', 'translate(' + (p[0]-CX).toFixed(2) + ',' + (p[1]-CY).toFixed(2) + ')');
       } else {
         s.g.removeAttribute('transform');
@@ -333,19 +437,19 @@
 
     if(hot < 0){
       hub.classList.add('tw-idle');
-      hubName.textContent = 'Tools';
+      hubName.textContent = title;
       hubName.style.color = '';
       hubDesc.textContent = pointer === 'touch' ? 'Tap a wedge' : 'Point to choose';
     } else {
       hub.classList.remove('tw-idle');
-      hubName.textContent = TOOLS[hot].name;
-      hubName.style.color = TOOLS[hot].color;
-      hubDesc.textContent = TOOLS[hot].desc;
+      hubName.textContent = items[hot].name || '';
+      hubName.style.color = items[hot].color || '';
+      hubDesc.textContent = items[hot].desc || items[hot].sub2 || '';
     }
   }
 
   function hexA(hex, a){
-    var h = hex.replace('#','');
+    var h = String(hex).replace('#','');
     if(h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
     return 'rgba(' + parseInt(h.slice(0,2),16) + ',' +
                      parseInt(h.slice(2,4),16) + ',' +
@@ -355,41 +459,62 @@
   function setHot(i){
     if(i === hot) return;
     hot = i;
+    if(i >= 0) buzz('tick');        // the detent — one tick per crossing
     paint();
   }
 
-  /* ── Reflect which tools are already open ─────────────── */
+  /* ── Live pips ────────────────────────────────────────── */
+  function isLive(t){
+    if(!t || t.live === undefined || t.live === null) return false;
+    if(typeof t.live === 'boolean')  return t.live;
+    if(typeof t.live === 'function'){ try { return !!t.live(); } catch(e){ return false; } }
+    var el = document.querySelector(t.live.sel);
+    return !!(el && el.classList.contains(t.live.cls));
+  }
   function refreshLive(){
-    TOOLS.forEach(function(t, i){
-      var on = false;
-      if(t.live){
-        var el = document.querySelector(t.live.sel);
-        on = !!(el && el.classList.contains(t.live.cls));
-      }
-      segEls[i].g.classList.toggle('tw-active', on);
+    items.forEach(function(t, i){
+      if(segEls[i]) segEls[i].g.classList.toggle('tw-active', isLive(t));
     });
   }
   function refreshTriggers(){
-    var any = TOOLS.some(function(t){
-      if(!t.live) return false;
-      var el = document.querySelector(t.live.sel);
-      return !!(el && el.classList.contains(t.live.cls));
-    });
     document.querySelectorAll('.tw-trigger').forEach(function(b){
-      b.classList.toggle('tw-live', any);
+      var key  = b.getAttribute('data-tw-wheel') || 'tools';
+      var spec = resolve(key);
+      var any  = false;
+      if(spec){
+        // a wheel may define its own trigger-pip meaning; otherwise the pip
+        // lights when any single wedge is live
+        if(typeof spec.live === 'function'){ try { any = !!spec.live(); } catch(e){ any = false; } }
+        else any = spec.items.some(isLive);
+      }
+      b.classList.toggle('tw-live', !!any);
     });
   }
 
   /* ── Pointer → wedge index ────────────────────────────── */
   function indexAt(x, y){
     var dx = x - cx, dy = y - cy;
-    var dist = Math.sqrt(dx*dx + dy*dy);
-    var scale = (wheel.offsetWidth || 400) / 400;
-    if(dist < R_IN * scale * 0.92) return -1;               // dead zone
-    if(dist > (R_OUT + 55) * scale) return -2;              // outside → close signal
-    var deg = Math.atan2(dy, dx) * 180 / Math.PI;           // 0° = east
-    var t = (deg + 90 + SPAN/2 + 720) % 360;                // rotate so wedge 0 starts at 0
+    var dist  = Math.sqrt(dx*dx + dy*dy);
+    var scale = (wheel.offsetWidth || 400) / 400;   // offsetWidth ignores the scale() transform
+    if(dist < geo.R_IN * scale * 0.92)   return -1; // dead zone
+    if(dist > (geo.R_OUT + 55) * scale)  return -2; // outside → close signal
+    var deg = Math.atan2(dy, dx) * 180 / Math.PI;   // 0° = east
+    var t = (deg + 90 + SPAN/2 + 720) % 360;        // rotate so wedge 0 starts at 0
     return Math.floor(t / SPAN) % N;
+  }
+
+  /* ── Resolve a registered wheel ───────────────────────── */
+  function resolve(key){
+    var provider = WHEELS[key];
+    if(!provider) return null;
+    var spec;
+    try { spec = provider(); } catch(e){ console.error('[toolWheel] provider "' + key + '"', e); return null; }
+    if(!spec) return null;
+    if(Object.prototype.toString.call(spec) === '[object Array]') spec = { items:spec };
+    if(!spec.items || !spec.items.length) return null;
+    spec.title = spec.title || 'Tools';
+    spec.rich  = !!spec.rich || spec.items.some(function(t){ return t.sub; });
+    return spec;
   }
 
   /* ── Open / close / fire ──────────────────────────────── */
@@ -404,8 +529,7 @@
       cx = innerWidth / 2;
       cy = innerHeight / 2;
     }
-    // keep the whole wheel on screen
-    cx = Math.max(pad, Math.min(innerWidth  - pad, cx));
+    cx = Math.max(pad, Math.min(innerWidth  - pad, cx));   // keep it all on screen
     cy = Math.max(pad, Math.min(innerHeight - pad, cy));
     wheel.style.left = cx + 'px';
     wheel.style.top  = cy + 'px';
@@ -413,8 +537,22 @@
     bg.style.setProperty('--tw-cy', cy + 'px');
   }
 
-  function openWheel(el, via){
+  function openWheel(el, via, key){
     if(open) return;
+    var spec = resolve(key || 'tools');
+    if(!spec){
+      // nothing to show — shake the trigger rather than opening an empty wheel
+      if(el){ el.style.transition='transform .07s'; var n=0;
+              var iv=setInterval(function(){ el.style.transform='translateX('+(n%2?-3:3)+'px)';
+                if(++n>5){ clearInterval(iv); el.style.transform=''; el.style.transition=''; } }, 55); }
+      buzz('warn');
+      return;
+    }
+
+    items = spec.items;
+    title = spec.title;
+    geo   = spec.rich ? GEO_RICH : GEO_PLAIN;
+
     open     = true;
     pointer  = via || 'mouse';
     anchor   = el || null;
@@ -422,14 +560,22 @@
     hot      = -1;
     openedAt = Date.now();
 
+    // visible first — getComputedTextLength() reads 0 on a display:none tree
     bg.style.display = 'block';
+
+    var newSig = spec.rich + '|' + items.map(function(t){
+      return [t.name, t.sub, t.sub2, t.color].join('');
+    }).join('');
+    if(newSig !== sig){ sig = newSig; build(); }
+
     place(el);
     refreshLive();
     paint();
-    // force reflow so the scale-in transition actually runs
-    void bg.offsetWidth;
+    fitText();
+    void bg.offsetWidth;            // force reflow so the scale-in actually runs
     bg.classList.add('tw-on');
     if(el) el.classList.add('tw-open');
+    buzz('open');
   }
 
   function closeWheel(){
@@ -442,17 +588,18 @@
   }
 
   function fire(i){
-    if(i < 0 || i >= N) return;
-    var t = TOOLS[i];
+    if(i < 0 || i >= items.length) return;
+    var t = items[i];
+    if(t.disabled){ buzz('warn'); return; }
     setHot(i);
+    buzz('select');
     closeWheel();
     setTimeout(function(){
-      var fn = window[t.fn];
-      if(typeof fn === 'function'){
-        try { fn(); } catch(err){ console.error('[toolWheel] ' + t.fn, err); }
-      } else {
-        console.warn('[toolWheel] ' + t.fn + '() not available on this page');
-      }
+      try {
+        if(typeof t.run === 'function')      t.run();
+        else if(typeof window[t.fn] === 'function') window[t.fn]();
+        else console.warn('[toolWheel] ' + t.fn + '() not available on this page');
+      } catch(err){ console.error('[toolWheel] firing "' + t.name + '"', err); }
       setTimeout(function(){ refreshLive(); refreshTriggers(); }, 350);
     }, 120);
   }
@@ -471,6 +618,12 @@
     setHot(i);
   }
 
+  function triggerOf(e){
+    var t = e.target;
+    return (t && t.closest) ? t.closest('.tw-trigger') : null;
+  }
+  function keyOf(el){ return el.getAttribute('data-tw-wheel') || 'tools'; }
+
   function init(){
     bg      = document.getElementById('tw-bg');
     wheel   = document.getElementById('tw-wheel');
@@ -478,35 +631,33 @@
     hub     = document.getElementById('tw-hub');
     hubName = document.getElementById('tw-hub-name');
     hubDesc = document.getElementById('tw-hub-desc');
+    hint    = document.getElementById('tw-hint');
     if(!bg || !svg) return;
 
-    build();
-
-    /* Triggers — bound by delegation so headers rendered later still work */
+    /* Triggers — delegated, so headers rendered later still work */
     document.addEventListener('mouseover', function(e){
-      var t = e.target.closest && e.target.closest('.tw-trigger');
+      var t = triggerOf(e);
       if(!t || open) return;
       clearTimeout(hoverTimer);
-      hoverTimer = setTimeout(function(){ openWheel(t, 'mouse'); }, 140);
+      hoverTimer = setTimeout(function(){ openWheel(t, 'mouse', keyOf(t)); }, 140);
     });
     document.addEventListener('mouseout', function(e){
-      var t = e.target.closest && e.target.closest('.tw-trigger');
-      if(t) clearTimeout(hoverTimer);
+      if(triggerOf(e)) clearTimeout(hoverTimer);
     });
     document.addEventListener('click', function(e){
-      var t = e.target.closest && e.target.closest('.tw-trigger');
+      var t = triggerOf(e);
       if(!t) return;
       e.preventDefault();
       clearTimeout(hoverTimer);
-      if(open) closeWheel(); else openWheel(t, 'mouse');
+      if(open) closeWheel(); else openWheel(t, 'mouse', keyOf(t));
     });
-    // touch: open immediately on finger-down, and support drag-to-select
+    // touch: open on finger-down, and support drag-to-select
     document.addEventListener('touchstart', function(e){
-      var t = e.target.closest && e.target.closest('.tw-trigger');
+      var t = triggerOf(e);
       if(!t) return;
-      e.preventDefault();
+      e.preventDefault();          // also suppresses the synthetic click
       clearTimeout(hoverTimer);
-      if(open) closeWheel(); else openWheel(t, 'touch');
+      if(open) closeWheel(); else openWheel(t, 'touch', keyOf(t));
     }, { passive:false });
 
     document.addEventListener('mousemove', function(e){
@@ -528,22 +679,24 @@
     document.addEventListener('keydown', function(e){
       if(!open) return;
       if(e.key === 'Escape'){ e.preventDefault(); closeWheel(); return; }
-      if(e.key >= '1' && e.key <= String(N)){ e.preventDefault(); fire(+e.key - 1); return; }
+      if(e.key >= '1' && e.key <= '9' && (+e.key) <= N){ e.preventDefault(); fire(+e.key - 1); return; }
       if(e.key === 'Enter' && hot >= 0){ e.preventDefault(); fire(hot); return; }
       if(e.key === 'ArrowRight' || e.key === 'ArrowDown'){ e.preventDefault(); setHot(((hot < 0 ? -1 : hot) + 1) % N); }
-      if(e.key === 'ArrowLeft'  || e.key === 'ArrowUp')  { e.preventDefault(); setHot(((hot < 0 ? 1 : hot) - 1 + N) % N); }
+      if(e.key === 'ArrowLeft'  || e.key === 'ArrowUp')  { e.preventDefault(); setHot(((hot < 0 ?  1 : hot) - 1 + N) % N); }
     });
 
     window.addEventListener('resize', function(){ if(open) place(anchor); });
     window.addEventListener('scroll', function(){ if(open) closeWheel(); }, true);
 
-    // keep the trigger's live-dot honest even when tools are opened elsewhere
+    // keep trigger pips honest even when tools are opened from elsewhere
     setInterval(function(){ refreshTriggers(); if(open) refreshLive(); }, 1200);
   }
 
-  /* Public API — also used by the Ctrl+K command palette */
-  window.toolWheelOpen  = function(el){ openWheel(el || null, 'mouse'); };
-  window.toolWheelClose = closeWheel;
+  /* ── Public API ───────────────────────────────────────── */
+  window.toolWheelRegister = register;
+  window.toolWheelOpen     = function(el, key){ openWheel(el || null, 'mouse', key || 'tools'); };
+  window.toolWheelClose    = closeWheel;
+  window.toolWheelRefresh  = refreshTriggers;
 
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

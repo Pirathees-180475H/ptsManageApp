@@ -24,6 +24,7 @@ document.title = 'EXP TRACK';
 <?!= HtmlService.createHtmlOutputFromFile('BankBalances').getContent(); ?>
 <?!= HtmlService.createHtmlOutputFromFile('ETFCalc').getContent(); ?>
 <?!= include('notification'); ?>
+<?!= include('cardDeck'); ?>
 <?!= include('toolWheel'); ?>
 
 <!-- ── Quick Add Modal ── -->
@@ -221,6 +222,7 @@ document.title = 'EXP TRACK';
   <div class="pg-hdr">
     <span class="pg-hdr-title">💳 Cards</span>
     <div class="pg-hdr-actions">
+      <button class="tw-trigger tw-cards" type="button" data-tw-wheel="cards" title="Cards — hover or tap" aria-label="Open card wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10.5h20"/><path d="M6 15h3.5"/></svg></button>
       <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
@@ -893,6 +895,61 @@ document.title = 'EXP TRACK';
 
 <script>
 /* ═══════════════════════════════════════════
+   HAPTICS
+   Short, precise vibration feedback — feedback, not alarms, so
+   bursts stay under ~20ms and read as a mechanical detent rather
+   than a notification. Silently no-ops when the device has no
+   vibration motor (iOS Safari) or the user asked for reduced motion.
+
+     haptic('tick')     one wheel detent
+     haptic('select')   an item was chosen
+     haptic('success')  a save landed
+     haptic('error')    a save failed
+     haptic(12)         or any raw ms / pattern array
+
+   toolWheel and cardDeck call this lazily, so it is safe for them
+   to load before this block runs.
+═══════════════════════════════════════════ */
+(function(){
+  var PATTERNS = {
+    tick:    8,               // wheel crossed into a new wedge — the detent
+    step:    6,               // lighter tick (page switch, card cycle)
+    open:    [0, 18],         // something sprang open
+    select:  [0, 14, 30, 14], // committed to a choice
+    success: [0, 12, 40, 12], // saved
+    warn:    [0, 30, 60, 30], // careful
+    error:   180,             // unmistakably bad — the only long one
+    pop:     12               // card lifted / panel expanded
+  };
+
+  var supported = false;
+  try { supported = (typeof navigator !== 'undefined' &&
+                     typeof navigator.vibrate === 'function'); } catch(e){}
+
+  var reduced = false;
+  try {
+    var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reduced = !!mq.matches;
+    if (mq.addEventListener) mq.addEventListener('change', function(e){ reduced = e.matches; });
+    else if (mq.addListener) mq.addListener(function(e){ reduced = e.matches; });
+  } catch(e){}
+
+  function haptic(kind){
+    if(!supported || reduced) return false;
+    var p = (typeof kind === 'number' || Object.prototype.toString.call(kind) === '[object Array]')
+              ? kind : PATTERNS[kind];
+    if(p === undefined || p === null) return false;
+    try { return navigator.vibrate(p); } catch(e){ return false; }
+  }
+
+  haptic.supported = supported;
+  haptic.patterns  = PATTERNS;
+  haptic.reduced   = function(){ return reduced; };
+
+  window.haptic = haptic;
+})();
+
+/* ═══════════════════════════════════════════
    SPA ROUTER
 ═══════════════════════════════════════════ */
 var _spaLoaded = {cse:false, cc:false, ca:false, exp:false, port:false, mf:false, sw:false};
@@ -904,6 +961,7 @@ var _analyzePreloadData = { majorexp:null, inspector:null, allInspectors:null, e
 
 var _activePage = 'exp';
 function _doShowPage(name){
+  if(name !== _activePage) if(typeof haptic==='function')haptic('step');
   _activePage = name;
 
   // Show/hide Add Expense FAB — only on Expenses tab
@@ -1158,8 +1216,10 @@ function saveQuickAdd() {
       btn.disabled = false;
       btn.innerText = 'Save Expense';
       if (r && r.error) {
+        if(typeof haptic==='function')haptic('error');
         alert('Error: ' + r.error);
       } else {
+        if(typeof haptic==='function')haptic('success');
         PTS.toast('Expense Added!', 'ok');
         closeQuickAdd();
         if (_activePage === 'exp') reloadPage('exp');
@@ -1168,6 +1228,7 @@ function saveQuickAdd() {
     .withFailureHandler(function(e) {
       btn.disabled = false;
       btn.innerText = 'Save Expense';
+      if(typeof haptic==='function')haptic('error');
       alert('Fail: ' + e);
     })
     .updateExpenseCells({ dateKey: dateKey, cells: cells });
@@ -2828,14 +2889,15 @@ function toggleStatus(i){
   badge.classList.toggle('settled',!isSettled);badge.classList.toggle('pending',isSettled);
   badge.innerHTML=!isSettled?'✓ Settled':'⚠ Pending';
   ccCurrentData[i][3]=!isSettled;saveBtn.style.display='inline-flex';
+  if(typeof haptic==='function')haptic('tick');
 }
 
 function saveStatus(i){
   var btn=document.getElementById('save-status-btn-'+i);
   btn.textContent='Saving…';btn.disabled=true;
   google.script.run
-    .withSuccessHandler(function(){btn.textContent='✓ Saved';btn.classList.add('success');setTimeout(function(){btn.style.display='none';btn.textContent='Save';btn.classList.remove('success');btn.disabled=false;},2000);})
-    .withFailureHandler(function(err){alert('Error: '+err.message);btn.textContent='Save';btn.disabled=false;})
+    .withSuccessHandler(function(){if(typeof haptic==='function')haptic('success');btn.textContent='✓ Saved';btn.classList.add('success');setTimeout(function(){btn.style.display='none';btn.textContent='Save';btn.classList.remove('success');btn.disabled=false;},2000);})
+    .withFailureHandler(function(err){if(typeof haptic==='function')haptic('error');alert('Error: '+err.message);btn.textContent='Save';btn.disabled=false;})
     .saveMonthlySettled(i+4,ccCurrentData[i][3]);
 }
 
@@ -2845,7 +2907,7 @@ function saveBalance(i){
   btn.textContent='Saving…';btn.classList.add('saving');btn.disabled=true;
   google.script.run
     .withSuccessHandler(function(){
-      btn.textContent='✓ Saved';btn.classList.remove('saving');btn.classList.add('success');
+      if(typeof haptic==='function')haptic('success');btn.textContent='✓ Saved';btn.classList.remove('saving');btn.classList.add('success');
       var alertEl=document.getElementById('alert-'+i);
       if(alertEl){
         var newAlert=document.createElement('span');
@@ -2858,7 +2920,7 @@ function saveBalance(i){
       ccCurrentData[i][7]=val;
       setTimeout(function(){btn.textContent='Save';btn.classList.remove('success');btn.disabled=false;},2000);
     })
-    .withFailureHandler(function(err){alert('Error: '+err.message);btn.textContent='Save';btn.classList.remove('saving');btn.disabled=false;})
+    .withFailureHandler(function(err){if(typeof haptic==='function')haptic('error');alert('Error: '+err.message);btn.textContent='Save';btn.classList.remove('saving');btn.disabled=false;})
     .saveLastStatementBalance(i+4,val);
 }
 
@@ -2880,11 +2942,68 @@ function ccDisplayData(data){
   var chartPays=data.map(function(r){return parseFloat((r[6]+'').replace(/,/g,''))||0;});
   var brandColors=data.map(function(r){return ccBrandCfg(r[0]).color;});
 
-  var cardsHTML=data.map(function(row,i){
-    var b=ccBrandCfg(row[0]),isSettled=row[3]===true||row[3]==='TRUE'||row[3]==='true';
+  /* ── Brand colour → rgba(), for the deck's glow and rims ── */
+  function _cdHex(c,a){
+    var h=String(c).replace('#','');
+    if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')';
+  }
+  /* esc() leaves quotes alone; attributes need them escaped too */
+  function _cdAttr(v){ return esc(v).replace(/"/g,'&quot;'); }
+  function _cdSettled(row){ return row[3]===true||row[3]==='TRUE'||row[3]==='true'; }
+  function _cdDueText(row){
+    var d=ccDaysUntilDue(row[5]), t=ccFmtDate(row[5]);
+    if(d===null) return t;
+    if(d<0)   return t+' · '+Math.abs(d)+'d ago';
+    if(d===0) return t+' · today';
+    return t+' · '+d+'d';
+  }
+
+  /* ── DECK: the physical card faces ─────────────────────── */
+  var deckHTML=data.map(function(row,i){
+    var b=ccBrandCfg(row[0]), isSettled=_cdSettled(row);
+    var pay=parseFloat((row[6]+'').replace(/,/g,''))||0;
+    var bal=parseFloat((row[7]+'').replace(/,/g,''))||0;
+    var watch=!!(row[7]&&pay<=bal);
+    return '<div class="cd-card'+(watch?' cd-warn':'')+'" data-i="'+i+'"'+
+             ' data-brand="'+b.color+'" data-soft="'+_cdHex(b.color,.4)+'"'+
+             ' style="--brand-bg:'+b.bg+';--brand-soft:'+_cdHex(b.color,.4)+';--brand-glow:'+_cdHex(b.color,.32)+'">'+
+      '<div class="cd-face">'+
+        '<div class="cd-guilloche"></div>'+
+        '<div class="cd-sheen"></div>'+
+        '<div class="cd-body">'+
+          '<div class="cd-row1">'+
+            '<div class="cd-chip"></div>'+
+            '<div class="cd-pip '+(isSettled?'settled':'pending')+'"><i></i>'+(isSettled?'Settled':'Pending')+'</div>'+
+          '</div>'+
+          '<div class="cd-mid">'+
+            '<div class="cd-due-lbl">Total Due</div>'+
+            '<div class="cd-due">'+ccFmt(row[1])+'</div>'+
+            '<div class="cd-avail">Available <b>'+ccFmt(row[8])+'</b></div>'+
+          '</div>'+
+          '<div class="cd-row3">'+
+            '<div><div class="cd-brand">'+esc(b.label)+'</div><div class="cd-bank">'+esc(row[0])+'</div></div>'+
+            '<div class="cd-due-date"><div class="cd-dd-lbl">Due</div><div class="cd-dd-val">'+esc(_cdDueText(row))+'</div></div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+
+  var dotsHTML=data.map(function(row,i){
+    return '<button class="cd-dot'+(i===0?' on':'')+'" type="button" aria-label="'+_cdAttr(row[0])+'" title="'+_cdAttr(row[0])+'"></button>';
+  }).join('');
+
+  /* ── DETAILS: the original card body, unchanged, one per card.
+        Every id and handler below is exactly as it was — only the
+        wrapper around it is new, so toggleStatus / saveStatus /
+        saveBalance / alert-N keep working. ───────────────────── */
+  var detailHTML=data.map(function(row,i){
+    var b=ccBrandCfg(row[0]),isSettled=_cdSettled(row);
     var totalDueNum=parseFloat((row[1]+'').replace(/,/g,''))||0,payNum=parseFloat((row[6]+'').replace(/,/g,''))||0;
     var amtClass=totalDueNum>50000?'danger':totalDueNum>20000?'warn':'ok';
-    return '<div class="cc-card" style="border-color:'+(isSettled?'rgba(0,230,118,.18)':'rgba(255,255,255,.07)')+'">'+
+    return '<div class="cd-detail" data-i="'+i+'">'+
+      '<div class="cc-card" style="border-color:'+(isSettled?'rgba(0,230,118,.18)':'rgba(255,255,255,.07)')+'">'+
       '<div style="background:'+b.bg+';height:3px;position:absolute;top:0;left:0;right:0;"></div>'+
       '<div class="cc-top">'+
         '<div class="cc-header">'+
@@ -2897,7 +3016,7 @@ function ccDisplayData(data){
           '<div class="amt-block" style="border-color:rgba(255,77,109,.15)">'+
             '<div class="amt-lbl-row">'+
               '<div class="amt-lbl">💳 Total Due</div>'+
-              '<button class="cc-view-exp-btn" onclick="showCardExpenses(\''+row[0].replace(/'/g,"\\'")+'\',\''+row[0].replace(/'/g,"\\'")+'\');" title="View this month\'s expenses"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></button>'+
+              '<button class="cc-view-exp-btn" onclick="showCardExpenses(\''+row[0].replace(/'/g,"\\'")+'\')" title="View this month\'s expenses"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></button>'+
             '</div>'+
             '<div class="amt-val '+amtClass+'">'+ccFmt(row[1])+'</div>'+
           '</div>'+
@@ -2917,7 +3036,7 @@ function ccDisplayData(data){
           ccGetAlertHTML(row[6],row[7],'alert-'+i)+
         '</div>'+
       '</div>'+
-    '</div>';
+    '</div></div>';
   }).join('');
 
   document.getElementById('cc-root').innerHTML=
@@ -2925,7 +3044,12 @@ function ccDisplayData(data){
       '<div class="pg-corner-title" style="margin-bottom:0;"><span class="pg-ct-icon">👜</span><span class="pg-ct-text">Manage Credit Cards</span></div>'+
       '<button onclick="showPage(\'ca\')" class="cc-analyze-btn">📊 Analyze</button>'+
     '</div>'+
-    '<div class="cc-grid">'+cardsHTML+'</div>'+
+    '<div class="cd-wrap">'+
+      '<div class="cd-deck" id="cd-deck">'+deckHTML+'</div>'+
+      '<div class="cd-bar"><div class="cd-dots" id="cd-dots">'+dotsHTML+'</div>'+
+        '<button class="cd-fan-btn" id="cd-fan-btn" type="button">⤢ Fan</button></div>'+
+      '<div class="cd-details" id="cd-details">'+detailHTML+'</div>'+
+    '</div>'+
     '<div class="kpi-row">'+
       '<div class="kpi red"><div class="kpi-glow"></div><span class="kpi-icon">💳</span><div class="kpi-label">Total Due</div><div class="kpi-value">'+ccFmt(totalDue)+'</div><div class="kpi-sub-cc">across all cards</div></div>'+
       '<div class="kpi '+(settledCnt===data.length?'green':'gold')+'"><div class="kpi-glow"></div><span class="kpi-icon">✅</span><div class="kpi-label">Settled</div><div class="kpi-value">'+settledCnt+' / '+data.length+'</div><div class="kpi-sub-cc">'+(pendingCnt>0?pendingCnt+' pending':'all clear')+'</div></div>'+
@@ -2938,6 +3062,8 @@ function ccDisplayData(data){
     '</div>'+
     ccBuildTimeline(data);
   buildCCTicker(data);
+  if(typeof cardDeckInit === 'function') cardDeckInit();
+  if(typeof toolWheelRefresh === 'function') toolWheelRefresh();
 
   setTimeout(function(){
   },350);
@@ -2966,6 +3092,50 @@ function ccDisplayData(data){
                tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+ccFmt(ctx.parsed.y);}}}},
       scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
               y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+v.toLocaleString('en-IN');}},grid:{color:'rgba(255,255,255,.04)'}}}}
+  });
+}
+
+/* ═══════════════════════════════════════════
+   CARD WHEEL  —  radial card picker (Cards tab header)
+   Rebuilt on every open, so the wedges always show live figures.
+═══════════════════════════════════════════ */
+if(typeof toolWheelRegister === 'function'){
+  toolWheelRegister('cards', function(){
+    var data = (typeof ccCurrentData !== 'undefined' && ccCurrentData) ? ccCurrentData : null;
+    if(!data || !data.length) return null;
+
+    function settled(row){ return row[3]===true||row[3]==='TRUE'||row[3]==='true'; }
+
+    return {
+      title: 'Cards',
+      rich : true,
+      // trigger pip is green only when every card is settled
+      live : function(){ return data.every(settled); },
+      items: data.slice(0, 8).map(function(row, i){
+        var b  = ccBrandCfg(row[0]);
+        var st = settled(row);
+        var d  = ccDaysUntilDue(row[5]);
+        var sub2;
+        if(st)              sub2 = 'settled';
+        else if(d === null) sub2 = 'no due date';
+        else if(d < 0)      sub2 = Math.abs(d) + 'd overdue';
+        else if(d === 0)    sub2 = 'due today';
+        else                sub2 = 'due in ' + d + 'd';
+
+        return {
+          ico  : (!st && d !== null && d <= 3) ? '⚠️' : '',
+          name : b.label,
+          desc : row[0],
+          sub  : ccFmt(row[1]),
+          sub2 : sub2,
+          color: b.color,
+          run  : function(){
+            if(typeof cardDeckSetActive === 'function') cardDeckSetActive(i);
+            showCardExpenses(row[0]);
+          }
+        };
+      })
+    };
   });
 }
 
