@@ -24,6 +24,7 @@ document.title = 'EXP TRACK';
 <?!= HtmlService.createHtmlOutputFromFile('BankBalances').getContent(); ?>
 <?!= HtmlService.createHtmlOutputFromFile('ETFCalc').getContent(); ?>
 <?!= include('notification'); ?>
+<?!= include('toolWheel'); ?>
 
 <!-- ── Quick Add Modal ── -->
 <div id="qa-bg" onclick="if(event.target===this)closeQuickAdd()">
@@ -152,6 +153,7 @@ document.title = 'EXP TRACK';
     </div>
     <div class="pg-hdr-actions">
       <span class="upd-lbl" id="updLbl">Starting…</span>
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
@@ -219,6 +221,7 @@ document.title = 'EXP TRACK';
   <div class="pg-hdr">
     <span class="pg-hdr-title">💳 Cards</span>
     <div class="pg-hdr-actions">
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
@@ -256,6 +259,7 @@ document.title = 'EXP TRACK';
   <div class="pg-hdr">
     <span class="pg-hdr-title">📊 Expenses</span>
     <div class="pg-hdr-actions">
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
@@ -294,6 +298,7 @@ document.title = 'EXP TRACK';
   <div class="pg-hdr">
     <span class="pg-hdr-title">💼 Summary</span>
     <div class="pg-hdr-actions">
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
@@ -323,6 +328,7 @@ document.title = 'EXP TRACK';
   <div class="pg-hdr">
     <span class="pg-hdr-title">💸 Money Flow</span>
     <div class="pg-hdr-actions">
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
@@ -394,6 +400,7 @@ document.title = 'EXP TRACK';
   <div class="pg-hdr">
     <span class="pg-hdr-title">🤝 Splitwise</span>
     <div class="pg-hdr-actions">
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
       <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
       <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
@@ -1189,6 +1196,7 @@ var _cmdPages = [
   { id: 'cse', tab: 3, name: 'Insights',       desc: 'Investment Portfolio > Insights',   icon: '💡' },
 
   // Tools & Actions
+  { action: 'toolWheelOpen', name: 'Tool Wheel',  desc: 'Radial tool selector',         icon: '🎯' },
   { action: 'docsToggle',  name: 'Document Vault', desc: 'Open shared documents & files', icon: '📂' },
   { action: 'calcToggle',  name: 'Calculator',     desc: 'Open financial calculator',    icon: '🧮' },
   { action: 'calToggle',   name: 'Calendar',       desc: 'Open investment calendar',    icon: '📅' },

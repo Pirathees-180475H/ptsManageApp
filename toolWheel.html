@@ -1,0 +1,551 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     TOOL WHEEL  —  GTA / RDR2 style radial weapon-wheel selector
+     ───────────────────────────────────────────────────────────
+     Desktop : hover the trigger → wheel opens under the cursor,
+               point in a direction to highlight, click to fire.
+     Mobile  : tap the trigger → wheel springs open, tap a wedge.
+               (drag-out-and-release from the trigger also works)
+
+     Included from render.html via:  <?!= include('toolWheel'); ?>
+     Hides the old .pg-hdr-* emoji buttons (they stay in the DOM so
+     every existing *-active class hook keeps working untouched).
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Hide the legacy header emoji strip (DOM kept for active-state hooks) ── */
+.pg-hdr-actions .pg-money-btn,
+.pg-hdr-actions .pg-tracker-btn,
+.pg-hdr-actions .pg-docs-btn,
+.pg-hdr-actions .pg-cal-btn,
+.pg-hdr-actions .pg-calc-btn,
+.pg-hdr-actions .pg-divider-btn{ display:none !important; }
+
+/* ── Trigger button ── */
+.tw-trigger{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.14);
+  color:rgba(255,255,255,.72);
+  border-radius:10px;
+  width:38px;height:30px;
+  display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;padding:0;position:relative;
+  transition:background .18s,border-color .18s,color .18s,transform .12s;
+  -webkit-tap-highlight-color:transparent;
+}
+.tw-trigger svg{width:19px;height:19px;transition:transform .45s cubic-bezier(.34,1.4,.64,1);}
+.tw-trigger:hover{background:rgba(168,85,247,.16);border-color:rgba(168,85,247,.45);color:#c084fc;}
+.tw-trigger:hover svg{transform:rotate(60deg);}
+.tw-trigger:active{transform:scale(.9);}
+.tw-trigger.tw-open{background:rgba(168,85,247,.3);border-color:rgba(168,85,247,.7);color:#d8b4fe;}
+.tw-trigger.tw-open svg{transform:rotate(180deg);}
+/* pulsing dot when any tool panel is currently open */
+.tw-trigger.tw-live::after{
+  content:'';position:absolute;top:-3px;right:-3px;
+  width:6px;height:6px;border-radius:50%;background:#00e676;
+  box-shadow:0 0 7px rgba(0,230,118,.9);
+  animation:twLive 1.6s ease-in-out infinite;
+}
+@keyframes twLive{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* ── Backdrop ── */
+#tw-bg{
+  position:fixed;inset:0;z-index:10050;
+  display:none;
+  background:radial-gradient(ellipse at var(--tw-cx,50%) var(--tw-cy,50%),
+             rgba(8,12,24,.55) 0%, rgba(3,5,12,.88) 60%);
+  opacity:0;
+  transition:opacity .22s ease;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:none;
+}
+#tw-bg.tw-on{display:block;opacity:1;}
+/* the RDR "dead-eye" desaturation of everything behind the wheel */
+#tw-bg.tw-on{ backdrop-filter:blur(7px) saturate(.35) brightness(.7);
+              -webkit-backdrop-filter:blur(7px) saturate(.35) brightness(.7); }
+
+/* ── Wheel ── */
+#tw-wheel{
+  position:fixed;
+  width:var(--tw-size,420px);height:var(--tw-size,420px);
+  transform:translate(-50%,-50%) scale(.55);
+  opacity:0;
+  transition:transform .26s cubic-bezier(.34,1.56,.64,1), opacity .18s ease;
+  will-change:transform,opacity;
+}
+#tw-bg.tw-on #tw-wheel{ transform:translate(-50%,-50%) scale(1); opacity:1; }
+#tw-wheel svg{width:100%;height:100%;overflow:visible;display:block;}
+
+.tw-seg{ cursor:pointer; transition:transform .17s cubic-bezier(.34,1.56,.64,1); }
+.tw-seg-shape{
+  transition:fill .15s ease, stroke .15s ease, filter .15s ease;
+  stroke-width:1.5;
+}
+.tw-seg-ico{
+  font-size:36px;text-anchor:middle;dominant-baseline:central;
+  pointer-events:none;user-select:none;
+  transition:font-size .17s cubic-bezier(.34,1.56,.64,1);
+}
+.tw-seg-lbl{
+  font-size:11.5px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
+  text-anchor:middle;dominant-baseline:central;
+  pointer-events:none;user-select:none;
+  fill:rgba(255,255,255,.42);
+  transition:fill .15s ease;
+}
+.tw-seg.tw-hot .tw-seg-ico{ font-size:44px; }
+.tw-seg.tw-hot .tw-seg-lbl{ fill:#fff; }
+.tw-seg-key{
+  font-size:9.5px;font-weight:800;text-anchor:middle;dominant-baseline:central;
+  fill:rgba(255,255,255,.22);pointer-events:none;user-select:none;
+}
+.tw-seg.tw-hot .tw-seg-key{ fill:rgba(255,255,255,.5); }
+/* live dot = that tool's panel is currently open */
+.tw-seg-live{ opacity:0; transition:opacity .2s; }
+.tw-seg.tw-active .tw-seg-live{ opacity:1; }
+
+/* ── Centre hub ── */
+#tw-hub{
+  position:absolute;left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  width:38%;text-align:center;pointer-events:none;user-select:none;
+}
+#tw-hub-name{
+  font-size:14px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase;
+  color:#fff;line-height:1.15;
+  text-shadow:0 2px 14px rgba(0,0,0,.9);
+  transition:color .15s ease;
+}
+#tw-hub-desc{
+  margin-top:6px;
+  font-size:10.5px;font-weight:600;letter-spacing:.3px;
+  color:rgba(255,255,255,.42);line-height:1.3;
+}
+#tw-hub.tw-idle #tw-hub-name{ color:rgba(255,255,255,.3); font-size:12px; letter-spacing:2.4px; }
+
+/* ── Hint strip ── */
+#tw-hint{
+  position:fixed;left:50%;bottom:calc(var(--nav-h,58px) + 14px);
+  transform:translateX(-50%) translateY(8px);
+  display:flex;align-items:center;gap:14px;
+  padding:7px 15px;border-radius:999px;
+  background:rgba(10,15,28,.75);border:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(12px);
+  font-size:10px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);white-space:nowrap;
+  opacity:0;transition:opacity .3s ease .12s, transform .3s ease .12s;
+  pointer-events:none;
+}
+#tw-bg.tw-on #tw-hint{ opacity:1; transform:translateX(-50%) translateY(0); }
+#tw-hint kbd{
+  display:inline-block;padding:2px 6px;margin-right:5px;
+  border-radius:5px;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.6);font-family:inherit;font-size:9px;
+}
+
+@media(max-width:768px){
+  #tw-wheel{ --tw-size:min(86vw,360px); }
+  .tw-seg-ico{ font-size:31px; }
+  .tw-seg.tw-hot .tw-seg-ico{ font-size:38px; }
+  .tw-seg-lbl{ font-size:10.5px;letter-spacing:.9px; }
+  .tw-seg-key{ display:none; }
+  #tw-hub-name{ font-size:12.5px; }
+  #tw-hub-desc{ font-size:9.5px; }
+  #tw-hint{ font-size:9px;gap:10px;padding:6px 12px; }
+  .tw-trigger{ width:40px;height:32px; }
+}
+@media(prefers-reduced-motion:reduce){
+  #tw-wheel,.tw-seg,.tw-seg-ico,#tw-bg{ transition-duration:.01ms !important; }
+  .tw-trigger svg{ transition:none; }
+  .tw-trigger.tw-live::after{ animation:none; }
+}
+</style>
+
+<!-- ── Wheel overlay ── -->
+<div id="tw-bg">
+  <div id="tw-wheel">
+    <svg id="tw-svg" viewBox="0 0 400 400" aria-hidden="true"></svg>
+    <div id="tw-hub" class="tw-idle">
+      <div id="tw-hub-name">Tools</div>
+      <div id="tw-hub-desc"></div>
+    </div>
+  </div>
+  <div id="tw-hint">
+    <span><kbd>1-6</kbd>select</span>
+    <span><kbd>esc</kbd>close</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ── The wheel's contents. Order runs clockwise from 12 o'clock. ──
+     `live` = selector whose active-class means that tool is already open,
+     so the wedge shows a green dot (same idea as the RDR ammo pip).      */
+  var TOOLS = [
+    { ico:'💵', name:'Money',      desc:'Bank balances',      fn:'moneyToggle',   color:'#00e676',
+      live:{ sel:'#bank-modal',     cls:'open' } },
+    { ico:'📋', name:'Tracker',    desc:'Subs · budget · notes', fn:'trackerToggle', color:'#3b82f6',
+      live:{ sel:'.pg-tracker-btn', cls:'tracker-active' } },
+    { ico:'📂', name:'Docs',       desc:'Document vault',     fn:'docsToggle',    color:'#cbd5e1',
+      live:{ sel:'.pg-docs-btn',    cls:'docs-active' } },
+    { ico:'📅', name:'Calendar',   desc:'Dates & heatmap',    fn:'calToggle',     color:'#00d4ff',
+      live:{ sel:'.pg-cal-btn',     cls:'cal-active' } },
+    { ico:'🧮', name:'Calculator', desc:'Quick maths',        fn:'calcToggle',    color:'#a855f7',
+      live:{ sel:'.pg-calc-btn',    cls:'calc-active' } },
+    { ico:'⚖️', name:'Divider',    desc:'Split an expense',   fn:'edToggle',      color:'#fbbf24',
+      live:{ sel:'#ed-overlay',     cls:'open' } }
+  ];
+
+  var N      = TOOLS.length;
+  var SPAN   = 360 / N;      // 60° per wedge
+  var GAP    = 1.7;          // degrees trimmed off each side
+  var R_IN   = 78;           // inner radius  (viewBox units)
+  var R_OUT  = 183;          // outer radius
+  var R_ICO  = 136;          // icon ring
+  var R_LBL  = 166;          // label ring
+  var R_KEY  = 96;           // number-key ring
+  var CX     = 200, CY = 200;
+
+  var bg, wheel, svg, hub, hubName, hubDesc;
+  var segEls  = [];
+  var open    = false;
+  var hot     = -1;          // currently highlighted index
+  var armed   = false;       // pointer has entered the wheel at least once
+  var openedAt= 0;
+  var pointer = 'mouse';     // 'mouse' | 'touch'
+  var anchor  = null;        // trigger element that opened us
+  var hoverTimer = null;
+  var cx = 0, cy = 0;        // wheel centre, in viewport px
+
+  /* ── Geometry ─────────────────────────────────────────── */
+  function pt(r, deg){
+    var a = deg * Math.PI / 180;
+    return [ CX + r * Math.cos(a), CY + r * Math.sin(a) ];
+  }
+  // wedge i is centred on -90 + i*SPAN  (i.e. index 0 points straight up)
+  function midAngle(i){ return -90 + i * SPAN; }
+
+  function wedgePath(i){
+    var a0 = midAngle(i) - SPAN/2 + GAP;
+    var a1 = midAngle(i) + SPAN/2 - GAP;
+    var big = (a1 - a0) > 180 ? 1 : 0;
+    var o0 = pt(R_OUT, a0), o1 = pt(R_OUT, a1);
+    var i1 = pt(R_IN,  a1), i0 = pt(R_IN,  a0);
+    return 'M' + o0[0].toFixed(2) + ',' + o0[1].toFixed(2) +
+           'A' + R_OUT + ',' + R_OUT + ' 0 ' + big + ' 1 ' + o1[0].toFixed(2) + ',' + o1[1].toFixed(2) +
+           'L' + i1[0].toFixed(2) + ',' + i1[1].toFixed(2) +
+           'A' + R_IN  + ',' + R_IN  + ' 0 ' + big + ' 0 ' + i0[0].toFixed(2) + ',' + i0[1].toFixed(2) +
+           'Z';
+  }
+
+  /* ── Build the SVG once ───────────────────────────────── */
+  function build(){
+    var NS = 'http://www.w3.org/2000/svg';
+    var defs = document.createElementNS(NS, 'defs');
+    svg.appendChild(defs);
+
+    // soft outer ring so the wheel reads as one object
+    var ring = document.createElementNS(NS, 'circle');
+    ring.setAttribute('cx', CX); ring.setAttribute('cy', CY);
+    ring.setAttribute('r', R_OUT + 7);
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', 'rgba(255,255,255,.055)');
+    ring.setAttribute('stroke-width', '1');
+    svg.appendChild(ring);
+
+    var hubRing = document.createElementNS(NS, 'circle');
+    hubRing.setAttribute('cx', CX); hubRing.setAttribute('cy', CY);
+    hubRing.setAttribute('r', R_IN - 9);
+    hubRing.setAttribute('fill', 'rgba(6,11,24,.82)');
+    hubRing.setAttribute('stroke', 'rgba(255,255,255,.09)');
+    hubRing.setAttribute('stroke-width', '1');
+    svg.appendChild(hubRing);
+
+    TOOLS.forEach(function(t, i){
+      var g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', 'tw-seg');
+
+      var shape = document.createElementNS(NS, 'path');
+      shape.setAttribute('class', 'tw-seg-shape');
+      shape.setAttribute('d', wedgePath(i));
+      g.appendChild(shape);
+
+      var ip = pt(R_ICO, midAngle(i));
+      var ico = document.createElementNS(NS, 'text');
+      ico.setAttribute('class', 'tw-seg-ico');
+      ico.setAttribute('x', ip[0].toFixed(2));
+      ico.setAttribute('y', ip[1].toFixed(2));
+      ico.textContent = t.ico;
+      g.appendChild(ico);
+
+      var lp = pt(R_LBL, midAngle(i));
+      var lbl = document.createElementNS(NS, 'text');
+      lbl.setAttribute('class', 'tw-seg-lbl');
+      lbl.setAttribute('x', lp[0].toFixed(2));
+      lbl.setAttribute('y', lp[1].toFixed(2));
+      lbl.textContent = t.name;
+      g.appendChild(lbl);
+
+      var kp = pt(R_KEY, midAngle(i));
+      var key = document.createElementNS(NS, 'text');
+      key.setAttribute('class', 'tw-seg-key');
+      key.setAttribute('x', kp[0].toFixed(2));
+      key.setAttribute('y', kp[1].toFixed(2));
+      key.textContent = (i + 1);
+      g.appendChild(key);
+
+      var dp = pt(R_LBL + 13, midAngle(i));
+      var dot = document.createElementNS(NS, 'circle');
+      dot.setAttribute('class', 'tw-seg-live');
+      dot.setAttribute('cx', dp[0].toFixed(2));
+      dot.setAttribute('cy', dp[1].toFixed(2));
+      dot.setAttribute('r', '3');
+      dot.setAttribute('fill', '#00e676');
+      g.appendChild(dot);
+
+      g.addEventListener('click', function(e){ e.stopPropagation(); fire(i); });
+      g.addEventListener('mouseenter', function(){ if(pointer === 'mouse') setHot(i); });
+
+      svg.appendChild(g);
+      segEls.push({ g:g, shape:shape });
+    });
+
+    paint();
+  }
+
+  /* ── Paint wedge colours for the current `hot` ────────── */
+  function paint(){
+    TOOLS.forEach(function(t, i){
+      var s = segEls[i];
+      var on = (i === hot);
+      s.shape.setAttribute('fill', on ? hexA(t.color, .26) : 'rgba(255,255,255,.035)');
+      s.shape.setAttribute('stroke', on ? hexA(t.color, .85) : 'rgba(255,255,255,.07)');
+      s.shape.style.filter = on ? 'drop-shadow(0 0 14px ' + hexA(t.color, .45) + ')' : 'none';
+      s.g.classList.toggle('tw-hot', on);
+      if(on){
+        var p = pt(9, midAngle(i));           // nudge the hot wedge outward
+        s.g.setAttribute('transform', 'translate(' + (p[0]-CX).toFixed(2) + ',' + (p[1]-CY).toFixed(2) + ')');
+      } else {
+        s.g.removeAttribute('transform');
+      }
+    });
+
+    if(hot < 0){
+      hub.classList.add('tw-idle');
+      hubName.textContent = 'Tools';
+      hubName.style.color = '';
+      hubDesc.textContent = pointer === 'touch' ? 'Tap a wedge' : 'Point to choose';
+    } else {
+      hub.classList.remove('tw-idle');
+      hubName.textContent = TOOLS[hot].name;
+      hubName.style.color = TOOLS[hot].color;
+      hubDesc.textContent = TOOLS[hot].desc;
+    }
+  }
+
+  function hexA(hex, a){
+    var h = hex.replace('#','');
+    if(h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    return 'rgba(' + parseInt(h.slice(0,2),16) + ',' +
+                     parseInt(h.slice(2,4),16) + ',' +
+                     parseInt(h.slice(4,6),16) + ',' + a + ')';
+  }
+
+  function setHot(i){
+    if(i === hot) return;
+    hot = i;
+    paint();
+  }
+
+  /* ── Reflect which tools are already open ─────────────── */
+  function refreshLive(){
+    TOOLS.forEach(function(t, i){
+      var on = false;
+      if(t.live){
+        var el = document.querySelector(t.live.sel);
+        on = !!(el && el.classList.contains(t.live.cls));
+      }
+      segEls[i].g.classList.toggle('tw-active', on);
+    });
+  }
+  function refreshTriggers(){
+    var any = TOOLS.some(function(t){
+      if(!t.live) return false;
+      var el = document.querySelector(t.live.sel);
+      return !!(el && el.classList.contains(t.live.cls));
+    });
+    document.querySelectorAll('.tw-trigger').forEach(function(b){
+      b.classList.toggle('tw-live', any);
+    });
+  }
+
+  /* ── Pointer → wedge index ────────────────────────────── */
+  function indexAt(x, y){
+    var dx = x - cx, dy = y - cy;
+    var dist = Math.sqrt(dx*dx + dy*dy);
+    var scale = (wheel.offsetWidth || 400) / 400;
+    if(dist < R_IN * scale * 0.92) return -1;               // dead zone
+    if(dist > (R_OUT + 55) * scale) return -2;              // outside → close signal
+    var deg = Math.atan2(dy, dx) * 180 / Math.PI;           // 0° = east
+    var t = (deg + 90 + SPAN/2 + 720) % 360;                // rotate so wedge 0 starts at 0
+    return Math.floor(t / SPAN) % N;
+  }
+
+  /* ── Open / close / fire ──────────────────────────────── */
+  function place(el){
+    var size = wheel.offsetWidth || 420;
+    var pad  = size / 2 + 10;
+    if(el){
+      var r = el.getBoundingClientRect();
+      cx = r.left + r.width / 2;
+      cy = r.top  + r.height / 2;
+    } else {
+      cx = innerWidth / 2;
+      cy = innerHeight / 2;
+    }
+    // keep the whole wheel on screen
+    cx = Math.max(pad, Math.min(innerWidth  - pad, cx));
+    cy = Math.max(pad, Math.min(innerHeight - pad, cy));
+    wheel.style.left = cx + 'px';
+    wheel.style.top  = cy + 'px';
+    bg.style.setProperty('--tw-cx', cx + 'px');
+    bg.style.setProperty('--tw-cy', cy + 'px');
+  }
+
+  function openWheel(el, via){
+    if(open) return;
+    open     = true;
+    pointer  = via || 'mouse';
+    anchor   = el || null;
+    armed    = false;
+    hot      = -1;
+    openedAt = Date.now();
+
+    bg.style.display = 'block';
+    place(el);
+    refreshLive();
+    paint();
+    // force reflow so the scale-in transition actually runs
+    void bg.offsetWidth;
+    bg.classList.add('tw-on');
+    if(el) el.classList.add('tw-open');
+  }
+
+  function closeWheel(){
+    if(!open) return;
+    open = false;
+    bg.classList.remove('tw-on');
+    document.querySelectorAll('.tw-trigger').forEach(function(b){ b.classList.remove('tw-open'); });
+    hot = -1;
+    setTimeout(function(){ if(!open) bg.style.display = 'none'; }, 240);
+  }
+
+  function fire(i){
+    if(i < 0 || i >= N) return;
+    var t = TOOLS[i];
+    setHot(i);
+    closeWheel();
+    setTimeout(function(){
+      var fn = window[t.fn];
+      if(typeof fn === 'function'){
+        try { fn(); } catch(err){ console.error('[toolWheel] ' + t.fn, err); }
+      } else {
+        console.warn('[toolWheel] ' + t.fn + '() not available on this page');
+      }
+      setTimeout(function(){ refreshLive(); refreshTriggers(); }, 350);
+    }, 120);
+  }
+
+  /* ── Global pointer handling ──────────────────────────── */
+  function onMove(x, y){
+    if(!open) return;
+    var i = indexAt(x, y);
+    if(i === -2){
+      // pointer left the wheel entirely — only auto-close on mouse, and only
+      // once it has actually been inside (so a hover-open never snaps shut)
+      if(pointer === 'mouse' && armed && Date.now() - openedAt > 260) closeWheel();
+      return;
+    }
+    armed = true;
+    setHot(i);
+  }
+
+  function init(){
+    bg      = document.getElementById('tw-bg');
+    wheel   = document.getElementById('tw-wheel');
+    svg     = document.getElementById('tw-svg');
+    hub     = document.getElementById('tw-hub');
+    hubName = document.getElementById('tw-hub-name');
+    hubDesc = document.getElementById('tw-hub-desc');
+    if(!bg || !svg) return;
+
+    build();
+
+    /* Triggers — bound by delegation so headers rendered later still work */
+    document.addEventListener('mouseover', function(e){
+      var t = e.target.closest && e.target.closest('.tw-trigger');
+      if(!t || open) return;
+      clearTimeout(hoverTimer);
+      hoverTimer = setTimeout(function(){ openWheel(t, 'mouse'); }, 140);
+    });
+    document.addEventListener('mouseout', function(e){
+      var t = e.target.closest && e.target.closest('.tw-trigger');
+      if(t) clearTimeout(hoverTimer);
+    });
+    document.addEventListener('click', function(e){
+      var t = e.target.closest && e.target.closest('.tw-trigger');
+      if(!t) return;
+      e.preventDefault();
+      clearTimeout(hoverTimer);
+      if(open) closeWheel(); else openWheel(t, 'mouse');
+    });
+    // touch: open immediately on finger-down, and support drag-to-select
+    document.addEventListener('touchstart', function(e){
+      var t = e.target.closest && e.target.closest('.tw-trigger');
+      if(!t) return;
+      e.preventDefault();
+      clearTimeout(hoverTimer);
+      if(open) closeWheel(); else openWheel(t, 'touch');
+    }, { passive:false });
+
+    document.addEventListener('mousemove', function(e){
+      if(open && pointer === 'mouse') onMove(e.clientX, e.clientY);
+    });
+    document.addEventListener('touchmove', function(e){
+      if(!open) return;
+      var tt = e.touches[0];
+      if(tt) onMove(tt.clientX, tt.clientY);
+    }, { passive:true });
+    document.addEventListener('touchend', function(e){
+      if(!open || pointer !== 'touch') return;
+      // a drag that ended on a wedge fires it; a plain tap falls through to click
+      if(armed && hot >= 0){ e.preventDefault(); fire(hot); }
+    }, { passive:false });
+
+    bg.addEventListener('click', function(e){ if(e.target === bg) closeWheel(); });
+
+    document.addEventListener('keydown', function(e){
+      if(!open) return;
+      if(e.key === 'Escape'){ e.preventDefault(); closeWheel(); return; }
+      if(e.key >= '1' && e.key <= String(N)){ e.preventDefault(); fire(+e.key - 1); return; }
+      if(e.key === 'Enter' && hot >= 0){ e.preventDefault(); fire(hot); return; }
+      if(e.key === 'ArrowRight' || e.key === 'ArrowDown'){ e.preventDefault(); setHot(((hot < 0 ? -1 : hot) + 1) % N); }
+      if(e.key === 'ArrowLeft'  || e.key === 'ArrowUp')  { e.preventDefault(); setHot(((hot < 0 ? 1 : hot) - 1 + N) % N); }
+    });
+
+    window.addEventListener('resize', function(){ if(open) place(anchor); });
+    window.addEventListener('scroll', function(){ if(open) closeWheel(); }, true);
+
+    // keep the trigger's live-dot honest even when tools are opened elsewhere
+    setInterval(function(){ refreshTriggers(); if(open) refreshLive(); }, 1200);
+  }
+
+  /* Public API — also used by the Ctrl+K command palette */
+  window.toolWheelOpen  = function(el){ openWheel(el || null, 'mouse'); };
+  window.toolWheelClose = closeWheel;
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
