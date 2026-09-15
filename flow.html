@@ -1,0 +1,1369 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     FLOW PAGE  —  Money Flow, self-contained
+     ───────────────────────────────────────────────────────────
+     Everything the Flow tab needs, lifted out of render.html:
+
+       • the #page-mf section, the Add-Month-Plan FAB and its modal
+       • the whole Money Flow script — plan cards, status insights,
+         charts, heatmap, the add-month flow and its ticker
+       • the Sankey (formerly moneyFlowSankey.html), which now
+         lives beside the code that drives it
+
+     Talks to render.html through four hooks only:
+       in  — mfLoad() and #mf-fab / #mf-root, called by _doShowPage()
+             and reloadPage()
+       out — _buildTick(), _activePage, _spaLoaded.mf, Chart
+
+     Styling still comes from render-style.html (.plan-*, .sic-*,
+     .mfadd-*, .hm-*); only the Sankey's own CSS is local, below.
+
+     Included from render.html via:  <?!= include('flow'); ?>
+     — placed exactly where the #page-mf section used to sit, so the
+     .spa-page siblings keep their original DOM order.
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ═══ Shell ═══════════════════════════════════════════════ */
+.mf-sk{
+  margin:14px 0 16px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:16px;
+  background:
+    radial-gradient(120% 90% at 8% 50%, rgba(0,212,255,.07) 0%, transparent 58%),
+    rgba(255,255,255,.022);
+  overflow:hidden;
+}
+
+/* ── Header strip: the whole month in one line ── */
+.mf-sk-hdr{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:11px 14px 10px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.mf-sk-ttl{
+  display:flex;align-items:center;gap:7px;
+  font-size:.62em;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;
+  color:rgba(255,255,255,.42);
+}
+.mf-sk-ttl i{
+  width:6px;height:6px;border-radius:50%;background:#00d4ff;
+  box-shadow:0 0 8px #00d4ff;font-style:normal;display:block;
+}
+.mf-sk-flowline{
+  display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;
+}
+.mf-sk-stat{ display:flex;flex-direction:column;line-height:1.15; }
+.mf-sk-stat-l{
+  font-size:.5em;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);
+}
+.mf-sk-stat-v{ font-size:.9em;font-weight:800;letter-spacing:-.3px; }
+.mf-sk-arrow{ color:rgba(255,255,255,.2);font-size:.9em;font-weight:700; }
+.mf-sk-pct{
+  padding:4px 10px;border-radius:999px;
+  font-size:.62em;font-weight:900;letter-spacing:.8px;
+  border:1px solid;white-space:nowrap;
+}
+.mf-sk-pct.great{ background:rgba(0,230,118,.12);border-color:rgba(0,230,118,.35);color:#00e676; }
+.mf-sk-pct.good { background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.35);color:#00d4ff; }
+.mf-sk-pct.ok   { background:rgba(255,215,0,.12);border-color:rgba(255,215,0,.35);color:#ffd700; }
+.mf-sk-pct.low  { background:rgba(255,77,141,.12);border-color:rgba(255,77,141,.35);color:#ff4d8d; }
+
+/* ── Canvas ── */
+.mf-sk-canvas{ padding:6px 4px 10px; }
+/* sized in real px by the script, so type stays true; centred once the
+   diagram hits its max width on a wide screen */
+.mf-sk-canvas svg{ display:block;margin:0 auto;max-width:100%;height:auto;overflow:visible; }
+.mf-sk-empty{
+  padding:34px 16px;text-align:center;
+  color:rgba(255,255,255,.28);font-size:.74em;
+}
+
+/* ═══ Ribbons ═════════════════════════════════════════════ */
+.mf-sk-ribbon{
+  fill:none;stroke-linecap:butt;
+  stroke-dasharray:1 1;stroke-dashoffset:1;
+  transition:stroke-dashoffset 1.05s cubic-bezier(.25,.8,.3,1),
+             opacity .22s ease, stroke-width .22s ease;
+  opacity:.62;
+}
+.mf-sk-svg.lit .mf-sk-ribbon{ stroke-dashoffset:0; }
+.mf-sk-ribbon.failed{ stroke-dasharray:6 5;stroke-dashoffset:0;opacity:.5; }
+
+/* the travelling pulse — reads as money actually moving */
+.mf-sk-pulse{
+  fill:none;stroke:#fff;stroke-linecap:round;opacity:0;
+  transition:opacity .4s ease .9s;
+}
+.mf-sk-svg.lit .mf-sk-pulse{ opacity:.42;animation:mfSkFlow 2.6s linear infinite; }
+@keyframes mfSkFlow{ from{ stroke-dashoffset:260; } to{ stroke-dashoffset:0; } }
+
+/* ═══ Nodes + labels ══════════════════════════════════════ */
+.mf-sk-node{ transition:opacity .22s ease; }
+.mf-sk-src{ fill:url(#mfSkSrcGrad); }
+.mf-sk-srclbl{
+  font-size:9px;font-weight:900;letter-spacing:3.2px;
+  fill:rgba(255,255,255,.5);text-anchor:middle;
+  pointer-events:none;user-select:none;
+}
+.mf-sk-name{
+  font-size:10.5px;font-weight:800;letter-spacing:.6px;
+  fill:rgba(255,255,255,.78);
+  pointer-events:none;user-select:none;
+  transition:fill .2s ease;
+}
+.mf-sk-amt{
+  font-size:12.5px;font-weight:900;letter-spacing:-.3px;
+  pointer-events:none;user-select:none;
+  transition:fill .2s ease;
+}
+.mf-sk-shr{
+  font-size:9px;font-weight:700;letter-spacing:.7px;
+  fill:rgba(255,255,255,.3);
+  pointer-events:none;user-select:none;
+}
+
+/* ═══ Row hover — lift one, recede the rest ═══════════════ */
+.mf-sk-row{ cursor:default;transition:opacity .22s ease; }
+.mf-sk-hit{ fill:transparent;stroke:none; }
+.mf-sk-svg.dim .mf-sk-row{ opacity:.24; }
+.mf-sk-svg.dim .mf-sk-row.hot{ opacity:1; }
+.mf-sk-svg.dim .mf-sk-row.hot .mf-sk-ribbon{ opacity:.95; }
+.mf-sk-svg.dim .mf-sk-row.hot .mf-sk-name{ fill:#fff; }
+
+/* ═══ Status pips ═════════════════════════════════════════ */
+.mf-sk-dot{ transition:opacity .2s ease; }
+.mf-sk-dot.done   { fill:#00e676; }
+.mf-sk-dot.partial{ fill:#fb923c; }
+.mf-sk-dot.pending{ fill:#fbbf24; }
+.mf-sk-dot.failed { fill:#ff4d6d; }
+
+@media(max-width:600px){
+  .mf-sk-hdr{ padding:10px 11px 9px;gap:8px; }
+  .mf-sk-flowline{ margin-left:0;width:100%;justify-content:space-between; }
+  .mf-sk-name{ font-size:10px; }
+  .mf-sk-amt{ font-size:11.5px; }
+}
+@media(prefers-reduced-motion:reduce){
+  .mf-sk-ribbon{ transition:none;stroke-dashoffset:0; }
+  .mf-sk-svg.lit .mf-sk-pulse{ animation:none;opacity:.2; }
+}
+</style>
+
+<!-- ═══════════════════════════════════════════
+     MONEY FLOW PAGE
+═══════════════════════════════════════════ -->
+<section id="page-mf" class="spa-page">
+  <div class="ticker-wrap" id="mfTickerWrap" style="display:none;"><div class="ticker-track" id="mfTickerTrack"></div></div>
+  <div class="pg-hdr">
+    <span class="pg-hdr-title">💸 Money Flow</span>
+    <div class="pg-hdr-actions">
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
+      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('mf')">↺ Reload</button>
+    </div>
+  </div>
+  <div id="mf-root" class="mf-scroll-wrap">
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
+      <div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div>
+      <div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Flow…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Add Month Plan FAB ── -->
+<button id="mf-fab" onclick="mfAddOpen()" title="Add Month Plan">＋</button>
+
+<!-- ── Add Month Plan Modal ── -->
+<div id="mfadd-bg" onclick="mfAddOutsideClose(event)">
+  <div id="mfadd-sheet">
+    <div class="mfadd-head">
+      <span class="mfadd-title">📅 Add Month Plan</span>
+      <button class="mfadd-close" onclick="mfAddClose()">✕</button>
+    </div>
+    <div class="mfadd-month-row">
+      <span class="mfadd-month-label" id="mfadd-monthLabel">Loading...</span>
+    </div>
+    <div class="mfadd-body">
+      <div class="mfadd-cards" id="mfadd-cards"></div>
+      <div class="mfadd-income">
+        <label class="mfadd-label">💰 Income</label>
+        <div class="mfadd-income-row">
+          <span class="mfadd-currency">₨</span>
+          <input type="number" class="mfadd-income-input" id="mfadd-incomeTa" placeholder="Monthly income" value="">
+        </div>
+      </div>
+      <div class="mfadd-notes">
+        <label class="mfadd-label">📝 Notes</label>
+        <textarea class="mfadd-ta" id="mfadd-notesTa" placeholder="Add notes or reasons…"></textarea>
+      </div>
+    </div>
+    <div class="mfadd-foot">
+      <div class="mfadd-msg" id="mfadd-msg"></div>
+      <button class="mfadd-btn" id="mfadd-saveBtn" onclick="mfAddSave()">💾 Save Plan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   MONEY FLOW PAGE JS
+═══════════════════════════════════════════ */
+var MF_CATS = ['CAL','NDB','Binance','Stock','FD','Gold','Sent Home'];
+var MF_KEYS = ['cal','ndb','binance','stock','fd','gold','sentHome'];
+var MF_COLORS = ['#00d4ff','#a855f7','#f59e0b','#00e676','#ff6b35','#ffd700','#ff4d8d'];
+var MF_COLORS_A = MF_COLORS.map(function(c){return c+'44';});
+var MF_TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:12,titleFont:{size:11,weight:'700'},bodyFont:{size:10}};
+var MF_EMOJIS = {cal:'🏦',ndb:'🏛️',binance:'₿',stock:'📊',fd:'🔒',gold:'🥇',sentHome:'🏠'};
+
+function mfK(n){ return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':n.toFixed(0); }
+function mfFmt(n){ return '₨'+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); }
+
+function mfAnimCounter(el, target, dur) {
+  if(dur===undefined) dur=1200;
+  var s=performance.now();
+  function tick(now){
+    var p=Math.min((now-s)/dur,1), e=1-Math.pow(1-p,4);
+    el.textContent='₨'+Math.round(target*e).toLocaleString('en-IN');
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+function mfAnimPct(el, target, dur) {
+  if(dur===undefined) dur=1200;
+  var s=performance.now();
+  function tick(now){
+    var p=Math.min((now-s)/dur,1), e=1-Math.pow(1-p,4);
+    el.textContent=(target*e).toFixed(1)+'%';
+    if(p<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function mfHeatColor(val, max) {
+  if(!val||max===0) return null;
+  var p=Math.min(val/max,1);
+  var r=Math.round(0+p*0), g=Math.round(100+p*130), b=Math.round(180+p*75);
+  return 'rgba('+r+','+g+','+b+','+(0.2+p*0.55)+')';
+}
+
+function mfLoad() {
+  google.script.run
+    .withSuccessHandler(mfRender)
+    .withFailureHandler(function(err){
+      document.getElementById('mf-root').innerHTML=
+        '<div style="text-align:center;padding:80px;color:#ff4d8d;font-size:.9em">⚠️ '+(err.message||err)+'</div>';
+    })
+    .getMoneyFlowData();
+}
+
+function mfRender(DATA) {
+  if(!DATA||!DATA.length){
+    document.getElementById('mf-root').innerHTML=
+      '<div style="text-align:center;padding:80px;color:rgba(255,255,255,.3)">No data found in "Money Flow and invest" sheet.</div>';
+    return;
+  }
+  // Show FAB now that data is ready
+  var mfFab=document.getElementById('mf-fab');
+  if(mfFab && _activePage==='mf') mfFab.style.display='flex';
+
+  var totalInvested=DATA.reduce(function(s,d){return s+d.totalInvested;},0);
+  var totalIncome=DATA.reduce(function(s,d){return s+d.income;},0);
+  var avgSaving=DATA.reduce(function(s,d){return s+d.savingPct;},0)/DATA.length;
+  var best=DATA.reduce(function(a,b){return b.savingPct>a.savingPct?b:a;});
+  var worst=DATA.reduce(function(a,b){return b.savingPct<a.savingPct?b:a;});
+  var catTotals=MF_KEYS.map(function(k){return DATA.reduce(function(s,d){return s+Math.max(0,d[k]);},0);});
+  var maxCatVal=Math.max.apply(null,MF_KEYS.map(function(k){return Math.max.apply(null,DATA.map(function(d){return d[k];}));}));
+  var months=DATA.map(function(d){return d.month;});
+
+  document.getElementById('mf-root').innerHTML=
+    '<div class="pg-corner-title"><span class="pg-ct-icon">💰</span><span class="pg-ct-text">Monthly Money Flow</span></div>'+
+    '<div class="plan-section glass" id="mf-planSection">'+
+    '<div class="plan-hdr">'+
+      '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'+
+        '<select class="plan-month-sel" id="mf-planMonthSel" onchange="mfOnPlanMonthChange()"></select>'+
+        '<span class="plan-overall-badge" id="mf-planOverallBadge"></span>'+
+      '</div>'+
+      '<div class="plan-month-label" id="mf-planTitle">Investment Plan</div>'+
+    '</div>'+
+    '<div class="mf-sk">'+
+      '<div class="mf-sk-hdr">'+
+        '<span class="mf-sk-ttl"><i></i>Where the money went</span>'+
+        '<div class="mf-sk-flowline" id="mf-sk-head"></div>'+
+      '</div>'+
+      '<div class="mf-sk-canvas" id="mf-sk-canvas"></div>'+
+    '</div>'+
+    '<div class="plan-cards" id="mf-planCards"></div>'+
+    '<div class="plan-notes-edit">'+
+      '<div class="pne-label">📝 Notes</div>'+
+      '<textarea class="pne-ta" id="mf-planNotesTa" placeholder="Add notes or reasons\u2026"></textarea>'+
+      '<div class="pne-footer">'+
+        '<div class="pne-msg" id="mf-planNotesMsg"></div>'+
+        '<button class="pne-save" onclick="mfSaveAll()">💾 Save</button>'+
+      '</div>'+
+    '</div>'+
+    '</div>'+
+    '<div class="sic-section glass" id="mf-statusInsights">'+
+    '<div class="card-hdr toggle-hdr" onclick="mfToggleInsights()">'+
+      '<div class="card-dot" style="background:#a78bfa;box-shadow:0 0 8px #a78bfa"></div>'+
+      '<div class="card-title">📊 Investment Status Insights</div>'+
+      '<div style="margin-left:auto;display:flex;align-items:center;gap:8px;">'+
+        '<span id="mf-sicToggleBtn" class="toggle-btn">Click to view</span>'+
+        '<span class="toggle-chevron" id="mf-sicChevron">▼</span>'+
+      '</div>'+
+    '</div>'+
+    '<div class="collapsible-body collapsed" id="mf-sicBody" style="max-height:1200px;">'+
+      '<div class="sic-kpis" id="mf-sicKpis"></div>'+
+      '<div class="sic-row2">'+
+        '<div class="sic-chart-box">'+
+          '<div class="sic-chart-lbl">📈 Completion % per Month</div>'+
+          '<div style="position:relative;height:180px"><canvas id="mf-sicLineChart"></canvas></div>'+
+        '</div>'+
+        '<div class="sic-chart-box">'+
+          '<div class="sic-chart-lbl">🍩 Overall Distribution</div>'+
+          '<div style="position:relative;height:180px"><canvas id="mf-sicDonutChart"></canvas></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="sic-chart-box" style="margin-top:12px">'+
+        '<div class="sic-chart-lbl">📊 Monthly Status Breakdown</div>'+
+        '<div style="position:relative;height:180px"><canvas id="mf-sicStackBar"></canvas></div>'+
+      '</div>'+
+      '<div style="margin-top:14px">'+
+        '<div class="sic-chart-lbl">🗓 Investment × Month Heatmap</div>'+
+        '<div class="sic-heatmap" id="mf-sicHeatmap"></div>'+
+      '</div>'+
+    '</div>'+
+    '</div>'+
+    '<div class="mf-kpi-row">'+
+    '<div class="kpi blue"><div class="kpi-glow"></div><span class="kpi-icon">💰</span><div class="kpi-label">Total Invested</div><div class="kpi-value" id="mf-kpi-ti">₨0</div><div class="kpi-sub">'+DATA.length+' months tracked</div></div>'+
+    '<div class="kpi purple"><div class="kpi-glow"></div><span class="kpi-icon">📈</span><div class="kpi-label">Avg Saving Rate</div><div class="kpi-value" id="mf-kpi-avg">0%</div><div class="kpi-sub">across all months</div></div>'+
+    '<div class="kpi green"><div class="kpi-glow"></div><span class="kpi-icon">🏆</span><div class="kpi-label">Best Month</div><div class="kpi-value" style="font-size:1.1em">'+best.month+'</div><div class="kpi-sub">'+best.savingPct.toFixed(1)+'% saved</div></div>'+
+    '<div class="kpi gold"><div class="kpi-glow"></div><span class="kpi-icon">📉</span><div class="kpi-label">Lowest Month</div><div class="kpi-value" style="font-size:1.1em">'+worst.month+'</div><div class="kpi-sub">'+worst.savingPct.toFixed(1)+'% saved</div></div>'+
+    '<div class="kpi orange"><div class="kpi-glow"></div><span class="kpi-icon">🏦</span><div class="kpi-label">Total Income</div><div class="kpi-value" id="mf-kpi-inc">₨0</div><div class="kpi-sub">cumulative earnings</div></div>'+
+    '</div>'+
+    '<div class="row-3">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#00d4ff;box-shadow:0 0 6px #00d4ff"></div><div class="card-title">Saving % Trend</div><div class="card-sub">monthly saving rate</div></div><div class="chart-wrap tall"><canvas id="mfLineChart"></canvas></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#a855f7;box-shadow:0 0 6px #a855f7"></div><div class="card-title">Category Allocation</div><div class="card-sub">all-time total</div></div><div class="chart-wrap tall"><canvas id="mfDonutChart"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row-full glass"><div class="card-hdr"><div class="card-dot" style="background:#ffd700;box-shadow:0 0 6px #ffd700"></div><div class="card-title">Monthly Investment Breakdown</div><div class="card-sub">stacked by category</div></div><div class="chart-wrap tall"><canvas id="mfStackedBar"></canvas></div></div>'+
+    '<div class="row-2">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#00e676;box-shadow:0 0 6px #00e676"></div><div class="card-title">Income vs Invested</div></div><div class="chart-wrap"><canvas id="mfGroupedBar"></canvas></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#ff6b35;box-shadow:0 0 6px #ff6b35"></div><div class="card-title">Category Spread</div><div class="card-sub">polar area</div></div><div class="chart-wrap"><canvas id="mfPolarChart"></canvas></div></div>'+
+    '</div>'+
+    '<div class="row-full glass"><div class="card-hdr"><div class="card-dot" style="background:#ff4d8d;box-shadow:0 0 6px #ff4d8d"></div><div class="card-title">Investment Heatmap</div><div class="card-sub">amount per category per month — darker = higher</div></div><div class="heatmap" id="mf-heatmap"></div></div>'+
+    '<div class="row-2b">'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#38bdf8;box-shadow:0 0 6px #38bdf8"></div><div class="card-title">Saving % Bars</div></div><div id="mf-savingBars" style="display:flex;flex-direction:column;gap:8px;"></div></div>'+
+    '<div class="glass"><div class="card-hdr"><div class="card-dot" style="background:#c084fc;box-shadow:0 0 6px #c084fc"></div><div class="card-title">Month Insights</div></div><div id="mf-insights" style="display:flex;flex-direction:column;gap:8px;"></div></div>'+
+    '</div>';
+
+  setTimeout(function(){
+    mfAnimCounter(document.getElementById('mf-kpi-ti'), totalInvested);
+    mfAnimCounter(document.getElementById('mf-kpi-inc'), totalIncome);
+    mfAnimPct(document.getElementById('mf-kpi-avg'), avgSaving);
+  }, 150);
+
+  var mT=MF_TIP;
+  new Chart(document.getElementById('mfLineChart'),{type:'line',data:{labels:months,datasets:[
+    {label:'Saving %',data:DATA.map(function(d){return d.savingPct;}),borderColor:'#00d4ff',
+      backgroundColor:function(ctx){var g=ctx.chart.ctx.createLinearGradient(0,0,0,280);g.addColorStop(0,'rgba(0,212,255,0.25)');g.addColorStop(1,'rgba(0,212,255,0)');return g;},
+      borderWidth:2.5,fill:true,tension:0.4,
+      pointBackgroundColor:DATA.map(function(d){return d.savingPct>=70?'#00e676':d.savingPct>=50?'#ffd700':'#ff4d8d';}),
+      pointRadius:5,pointHoverRadius:8},
+    {label:'Target 60%',data:DATA.map(function(){return 60;}),borderColor:'rgba(255,215,0,0.3)',borderDash:[6,4],borderWidth:1.5,fill:false,pointRadius:0,tension:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1200},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:10},usePointStyle:true}},tooltip:{...mT,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+ctx.parsed.y.toFixed(2)+'%';}}}},
+    scales:{x:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},y:{min:0,max:110,ticks:{color:'rgba(255,255,255,0.4)',font:{size:9},callback:function(v){return v+'%';}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  var donutLabels=MF_CATS.filter(function(_,i){return catTotals[i]>0;});
+  var donutVals=catTotals.filter(function(v){return v>0;});
+  var donutColors=MF_COLORS.filter(function(_,i){return catTotals[i]>0;});
+  new Chart(document.getElementById('mfDonutChart'),{type:'doughnut',data:{labels:donutLabels,datasets:[{
+    data:donutVals,backgroundColor:donutColors.map(function(c){return c+'44';}),borderColor:donutColors,borderWidth:2,hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',animation:{animateRotate:true,duration:1300},
+    plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,0.5)',font:{size:9},padding:10,usePointStyle:true,pointStyleWidth:7}},
+      tooltip:{...mT,callbacks:{label:function(ctx){return ' '+ctx.label+': '+mfFmt(ctx.parsed)+' ('+((ctx.parsed/donutVals.reduce(function(a,b){return a+b;},0))*100).toFixed(1)+'%)';}}}}}});
+
+  new Chart(document.getElementById('mfStackedBar'),{type:'bar',data:{labels:months,datasets:MF_KEYS.map(function(k,i){return {
+    label:MF_CATS[i],data:DATA.map(function(d){return Math.max(0,d[k]);}),backgroundColor:MF_COLORS[i]+'55',borderColor:MF_COLORS[i],borderWidth:1,
+    borderRadius:i===MF_KEYS.length-1?6:0,borderSkipped:false};})},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:9},usePointStyle:true,pointStyleWidth:7}},
+      tooltip:{...mT,mode:'index',intersect:false,callbacks:{label:function(ctx){return ctx.parsed.y>0?' '+ctx.dataset.label+': '+mfFmt(ctx.parsed.y):null;},footer:function(items){return ' Total: '+mfFmt(items.reduce(function(s,i){return s+i.parsed.y;},0));}}}},
+    scales:{x:{stacked:true,ticks:{color:'rgba(255,255,255,0.4)',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},y:{stacked:true,ticks:{color:'rgba(255,255,255,0.4)',font:{size:9},callback:function(v){return '₨'+mfK(v);}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  new Chart(document.getElementById('mfGroupedBar'),{type:'bar',data:{labels:months,datasets:[
+    {label:'Income',data:DATA.map(function(d){return d.income;}),backgroundColor:'rgba(0,212,255,0.2)',borderColor:'#00d4ff',borderWidth:2,borderRadius:6,borderSkipped:false},
+    {label:'Invested',data:DATA.map(function(d){return d.totalInvested;}),backgroundColor:'rgba(0,230,118,0.2)',borderColor:'#00e676',borderWidth:2,borderRadius:6,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
+    plugins:{legend:{labels:{color:'rgba(255,255,255,0.5)',font:{size:10},usePointStyle:true}},tooltip:{...mT,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+mfFmt(ctx.parsed.y);}}}},
+    scales:{x:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:9}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'rgba(255,255,255,0.4)',font:{size:9},callback:function(v){return '₨'+mfK(v);}},grid:{color:'rgba(255,255,255,0.04)'}}}}});
+
+  new Chart(document.getElementById('mfPolarChart'),{type:'polarArea',data:{labels:donutLabels,datasets:[{
+    data:donutVals,backgroundColor:donutColors.map(function(c){return c+'44';}),borderColor:donutColors,borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:1400},
+    scales:{r:{ticks:{display:false},grid:{color:'rgba(255,255,255,0.05)'}}},
+    plugins:{legend:{display:false},tooltip:{...mT,callbacks:{label:function(ctx){return ' '+ctx.label+': '+mfFmt(ctx.parsed.r);}}}}}});
+
+  var hmCats=MF_CATS.filter(function(_,i){return catTotals[i]>0;});
+  var hmKeys=MF_KEYS.filter(function(_,i){return catTotals[i]>0;});
+  var hmMax=Math.max.apply(null,hmKeys.reduce(function(a,k){return a.concat(DATA.map(function(d){return d[k];}));},[]));
+  var hmHtml='<table class="hm-table"><thead><tr><th style="text-align:right">Month</th>'+hmCats.map(function(c){return '<th>'+c+'</th>';}).join('')+'<th>Saving%</th><th>Total</th></tr></thead><tbody>';
+  DATA.forEach(function(d){
+    var sp=d.savingPct;
+    var bCls=sp>=80?'badge-great':sp>=60?'badge-good':sp>=45?'badge-ok':'badge-low';
+    hmHtml+='<tr><td class="month-lbl">'+d.month+'</td>';
+    hmKeys.forEach(function(k){
+      var v=d[k];
+      var bg=v>0?mfHeatColor(v,hmMax):null;
+      hmHtml+='<td class="hm-cell'+(v===0?' zero':'')+'" style="'+(bg?'background:'+bg+';color:#fff':'')+'">'+(v>0?mfK(v):'—')+'</td>';
+    });
+    hmHtml+='<td style="text-align:center;padding:0 6px"><span class="saving-badge '+bCls+'">'+sp.toFixed(1)+'%</span></td>'+
+      '<td style="text-align:right;padding:0 0 0 6px;font-size:.7em;font-weight:700;color:rgba(255,255,255,0.6)">₨'+mfK(d.totalInvested)+'</td></tr>';
+  });
+  hmHtml+='<tr style="border-top:1px solid rgba(255,255,255,0.08)"><td class="month-lbl" style="color:rgba(255,255,255,0.6)">TOTAL</td>'+
+    hmKeys.map(function(k){return '<td class="hm-cell" style="background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.7)">₨'+mfK(DATA.reduce(function(s,d){return s+d[k];},0))+'</td>';}).join('')+
+    '<td style="text-align:center;padding:0 6px"><span class="saving-badge badge-good">'+avgSaving.toFixed(1)+'%</span></td>'+
+    '<td style="text-align:right;padding:0 0 0 6px;font-size:.7em;font-weight:700;color:#00d4ff">₨'+mfK(totalInvested)+'</td></tr></tbody></table>';
+  document.getElementById('mf-heatmap').innerHTML=hmHtml;
+
+  var maxSP=Math.max.apply(null,DATA.map(function(d){return d.savingPct;}));
+  var barsEl=document.getElementById('mf-savingBars');
+  if(barsEl) barsEl.innerHTML=DATA.map(function(d){
+    var sp=d.savingPct, p=(sp/maxSP*100).toFixed(1);
+    var col=sp>=80?'#00e676':sp>=60?'#00d4ff':sp>=45?'#ffd700':'#ff4d8d';
+    return '<div><div style="display:flex;justify-content:space-between;margin-bottom:3px"><span style="font-size:.68em;color:rgba(255,255,255,0.5)">'+d.month+'</span><span style="font-size:.68em;font-weight:700;color:'+col+'">'+sp.toFixed(1)+'%</span></div>'+
+      '<div style="height:6px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden"><div class="mf-sbar" data-w="'+p+'" style="height:100%;width:0;background:'+col+';border-radius:4px;transition:width 1.2s cubic-bezier(.4,0,.2,1)"></div></div></div>';
+  }).join('');
+
+  var insEl2=document.getElementById('mf-insights');
+  if(insEl2) insEl2.innerHTML=DATA.map(function(d){
+    var sp=d.savingPct, cls=sp>=80?'badge-great':sp>=60?'badge-good':sp>=45?'badge-ok':'badge-low';
+    var note=d.notes&&d.notes!=='N/A'&&d.notes?d.notes:null;
+    return '<div style="display:flex;align-items:flex-start;gap:10px;padding:8px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.05)">'+
+      '<span class="saving-badge '+cls+'" style="flex-shrink:0;margin-top:1px">'+d.month+'</span>'+
+      '<div><div style="font-size:.72em;font-weight:700;color:rgba(255,255,255,0.7)">₨'+mfK(d.totalInvested)+' invested &nbsp;·&nbsp; '+sp.toFixed(1)+'%</div>'+
+      (note?'<div style="font-size:.65em;color:rgba(255,255,255,0.3);margin-top:2px">'+note+'</div>':'')+
+      '</div></div>';
+  }).join('');
+
+  setTimeout(function(){
+    document.querySelectorAll('#page-mf .mf-sbar').forEach(function(b){b.style.width=b.dataset.w+'%';});
+  }, 400);
+
+  mfInitPlan(DATA);
+  mfInitStatusCharts(DATA);
+}
+
+var _mfCurMonth='';
+var _mfCurStatus={};
+var _mfAllPlanData=[];
+var _mfInsightsOpen=false;
+var _mfInsightsChartsReady=false;
+var _mfSicCharts=[];
+
+function mfInitPlan(DATA) {
+  _mfAllPlanData=DATA;
+  var sel=document.getElementById('mf-planMonthSel');
+  if(sel){
+    sel.innerHTML=DATA.slice().reverse().map(function(d){
+      return '<option value="'+d.month+'">📅 '+d.month+'</option>';
+    }).join('');
+  }
+  mfRenderPlanForMonth(DATA[DATA.length-1]);
+}
+
+function mfOnPlanMonthChange(){
+  var sel=document.getElementById('mf-planMonthSel');
+  if(!sel) return;
+  var month=sel.value;
+  var found=_mfAllPlanData.find(function(d){return d.month===month;});
+  if(found) mfRenderPlanForMonth(found);
+}
+
+function mfRenderPlanForMonth(cur){
+  _mfCurMonth=cur.month;
+  _mfCurStatus=Object.assign({},cur.status||{});
+  var titleEl=document.getElementById('mf-planTitle');
+  if(titleEl) titleEl.textContent=cur.month+' · Investment Plan';
+
+  // Pre-seed status for active keys
+  MF_KEYS.forEach(function(k){
+    if((cur[k]>0||cur[k]===-1)&&!_mfCurStatus[k]){
+      _mfCurStatus[k]=cur[k]===-1?'Failed':'Pending';
+    }
+  });
+
+  var cardsEl=document.getElementById('mf-planCards');
+  if(cardsEl) cardsEl.innerHTML=MF_KEYS.map(function(k,i){
+    var val=cur[k];
+    var isActive=val>0||val===-1;
+    var isFailed=val===-1;
+    var isNTM=val===0;
+
+    var cardCls=isNTM?'ntm':isFailed?'failed-card':'invested';
+    var sv=_mfCurStatus[k]||'Pending';
+    var pa=_mfCurStatus[k+'_partial']||'';
+    var isP=sv==='Partially Done';
+    var cls=sv==='DONE'?'done':sv==='Failed'?'failed':isP?'partial':'pending';
+    var SVL=sv==='DONE'?'✅ Done':sv==='Failed'?'❌ Failed':isP?'🔸 Partial':'⏳ Pending';
+
+    return '<div class="plan-card '+cardCls+'" id="mf-pc-'+k+'" data-ntm="'+(isNTM?'true':'false')+'" data-key="'+k+'">'+
+      '<div class="pc-header">'+
+        '<span class="pc-emoji">'+(MF_EMOJIS[k]||'💼')+'</span>'+
+        '<div class="pc-header-right" style="display:flex;align-items:center;gap:4px;">'+
+          '<div class="pst-dd '+(isNTM?'hidden':'')+'" id="mf-pst-dd-'+k+'">'+
+            '<button class="pst-dd-btn '+cls+'" onclick="mfToggleDD(event,\''+k+'\')">'+
+              '<span>'+SVL+'</span><span class="pst-dd-arrow">▾</span>'+
+            '</button>'+
+            '<div class="pst-dd-menu">'+
+              '<div class="pst-dd-opt pending" onclick="mfSelectDD(\''+k+'\',\'Pending\')">⏳ Pending</div>'+
+              '<div class="pst-dd-opt done"    onclick="mfSelectDD(\''+k+'\',\'DONE\')">✅ DONE</div>'+
+              '<div class="pst-dd-opt partial" onclick="mfSelectDD(\''+k+'\',\'Partially Done\')">🔸 Partially Done</div>'+
+              '<div class="pst-dd-opt failed"  onclick="mfSelectDD(\''+k+'\',\'Failed\')">❌ Failed</div>'+
+            '</div>'+
+          '</div>'+
+          '<span class="pst-saved" id="mf-pst-saved-'+k+'"></span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="pc-name">'+MF_CATS[i]+'</div>'+
+      '<div class="pc-body" onclick="mfCardClick(event,\''+k+'\')">'+
+        '<div class="pc-ntm-view '+(isNTM?'':'hidden')+'">'+
+          '<span class="pc-ntm-badge">NTM</span>'+
+          '<span class="pc-ntm-hint">tap to add</span>'+
+        '</div>'+
+        '<div class="pc-value-view '+(isNTM?'hidden':'')+'">'+
+          '<div class="pc-input-row">'+
+            '<span class="pc-currency">₨</span>'+
+            '<input type="number" class="pc-amount-input" id="mf-amt-'+k+'" value="'+(isFailed?'':val||'')+'" placeholder="0" '+(isFailed?'disabled':'')+' onclick="event.stopPropagation()">'+
+          '</div>'+
+          (isFailed?'<span class="pc-fail-badge">FAILED</span>':
+          '<button class="pc-to-ntm-btn" onclick="mfSetNTM(event,\''+k+'\')">Mark NTM</button>')+
+        '</div>'+
+      '</div>'+
+      '<div class="pc-partial '+(isP?'show':'')+'" id="mf-pst-partial-'+k+'">'+
+        '<div class="pc-partial-row">'+
+          '<span class="pc-partial-lbl">Partial ₨</span>'+
+          '<input class="pc-partial-input" id="mf-pst-pinp-'+k+'" type="number" min="0" placeholder="amount" value="'+pa+'" onclick="event.stopPropagation()">'+
+          '<button class="pc-partial-save" onclick="mfPstPartialSave(\''+k+'\')">✓</button>'+
+        '</div>'+
+        '<span class="pc-partial-msg" id="mf-pst-pmsg-'+k+'"></span>'+
+      '</div>'+
+      '</div>';
+  }).join('');
+
+  var ta=document.getElementById('mf-planNotesTa');
+  if(ta) ta.value=cur.notes||'';
+  mfUpdateOverallStatus();
+  buildMFTicker(cur);
+  if(typeof mfRenderSankey === 'function') mfRenderSankey(cur);
+}
+
+function mfUpdateOverallStatus(){
+  var badge=document.getElementById('mf-planOverallBadge');
+  if(!badge) return;
+  var activeKeys=Object.keys(_mfCurStatus).filter(function(k){return !k.endsWith('_partial');});
+  if(activeKeys.length===0){badge.textContent='';return;}
+  var vals=activeKeys.map(function(k){return _mfCurStatus[k]||'Pending';});
+  var cls,label;
+  if(vals.some(function(v){return v==='Failed';})){cls='failed';label='❌ Failed';}
+  else if(vals.every(function(v){return v==='DONE';})){cls='done';label='✅ All Done';}
+  else if(vals.some(function(v){return v==='Partially Done';})){cls='partial';label='🔸 Partial';}
+  else{cls='pending';label='⏳ Pending';}
+  badge.className='plan-overall-badge '+cls;
+  badge.textContent=label;
+}
+
+function mfCardClick(e,key){
+  var card=document.getElementById('mf-pc-'+key);
+  if(!card) return;
+  var isNTM=card.dataset.ntm==='true';
+  if(isNTM){
+    // Switch to value mode
+    mfSetValueMode(key);
+  }
+}
+
+function mfSetNTM(e,key){
+  e.stopPropagation();
+  var card=document.getElementById('mf-pc-'+key);
+  var inp=document.getElementById('mf-amt-'+key);
+  if(!card) return;
+
+  card.dataset.ntm='true';
+  card.classList.remove('invested','failed-card');
+  card.classList.add('ntm');
+
+  var ntmView=card.querySelector('.pc-ntm-view');
+  var valView=card.querySelector('.pc-value-view');
+  var dd=card.querySelector('.pst-dd');
+  var partial=card.querySelector('.pc-partial');
+
+  if(ntmView) ntmView.classList.remove('hidden');
+  if(valView) valView.classList.add('hidden');
+  if(dd) dd.classList.add('hidden');
+  if(partial) partial.classList.remove('show');
+  if(inp) inp.value='';
+
+  delete _mfCurStatus[key];
+  delete _mfCurStatus[key+'_partial'];
+  mfUpdateOverallStatus();
+}
+
+function mfSetValueMode(key){
+  var card=document.getElementById('mf-pc-'+key);
+  var inp=document.getElementById('mf-amt-'+key);
+  if(!card) return;
+
+  card.dataset.ntm='false';
+  card.classList.remove('ntm','failed-card');
+  card.classList.add('invested');
+
+  var ntmView=card.querySelector('.pc-ntm-view');
+  var valView=card.querySelector('.pc-value-view');
+  var dd=card.querySelector('.pst-dd');
+
+  if(ntmView) ntmView.classList.add('hidden');
+  if(valView) valView.classList.remove('hidden');
+  if(dd) dd.classList.remove('hidden');
+  if(inp){inp.focus();inp.select();}
+
+  _mfCurStatus[key]='Pending';
+  mfUpdateOverallStatus();
+}
+
+function mfToggleDD(e,key){
+  e.stopPropagation();
+  var dd=document.getElementById('mf-pst-dd-'+key);
+  var isOpen=dd.classList.contains('open');
+  document.querySelectorAll('#page-mf .pst-dd.open').forEach(function(d){d.classList.remove('open');});
+  if(!isOpen) dd.classList.add('open');
+}
+
+function mfSelectDD(key,sv){
+  var dd=document.getElementById('mf-pst-dd-'+key);
+  if(dd) dd.classList.remove('open');
+  var isP=sv==='Partially Done';
+  var cls=sv==='DONE'?'done':sv==='Failed'?'failed':isP?'partial':'pending';
+  var SVL=sv==='DONE'?'✅ Done':sv==='Failed'?'❌ Failed':isP?'🔸 Partial':'⏳ Pending';
+  var btn=dd&&dd.querySelector('.pst-dd-btn');
+  if(btn){
+    btn.className='pst-dd-btn '+cls;
+    var span=btn.querySelector('span');
+    if(span) span.textContent=SVL;
+  }
+  var pw=document.getElementById('mf-pst-partial-'+key);
+  if(pw) pw.classList.toggle('show',isP);
+  if(!isP) delete _mfCurStatus[key+'_partial'];
+  _mfCurStatus[key]=sv;
+  mfUpdateOverallStatus();
+  var ind=document.getElementById('mf-pst-saved-'+key);
+  if(ind) ind.textContent='…';
+  google.script.run
+    .withSuccessHandler(function(){if(ind){ind.textContent='✓';setTimeout(function(){ind.textContent='';},1500);} })
+    .withFailureHandler(function(){if(ind) ind.textContent='⚠';})
+    .saveInvestmentStatus(_mfCurMonth,JSON.stringify(_mfCurStatus));
+  if(sv==='Failed'){
+    google.script.run
+      .withSuccessHandler(function(){
+        var card=document.getElementById('mf-pc-'+key);
+        var amtInp=document.getElementById('mf-amt-'+key);
+        if(amtInp){amtInp.disabled=true;amtInp.value='';}
+        if(card){
+          card.className='plan-card failed-card';
+          var toNtmBtn=card.querySelector('.pc-to-ntm-btn');
+          if(toNtmBtn) toNtmBtn.style.display='none';
+          var valView=card.querySelector('.pc-value-view');
+          if(valView&&!valView.querySelector('.pc-fail-badge')){
+            valView.insertAdjacentHTML('beforeend','<span class="pc-fail-badge">FAILED</span>');
+          }
+        }
+      })
+      .withFailureHandler(function(e){console.warn('writeInvestmentFailed:',e);})
+      .writeInvestmentFailed(_mfCurMonth,key);
+  }
+}
+
+function mfPstPartialSave(key){
+  var inp=document.getElementById('mf-pst-pinp-'+key);
+  var msg=document.getElementById('mf-pst-pmsg-'+key);
+  var ind=document.getElementById('mf-pst-saved-'+key);
+  if(!inp) return;
+  var amt=parseFloat(inp.value)||0;
+  _mfCurStatus[key+'_partial']=amt;
+  if(msg) msg.textContent='…';
+  google.script.run
+    .withSuccessHandler(function(){
+      if(msg){msg.style.color='#00e676';msg.textContent='✓ Saved';setTimeout(function(){msg.textContent='';},2000);}
+      if(ind){ind.textContent='✓';setTimeout(function(){ind.textContent='';},1500);}
+    })
+    .withFailureHandler(function(e){
+      if(msg){msg.style.color='#ff4d6d';msg.textContent='⚠ '+(e.message||'Error');}
+    })
+    .saveInvestmentStatus(_mfCurMonth,JSON.stringify(_mfCurStatus));
+}
+
+function mfSavePlanNotes(){
+  var ta=document.getElementById('mf-planNotesTa');
+  var msg=document.getElementById('mf-planNotesMsg');
+  if(msg){msg.className='pne-msg';msg.textContent='Saving…';}
+  google.script.run
+    .withSuccessHandler(function(){if(msg){msg.className='pne-msg ok';msg.textContent='✓ Saved';setTimeout(function(){msg.textContent='';},2000);}})
+    .withFailureHandler(function(e){if(msg){msg.className='pne-msg err';msg.textContent='⚠ '+(e.message||'Error');}})
+    .saveMoneyFlowNotes(_mfCurMonth,ta?ta.value:'');
+}
+
+function mfSaveAll(){
+  var ta=document.getElementById('mf-planNotesTa');
+  var msg=document.getElementById('mf-planNotesMsg');
+  var amounts={};
+  var errors=[];
+
+  // Collect amounts and validate
+  MF_KEYS.forEach(function(k){
+    var card=document.getElementById('mf-pc-'+k);
+    var inp=document.getElementById('mf-amt-'+k);
+    if(!card||!inp) return;
+
+    var isNTM=card.dataset.ntm==='true';
+    var val=parseFloat(inp.value)||0;
+
+    // Remove previous error highlight
+    inp.classList.remove('input-error');
+
+    if(isNTM){
+      amounts[k]=0; // NTM = 0
+    }else if(inp.disabled){
+      // Failed card - skip, keep current value
+    }else{
+      if(val<=0){
+        errors.push(k);
+        inp.classList.add('input-error');
+      }else{
+        amounts[k]=val;
+      }
+    }
+  });
+
+  // Validation failed
+  if(errors.length>0){
+    if(msg){msg.className='pne-msg err';msg.textContent='⚠ Please enter values for highlighted cards';}
+    // Scroll to first error
+    var firstErr=document.getElementById('mf-amt-'+errors[0]);
+    if(firstErr) firstErr.focus();
+    return;
+  }
+
+  if(msg){msg.className='pne-msg';msg.textContent='Saving…';}
+  google.script.run
+    .withSuccessHandler(function(){
+      google.script.run
+        .withSuccessHandler(function(){if(msg){msg.className='pne-msg ok';msg.textContent='✓ Saved';setTimeout(function(){msg.textContent='';},2000);}})
+        .withFailureHandler(function(e){if(msg){msg.className='pne-msg err';msg.textContent='⚠ '+(e.message||'Error');}})
+        .saveMoneyFlowNotes(_mfCurMonth,ta?ta.value:'');
+    })
+    .withFailureHandler(function(e){if(msg){msg.className='pne-msg err';msg.textContent='⚠ '+(e.message||'Error');}})
+    .saveMoneyFlowAmounts(_mfCurMonth,JSON.stringify(amounts),JSON.stringify(_mfCurStatus));
+}
+
+/* ── Add Month Plan Modal Functions ── */
+var _mfAddData = {};
+
+function mfAddOpen(){
+  var bg=document.getElementById('mfadd-bg');
+  if(!bg) return;
+  bg.classList.add('open');
+  mfAddInit();
+}
+
+function mfAddClose(){
+  var bg=document.getElementById('mfadd-bg');
+  if(bg) bg.classList.remove('open');
+  _mfAddData = {};
+}
+
+function mfAddOutsideClose(e){
+  if(e.target.id==='mfadd-bg') mfAddClose();
+}
+
+function mfAddInit(){
+  // Calculate next month from last available data
+  var lastMonth = _mfAllPlanData.length > 0 ? _mfAllPlanData[_mfAllPlanData.length-1].month : null;
+  var nextMonth = mfCalcNextMonth(lastMonth);
+
+  document.getElementById('mfadd-monthLabel').textContent = nextMonth;
+  document.getElementById('mfadd-notesTa').value = '';
+  document.getElementById('mfadd-incomeTa').value = '';
+  document.getElementById('mfadd-msg').textContent = '';
+
+  _mfAddData = { month: nextMonth, amounts: {} };
+
+  // Initialize all categories as NTM
+  MF_KEYS.forEach(function(k){ _mfAddData.amounts[k] = 0; });
+
+  mfAddRenderCards();
+}
+
+function mfCalcNextMonth(lastMonth){
+  if(!lastMonth) {
+    var now = new Date();
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][now.getMonth()] + '/' + now.getFullYear();
+  }
+  // Parse "MMM/yyyy" format
+  var parts = lastMonth.split('/');
+  var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mIdx = monthNames.indexOf(parts[0]);
+  var year = parseInt(parts[1]);
+
+  if(mIdx === -1) mIdx = 0;
+  mIdx++;
+  if(mIdx > 11) { mIdx = 0; year++; }
+
+  return monthNames[mIdx] + '/' + year;
+}
+
+function mfAddRenderCards(){
+  var cardsEl = document.getElementById('mfadd-cards');
+  if(!cardsEl) return;
+
+  cardsEl.innerHTML = MF_KEYS.map(function(k, i){
+    var val = _mfAddData.amounts[k] || 0;
+    var isNTM = val === 0;
+    var cardCls = isNTM ? 'ntm' : 'value';
+
+    return '<div class="mfadd-card '+cardCls+'" id="mfadd-c-'+k+'" data-key="'+k+'" onclick="mfAddCardClick(\''+k+'\')">'+
+      '<div class="mfadd-card-head">'+
+        '<span class="mfadd-card-emoji">'+(MF_EMOJIS[k]||'💼')+'</span>'+
+        '<span class="mfadd-card-name">'+MF_CATS[i]+'</span>'+
+      '</div>'+
+      '<div class="mfadd-ntm-view">'+
+        '<span class="mfadd-ntm-badge">NTM</span>'+
+        '<span class="mfadd-ntm-hint">tap to add</span>'+
+      '</div>'+
+      '<div class="mfadd-val-view">'+
+        '<div class="mfadd-input-row">'+
+          '<span class="mfadd-currency">₨</span>'+
+          '<input type="number" class="mfadd-input" id="mfadd-inp-'+k+'" value="'+(val||'')+'" placeholder="0" onclick="event.stopPropagation()">'+
+        '</div>'+
+        '<button class="mfadd-to-ntm" onclick="mfAddSetNTM(event,\''+k+'\')">Mark NTM</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+}
+
+function mfAddCardClick(key){
+  var card = document.getElementById('mfadd-c-'+key);
+  if(!card) return;
+
+  if(card.classList.contains('ntm')){
+    // Switch to value mode
+    card.classList.remove('ntm');
+    card.classList.add('value');
+    var inp = document.getElementById('mfadd-inp-'+key);
+    if(inp) { inp.focus(); inp.select(); }
+  }
+}
+
+function mfAddSetNTM(e, key){
+  e.stopPropagation();
+  var card = document.getElementById('mfadd-c-'+key);
+  var inp = document.getElementById('mfadd-inp-'+key);
+  if(!card) return;
+
+  card.classList.remove('value');
+  card.classList.add('ntm');
+  if(inp) inp.value = '';
+  _mfAddData.amounts[key] = 0;
+}
+
+function mfAddSave(){
+  var msg = document.getElementById('mfadd-msg');
+  var btn = document.getElementById('mfadd-saveBtn');
+  var notesTa = document.getElementById('mfadd-notesTa');
+  var errors = [];
+
+  // Collect amounts and validate
+  MF_KEYS.forEach(function(k){
+    var card = document.getElementById('mfadd-c-'+k);
+    var inp = document.getElementById('mfadd-inp-'+k);
+    if(!card || !inp) return;
+
+    inp.classList.remove('error');
+
+    if(card.classList.contains('value')){
+      var val = parseFloat(inp.value) || 0;
+      if(val <= 0){
+        errors.push(k);
+        inp.classList.add('error');
+      } else {
+        _mfAddData.amounts[k] = val;
+      }
+    } else {
+      _mfAddData.amounts[k] = 0; // NTM
+    }
+  });
+
+  if(errors.length > 0){
+    if(msg){ msg.className = 'mfadd-msg err'; msg.textContent = '⚠ Enter values for highlighted cards'; }
+    var firstErr = document.getElementById('mfadd-inp-'+errors[0]);
+    if(firstErr) firstErr.focus();
+    return;
+  }
+
+  if(msg){ msg.className = 'mfadd-msg'; msg.textContent = 'Saving...'; }
+  if(btn) btn.disabled = true;
+
+  var incomeTa = document.getElementById('mfadd-incomeTa');
+  var payload = {
+    month: _mfAddData.month,
+    amounts: _mfAddData.amounts,
+    income: incomeTa ? (parseFloat(incomeTa.value) || 0) : 0,
+    notes: notesTa ? notesTa.value : ''
+  };
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(btn) btn.disabled = false;
+      if(res && res.success){
+        if(msg){ msg.className = 'mfadd-msg ok'; msg.textContent = '✓ Plan saved!'; }
+        setTimeout(function(){
+          mfAddClose();
+          _spaLoaded.mf = false;
+          mfLoad();
+        }, 1500);
+      } else {
+        if(msg){ msg.className = 'mfadd-msg err'; msg.textContent = '⚠ '+(res && res.error ? res.error : 'Unknown error'); }
+      }
+    })
+    .withFailureHandler(function(e){
+      if(btn) btn.disabled = false;
+      if(msg){ msg.className = 'mfadd-msg err'; msg.textContent = '⚠ '+(e.message || 'Error'); }
+    })
+    .addMoneyFlowMonth(JSON.stringify(payload));
+}
+
+function mfToggleInsights(){
+  _mfInsightsOpen=!_mfInsightsOpen;
+  var body=document.getElementById('mf-sicBody');
+  var chevron=document.getElementById('mf-sicChevron');
+  var btn=document.getElementById('mf-sicToggleBtn');
+  if(!body) return;
+  if(_mfInsightsOpen){
+    body.classList.remove('collapsed');
+    body.style.maxHeight='1200px';
+    if(chevron) chevron.classList.add('open');
+    if(btn) btn.textContent='Hide';
+    setTimeout(function(){
+      _mfSicCharts.forEach(function(c){try{c.resize();}catch(e){}});
+    },50);
+  } else {
+    body.classList.add('collapsed');
+    if(chevron) chevron.classList.remove('open');
+    if(btn) btn.textContent='Click to view';
+  }
+}
+
+function mfInitStatusCharts(DATA){
+  function activeKeys(d){return MF_KEYS.filter(function(k){return d[k]>0||d[k]===-1;});}
+  function getStatus(d,k){
+    var stored=(d.status||{})[k];
+    if(stored) return stored;
+    return d[k]===-1?'Failed':'Pending';
+  }
+  var ST={DONE:'DONE',PARTIAL:'Partially Done',PENDING:'Pending',FAILED:'Failed'};
+  var ST_COLOR={DONE:'#00e676','Partially Done':'#fb923c',Pending:'#fbbf24',Failed:'#ff4d6d'};
+
+  var totDone=0,totPartial=0,totPending=0,totFailed=0,totAll=0,allDoneMonths=0;
+  DATA.forEach(function(d){
+    var ak=activeKeys(d);
+    var mDone=0;
+    ak.forEach(function(k){
+      totAll++;
+      var s=getStatus(d,k);
+      if(s===ST.DONE){totDone++;mDone++;}
+      else if(s===ST.PARTIAL) totPartial++;
+      else if(s===ST.FAILED)  totFailed++;
+      else totPending++;
+    });
+    if(ak.length>0&&mDone===ak.length) allDoneMonths++;
+  });
+  var overallPct=totAll>0?Math.round((totDone+totPartial*0.5)/totAll*100):0;
+
+  var kpisEl=document.getElementById('mf-sicKpis');
+  if(kpisEl) kpisEl.innerHTML=
+    '<div class="sic-kpi c-purple"><div class="sic-kpi-val">'+totAll+'</div><div class="sic-kpi-lbl">Total tracked</div></div>'+
+    '<div class="sic-kpi c-green"><div class="sic-kpi-val">'+overallPct+'%</div><div class="sic-kpi-lbl">Overall done</div></div>'+
+    '<div class="sic-kpi c-red"><div class="sic-kpi-val">'+totFailed+'</div><div class="sic-kpi-lbl">Failed items</div></div>'+
+    '<div class="sic-kpi c-cyan"><div class="sic-kpi-val">'+allDoneMonths+'</div><div class="sic-kpi-lbl">All-done months</div></div>';
+
+  _mfSicCharts.forEach(function(c){try{c.destroy();}catch(e){}});
+  _mfSicCharts=[];
+
+  var months=DATA.map(function(d){return d.month.replace('/20','/');});
+  var TIP={backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:10};
+
+  // 1. Completion % line
+  var compPct=DATA.map(function(d){
+    var ak=activeKeys(d);if(!ak.length) return 0;
+    var done=ak.filter(function(k){return getStatus(d,k)===ST.DONE;}).length;
+    var part=ak.filter(function(k){return getStatus(d,k)===ST.PARTIAL;}).length;
+    return Math.round((done+part*0.5)/ak.length*100);
+  });
+  var lcEl=document.getElementById('mf-sicLineChart');
+  if(lcEl) _mfSicCharts.push(new Chart(lcEl,{type:'line',
+    data:{labels:months,datasets:[
+      {label:'Completion %',data:compPct,borderColor:'#a78bfa',backgroundColor:'rgba(167,139,250,.12)',
+       borderWidth:2.5,fill:true,tension:0.4,
+       pointBackgroundColor:compPct.map(function(v){return v===100?'#00e676':v>=60?'#a78bfa':'#fb923c';}),
+       pointRadius:5,pointHoverRadius:8},
+      {label:'100% target',data:DATA.map(function(){return 100;}),borderColor:'rgba(0,230,118,.25)',
+       borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{min:0,max:100,ticks:{color:'rgba(255,255,255,.35)',font:{size:10},callback:function(v){return v+'%';}},
+                  grid:{color:'rgba(255,255,255,.05)'}},
+              x:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9},maxRotation:45},
+                 grid:{color:'rgba(255,255,255,.04)'}}},
+      plugins:{legend:{display:false},tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+ctx.parsed.y+'%';}}}}}}));
+
+  // 2. Overall distribution donut
+  var dAll=[totDone,totPartial,totPending,totFailed];
+  var dLblsAll=['DONE','Partially Done','Pending','Failed'];
+  var dVals=dAll.filter(function(v){return v>0;});
+  var dLbls=dLblsAll.filter(function(_,i){return dAll[i]>0;});
+  var dCols=dLbls.map(function(l){return ST_COLOR[l];});
+  var dcEl=document.getElementById('mf-sicDonutChart');
+  if(dcEl) _mfSicCharts.push(new Chart(dcEl,{type:'doughnut',
+    data:{labels:dLbls,datasets:[{data:dVals,backgroundColor:dCols.map(function(c){return c+'33';}),
+      borderColor:dCols,borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{position:'bottom',labels:{color:'rgba(255,255,255,.55)',font:{size:10},boxWidth:10,padding:8}},
+        tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.label+': '+ctx.parsed+' ('+Math.round(ctx.parsed/totAll*100)+'%)';}}}}}})  );
+
+  // 3. Stacked bar breakdown
+  function mkDs(label,data,color){return{label:label,data:data,backgroundColor:color+'44',borderColor:color,borderWidth:1.5,borderRadius:3,stack:'s'};}
+  var sbEl=document.getElementById('mf-sicStackBar');
+  if(sbEl) _mfSicCharts.push(new Chart(sbEl,{type:'bar',
+    data:{labels:months,datasets:[
+      mkDs('DONE',          DATA.map(function(d){return activeKeys(d).filter(function(k){return getStatus(d,k)===ST.DONE;}).length;}),    '#00e676'),
+      mkDs('Partially Done',DATA.map(function(d){return activeKeys(d).filter(function(k){return getStatus(d,k)===ST.PARTIAL;}).length;}), '#fb923c'),
+      mkDs('Pending',       DATA.map(function(d){return activeKeys(d).filter(function(k){return getStatus(d,k)===ST.PENDING;}).length;}), '#fbbf24'),
+      mkDs('Failed',        DATA.map(function(d){return activeKeys(d).filter(function(k){return getStatus(d,k)===ST.FAILED;}).length;}),  '#ff4d6d')
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{ticks:{color:'rgba(255,255,255,.35)',font:{size:10},stepSize:1},grid:{color:'rgba(255,255,255,.05)'}},
+              x:{ticks:{color:'rgba(255,255,255,.35)',font:{size:9},maxRotation:45},grid:{display:false}}},
+      plugins:{legend:{labels:{color:'rgba(255,255,255,.55)',font:{size:10},boxWidth:10}},
+        tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+ctx.parsed.y;}}}}}}));
+
+  // 4. Heatmap grid
+  var SYM={DONE:'✓','Partially Done':'½',Pending:'·',Failed:'✕'};
+  var hmHtml='<table class="sic-hm-table"><thead><tr><th class="sic-hm-th-inv"></th>';
+  DATA.forEach(function(d){hmHtml+='<th class="sic-hm-th">'+d.month.replace('/20','/')+'</th>';});
+  hmHtml+='</tr></thead><tbody>';
+  MF_KEYS.forEach(function(k,i){
+    hmHtml+='<tr><td class="sic-hm-th-inv">'+(MF_EMOJIS[k]||'')+' '+MF_CATS[i]+'</td>';
+    DATA.forEach(function(d){
+      if(d[k]===0){hmHtml+='<td class="sic-hm-cell sic-hm-ntm" title="NTM">—</td>';return;}
+      var s=getStatus(d,k);
+      var cls=s===ST.DONE?'sic-hm-done':s===ST.PARTIAL?'sic-hm-partial':s===ST.FAILED?'sic-hm-failed':'sic-hm-pending';
+      var amt=d[k]===-1?'FAILED':d[k].toLocaleString('en-IN');
+      var amtPfx=d[k]===-1?'':'₨';
+      hmHtml+='<td class="sic-hm-cell '+cls+'" title="'+s+' · '+amtPfx+amt+'">'+(SYM[s]||'?')+'</td>';
+    });
+    hmHtml+='</tr>';
+  });
+  hmHtml+='</tbody></table>';
+  var hmEl=document.getElementById('mf-sicHeatmap');
+  if(hmEl) hmEl.innerHTML=hmHtml;
+}
+
+// Close mf dropdowns on outside click
+document.addEventListener('click',function(){
+  document.querySelectorAll('#page-mf .pst-dd.open').forEach(function(d){d.classList.remove('open');});
+});
+
+/* ── Money Flow ticker ── */
+function buildMFTicker(cur){
+  var fmt = function(v){ return '₨'+Math.abs(v).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); };
+  var stIco = {'DONE':'<span class="tick-chg fr">✅</span>', 'Partially Done':'<span class="tick-chg" style="color:#fb923c">🔸</span>', 'Failed':'<span class="tick-chg fl">❌</span>', 'Pending':'<span class="tick-chg" style="color:#fbbf24">⏳</span>'};
+  var items = MF_KEYS.map(function(k, i){
+    var val = cur[k];
+    if(!val || val === 0) return null;
+    var isFailed = val === -1;
+    var amtStr = isFailed ? 'FAILED' : fmt(val);
+    var sv = (cur.status && cur.status[k]) || 'Pending';
+    var ico = stIco[sv] || stIco['Pending'];
+    return '<span class="tick-item">'
+      + '<span class="tick-sym">' + MF_CATS[i] + '</span>'
+      + ' ' + amtStr
+      + ' ' + ico
+      + '</span>';
+  }).filter(Boolean);
+  if(!items.length) return;
+  _buildTick('mfTickerWrap', 'mfTickerTrack', items, 35);
+}
+
+/* ═══════════════════════════════════════════
+   SANKEY  —  where the month's income actually went
+   (was moneyFlowSankey.html; merged here so the diagram
+    sits with the data that feeds it)
+═══════════════════════════════════════════ */
+(function(){
+  'use strict';
+
+  var NS = 'http://www.w3.org/2000/svg';
+  var _cur = null, _resizeBound = false, _rt = null;
+
+  function mk(tag, attrs){
+    var el = document.createElementNS(NS, tag);
+    for(var k in attrs) if(attrs.hasOwnProperty(k)) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function money(n){
+    return (typeof mfFmt === 'function')
+      ? mfFmt(n)
+      : '₨' + Math.abs(Math.round(n)).toLocaleString('en-IN');
+  }
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+  function trunc(s, max){
+    s = String(s || '');
+    return s.length > max ? s.slice(0, max - 1) + '…' : s;
+  }
+
+  /* ── Build the row list from one month object ──────────── */
+  function buildRows(cur){
+    var KEYS = window.MF_KEYS   || [];
+    var CATS = window.MF_CATS   || [];
+    var COLS = window.MF_COLORS || [];
+    var EMO  = window.MF_EMOJIS || {};
+    var st   = cur.status || {};
+
+    var rows = [], invested = 0;
+    KEYS.forEach(function(k, i){
+      var v = cur[k];
+      if(v > 0){
+        invested += v;
+        rows.push({ key:k, name:CATS[i] || k, ico:EMO[k] || '', color:COLS[i] || '#00d4ff',
+                    amt:v, failed:false, status:st[k] || 'Pending' });
+      } else if(v === -1){
+        // FAILED — no money moved, but it must not vanish from the picture
+        rows.push({ key:k, name:CATS[i] || k, ico:EMO[k] || '', color:'#ff4d6d',
+                    amt:0, failed:true, status:'Failed' });
+      }
+      // v === 0 is NTM (not this month) — intentionally omitted
+    });
+
+    var income = cur.income > 0 ? cur.income : 0;
+    var rest   = income > 0 ? income - invested : 0;
+    if(rest > 0.5){
+      rows.push({ key:'__rest', name:'Not Invested', ico:'💤', color:'#64748b',
+                  amt:rest, failed:false, status:null, muted:true });
+    }
+    return { rows:rows, invested:invested, income:income,
+             total:(income > 0 ? income : invested) };
+  }
+
+  /* ── Draw ─────────────────────────────────────────────── */
+  function draw(host, data){
+    var rows = data.rows, total = data.total;
+    host.innerHTML = '';
+    if(!rows.length){
+      host.innerHTML = '<div class="mf-sk-empty">No investments recorded for this month yet.</div>';
+      return;
+    }
+
+    // 1 SVG unit = 1 CSS px, so every font size below is true to the screen.
+    // clientWidth includes the host's 4px side padding; capped so the ribbons
+    // don't stretch into a thin 1000px run on a wide monitor.
+    var W = Math.max(300, Math.min(1040, Math.round((host.clientWidth || 348) - 8)));
+
+    var NODE_W  = 15;
+    var MIN_T   = 8;                                   // thinnest readable ribbon
+    var ROW_MIN = 38;                                  // room for a 2-line label
+    var PAD     = 10;
+    var srcX    = 11;
+    var labelW  = clamp(W * 0.34, 112, 196);
+    var dstX    = Math.max(srcX + NODE_W + 70, W - 10 - labelW - NODE_W);
+    var FLOW_H  = clamp(W * 0.30, 152, 250);
+
+    // thickness ∝ share of the month, floored so a tiny slice is still visible
+    var sumT = 0;
+    rows.forEach(function(r){
+      r.t = r.failed ? MIN_T
+                     : Math.max(MIN_T, (total > 0 ? r.amt / total : 1 / rows.length) * FLOW_H);
+      sumT += r.t;
+    });
+
+    // each row owns a band tall enough for its own label, so they never collide
+    var H = PAD, cumRow = PAD;
+    rows.forEach(function(r){
+      r.rowH = Math.max(r.t + 8, ROW_MIN);
+      r.cy   = cumRow + r.rowH / 2;
+      cumRow += r.rowH;
+    });
+    H = cumRow + PAD;
+
+    var srcTop = (H - sumT) / 2, cumT = srcTop;
+    rows.forEach(function(r){ r.sy = cumT + r.t / 2; cumT += r.t; });
+
+    var svg = mk('svg', { 'class':'mf-sk-svg', viewBox:'0 0 ' + W + ' ' + H,
+                          width:W, height:H, role:'img' });
+
+    // source-bar gradient
+    var defs = mk('defs');
+    var lg = mk('linearGradient', { id:'mfSkSrcGrad', x1:'0', y1:'0', x2:'0', y2:'1' });
+    lg.appendChild(mk('stop', { offset:'0',   'stop-color':'#00d4ff' }));
+    lg.appendChild(mk('stop', { offset:'1',   'stop-color':'#a855f7' }));
+    defs.appendChild(lg);
+    svg.appendChild(defs);
+
+    // ── income bar + its rotated caption ──
+    svg.appendChild(mk('rect', { 'class':'mf-sk-node mf-sk-src', x:srcX, y:srcTop.toFixed(1),
+                                 width:NODE_W, height:Math.max(2, sumT).toFixed(1), rx:4 }));
+    if(sumT > 54){
+      var mid = srcTop + sumT / 2;
+      var cap = mk('text', { 'class':'mf-sk-srclbl', x:srcX + NODE_W / 2, y:mid,
+                             transform:'rotate(-90 ' + (srcX + NODE_W / 2) + ' ' + mid + ')',
+                             'dominant-baseline':'central' });
+      cap.textContent = 'INCOME';
+      svg.appendChild(cap);
+    }
+
+    var x0 = srcX + NODE_W, x1 = dstX, xm = (x0 + x1) / 2;
+    var shares = [];   // %-labels positioned after the SVG is mounted
+
+    rows.forEach(function(r, i){
+      var g = mk('g', { 'class':'mf-sk-row' });
+      var d = 'M' + x0 + ',' + r.sy.toFixed(1) +
+              'C' + xm.toFixed(1) + ',' + r.sy.toFixed(1) +
+              ' ' + xm.toFixed(1) + ',' + r.cy.toFixed(1) +
+              ' ' + x1 + ',' + r.cy.toFixed(1);
+
+      // the ribbon itself — width IS the money
+      var rib = mk('path', { 'class':'mf-sk-ribbon' + (r.failed ? ' failed' : ''),
+                             d:d, stroke:r.color, 'stroke-width':r.t.toFixed(1),
+                             pathLength:'1' });
+      rib.style.transitionDelay = (i * 70) + 'ms';
+      g.appendChild(rib);
+
+      // a thin highlight that keeps travelling, so the flow reads as live
+      if(!r.failed){
+        var pulse = mk('path', { 'class':'mf-sk-pulse', d:d,
+                                 'stroke-width':Math.max(1.6, r.t * 0.3).toFixed(1),
+                                 'stroke-dasharray':'9 251' });
+        pulse.style.animationDelay = (i * 0.34) + 's';
+        g.appendChild(pulse);
+      }
+
+      // destination node
+      g.appendChild(mk('rect', { 'class':'mf-sk-node', x:dstX, y:(r.cy - r.t / 2).toFixed(1),
+                                 width:NODE_W, height:r.t.toFixed(1), rx:3,
+                                 fill:r.color, 'fill-opacity':r.muted ? .45 : .9 }));
+
+      // label block
+      var lx = dstX + NODE_W + 9;
+      var nm = mk('text', { 'class':'mf-sk-name', x:lx, y:(r.cy - 6).toFixed(1),
+                            'dominant-baseline':'central' });
+      nm.textContent = (r.ico ? r.ico + ' ' : '') + trunc(r.name, 14);
+      g.appendChild(nm);
+
+      var am = mk('text', { 'class':'mf-sk-amt', x:lx, y:(r.cy + 8).toFixed(1),
+                            'dominant-baseline':'central',
+                            fill:r.failed ? '#ff4d6d' : (r.muted ? 'rgba(255,255,255,.45)' : r.color) });
+      am.textContent = r.failed ? 'FAILED' : money(r.amt);
+      g.appendChild(am);
+
+      if(!r.failed && total > 0){
+        var pct = (r.amt / total * 100);
+        var sh = mk('text', { 'class':'mf-sk-shr', x:lx, y:(r.cy + 8).toFixed(1),
+                              'dominant-baseline':'central', opacity:'0' });
+        sh.textContent = (pct < 1 ? pct.toFixed(1) : Math.round(pct)) + '%';
+        g.appendChild(sh);
+        // parked after the amount — but only once the SVG is live, since
+        // getComputedTextLength() reads 0 on a tree that isn't rendered yet
+        shares.push({ sh:sh, am:am, lx:lx });
+      }
+
+      // status pip, straight off the plan data
+      if(r.status){
+        var cls = r.status === 'DONE' ? 'done'
+                : r.status === 'Partially Done' ? 'partial'
+                : r.status === 'Failed' ? 'failed' : 'pending';
+        g.appendChild(mk('circle', { 'class':'mf-sk-dot ' + cls, cx:lx - 4.5,
+                                     cy:(r.cy - 6).toFixed(1), r:2.6 }));
+      }
+
+      // one generous hit area for the whole band
+      var hit = mk('rect', { 'class':'mf-sk-hit', x:x0, y:(r.cy - r.rowH / 2).toFixed(1),
+                             width:Math.max(1, W - x0), height:r.rowH.toFixed(1) });
+      hit.addEventListener('mouseenter', function(){
+        svg.classList.add('dim'); g.classList.add('hot');
+      });
+      hit.addEventListener('mouseleave', function(){
+        svg.classList.remove('dim'); g.classList.remove('hot');
+      });
+      g.appendChild(hit);
+
+      svg.appendChild(g);
+    });
+
+    host.appendChild(svg);
+
+    // now that it is rendered, tuck each % in just past its amount
+    shares.forEach(function(p){
+      var w = 0;
+      try { w = p.am.getComputedTextLength(); } catch(e){ w = 0; }
+      p.sh.setAttribute('x', (p.lx + w + 7).toFixed(1));
+      p.sh.setAttribute('opacity', '1');
+    });
+
+    // next frame, so the dash transition actually runs instead of snapping
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ svg.classList.add('lit'); });
+    });
+  }
+
+  /* ── Header strip ─────────────────────────────────────── */
+  function header(data, cur){
+    var el = document.getElementById('mf-sk-head');
+    if(!el) return;
+    var pct = cur.savingPct || (data.income > 0 ? data.invested / data.income * 100 : 0);
+    var cls = pct >= 80 ? 'great' : pct >= 60 ? 'good' : pct >= 45 ? 'ok' : 'low';
+    el.innerHTML =
+      '<div class="mf-sk-stat"><span class="mf-sk-stat-l">Income</span>' +
+        '<span class="mf-sk-stat-v" style="color:#00d4ff">' + (data.income > 0 ? money(data.income) : '—') + '</span></div>' +
+      '<span class="mf-sk-arrow">→</span>' +
+      '<div class="mf-sk-stat"><span class="mf-sk-stat-l">Invested</span>' +
+        '<span class="mf-sk-stat-v" style="color:#00e676">' + money(data.invested) + '</span></div>' +
+      '<span class="mf-sk-pct ' + cls + '">' + pct.toFixed(1) + '% saved</span>';
+  }
+
+  /* ── Public entry point, called by mfRenderPlanForMonth() ── */
+  window.mfRenderSankey = function(cur){
+    try {
+      var host = document.getElementById('mf-sk-canvas');
+      if(!host || !cur) return;
+      _cur = cur;
+      var data = buildRows(cur);
+      header(data, cur);
+      draw(host, data);
+
+      if(!_resizeBound){
+        _resizeBound = true;
+        window.addEventListener('resize', function(){
+          clearTimeout(_rt);
+          _rt = setTimeout(function(){
+            var h = document.getElementById('mf-sk-canvas');
+            if(h && _cur && h.clientWidth) draw(h, buildRows(_cur));
+          }, 180);
+        });
+      }
+    } catch(err){
+      console.error('[mfSankey]', err);   // never take the plan down with it
+    }
+  };
+})();
+</script>
