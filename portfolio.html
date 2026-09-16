@@ -134,7 +134,7 @@
 /* allocation ribbon */
 #page-port .pf-ribbon-wrap{display:flex;flex-direction:column;gap:8px;}
 #page-port .pf-ribbon{display:flex;gap:2px;height:10px;align-items:flex-end;}
-#page-port .pf-rib{height:10px;border-radius:2px;cursor:pointer;transition:height .2s,box-shadow .2s,filter .2s;min-width:2px;}
+#page-port .pf-rib{height:10px;border-radius:2px;transition:height .2s,box-shadow .2s,filter .2s;min-width:2px;}
 #page-port .pf-rib:first-child{border-radius:6px 2px 2px 6px;}
 #page-port .pf-rib:last-child {border-radius:2px 6px 6px 2px;}
 #page-port .pf-rib:hover{height:15px;filter:brightness(1.2);}
@@ -976,9 +976,8 @@ function portHeroHtml(lkr, usd, epf, momPct, momAbs, ytdPct, hasYtd, amounts){
   var tot = _portPos.reduce(function(s,a){ return s + a.amt; }, 0);
   if(tot > 0){
     _portPos.forEach(function(a){
-      ribbon += '<button class="pf-rib" type="button" style="width:' + a.pct.toFixed(2) + '%;background:' + a.color + '" ' +
-        'title="' + portEsc(a.cat) + ' · ' + portFmt(a.amt) + ' · ' + a.pct.toFixed(1) + '%" ' +
-        'aria-label="' + portEsc(a.cat) + '" onclick="portOpenAsset(' + a.i + ')"></button>';
+      ribbon += '<span class="pf-rib" style="width:' + a.pct.toFixed(2) + '%;background:' + a.color + '" ' +
+        'title="' + portEsc(a.cat) + ' · ' + portFmt(a.amt) + ' · ' + a.pct.toFixed(1) + '%"></span>';
       legend += '<span class="pf-rl"><i class="pf-rl-sw" style="background:' + a.color + '"></i>' +
         portEsc(a.cat) + ' ' + a.pct.toFixed(1) + '%</span>';
     });
