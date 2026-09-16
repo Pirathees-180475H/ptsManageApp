@@ -1,0 +1,1727 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     PORTFOLIO PAGE  —  Summary / net worth, self-contained
+     ───────────────────────────────────────────────────────────
+     Five zones, in document order, each one anchor of the tab rail:
+
+       ① command bar    pinned above the scroller · tabs · actions
+       ② overview       net-worth hero + allocation ribbon + 7 tiles
+       ③ allocation     4 switchable charts | goals & phases
+       ④ growth         range-filtered line + MA + projection
+       ⑤ assets         search / sort / filter · card grid
+
+     One card vocabulary replaces three (KPI cards, stat pills and
+     growth pills were three different shapes for the same job).
+
+     Every write, handler and read from the old page is intact:
+       getPortfolioData · logPortfolioAmount · syncEPFetf
+       portEPFCalcOpen (lives in ETFCalc.html, called from a tile)
+
+     Talks to render.html through five hooks only:
+       in  — portLoad() · #port-root      (_doShowPage, reloadPage)
+       out — _buildTick() · haptic() · Chart (global, from render.html)
+
+     Base styling for .glass-card / .card-header / .asset-card and
+     the .port-* hero, KPI, aims and toast rules used to live in
+     render-style.html; they now live here. Everything is prefixed
+     #page-port except .port-toast, which is position:fixed and
+     rendered inside the section.
+
+     Included from render.html via:  <?!= include('portfolio'); ?>
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Every rule is prefixed #page-port so it out-ranks anything left
+   in render-style.html without !important.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── scroller ── */
+#page-port .page-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:1;
+  padding:16px;padding-bottom:96px;scroll-behavior:smooth;}
+#page-port [id^="portSec"]{scroll-margin-top:12px;}
+
+/* ── ① command bar ── */
+#page-port .pg-hdr{transition:box-shadow .25s ease,border-color .25s ease;}
+#page-port .pg-hdr.scrolled{box-shadow:0 8px 24px rgba(0,0,0,.4);border-bottom-color:rgba(255,255,255,.14);}
+#page-port .pf-sync{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;
+  padding:3px 9px;border-radius:12px;background:rgba(0,255,136,.09);border:1px solid rgba(0,255,136,.22);
+  color:#00ff88;white-space:nowrap;}
+#page-port .pf-sync-dot{width:5px;height:5px;border-radius:50%;background:#00ff88;flex-shrink:0;
+  animation:pfPulse 2.4s ease-in-out infinite;}
+@keyframes pfPulse{0%,100%{opacity:1}50%{opacity:.3}}
+#page-port .pf-hdr-left{display:flex;align-items:center;gap:9px;min-width:0;}
+
+/* tab rail — its own row, outside the scroller */
+#page-port .pf-tabs{display:flex;align-items:center;gap:4px;padding:8px 16px;flex-shrink:0;
+  position:relative;z-index:2;background:rgba(6,11,24,.6);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--bdr);overflow-x:auto;scrollbar-width:none;}
+#page-port .pf-tabs::-webkit-scrollbar{display:none;}
+#page-port .pf-tab{font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:.4px;
+  padding:6px 14px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  color:rgba(255,255,255,.42);cursor:pointer;white-space:nowrap;transition:all .2s;}
+#page-port .pf-tab:hover{color:rgba(255,255,255,.7);border-color:rgba(255,255,255,.16);}
+#page-port .pf-tab.active{background:rgba(0,212,255,.16);border-color:rgba(0,212,255,.32);color:var(--blue);font-weight:700;}
+
+/* ── shared card vocabulary ── */
+#page-port .glass-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+  border-radius:18px;padding:16px;backdrop-filter:blur(20px);
+  box-shadow:0 4px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);position:relative;overflow:hidden;}
+#page-port .glass-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);}
+#page-port .card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+#page-port .card-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+#page-port .card-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.45);}
+#page-port .assets-section{margin-bottom:16px;}
+#page-port .section-heading{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);margin-bottom:11px;display:flex;align-items:center;gap:10px;}
+#page-port .section-heading::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.06);}
+#page-port .error-box{background:rgba(255,77,141,.08);border:1px solid rgba(255,77,141,.25);
+  border-radius:14px;padding:22px;text-align:center;color:var(--red2);font-size:.88em;}
+
+/* segmented control (chart type, growth range) */
+#page-port .pf-seg{display:flex;gap:2px;padding:3px;border-radius:10px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);flex-shrink:0;}
+#page-port .pf-seg-btn{display:flex;align-items:center;justify-content:center;gap:5px;
+  min-width:30px;height:25px;padding:0 9px;border-radius:7px;border:1px solid transparent;
+  background:none;color:rgba(255,255,255,.35);cursor:pointer;font-family:'Inter',sans-serif;
+  font-size:10px;font-weight:700;letter-spacing:.6px;transition:all .18s;}
+#page-port .pf-seg-btn:hover{color:rgba(255,255,255,.65);}
+#page-port .pf-seg-btn svg{display:block;}
+#page-port .pf-seg-btn.active{background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.32);color:var(--blue);}
+#page-port .pf-seg.purple .pf-seg-btn.active{background:rgba(168,85,247,.2);border-color:rgba(168,85,247,.35);color:#c084fc;}
+#page-port .pf-seg.teal   .pf-seg-btn.active{background:rgba(45,212,191,.18);border-color:rgba(45,212,191,.35);color:var(--teal);}
+
+/* ── ② hero ── */
+#page-port .pf-hero{position:relative;border-radius:20px;padding:24px 28px;margin-bottom:16px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(168,85,247,.05),rgba(0,255,136,.04));
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 8px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);}
+#page-port .pf-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;
+  border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.13),transparent 70%);pointer-events:none;}
+#page-port .pf-hero::after{content:'';position:absolute;bottom:-30px;left:20%;width:240px;height:90px;
+  background:radial-gradient(ellipse,rgba(168,85,247,.09),transparent 70%);pointer-events:none;}
+#page-port .pf-hero-spark{position:absolute;right:0;bottom:0;width:62%;height:112px;opacity:.16;pointer-events:none;}
+#page-port .pf-hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;gap:16px;}
+#page-port .pf-hero-top{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+#page-port .pf-hero-main{display:flex;flex-direction:column;gap:5px;min-width:0;}
+#page-port .pf-hero-label{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.4);display:flex;align-items:center;gap:8px;}
+#page-port .pf-hero-label .hero-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;
+  background:#00ff88;box-shadow:0 0 10px #00ff88;animation:pfPulse 2.4s ease-in-out infinite;}
+#page-port .pf-hero-amt{font-size:clamp(28px,5.4vw,52px);font-weight:900;letter-spacing:-2px;line-height:1;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(135deg,#fff 0%,var(--blue) 55%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#page-port .pf-deltas{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;}
+#page-port .pf-delta{font-size:12px;font-weight:700;padding:4px 11px;border-radius:8px;white-space:nowrap;}
+#page-port .pf-delta.up  {background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);color:#00ff88;}
+#page-port .pf-delta.down{background:rgba(255,77,141,.1);border:1px solid rgba(255,77,141,.25);color:var(--red2);}
+#page-port .pf-delta.flat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.45);}
+#page-port .pf-delta-note{font-size:11px;color:rgba(255,255,255,.35);}
+
+#page-port .pf-ccy-row{display:flex;gap:10px;flex-wrap:wrap;}
+#page-port .pf-ccy{display:flex;flex-direction:column;gap:2px;padding:11px 16px;border-radius:13px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);min-width:132px;transition:all .25s;}
+#page-port .pf-ccy:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);transform:translateY(-1px);}
+#page-port .pf-ccy.lkr{border-left:2px solid var(--gold);}
+#page-port .pf-ccy.usd{border-left:2px solid #00ff88;}
+#page-port .pf-ccy.epf{border-left:2px solid #c084fc;}
+#page-port .pf-ccy-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);}
+#page-port .pf-ccy-val{font-size:16px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
+#page-port .pf-ccy.lkr .pf-ccy-val{color:var(--gold);}
+#page-port .pf-ccy.usd .pf-ccy-val{color:#00ff88;}
+#page-port .pf-ccy.epf .pf-ccy-val{color:#c084fc;}
+
+/* allocation ribbon */
+#page-port .pf-ribbon-wrap{display:flex;flex-direction:column;gap:8px;}
+#page-port .pf-ribbon{display:flex;gap:2px;height:10px;align-items:flex-end;}
+#page-port .pf-rib{height:10px;border-radius:2px;cursor:pointer;transition:height .2s,box-shadow .2s,filter .2s;min-width:2px;}
+#page-port .pf-rib:first-child{border-radius:6px 2px 2px 6px;}
+#page-port .pf-rib:last-child {border-radius:2px 6px 6px 2px;}
+#page-port .pf-rib:hover{height:15px;filter:brightness(1.2);}
+#page-port .pf-ribbon-legend{display:flex;gap:16px;flex-wrap:wrap;}
+#page-port .pf-rl{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(255,255,255,.45);}
+#page-port .pf-rl-sw{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+
+/* ── KPI bento strip ── */
+#page-port .pf-kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+#page-port .pf-tile{position:relative;display:flex;flex-direction:column;gap:3px;padding:14px;
+  border-radius:16px;overflow:hidden;min-height:112px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+  transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease;}
+#page-port .pf-tile.pad0{padding-bottom:0;}
+#page-port .pf-tile:hover{transform:translateY(-3px);}
+#page-port .pf-tile-glow{position:absolute;right:-15px;bottom:-15px;width:70px;height:70px;border-radius:50%;
+  filter:blur(30px);opacity:.18;pointer-events:none;}
+#page-port .pf-tile-lbl{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);margin-top:4px;}
+#page-port .pf-tile-val{font-size:17px;font-weight:800;letter-spacing:-.8px;font-variant-numeric:tabular-nums;line-height:1.15;}
+#page-port .pf-tile-val.sm{font-size:15px;letter-spacing:-.5px;}
+#page-port .pf-tile-sub{font-size:10px;color:rgba(255,255,255,.3);margin-top:auto;}
+#page-port .pf-tile-spark{width:calc(100% + 28px);height:26px;margin:auto -14px 0;display:block;}
+#page-port .pf-tile svg{position:relative;}
+#page-port .pf-tile.lkr{background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,150,0,.04));
+  border-color:rgba(255,215,0,.25);box-shadow:0 0 30px rgba(255,215,0,.07),inset 0 1px 0 rgba(255,255,255,.05);}
+#page-port .pf-tile.usd{background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,212,255,.04));
+  border-color:rgba(0,255,136,.25);box-shadow:0 0 30px rgba(0,255,136,.07),inset 0 1px 0 rgba(255,255,255,.05);}
+#page-port .pf-tile.epf{background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(56,189,248,.04));
+  border-color:rgba(168,85,247,.25);box-shadow:0 0 30px rgba(168,85,247,.07),inset 0 1px 0 rgba(255,255,255,.05);}
+#page-port .pf-tile.lkr:hover{box-shadow:0 10px 34px rgba(255,215,0,.14);}
+#page-port .pf-tile.usd:hover{box-shadow:0 10px 34px rgba(0,255,136,.14);}
+#page-port .pf-tile.epf:hover{box-shadow:0 10px 34px rgba(168,85,247,.14);}
+#page-port .pf-tile.lkr .pf-tile-val{color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,.35);}
+#page-port .pf-tile.usd .pf-tile-val{color:#00ff88;text-shadow:0 0 20px rgba(0,255,136,.35);}
+#page-port .pf-tile.epf .pf-tile-val{color:#c084fc;text-shadow:0 0 20px rgba(168,85,247,.35);}
+#page-port .pf-tile-actions{position:absolute;top:10px;right:10px;display:flex;gap:5px;z-index:2;}
+#page-port .pf-tile-btn{display:flex;align-items:center;justify-content:center;width:24px;height:24px;
+  border-radius:8px;border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.12);color:#c084fc;
+  cursor:pointer;transition:all .22s;padding:0;}
+#page-port .pf-tile-btn:hover{background:rgba(168,85,247,.25);border-color:rgba(168,85,247,.55);transform:scale(1.1);}
+#page-port .pf-tile-btn.syncing svg{animation:spin .7s linear infinite;}
+#page-port .pf-dotrow{display:flex;gap:4px;flex-wrap:wrap;margin-top:auto;}
+#page-port .pf-dotrow i{width:7px;height:7px;border-radius:50%;display:block;}
+#page-port .pf-minibar{height:3px;border-radius:2px;background:rgba(255,255,255,.07);margin-top:auto;overflow:hidden;}
+#page-port .pf-minibar i{display:block;height:100%;border-radius:2px;width:0;transition:width 1s cubic-bezier(.4,0,.2,1);}
+
+/* ── ③ bento: allocation | goals ── */
+#page-port .pf-bento{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;margin-bottom:16px;align-items:stretch;}
+#page-port .pf-alloc-body{display:flex;align-items:center;gap:24px;}
+#page-port .pf-chart-panel{display:none;}
+#page-port .pf-chart-panel.active{display:block;}
+#page-port .pf-donut-wrap{position:relative;width:220px;height:220px;flex-shrink:0;}
+#page-port .pf-donut-wrap canvas{max-height:220px;}
+#page-port .pf-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:2px;pointer-events:none;text-align:center;padding:0 24px;}
+#page-port .pf-dc-lbl{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.3);}
+#page-port .pf-dc-val{font-size:19px;font-weight:800;letter-spacing:-.8px;color:#fff;font-variant-numeric:tabular-nums;}
+#page-port .pf-dc-sub{font-size:10px;color:rgba(255,255,255,.3);}
+#page-port .pf-legend{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px 18px;flex:1;min-width:0;}
+#page-port .pf-lg{display:flex;align-items:center;gap:8px;background:none;border:none;padding:2px 0;
+  cursor:pointer;font-family:'Inter',sans-serif;text-align:left;border-radius:6px;transition:opacity .2s;}
+#page-port .pf-lg:hover{opacity:.75;}
+#page-port .pf-lg.off{opacity:.38;}
+#page-port .pf-lg.off .pf-lg-name{text-decoration:line-through;}
+#page-port .pf-lg-sw{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+#page-port .pf-lg-name{font-size:11px;color:rgba(255,255,255,.6);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-port .pf-lg-val{font-size:11px;font-weight:700;color:rgba(255,255,255,.85);font-variant-numeric:tabular-nums;}
+#page-port .pf-lg-pct{font-size:10px;color:rgba(255,255,255,.3);width:40px;text-align:right;font-variant-numeric:tabular-nums;}
+#page-port .pf-legend-hint{grid-column:1/-1;font-size:10px;color:rgba(255,255,255,.22);padding-top:6px;
+  border-top:1px solid rgba(255,255,255,.06);}
+#page-port .pf-chart-box{position:relative;height:220px;}
+#page-port .pf-chart-box canvas{max-height:220px;}
+
+/* goals */
+#page-port .pf-goals{display:flex;flex-direction:column;gap:14px;}
+#page-port #portGoalsBody{display:flex;flex-direction:column;gap:14px;flex:1;min-height:0;}
+#page-port .pf-phase-pills{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap;}
+#page-port .pf-phase-pill{font-size:10px;font-weight:700;padding:4px 9px;border-radius:7px;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.42);
+  font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap;}
+#page-port .pf-phase-pill:hover{color:rgba(255,255,255,.75);}
+#page-port .pf-phase-pill.done{background:rgba(0,255,136,.12);border-color:rgba(0,255,136,.22);color:#00ff88;}
+#page-port .pf-phase-pill.active{background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.35);color:var(--blue);}
+#page-port .pf-phase-pill.active.done{background:rgba(0,255,136,.2);border-color:rgba(0,255,136,.4);color:#00ff88;}
+#page-port .pf-goal-head{display:flex;align-items:center;gap:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07);}
+#page-port .pf-ring{position:relative;width:86px;height:86px;flex-shrink:0;}
+#page-port .pf-ring-txt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:19px;font-weight:800;letter-spacing:-.8px;color:#fff;font-variant-numeric:tabular-nums;}
+#page-port .pf-ring circle.fg{transition:stroke-dasharray 1.1s cubic-bezier(.4,0,.2,1);}
+#page-port .pf-goal-meta{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0;}
+#page-port .pf-goal-phase{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.35);}
+#page-port .pf-goal-amt{font-size:15px;font-weight:800;letter-spacing:-.5px;color:#fff;font-variant-numeric:tabular-nums;}
+#page-port .pf-goal-of{font-size:11px;color:rgba(255,255,255,.35);}
+#page-port .pf-goal-left{font-size:11px;font-weight:700;}
+#page-port .pf-aims{display:flex;flex-direction:column;gap:12px;flex:1;overflow-y:auto;max-height:300px;padding-right:2px;}
+#page-port .pf-aim{display:flex;flex-direction:column;gap:4px;}
+#page-port .pf-aim-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px;}
+#page-port .pf-aim-cat{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-port .pf-aim-pct{font-size:10px;font-weight:700;flex-shrink:0;font-variant-numeric:tabular-nums;}
+#page-port .pf-aim-bar{height:5px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden;}
+#page-port .pf-aim-fill{height:100%;border-radius:4px;width:0;transition:width .9s cubic-bezier(.4,0,.2,1);}
+#page-port .pf-aim-fill.near{background-image:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);
+  background-size:200% 100%;animation:pfShimmer 2.2s linear infinite;}
+@keyframes pfShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+#page-port .pf-aim-nums{display:flex;justify-content:space-between;gap:8px;}
+#page-port .pf-aim-cur{font-size:10px;color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums;}
+#page-port .pf-aim-rem{font-size:10px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;}
+#page-port .pf-empty{color:rgba(255,255,255,.25);font-size:11px;padding:20px 0;text-align:center;}
+
+/* ── ④ growth ── */
+#page-port .pf-growth-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-bottom:14px;}
+#page-port .pf-gs{border-radius:11px;padding:9px 12px;text-align:center;
+  background:rgba(45,212,191,.07);border:1px solid rgba(45,212,191,.16);}
+#page-port .pf-gs-lbl{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.32);margin-bottom:2px;}
+#page-port .pf-gs-val{font-size:15px;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums;}
+#page-port .pf-growth-box{position:relative;height:250px;}
+#page-port .pf-toggle{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;
+  border:1px solid rgba(45,212,191,.25);background:rgba(45,212,191,.08);color:var(--teal);
+  font-size:10px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .2s;letter-spacing:1px;}
+#page-port .pf-toggle:hover{background:rgba(45,212,191,.16);border-color:rgba(45,212,191,.45);}
+#page-port .pf-toggle.active{background:rgba(45,212,191,.18);border-color:rgba(45,212,191,.5);box-shadow:0 0 12px rgba(45,212,191,.15);}
+#page-port .pf-toggle i{width:8px;height:8px;border-radius:50%;display:inline-block;}
+#page-port .pf-milestones{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;}
+#page-port .pf-ms{font-size:10px;padding:4px 10px;border-radius:6px;background:rgba(255,215,0,.1);
+  border:1px solid rgba(255,215,0,.25);color:var(--gold);}
+
+/* ── ⑤ assets ── */
+#page-port .pf-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:11px;}
+#page-port .pf-search{display:flex;align-items:center;gap:8px;padding:0 13px;height:34px;border-radius:10px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);width:230px;max-width:100%;
+  transition:border-color .2s;}
+#page-port .pf-search:focus-within{border-color:rgba(0,212,255,.45);}
+#page-port .pf-search input{background:none;border:none;outline:none;color:#fff;font-size:11px;
+  font-family:'Inter',sans-serif;flex:1;min-width:0;}
+#page-port .pf-search input::placeholder{color:rgba(255,255,255,.3);}
+#page-port .pf-select{height:34px;padding:0 28px 0 13px;border-radius:10px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.62);font-size:11px;font-family:'Inter',sans-serif;
+  cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.35)' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:11px;}
+#page-port .pf-select:hover{border-color:rgba(255,255,255,.2);}
+#page-port .pf-select option{background:#0d1424;color:rgba(255,255,255,.82);}
+#page-port .pf-chips{display:flex;gap:6px;flex-wrap:wrap;}
+#page-port .pf-chip{font-size:11px;font-weight:600;padding:7px 14px;border-radius:9px;cursor:pointer;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.45);
+  font-family:'Inter',sans-serif;transition:all .2s;white-space:nowrap;}
+#page-port .pf-chip:hover{color:rgba(255,255,255,.75);}
+#page-port .pf-chip.active{background:rgba(0,212,255,.16);border-color:rgba(0,212,255,.3);color:var(--blue);font-weight:700;}
+
+#page-port .assets-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+#page-port .asset-card{position:relative;border-radius:14px;padding:13px 13px 13px 16px;overflow:hidden;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);cursor:pointer;text-align:left;
+  font-family:'Inter',sans-serif;width:100%;display:block;
+  animation:pfRise .4s cubic-bezier(.34,1.2,.64,1) both;
+  transition:transform .2s,border-color .2s,background .2s;}
+#page-port .asset-card:hover{transform:translateY(-2px);background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.13);}
+@keyframes pfRise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+#page-port .pf-accent{position:absolute;left:0;top:0;bottom:0;width:3px;}
+#page-port .asset-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;gap:6px;}
+#page-port .pf-rank{font-size:9px;font-weight:800;color:rgba(255,255,255,.25);flex-shrink:0;}
+#page-port .asset-name{font-size:12px;font-weight:500;color:rgba(255,255,255,.48);line-height:1.3;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-port .asset-badge{font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;letter-spacing:1px;
+  text-transform:uppercase;flex-shrink:0;}
+#page-port .badge-positive{background:rgba(0,255,136,.15);color:#00ff88;}
+#page-port .badge-negative{background:rgba(255,77,141,.15);color:var(--red2);}
+#page-port .badge-neutral {background:rgba(0,212,255,.15);color:var(--blue);}
+#page-port .asset-amount{font-size:20px;font-weight:700;letter-spacing:-.4px;color:#fff;font-variant-numeric:tabular-nums;}
+#page-port .asset-amount.positive{color:#00ff88;}
+#page-port .asset-amount.negative{color:var(--red2);}
+#page-port .asset-amount.neutral {color:var(--blue);}
+#page-port .pf-share{display:flex;justify-content:space-between;align-items:center;margin-top:7px;gap:9px;}
+#page-port .asset-bar-wrap{height:3px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;flex:1;}
+#page-port .asset-bar{height:100%;border-radius:2px;width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1);}
+#page-port .pf-share-pct{font-size:10px;color:rgba(255,255,255,.3);font-variant-numeric:tabular-nums;flex-shrink:0;}
+
+/* ── drill-down sheet ── */
+#page-port .pf-sheet{position:absolute;inset:0;z-index:150;display:none;}
+#page-port .pf-sheet.open{display:block;}
+#page-port .pf-sheet-bg{position:absolute;inset:0;background:rgba(6,11,24,.62);backdrop-filter:blur(3px);
+  animation:pfFade .22s ease both;border:none;width:100%;padding:0;cursor:pointer;}
+@keyframes pfFade{from{opacity:0}to{opacity:1}}
+#page-port .pf-sheet-panel{position:absolute;right:0;top:0;bottom:0;width:380px;max-width:92%;
+  background:#0d1220;border-left:1px solid rgba(255,255,255,.1);box-shadow:-20px 0 60px rgba(0,0,0,.6);
+  padding:20px;display:flex;flex-direction:column;gap:14px;overflow-y:auto;
+  animation:pfSlideX .28s cubic-bezier(.34,1.2,.64,1) both;}
+@keyframes pfSlideX{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
+#page-port .pf-sheet-grab{display:none;}
+#page-port .pf-sheet-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#page-port .pf-sheet-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0;}
+#page-port .pf-sheet-name{font-size:15px;font-weight:800;letter-spacing:-.3px;color:#fff;}
+#page-port .pf-sheet-rank{margin-left:auto;font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:1px;}
+#page-port .pf-sheet-amt{font-size:27px;font-weight:800;letter-spacing:-1.2px;font-variant-numeric:tabular-nums;}
+#page-port .pf-sheet-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+#page-port .pf-ss{border-radius:11px;padding:9px 11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);}
+#page-port .pf-ss-lbl{font-size:9px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);margin-bottom:3px;}
+#page-port .pf-ss-val{font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;}
+#page-port .pf-sheet-close{align-self:flex-start;margin-top:auto;padding:9px 18px;border-radius:10px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.6);
+  font-size:11px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;}
+#page-port .pf-sheet-close:hover{background:rgba(255,255,255,.1);color:#fff;}
+
+/* ── FAB + log popover ── */
+#page-port .pf-fab{position:absolute;right:18px;bottom:18px;z-index:120;display:flex;align-items:center;
+  justify-content:center;width:54px;height:54px;border-radius:50%;cursor:pointer;
+  background:linear-gradient(135deg,rgba(255,215,0,.22),rgba(255,150,0,.12));
+  border:1px solid rgba(255,215,0,.5);box-shadow:0 8px 28px rgba(255,215,0,.18);color:var(--gold);
+  transition:transform .2s,box-shadow .2s;}
+#page-port .pf-fab:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 12px 34px rgba(255,215,0,.26);}
+#page-port .pf-fab:active{transform:scale(.94);}
+#page-port .pf-fab.logging svg{animation:spin .7s linear infinite;}
+#page-port .pf-log{position:absolute;right:18px;bottom:82px;z-index:121;width:292px;max-width:calc(100% - 36px);
+  border-radius:16px;padding:15px;background:#0d1220;border:1px solid rgba(255,215,0,.28);
+  box-shadow:0 16px 48px rgba(0,0,0,.6),0 0 30px rgba(255,215,0,.05);
+  display:none;flex-direction:column;gap:11px;}
+#page-port .pf-log.open{display:flex;animation:pfPop .22s cubic-bezier(.34,1.3,.64,1) both;}
+@keyframes pfPop{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+#page-port .pf-log-hd{display:flex;align-items:center;gap:8px;}
+#page-port .pf-log-hd i{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold);}
+#page-port .pf-log-hd span{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.45);}
+#page-port .pf-log-amt{font-size:19px;font-weight:800;letter-spacing:-.8px;color:var(--gold);font-variant-numeric:tabular-nums;}
+#page-port .pf-log-input{padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,215,0,.25);color:#fff;font-size:11px;font-family:'Inter',sans-serif;
+  outline:none;transition:border-color .2s;width:100%;}
+#page-port .pf-log-input:focus{border-color:rgba(255,215,0,.6);}
+#page-port .pf-log-chips{display:flex;gap:6px;flex-wrap:wrap;}
+#page-port .pf-log-chip{font-size:10px;font-weight:600;padding:4px 10px;border-radius:7px;cursor:pointer;
+  background:rgba(255,215,0,.09);border:1px solid rgba(255,215,0,.22);color:rgba(255,215,0,.85);
+  font-family:'Inter',sans-serif;transition:all .2s;}
+#page-port .pf-log-chip:hover{background:rgba(255,215,0,.2);color:var(--gold);}
+#page-port .pf-log-foot{display:flex;align-items:center;justify-content:flex-end;gap:8px;}
+#page-port .pf-log-hint{font-size:10px;color:rgba(255,255,255,.25);}
+#page-port .pf-log-go{padding:8px 16px;border-radius:9px;background:rgba(255,215,0,.16);
+  border:1px solid rgba(255,215,0,.42);color:var(--gold);font-size:11px;font-weight:700;
+  font-family:'Inter',sans-serif;cursor:pointer;transition:all .2s;}
+#page-port .pf-log-go:hover{background:rgba(255,215,0,.28);}
+#page-port .pf-log-go:disabled{opacity:.4;cursor:not-allowed;}
+
+/* ── toast (fixed, rendered inside the section) ── */
+#page-port .port-toast{position:fixed;bottom:74px;left:50%;transform:translateX(-50%) translateY(70px);
+  background:rgba(6,11,24,.97);border:1px solid rgba(255,255,255,.1);border-radius:14px;
+  padding:11px 20px;font-size:12.5px;font-weight:600;backdrop-filter:blur(20px);
+  z-index:200;max-width:calc(100% - 32px);text-align:center;
+  transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s ease;
+  opacity:0;display:flex;align-items:center;gap:8px;font-family:'Inter',sans-serif;pointer-events:none;}
+#page-port .port-toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+#page-port .port-toast.success{border-color:rgba(255,215,0,.4);color:var(--gold);}
+#page-port .port-toast.info   {border-color:rgba(0,212,255,.35);color:var(--blue);}
+#page-port .port-toast.error  {border-color:rgba(255,77,141,.35);color:var(--red2);}
+
+/* ── skeleton ── */
+#page-port .pf-skel{display:flex;flex-direction:column;gap:16px;}
+#page-port .pf-sk{border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.05);
+  position:relative;overflow:hidden;}
+#page-port .pf-sk::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+  transform:translateX(-100%);animation:pfSweep 1.5s ease-in-out infinite;}
+@keyframes pfSweep{100%{transform:translateX(100%)}}
+#page-port .pf-sk.hero{height:186px;border-radius:20px;}
+#page-port .pf-sk.tile{height:112px;}
+#page-port .pf-sk.big {height:300px;border-radius:18px;}
+#page-port .pf-sk.wide{height:380px;border-radius:18px;}
+#page-port .pf-sk.card{height:104px;border-radius:14px;}
+#page-port .pf-skel-row{display:grid;gap:10px;}
+#page-port .pf-skel-row.k7{grid-template-columns:repeat(7,minmax(0,1fr));}
+#page-port .pf-skel-row.b2{grid-template-columns:1.35fr 1fr;gap:14px;}
+#page-port .pf-skel-row.c4{grid-template-columns:repeat(4,minmax(0,1fr));}
+
+/* keeps the old loader markup readable if anything still renders it */
+#page-port .port-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:13px;}
+#page-port .port-spinner{width:42px;height:42px;border:3px solid rgba(0,212,255,.12);
+  border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+#page-port .port-loading-txt{color:rgba(255,255,255,.3);font-size:13px;letter-spacing:1px;}
+
+/* ── focus ── */
+#page-port button:focus-visible,#page-port input:focus-visible,#page-port select:focus-visible{
+  outline:2px solid var(--blue);outline-offset:2px;}
+
+/* ── responsive ladder ── */
+@media(max-width:1200px){
+  #page-port .pf-kpis{grid-template-columns:repeat(4,minmax(0,1fr));}
+  #page-port .assets-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));}
+}
+@media(max-width:980px){
+  #page-port .pf-bento{grid-template-columns:1fr;}
+  #page-port .pf-alloc-body{flex-direction:column;gap:16px;}
+  #page-port .pf-legend{width:100%;}
+  #page-port .pf-aims{max-height:none;}
+  #page-port .pf-growth-stats{grid-template-columns:repeat(3,minmax(0,1fr));}
+  #page-port .pf-skel-row.b2{grid-template-columns:1fr;}
+  #page-port .pf-skel-row.k7{grid-template-columns:repeat(4,minmax(0,1fr));}
+}
+@media(max-width:680px){
+  #page-port .page-wrap{padding:14px;padding-bottom:110px;}
+  #page-port .pf-growth-box{height:210px;}
+  #page-port .pf-hero{padding:18px 16px;}
+  #page-port .pf-hero-top{flex-direction:column;align-items:stretch;gap:14px;}
+  #page-port .pf-ccy-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
+  #page-port .pf-ccy{min-width:0;padding:9px 10px;}
+  #page-port .pf-ccy-val{font-size:12px;}
+  #page-port .pf-hero-spark{width:100%;height:80px;}
+  /* the seven KPI tiles are a laptop-and-up affordance */
+  #page-port .pf-kpis{display:none;}
+  /* and the hero's allocation ribbon is unreadable at this width */
+  #page-port .pf-ribbon-wrap{display:none;}
+  #page-port .pf-donut-wrap{width:180px;height:180px;}
+  #page-port .pf-donut-wrap canvas{max-height:180px;}
+  #page-port .pf-legend{grid-template-columns:1fr;}
+  #page-port .pf-growth-stats{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #page-port .pf-search{width:100%;}
+  /* sheet becomes a bottom sheet */
+  #page-port .pf-sheet-panel{right:0;left:0;top:auto;bottom:0;width:auto;max-width:none;
+    border-left:none;border-top:1px solid rgba(255,255,255,.1);border-radius:20px 20px 0 0;
+    box-shadow:0 -20px 50px rgba(0,0,0,.6);max-height:82%;
+    animation:pfSlideY .3s cubic-bezier(.34,1.2,.64,1) both;}
+  @keyframes pfSlideY{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  #page-port .pf-sheet-grab{display:block;width:38px;height:4px;border-radius:3px;
+    background:rgba(255,255,255,.18);align-self:center;flex-shrink:0;}
+  #page-port .pf-sheet-close{align-self:stretch;text-align:center;margin-top:6px;}
+  #page-port .pf-fab{bottom:14px;right:14px;}
+  #page-port .pf-log{bottom:78px;right:14px;}
+  #page-port .pf-skel-row.k7{display:none;}
+  #page-port .pf-skel-row.c4{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:420px){
+  #page-port .assets-grid{grid-template-columns:1fr 1fr;}
+  #page-port .pf-sheet-stats{grid-template-columns:1fr;}
+}
+
+@media(prefers-reduced-motion:reduce){
+  #page-port *,#page-port *::before,#page-port *::after{
+    animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important;}
+}
+</style>
+
+<!-- ═══════════════════════════════════════════
+     ① PORTFOLIO PAGE SHELL
+═══════════════════════════════════════════ -->
+<section id="page-port" class="spa-page">
+
+  <div class="ticker-wrap" id="portTickerWrap" style="display:none;"><div class="ticker-track" id="portTickerTrack"></div></div>
+
+  <div class="pg-hdr" id="portHdr">
+    <div class="pf-hdr-left">
+      <span class="pg-hdr-title">💼 Summary</span>
+      <span class="pf-sync" id="portSync" style="display:none;"><i class="pf-sync-dot"></i><span id="portSyncTxt">just now</span></span>
+    </div>
+    <div class="pg-hdr-actions">
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
+      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('port')">↺ Reload</button>
+    </div>
+  </div>
+
+  <nav class="pf-tabs" id="portTabs" aria-label="Portfolio sections">
+    <button class="pf-tab active" type="button" data-sec="portSecOverview" onclick="portGoSec('portSecOverview')">Overview</button>
+    <button class="pf-tab" type="button" data-sec="portSecAlloc"  onclick="portGoSec('portSecAlloc')">Allocation</button>
+    <button class="pf-tab" type="button" data-sec="portSecGrowth" onclick="portGoSec('portSecGrowth')">Growth</button>
+    <button class="pf-tab" type="button" data-sec="portSecAssets" onclick="portGoSec('portSecAssets')">Assets</button>
+  </nav>
+
+  <div class="port-toast" id="portToast"></div>
+
+  <div class="page-wrap" id="port-root"></div>
+
+  <!-- asset drill-down -->
+  <div class="pf-sheet" id="portSheet" role="dialog" aria-modal="true" aria-label="Asset detail">
+    <button class="pf-sheet-bg" type="button" aria-label="Close" onclick="portCloseAsset()"></button>
+    <div class="pf-sheet-panel" id="portSheetPanel"></div>
+  </div>
+
+  <!-- log value -->
+  <div class="pf-log" id="portLogPop">
+    <div class="pf-log-hd"><i></i><span>Log Portfolio Value</span></div>
+    <div class="pf-log-amt" id="portLogAmt">—</div>
+    <input class="pf-log-input" id="portLogNoteInput" type="text" maxlength="60" placeholder="Optional note (e.g. Saudi money, bonus…)">
+    <div class="pf-log-chips" id="portLogChips">
+      <button class="pf-log-chip" type="button" onclick="portLogChip('Bonus')">Bonus</button>
+      <button class="pf-log-chip" type="button" onclick="portLogChip('Salary')">Salary</button>
+      <button class="pf-log-chip" type="button" onclick="portLogChip('Saudi money')">Saudi money</button>
+      <button class="pf-log-chip" type="button" onclick="portLogChip('Correction')">Correction</button>
+    </div>
+    <div class="pf-log-foot">
+      <span class="pf-log-hint">↵ to confirm</span>
+      <button class="pf-log-go" id="portLogGo" type="button" onclick="portConfirmLog()">✓ Confirm</button>
+    </div>
+  </div>
+
+  <button class="pf-fab" id="portFab" type="button" title="Log portfolio value" aria-label="Log portfolio value" onclick="portToggleLog()">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+  </button>
+</section>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   PORTFOLIO PAGE JS
+   Hooks render.html calls: portLoad()
+   Hooks it calls back:     _buildTick() · haptic() · Chart
+═══════════════════════════════════════════════════════════════ */
+
+var PORT_PALETTE = ['#00d4ff','#00ff88','#ffd700','#a855f7','#ff6b35','#ff4d8d','#38bdf8','#34d399','#fbbf24','#c084fc','#fb923c','#f472b6'];
+
+/* the four allocation charts — ONE declaration, used by build + switch */
+var PORT_CHART_META = [
+  { id:'portDonutChart', type:'doughnut', label:'Asset Allocation',   dot:'#a855f7' },
+  { id:'portBarChart',   type:'bar',      label:'Value Comparison',   dot:'#00d4ff' },
+  { id:'portHbarChart',  type:'hbar',     label:'Horizontal Bars',    dot:'#ffd700' },
+  { id:'portPolarChart', type:'polarArea',label:'Polar Distribution', dot:'#00ff88' }
+];
+
+var PORT_TIP = {
+  backgroundColor:'rgba(6,11,24,.95)', borderColor:'rgba(255,255,255,.1)', borderWidth:1,
+  titleColor:'#fff', bodyColor:'rgba(255,255,255,.7)', padding:11
+};
+
+/* ── page state ── */
+var _portData      = null;   /* last payload from getPortfolioData()          */
+var _portAssets    = [];     /* [{cat,amt}] non-total rows                    */
+var _portPos       = [];     /* positive-only, for the charts + ribbon        */
+var _portTotals    = { lkr:0, usd:0, epf:0 };
+var _portHidden    = {};     /* slice index -> true when toggled off          */
+var _portCharts    = {};     /* meta index -> Chart instance                  */
+var _portChartIdx  = 0;
+var _portGrowthAll = [];
+var _portGrowthChart = null;
+var _portShowMA    = false;
+var _portShowProj  = false;
+var _portRange     = 'all';
+var _portSort      = 'val-desc';
+var _portFilter    = 'all';
+var _portQuery     = '';
+var _portLoadedAt  = 0;
+var _portSyncTimer = null;
+var _portSpyBound  = false;
+
+var portAimsAll    = [];     /* every aim row from the sheet (T:W)            */
+var portAimsPhases = [];     /* distinct phases, ascending                    */
+var portAimsPhase  = null;   /* currently displayed phase                     */
+
+/* ═══════════════════════════════════════════
+   FORMATTING
+═══════════════════════════════════════════ */
+function portFmt(value, currency){
+  currency = currency || 'LKR';
+  if(value === null || value === undefined || value === '') return '—';
+  var num = parseFloat(value.toString().replace(/,/g,''));
+  if(isNaN(num)) return value;
+  var f2 = Math.abs(num).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return (num < 0 ? '-' : '') + (currency === 'USD' ? '$' : '₨') + f2;
+}
+
+function portFmtShort(n, currency){
+  var sym = currency === 'USD' ? '$' : '₨';
+  var a = Math.abs(n), s = n < 0 ? '-' : '';
+  if(a >= 1e6) return s + sym + (a/1e6).toFixed(2) + 'M';
+  if(a >= 1e3) return s + sym + Math.round(a/1e3) + 'K';
+  return s + sym + a.toFixed(0);
+}
+
+function portTick(v){
+  var a = Math.abs(v);
+  return '₨' + (a >= 1e6 ? (v/1e6).toFixed(1)+'M' : a >= 1e3 ? Math.round(v/1e3)+'K' : v);
+}
+
+function portEsc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function portAnimateCounter(el, target, duration, prefix){
+  duration = duration || 1400; prefix = prefix || '₨';
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    el.textContent = prefix + Math.abs(target).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return;
+  }
+  var start = performance.now();
+  function upd(now){
+    var pct  = Math.min((now - start) / duration, 1);
+    var ease = 1 - Math.pow(1 - pct, 4);
+    el.textContent = prefix + Math.abs(target * ease).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(pct < 1) requestAnimationFrame(upd);
+  }
+  requestAnimationFrame(upd);
+}
+
+function portGetClass(cat){
+  var c = (cat || '').toLowerCase();
+  if(c.indexOf('earn')>=0 || c.indexOf('stock')>=0 || c.indexOf('gold')>=0 || c.indexOf('cash')>=0 || c.indexOf('saving')>=0) return 'positive';
+  if(c.indexOf('due')>=0 || c.indexOf('splitwise')>=0 || c.indexOf('loan')>=0 || c.indexOf('borrow')>=0) return 'negative';
+  return 'neutral';
+}
+
+function portShowToast(msg, type){
+  var t = document.getElementById('portToast'); if(!t) return;
+  t.textContent = msg;
+  t.className = 'port-toast ' + (type || 'info');
+  void t.offsetWidth;
+  t.classList.add('show');
+  clearTimeout(t._pt);
+  t._pt = setTimeout(function(){ t.classList.remove('show'); }, 3400);
+}
+
+function portHaptic(){ if(typeof haptic === 'function'){ try{ haptic(); }catch(e){} } }
+
+/* ═══════════════════════════════════════════
+   LOAD · SKELETON · ERROR
+═══════════════════════════════════════════ */
+function portSkeleton(){
+  return '<div class="pf-skel">' +
+    '<div class="pf-sk hero"></div>' +
+    '<div class="pf-skel-row k7">' +
+      '<div class="pf-sk tile"></div><div class="pf-sk tile"></div><div class="pf-sk tile"></div><div class="pf-sk tile"></div>' +
+      '<div class="pf-sk tile"></div><div class="pf-sk tile"></div><div class="pf-sk tile"></div>' +
+    '</div>' +
+    '<div class="pf-skel-row b2"><div class="pf-sk big"></div><div class="pf-sk big"></div></div>' +
+    '<div class="pf-sk wide"></div>' +
+    '<div class="pf-skel-row c4">' +
+      '<div class="pf-sk card"></div><div class="pf-sk card"></div><div class="pf-sk card"></div><div class="pf-sk card"></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function portLoad(){
+  var root = document.getElementById('port-root');
+  if(root && !root.querySelector('.pf-skel')) root.innerHTML = portSkeleton();
+  google.script.run
+    .withSuccessHandler(portDisplayPortfolio)
+    .withFailureHandler(portShowError)
+    .getPortfolioData();
+}
+
+function portShowError(err){
+  var root = document.getElementById('port-root'); if(!root) return;
+  root.innerHTML = '<div class="error-box">⚠️ Error loading portfolio<br><small style="opacity:.6">' +
+    portEsc(err && err.message ? err.message : err) + '</small></div>';
+}
+
+/* "synced 2m ago" chip */
+function portTouchSync(){
+  _portLoadedAt = Date.now();
+  var wrap = document.getElementById('portSync');
+  if(wrap) wrap.style.display = '';
+  portRenderSync();
+  clearInterval(_portSyncTimer);
+  _portSyncTimer = setInterval(portRenderSync, 30000);
+}
+
+function portRenderSync(){
+  var el = document.getElementById('portSyncTxt');
+  if(!el || !_portLoadedAt) return;
+  var mins = Math.floor((Date.now() - _portLoadedAt) / 60000);
+  el.textContent = mins < 1 ? 'just now' : mins < 60 ? ('synced ' + mins + 'm ago') : ('synced ' + Math.floor(mins/60) + 'h ago');
+}
+
+/* ═══════════════════════════════════════════
+   EPF SYNC  (unchanged contract)
+═══════════════════════════════════════════ */
+function portSyncEPF(){
+  var btn = document.getElementById('epfSyncBtn');
+  if(!btn || btn.classList.contains('syncing')) return;
+  btn.classList.add('syncing');
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.classList.remove('syncing');
+      if(res && res.success){
+        portShowToast('✅ ' + res.message, 'success');
+        google.script.run
+          .withSuccessHandler(portDisplayPortfolio)
+          .withFailureHandler(function(err){ portShowToast('⚠️ Reload failed: ' + (err.message || err), 'error'); })
+          .getPortfolioData();
+      } else {
+        portShowToast('⚠️ ' + ((res && res.message) || 'Sync failed'), 'error');
+      }
+    })
+    .withFailureHandler(function(err){
+      btn.classList.remove('syncing');
+      portShowToast('⚠️ ' + (err.message || err), 'error');
+    })
+    .syncEPFetf();
+}
+
+/* ═══════════════════════════════════════════
+   LOG PORTFOLIO VALUE  (unchanged contract)
+═══════════════════════════════════════════ */
+function portToggleLog(){
+  var pop = document.getElementById('portLogPop'); if(!pop) return;
+  var opening = !pop.classList.contains('open');
+  pop.classList.toggle('open', opening);
+  if(opening){
+    portHaptic();
+    var amt = document.getElementById('portLogAmt');
+    if(amt) amt.textContent = portFmt(_portTotals.lkr);
+    var inp = document.getElementById('portLogNoteInput');
+    if(inp){ inp.value = ''; setTimeout(function(){ inp.focus(); }, 60); }
+  }
+}
+
+/* kept so any older caller still works */
+function portStartLog(){ portToggleLog(); }
+
+function portCloseLog(){
+  var pop = document.getElementById('portLogPop');
+  if(pop) pop.classList.remove('open');
+}
+
+function portLogChip(txt){
+  var inp = document.getElementById('portLogNoteInput');
+  if(inp){ inp.value = txt; inp.focus(); }
+}
+
+function portConfirmLog(){
+  var fab = document.getElementById('portFab');
+  var go  = document.getElementById('portLogGo');
+  var inp = document.getElementById('portLogNoteInput');
+  var note = inp ? inp.value : '';
+  portCloseLog();
+  if(fab) fab.classList.add('logging');
+  if(go)  go.disabled = true;
+  google.script.run
+    .withSuccessHandler(function(result){
+      if(fab) fab.classList.remove('logging');
+      if(go)  go.disabled = false;
+      if(result && !result.logged){ portShowToast('⏭️ ' + result.message, 'error'); return; }
+      portShowToast('✅ ' + result.message + ' — refreshing…', 'success');
+      google.script.run
+        .withSuccessHandler(function(data){ portDisplayPortfolio(data); portShowToast('✅ Growth chart updated!','success'); })
+        .withFailureHandler(function(err){ portShowToast('⚠️ Logged but refresh failed: ' + (err.message || err), 'error'); })
+        .getPortfolioData();
+    })
+    .withFailureHandler(function(err){
+      if(fab) fab.classList.remove('logging');
+      if(go)  go.disabled = false;
+      portShowToast('⚠️ ' + (err.message || err), 'error');
+    })
+    .logPortfolioAmount(note);
+}
+
+/* ═══════════════════════════════════════════
+   SECTION TABS · SCROLL SPY
+═══════════════════════════════════════════ */
+function portGoSec(id){
+  var el = document.getElementById(id);
+  var wrap = document.getElementById('port-root');
+  if(!el || !wrap) return;
+  wrap.scrollTo({ top: Math.max(el.offsetTop - 12, 0), behavior:'smooth' });
+  portMarkTab(id);
+}
+
+function portMarkTab(id){
+  var tabs = document.querySelectorAll('#portTabs .pf-tab');
+  for(var i = 0; i < tabs.length; i++){
+    tabs[i].classList.toggle('active', tabs[i].dataset.sec === id);
+  }
+}
+
+function portInitSpy(){
+  if(_portSpyBound) return;
+  var wrap = document.getElementById('port-root');
+  var hdr  = document.getElementById('portHdr');
+  if(!wrap) return;
+  _portSpyBound = true;
+  wrap.addEventListener('scroll', function(){
+    if(hdr) hdr.classList.toggle('scrolled', wrap.scrollTop > 6);
+    var ids = ['portSecOverview','portSecAlloc','portSecGrowth','portSecAssets'];
+    var best = ids[0], top = wrap.scrollTop + 60;
+    for(var i = 0; i < ids.length; i++){
+      var el = document.getElementById(ids[i]);
+      if(el && el.offsetTop <= top) best = ids[i];
+    }
+    portMarkTab(best);
+  }, { passive:true });
+}
+
+/* ═══════════════════════════════════════════
+   SMALL SVG HELPERS
+═══════════════════════════════════════════ */
+function portSparkPath(values, w, h, pad){
+  if(!values || values.length < 2) return null;
+  pad = pad == null ? 3 : pad;
+  var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
+  var span = (max - min) || 1;
+  var line = [], area = [];
+  for(var i = 0; i < values.length; i++){
+    var x = (i / (values.length - 1)) * w;
+    var y = h - pad - ((values[i] - min) / span) * (h - pad * 2);
+    line.push((i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1));
+  }
+  area = line.join(' ') + ' L' + w + ',' + h + ' L0,' + h + ' Z';
+  return { line: line.join(' '), area: area };
+}
+
+function portSparkSvg(values, color, cls, w, h){
+  var p = portSparkPath(values, w, h);
+  if(!p) return '';
+  var gid = 'pfsp' + Math.random().toString(36).slice(2,8);
+  return '<svg class="' + cls + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
+    '<defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="' + color + '" stop-opacity=".35"/>' +
+      '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/></linearGradient></defs>' +
+    '<path d="' + p.area + '" fill="url(#' + gid + ')"/>' +
+    '<path d="' + p.line + '" fill="none" stroke="' + color + '" stroke-width="1.6" opacity=".75"/></svg>';
+}
+
+/* ═══════════════════════════════════════════
+   MAIN RENDER
+═══════════════════════════════════════════ */
+function portDisplayPortfolio(data){
+  var root = document.getElementById('port-root'); if(!root) return;
+
+  var rawAssets = (data && data.assets) ? data.assets : (Array.isArray(data) ? data : []);
+  var growth    = (data && data.growth) ? data.growth : [];
+  var epfEtf    = (data && data.epfEtf) ? +data.epfEtf : 0;
+  var aims      = (data && data.aims)   ? data.aims   : [];
+
+  if(!rawAssets || !rawAssets.length){
+    root.innerHTML = '<div class="error-box">No portfolio data found.</div>';
+    return;
+  }
+
+  _portData = data;
+  _portHidden = {};
+  portDestroyCharts();
+
+  /* ── split assets from total rows ── */
+  var totalLKR = 0, totalUSD = 0, assets = [], totals = [];
+  rawAssets.forEach(function(row){
+    var cat = (row[0] || '').toString().trim();
+    var amt = parseFloat((row[1] || 0).toString().replace(/,/g,'')) || 0;
+    if(!cat) return;
+    if(cat.toLowerCase().indexOf('total') >= 0) totals.push({ cat:cat, amt:amt });
+    else assets.push({ cat:cat, amt:amt });
+  });
+  totals.forEach(function(t){
+    if(t.cat.toLowerCase().indexOf('usd') >= 0) totalUSD = t.amt; else totalLKR = t.amt;
+  });
+
+  _portAssets   = assets;
+  _portPos      = assets.filter(function(a){ return a.amt > 0; });
+  _portGrowthAll = growth;
+  _portTotals   = { lkr: totalLKR, usd: totalUSD, epf: epfEtf };
+
+  var totalPositive = _portPos.reduce(function(s,a){ return s + a.amt; }, 0);
+
+  /* colour per asset, stable across views */
+  _portAssets.forEach(function(a, i){
+    a.i     = i;
+    a.color = PORT_PALETTE[i % PORT_PALETTE.length];
+    a.pct   = totalPositive > 0 && a.amt > 0 ? (a.amt / totalPositive * 100) : 0;
+    a.cls   = portGetClass(a.cat);
+  });
+  _portPos.forEach(function(a, i){ a.pi = i; });
+
+  /* ── deltas from the growth log ── */
+  var momPct = 0, momAbs = 0, ytdPct = 0, hasYtd = false;
+  if(growth.length >= 2){
+    var prev = growth[growth.length-2].amount, last = growth[growth.length-1].amount;
+    if(prev > 0){ momPct = (last - prev) / prev * 100; momAbs = last - prev; }
+    var back = growth.length > 12 ? growth.length - 13 : 0;
+    var base = growth[back].amount;
+    if(back !== growth.length-1 && base > 0){ ytdPct = (growth[growth.length-1].amount - base) / base * 100; hasYtd = true; }
+  }
+
+  var largest   = _portPos.length ? _portPos.reduce(function(b,a){ return a.amt > b.amt ? a : b; }) : { cat:'—', amt:0, pct:0 };
+  var epfPct    = totalLKR > 0 ? (epfEtf / totalLKR * 100) : 0;
+  var amounts   = growth.map(function(g){ return g.amount; });
+  var firstDate = growth.length ? growth[0].date : '—';
+
+  /* ── build ── */
+  root.innerHTML =
+    '<div id="portSecOverview">' +
+      portHeroHtml(totalLKR, totalUSD, epfEtf, momPct, momAbs, ytdPct, hasYtd, amounts) +
+      portKpisHtml(totalLKR, totalUSD, epfEtf, largest, epfPct, growth, amounts, firstDate) +
+    '</div>' +
+    '<div id="portSecAlloc" class="pf-bento">' +
+      portAllocHtml() +
+      portGoalsHtml(aims) +
+    '</div>' +
+    '<div id="portSecGrowth">' + portGrowthHtml(growth) + '</div>' +
+    '<div id="portSecAssets" class="assets-section">' +
+      '<div class="section-heading">All Assets &amp; Balances</div>' +
+      portToolbarHtml() +
+      '<div id="portAssetsBody"></div>' +
+    '</div>';
+
+  /* ── animate in ── */
+  setTimeout(function(){
+    var h = document.getElementById('portHeroAmt');
+    var l = document.getElementById('portTileLkr');
+    var u = document.getElementById('portTileUsd');
+    if(h) portAnimateCounter(h, totalLKR, 1800, '₨');
+    if(l) portAnimateCounter(l, totalLKR, 1600, '₨');
+    if(u) portAnimateCounter(u, totalUSD, 1600, '$');
+  }, 180);
+
+  setTimeout(function(){
+    var bars = document.querySelectorAll('#page-port [data-w]');
+    for(var i = 0; i < bars.length; i++) bars[i].style.width = bars[i].dataset.w + '%';
+  }, 320);
+
+  portRenderAssets();
+  portEnsureChart(_portChartIdx);
+  if(growth.length) portBuildGrowthChart();
+  buildPortTicker(_portAssets, totalLKR);
+  portInitSpy();
+  portTouchSync();
+  portMarkTab('portSecOverview');
+}
+
+/* ═══════════════════════════════════════════
+   ② HERO
+═══════════════════════════════════════════ */
+function portHeroHtml(lkr, usd, epf, momPct, momAbs, ytdPct, hasYtd, amounts){
+  var momCls = momPct > 0.5 ? 'up' : momPct < -0.5 ? 'down' : 'flat';
+  var momArr = momPct > 0.5 ? '▲' : momPct < -0.5 ? '▼' : '→';
+  var ytdCls = ytdPct > 0.5 ? 'up' : ytdPct < -0.5 ? 'down' : 'flat';
+  var ytdArr = ytdPct > 0.5 ? '▲' : ytdPct < -0.5 ? '▼' : '→';
+
+  var spark = '';
+  var sp = portSparkPath(amounts, 800, 120, 8);
+  if(sp){
+    spark = '<svg class="pf-hero-spark" viewBox="0 0 800 120" preserveAspectRatio="none" aria-hidden="true">' +
+      '<defs><linearGradient id="pfHeroG" x1="0" y1="0" x2="0" y2="1">' +
+        '<stop offset="0%" stop-color="#2dd4bf" stop-opacity=".9"/>' +
+        '<stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/></linearGradient></defs>' +
+      '<path d="' + sp.area + '" fill="url(#pfHeroG)"/>' +
+      '<path d="' + sp.line + '" fill="none" stroke="#2dd4bf" stroke-width="2.5"/></svg>';
+  }
+
+  var ribbon = '', legend = '';
+  var tot = _portPos.reduce(function(s,a){ return s + a.amt; }, 0);
+  if(tot > 0){
+    _portPos.forEach(function(a){
+      ribbon += '<button class="pf-rib" type="button" style="width:' + a.pct.toFixed(2) + '%;background:' + a.color + '" ' +
+        'title="' + portEsc(a.cat) + ' · ' + portFmt(a.amt) + ' · ' + a.pct.toFixed(1) + '%" ' +
+        'aria-label="' + portEsc(a.cat) + '" onclick="portOpenAsset(' + a.i + ')"></button>';
+      legend += '<span class="pf-rl"><i class="pf-rl-sw" style="background:' + a.color + '"></i>' +
+        portEsc(a.cat) + ' ' + a.pct.toFixed(1) + '%</span>';
+    });
+  }
+
+  return '<div class="pf-hero">' + spark +
+    '<div class="pf-hero-inner">' +
+      '<div class="pf-hero-top">' +
+        '<div class="pf-hero-main">' +
+          '<div class="pf-hero-label"><span class="hero-dot"></span>Net Worth · All currencies combined</div>' +
+          '<div class="pf-hero-amt" id="portHeroAmt">' + portFmt(lkr) + '</div>' +
+          '<div class="pf-deltas">' +
+            (amounts.length >= 2 ? '<span class="pf-delta ' + momCls + '">' + momArr + ' ' + (momPct>=0?'+':'') + momPct.toFixed(1) + '% MoM</span>' : '') +
+            (hasYtd ? '<span class="pf-delta ' + ytdCls + '">' + ytdArr + ' ' + (ytdPct>=0?'+':'') + ytdPct.toFixed(1) + '% 12M</span>' : '') +
+            (amounts.length >= 2 ? '<span class="pf-delta-note">' + (momAbs>=0?'+':'-') + portFmt(Math.abs(momAbs)) + ' since last snapshot</span>' : '') +
+          '</div>' +
+        '</div>' +
+        '<div class="pf-ccy-row">' +
+          '<div class="pf-ccy lkr"><span class="pf-ccy-lbl">LKR Assets</span><span class="pf-ccy-val">' + portFmtShort(lkr) + '</span></div>' +
+          '<div class="pf-ccy usd"><span class="pf-ccy-lbl">USD Assets</span><span class="pf-ccy-val">' + portFmt(usd,'USD') + '</span></div>' +
+          '<div class="pf-ccy epf"><span class="pf-ccy-lbl">EPF + ETF</span><span class="pf-ccy-val">' + portFmtShort(epf) + '</span></div>' +
+        '</div>' +
+      '</div>' +
+      (ribbon ? '<div class="pf-ribbon-wrap"><div class="pf-ribbon">' + ribbon + '</div>' +
+                '<div class="pf-ribbon-legend">' + legend + '</div></div>' : '') +
+    '</div>' +
+  '</div>';
+}
+
+/* ═══════════════════════════════════════════
+   ② KPI BENTO STRIP  (3 currency tiles + 4 stats)
+═══════════════════════════════════════════ */
+function portKpisHtml(lkr, usd, epf, largest, epfPct, growth, amounts, firstDate){
+  var ico = function(d, color){
+    return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="' + color +
+      '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  };
+  var dots = '';
+  _portPos.forEach(function(a){ dots += '<i style="background:' + a.color + '"></i>'; });
+
+  var lkrSpark = portSparkSvg(amounts, '#ffd700', 'pf-tile-spark', 200, 40);
+  var usdSpark = portSparkSvg(amounts, '#00ff88', 'pf-tile-spark', 200, 40);
+
+  return '<div class="pf-kpis">' +
+
+    '<div class="pf-tile lkr' + (lkrSpark ? ' pad0' : '') + '"><span class="pf-tile-glow" style="background:#ffd700"></span>' +
+      ico('<path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/>','#ffd700') +
+      '<span class="pf-tile-lbl">Total · LKR</span>' +
+      '<span class="pf-tile-val" id="portTileLkr">' + portFmt(lkr) + '</span>' +
+      (lkrSpark || '<span class="pf-tile-sub">&nbsp;</span>') +
+    '</div>' +
+
+    '<div class="pf-tile usd' + (usdSpark ? ' pad0' : '') + '"><span class="pf-tile-glow" style="background:#00ff88"></span>' +
+      ico('<path d="M12 2v20M17 6.5c0-2-2.2-3.5-5-3.5S7 4.5 7 6.5 9 10 12 10.5s5 1.5 5 3.5-2.2 3.5-5 3.5-5-1.5-5-3.5"/>','#00ff88') +
+      '<span class="pf-tile-lbl">Total · USD</span>' +
+      '<span class="pf-tile-val" id="portTileUsd">' + portFmt(usd,'USD') + '</span>' +
+      (usdSpark || '<span class="pf-tile-sub">&nbsp;</span>') +
+    '</div>' +
+
+    '<div class="pf-tile epf"><span class="pf-tile-glow" style="background:#a855f7"></span>' +
+      '<div class="pf-tile-actions">' +
+        '<button class="pf-tile-btn" id="epfSyncBtn" type="button" title="Auto-sync missing months" aria-label="Sync EPF and ETF" onclick="portSyncEPF()">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg></button>' +
+        '<button class="pf-tile-btn" type="button" title="ETF compounding calculator" aria-label="Open ETF calculator" onclick="portEPFCalcOpen()">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2.5"/><path d="M8 7h8M8 12h1M12 12h1M16 12h0M8 16h1M12 16h1M16 16h0"/></svg></button>' +
+      '</div>' +
+      ico('<path d="M3 20h18M6 20V9M11 20V4M16 20v-8M21 20v-5"/>','#c084fc') +
+      '<span class="pf-tile-lbl">EPF + ETF</span>' +
+      '<span class="pf-tile-val">' + portFmt(epf) + '</span>' +
+    '</div>' +
+
+    '<div class="pf-tile">' +
+      ico('<path d="M8 21h8M12 17v4M6 3h12v5a6 6 0 0 1-12 0V3zM6 5H3v2a4 4 0 0 0 3 3.9M18 5h3v2a4 4 0 0 1-3 3.9"/>','#00d4ff') +
+      '<span class="pf-tile-lbl">Largest Asset</span>' +
+      '<span class="pf-tile-val sm" style="color:#00d4ff">' + portEsc(largest.cat) + '</span>' +
+      '<span class="pf-tile-sub">' + (largest.pct || 0).toFixed(1) + '% of assets</span>' +
+    '</div>' +
+
+    '<div class="pf-tile">' +
+      ico('<path d="M21 16V8l-9-5-9 5v8l9 5 9-5zM3.3 7.5 12 12.5l8.7-5M12 21.5v-9"/>','#a855f7') +
+      '<span class="pf-tile-lbl">Asset Types</span>' +
+      '<span class="pf-tile-val" style="color:#a855f7">' + _portPos.length + '</span>' +
+      '<div class="pf-dotrow">' + dots + '</div>' +
+    '</div>' +
+
+    '<div class="pf-tile">' +
+      ico('<path d="M12 3a9 9 0 1 0 9 9h-9V3z"/><path d="M15.5 3.5A9 9 0 0 1 20.5 8.5"/>','#c084fc') +
+      '<span class="pf-tile-lbl">EPF Weight</span>' +
+      '<span class="pf-tile-val" style="color:#c084fc">' + epfPct.toFixed(1) + '%</span>' +
+      '<div class="pf-minibar"><i style="background:#c084fc" data-w="' + Math.min(epfPct,100).toFixed(1) + '"></i></div>' +
+    '</div>' +
+
+    '<div class="pf-tile">' +
+      ico('<path d="M3 17l5.5-6 4 4L21 6"/><path d="M15 6h6v6"/>','#2dd4bf') +
+      '<span class="pf-tile-lbl">Snapshots</span>' +
+      '<span class="pf-tile-val" style="color:#2dd4bf">' + growth.length + '</span>' +
+      '<span class="pf-tile-sub">' + (growth.length ? 'since ' + portEsc(firstDate) : 'none logged') + '</span>' +
+    '</div>' +
+
+  '</div>';
+}
+
+/* ═══════════════════════════════════════════
+   ③ ALLOCATION STUDIO
+═══════════════════════════════════════════ */
+function portAllocHtml(){
+  var icons = [
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h14M4 12h9M4 18h5"/></svg>',
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 12V3M12 12l7.8 4.5M12 12L6 18"/></svg>'
+  ];
+
+  var seg = '', panels = '';
+  PORT_CHART_META.forEach(function(m, i){
+    seg += '<button class="pf-seg-btn' + (i === _portChartIdx ? ' active' : '') + '" type="button" ' +
+      'data-ch="' + i + '" title="' + m.label + '" aria-label="' + m.label + '" onclick="portSwitchChart(' + i + ')">' + icons[i] + '</button>';
+    if(m.type === 'doughnut'){
+      panels += '<div class="pf-chart-panel' + (i === _portChartIdx ? ' active' : '') + '" id="portChPanel-' + i + '">' +
+        '<div class="pf-alloc-body">' +
+          '<div class="pf-donut-wrap"><canvas id="' + m.id + '"></canvas>' +
+            '<div class="pf-donut-center" id="portDonutCenter"></div></div>' +
+          '<div class="pf-legend" id="portLegend"></div>' +
+        '</div></div>';
+    } else {
+      panels += '<div class="pf-chart-panel' + (i === _portChartIdx ? ' active' : '') + '" id="portChPanel-' + i + '">' +
+        '<div class="pf-chart-box"><canvas id="' + m.id + '"></canvas></div></div>';
+    }
+  });
+
+  return '<div class="glass-card">' +
+    '<div class="card-header">' +
+      '<span class="card-dot" id="portChDot" style="background:' + PORT_CHART_META[_portChartIdx].dot +
+        ';box-shadow:0 0 6px ' + PORT_CHART_META[_portChartIdx].dot + '"></span>' +
+      '<span class="card-title" id="portChTitle">' + PORT_CHART_META[_portChartIdx].label + '</span>' +
+      '<div class="pf-seg purple" style="margin-left:auto" role="group" aria-label="Chart type">' + seg + '</div>' +
+    '</div>' + panels +
+  '</div>';
+}
+
+function portVisibleValues(){
+  return _portPos.map(function(a, i){ return _portHidden[i] ? null : a.amt; });
+}
+
+function portDestroyCharts(){
+  for(var k in _portCharts){
+    if(_portCharts[k]){ try{ _portCharts[k].destroy(); }catch(e){} }
+  }
+  _portCharts = {};
+  if(_portGrowthChart){ try{ _portGrowthChart.destroy(); }catch(e){} _portGrowthChart = null; }
+}
+
+function portEnsureChart(i){
+  if(_portCharts[i] || !_portPos.length) return;
+  var meta   = PORT_CHART_META[i];
+  var canvas = document.getElementById(meta.id);
+  if(!canvas || typeof Chart === 'undefined') return;
+
+  var labels = _portPos.map(function(a){ return a.cat; });
+  var colors = _portPos.map(function(a){ return a.color; });
+  var alpha  = colors.map(function(c){ return c + '33'; });
+  var values = portVisibleValues();
+
+  var tip = {
+    backgroundColor:PORT_TIP.backgroundColor, borderColor:PORT_TIP.borderColor, borderWidth:1,
+    titleColor:PORT_TIP.titleColor, bodyColor:PORT_TIP.bodyColor, padding:PORT_TIP.padding
+  };
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var dur = reduce ? 0 : 1200;
+
+  var cfg;
+  if(meta.type === 'doughnut'){
+    cfg = { type:'doughnut',
+      data:{ labels:labels, datasets:[{ data:values, backgroundColor:alpha, borderColor:colors, borderWidth:2, hoverBorderWidth:3, hoverOffset:8 }] },
+      options:{ responsive:true, maintainAspectRatio:true, cutout:'68%',
+        animation:{ animateRotate:true, duration:dur },
+        onHover:function(evt, els){ portDonutHover(els && els.length ? els[0].index : -1); },
+        plugins:{ legend:{ display:false },
+          tooltip:Object.assign({}, tip, { callbacks:{ label:function(c){ return ' ' + c.label + ': ' + portFmt(c.parsed); } } }) } } };
+  } else if(meta.type === 'polarArea'){
+    cfg = { type:'polarArea',
+      data:{ labels:labels, datasets:[{ data:values, backgroundColor:alpha, borderColor:colors, borderWidth:2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, animation:{ duration:reduce ? 0 : 1400 },
+        scales:{ r:{ ticks:{ display:false }, grid:{ color:'rgba(255,255,255,.06)' }, pointLabels:{ display:false } } },
+        plugins:{ legend:{ display:false },
+          tooltip:Object.assign({}, tip, { callbacks:{ label:function(c){ return ' ' + c.label + ': ' + portFmt(c.parsed.r); } } }) } } };
+  } else {
+    var horiz = meta.type === 'hbar';
+    cfg = { type:'bar',
+      data:{ labels:labels, datasets:[{ data:values, backgroundColor:alpha, borderColor:colors, borderWidth:2, borderRadius:horiz ? 6 : 8, borderSkipped:false }] },
+      options:{ indexAxis: horiz ? 'y' : 'x', responsive:true, maintainAspectRatio:false, animation:{ duration:dur },
+        plugins:{ legend:{ display:false },
+          tooltip:Object.assign({}, tip, { callbacks:{ label:function(c){ return ' ' + portFmt(horiz ? c.parsed.x : c.parsed.y); } } }) },
+        scales: horiz
+          ? { x:{ ticks:{ color:'rgba(255,255,255,.4)', font:{ size:9 }, callback:portTick }, grid:{ color:'rgba(255,255,255,.05)' } },
+              y:{ ticks:{ color:'rgba(255,255,255,.5)', font:{ size:9 } }, grid:{ display:false } } }
+          : { x:{ ticks:{ color:'rgba(255,255,255,.4)', font:{ size:9 } }, grid:{ color:'rgba(255,255,255,.04)' } },
+              y:{ ticks:{ color:'rgba(255,255,255,.4)', font:{ size:9 }, callback:portTick }, grid:{ color:'rgba(255,255,255,.05)' } } } } };
+  }
+
+  _portCharts[i] = new Chart(canvas, cfg);
+  if(meta.type === 'doughnut'){ portRenderLegend(); portDonutHover(-1); }
+}
+
+function portSwitchChart(i){
+  i = parseInt(i, 10);
+  if(isNaN(i) || !PORT_CHART_META[i]) return;
+  _portChartIdx = i;
+  for(var p = 0; p < PORT_CHART_META.length; p++){
+    var panel = document.getElementById('portChPanel-' + p);
+    if(panel) panel.classList.toggle('active', p === i);
+  }
+  var btns = document.querySelectorAll('#page-port .pf-seg-btn[data-ch]');
+  for(var b = 0; b < btns.length; b++) btns[b].classList.toggle('active', +btns[b].dataset.ch === i);
+  var dot = document.getElementById('portChDot'), ttl = document.getElementById('portChTitle');
+  if(dot){ dot.style.background = PORT_CHART_META[i].dot; dot.style.boxShadow = '0 0 6px ' + PORT_CHART_META[i].dot; }
+  if(ttl) ttl.textContent = PORT_CHART_META[i].label;
+  portEnsureChart(i);
+}
+
+function portRenderLegend(){
+  var el = document.getElementById('portLegend'); if(!el) return;
+  var html = '';
+  _portPos.forEach(function(a, i){
+    html += '<button class="pf-lg' + (_portHidden[i] ? ' off' : '') + '" type="button" ' +
+      'aria-pressed="' + (_portHidden[i] ? 'false' : 'true') + '" onclick="portToggleSlice(' + i + ')">' +
+      '<i class="pf-lg-sw" style="background:' + a.color + '"></i>' +
+      '<span class="pf-lg-name">' + portEsc(a.cat) + '</span>' +
+      '<span class="pf-lg-val">' + portFmtShort(a.amt) + '</span>' +
+      '<span class="pf-lg-pct">' + a.pct.toFixed(1) + '%</span></button>';
+  });
+  if(_portPos.length) html += '<span class="pf-legend-hint">Click a row to hide that slice</span>';
+  el.innerHTML = html;
+}
+
+function portToggleSlice(i){
+  _portHidden[i] = !_portHidden[i];
+  var values = portVisibleValues();
+  for(var k in _portCharts){
+    var c = _portCharts[k];
+    if(!c) continue;
+    c.data.datasets[0].data = values.slice();
+    c.update();
+  }
+  portRenderLegend();
+  portDonutHover(-1);
+}
+
+function portDonutHover(idx){
+  var el = document.getElementById('portDonutCenter'); if(!el) return;
+  if(idx >= 0 && _portPos[idx] && !_portHidden[idx]){
+    var a = _portPos[idx];
+    el.innerHTML = '<span class="pf-dc-lbl" style="color:' + a.color + '">' + portEsc(a.cat) + '</span>' +
+      '<span class="pf-dc-val">' + portFmtShort(a.amt) + '</span>' +
+      '<span class="pf-dc-sub">' + a.pct.toFixed(1) + '%</span>';
+  } else {
+    var shown = 0, n = 0;
+    _portPos.forEach(function(a, i){ if(!_portHidden[i]){ shown += a.amt; n++; } });
+    el.innerHTML = '<span class="pf-dc-lbl">Total</span>' +
+      '<span class="pf-dc-val">' + portFmtShort(shown) + '</span>' +
+      '<span class="pf-dc-sub">' + n + ' asset' + (n === 1 ? '' : 's') + '</span>';
+  }
+}
+
+/* ═══════════════════════════════════════════
+   ③ GOALS / AIMS
+═══════════════════════════════════════════ */
+function portAimsPhaseTotal(phase){
+  var t = { amount:0, aim:0, remaining:0, count:0, done:0 };
+  portAimsAll.forEach(function(a){
+    if(a.phase !== phase) return;
+    t.amount += a.amount; t.aim += a.aim; t.remaining += a.remaining; t.count++;
+    if(a.aim > 0 && a.remaining <= 0) t.done++;
+  });
+  return t;
+}
+
+function portGoalsHtml(aims){
+  portAimsAll = (aims || []).slice();
+
+  var head = '<div class="card-header">' +
+    '<span class="card-dot" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></span>' +
+    '<span class="card-title">🎯 Remaining to Collect</span>';
+
+  if(!portAimsAll.length){
+    portAimsPhases = []; portAimsPhase = null;
+    return '<div class="glass-card pf-goals">' + head + '</div>' +
+           '<div class="pf-empty">No aim data</div></div>';
+  }
+
+  var seen = {}; portAimsPhases = [];
+  portAimsAll.forEach(function(a){
+    var p = a.phase || 1; a.phase = p;
+    if(!seen[p]){ seen[p] = 1; portAimsPhases.push(p); }
+  });
+  portAimsPhases.sort(function(x,y){ return x - y; });
+  portAimsPhase = portAimsPhases[portAimsPhases.length - 1];
+
+  var pills = '<div class="pf-phase-pills" role="group" aria-label="Phase">';
+  portAimsPhases.forEach(function(p){
+    var t = portAimsPhaseTotal(p);
+    var done = t.aim > 0 && t.remaining <= 0;
+    pills += '<button class="pf-phase-pill' + (done ? ' done' : '') + (p === portAimsPhase ? ' active' : '') + '" ' +
+      'type="button" data-phase="' + p + '" onclick="portSwitchAimPhase(' + p + ')">P' + p + (done ? ' ✓' : '') + '</button>';
+  });
+  pills += '</div>';
+
+  return '<div class="glass-card pf-goals">' + head + pills + '</div>' +
+    '<div id="portGoalsBody">' + portGoalsBodyHtml(portAimsPhase) + '</div></div>';
+}
+
+function portGoalsBodyHtml(phase){
+  var list = portAimsAll.filter(function(a){ return a.phase === phase; });
+  if(!list.length) return '<div class="pf-empty">No aims in phase ' + phase + '</div>';
+
+  var t      = portAimsPhaseTotal(phase);
+  var isDone = t.aim > 0 && t.remaining <= 0;
+  var pct    = t.aim > 0 ? Math.min(t.amount / t.aim * 100, 100) : 0;
+  var C      = 2 * Math.PI * 34;
+  var isLast = phase === portAimsPhases[portAimsPhases.length - 1];
+
+  var ring = '<div class="pf-ring">' +
+    '<svg width="86" height="86" viewBox="0 0 80 80" aria-hidden="true">' +
+      '<circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="8"/>' +
+      '<circle class="fg" cx="40" cy="40" r="34" fill="none" stroke="url(#pfGoalG)" stroke-width="8" ' +
+        'stroke-linecap="round" stroke-dasharray="' + (C * pct / 100).toFixed(1) + ' ' + C.toFixed(1) + '" ' +
+        'transform="rotate(-90 40 40)"/>' +
+      '<defs><linearGradient id="pfGoalG" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0%" stop-color="#00d4ff"/><stop offset="100%" stop-color="#a855f7"/></linearGradient></defs>' +
+    '</svg><div class="pf-ring-txt">' + pct.toFixed(0) + '%</div></div>';
+
+  var rows = list.map(function(a){
+    var p      = a.aim > 0 ? Math.min(a.amount / a.aim * 100, 100) : 0;
+    var barClr = p >= 80 ? 'var(--green)' : p >= 50 ? 'var(--gold)' : 'var(--blue)';
+    var remClr = p >= 80 ? 'var(--green)' : p >= 50 ? 'var(--gold)' : '#94a3b8';
+    var remLbl = a.remaining > 0 ? portFmt(a.remaining) : (a.aim > 0 ? '✓ Done' : '—');
+    return '<div class="pf-aim">' +
+      '<div class="pf-aim-top">' +
+        '<span class="pf-aim-cat" title="' + portEsc(a.category) + '">' + portEsc(a.category) + '</span>' +
+        '<span class="pf-aim-pct" style="color:' + barClr + '">' + p.toFixed(1) + '%</span>' +
+      '</div>' +
+      '<div class="pf-aim-bar"><div class="pf-aim-fill' + (p >= 80 ? ' near' : '') + '" ' +
+        'style="background-color:' + barClr + '" data-w="' + p.toFixed(1) + '"></div></div>' +
+      '<div class="pf-aim-nums">' +
+        '<span class="pf-aim-cur">' + portFmt(a.amount) + ' of ' + portFmt(a.aim) + '</span>' +
+        '<span class="pf-aim-rem" style="color:' + remClr + '">' + remLbl + '</span>' +
+      '</div></div>';
+  }).join('');
+
+  return '<div class="pf-goal-head">' + ring +
+      '<div class="pf-goal-meta">' +
+        '<span class="pf-goal-phase">Phase ' + phase + (isLast ? ' · Latest' : '') + '</span>' +
+        '<span class="pf-goal-amt">' + portFmt(t.amount) + '</span>' +
+        '<span class="pf-goal-of">of ' + portFmt(t.aim) + ' · ' + t.done + '/' + t.count + ' targets met</span>' +
+        '<span class="pf-goal-left" style="color:' + (isDone ? 'var(--green)' : 'var(--red2)') + '">' +
+          (isDone ? '✓ Target reached' : portFmt(t.remaining) + ' left') + '</span>' +
+      '</div></div>' +
+    '<div class="pf-aims">' + rows + '</div>';
+}
+
+function portSwitchAimPhase(val){
+  var phase = parseInt(val, 10);
+  if(isNaN(phase)) return;
+  portAimsPhase = phase;
+  var body = document.getElementById('portGoalsBody');
+  if(body) body.innerHTML = portGoalsBodyHtml(phase);
+  var pills = document.querySelectorAll('#page-port .pf-phase-pill');
+  for(var i = 0; i < pills.length; i++) pills[i].classList.toggle('active', +pills[i].dataset.phase === phase);
+  setTimeout(function(){
+    var bars = document.querySelectorAll('#page-port .pf-aim-fill[data-w]');
+    for(var j = 0; j < bars.length; j++) bars[j].style.width = bars[j].dataset.w + '%';
+  }, 40);
+}
+
+/* ═══════════════════════════════════════════
+   ④ GROWTH
+═══════════════════════════════════════════ */
+function portGrowthHtml(growth){
+  if(!growth.length) return '';
+  var ranges = [['6m','6M'],['1y','1Y'],['2y','2Y'],['all','All']];
+  var seg = '';
+  ranges.forEach(function(r){
+    seg += '<button class="pf-seg-btn' + (r[0] === _portRange ? ' active' : '') + '" type="button" ' +
+      'data-range="' + r[0] + '" onclick="portSetRange(\'' + r[0] + '\')">' + r[1] + '</button>';
+  });
+
+  return '<div class="assets-section">' +
+    '<div class="section-heading">📈 Growth Trajectory</div>' +
+    '<div class="glass-card">' +
+      '<div class="card-header">' +
+        '<span class="card-dot" style="background:#2dd4bf;box-shadow:0 0 6px #2dd4bf"></span>' +
+        '<span class="card-title">Portfolio Value Over Time</span>' +
+        '<div class="pf-seg teal" style="margin-left:auto" role="group" aria-label="Range">' + seg + '</div>' +
+        '<button class="pf-toggle' + (_portShowMA ? ' active' : '') + '" id="portMAToggle" type="button" title="3-point moving average" onclick="portToggleMA()"><i style="background:#a855f7"></i> MA</button>' +
+        '<button class="pf-toggle' + (_portShowProj ? ' active' : '') + '" id="portProjToggle" type="button" title="Linear projection" onclick="portToggleProj()"><i style="background:#fbbf24"></i> Projection</button>' +
+      '</div>' +
+      '<div class="pf-growth-stats" id="portGrowthStats"></div>' +
+      '<div class="pf-growth-box"><canvas id="portGrowthChart"></canvas></div>' +
+      '<div class="pf-milestones" id="portGrowthMilestones"></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function portRangedGrowth(){
+  var n = { '6m':6, '1y':12, '2y':24 }[_portRange];
+  if(!n || _portGrowthAll.length <= n) return _portGrowthAll.slice();
+  return _portGrowthAll.slice(_portGrowthAll.length - n);
+}
+
+function portSetRange(r){
+  _portRange = r;
+  var btns = document.querySelectorAll('#page-port .pf-seg-btn[data-range]');
+  for(var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i].dataset.range === r);
+  portBuildGrowthChart();
+}
+
+function portBuildGrowthChart(){
+  var canvas = document.getElementById('portGrowthChart');
+  if(!canvas || typeof Chart === 'undefined') return;
+  var growth = portRangedGrowth();
+  if(!growth.length) return;
+
+  if(_portGrowthChart){ try{ _portGrowthChart.destroy(); }catch(e){} _portGrowthChart = null; }
+
+  var ctx     = canvas.getContext('2d');
+  var glabels = growth.map(function(g){ return g.date; });
+  var amounts = growth.map(function(g){ return g.amount; });
+  var notes   = growth.map(function(g){ return g.note; });
+  var reduce  = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* 3-point moving average */
+  var ma = [];
+  for(var m = 0; m < amounts.length; m++){
+    ma.push(m < 2 ? null : (amounts[m-2] + amounts[m-1] + amounts[m]) / 3);
+  }
+
+  /* linear projection, next 3 points */
+  var proj = [], fullProj = null, fullLabels = null;
+  if(amounts.length >= 2){
+    var n = amounts.length, sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for(var p = 0; p < n; p++){ sumX += p; sumY += amounts[p]; sumXY += p * amounts[p]; sumX2 += p * p; }
+    var denom = n * sumX2 - sumX * sumX;
+    if(denom !== 0){
+      var slope = (n * sumXY - sumX * sumY) / denom;
+      var inter = (sumY - slope * sumX) / n;
+      var projLabels = [];
+      for(var f = 1; f <= 3; f++){
+        proj.push(Math.max(0, inter + slope * (n - 1 + f)));
+        projLabels.push('Proj+' + f);
+      }
+      fullProj = [];
+      for(var j = 0; j < amounts.length; j++) fullProj.push(null);
+      fullProj[amounts.length - 1] = amounts[amounts.length - 1];  /* join the line */
+      fullProj = fullProj.concat(proj);
+      fullLabels = glabels.concat(projLabels);
+    }
+  }
+
+  var fill = ctx.createLinearGradient(0, 0, 0, 240);
+  fill.addColorStop(0, 'rgba(45,212,191,.38)');
+  fill.addColorStop(1, 'rgba(45,212,191,.02)');
+
+  var all  = fullProj ? amounts.concat(proj) : amounts;
+  var lo   = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+  var step = Math.max(Math.pow(10, Math.floor(Math.log(Math.max(hi,1)) / Math.LN10) - 1), 1);
+  var yMin = Math.max(0, Math.floor((lo * 0.94) / step) * step);
+  var yMax = Math.ceil((hi * 1.04) / step) * step;
+  if(yMax <= yMin) yMax = yMin + step;
+
+  var datasets = [{
+    label:'Portfolio Value', data:amounts,
+    borderColor:'#2dd4bf', backgroundColor:fill, borderWidth:3, fill:true, tension:.38,
+    pointBackgroundColor:amounts.map(function(v,i){ return notes[i] ? '#ffd700' : '#2dd4bf'; }),
+    pointRadius:amounts.map(function(v,i){ return notes[i] ? 7 : 4; }),
+    pointHoverRadius:9, pointBorderColor:'rgba(0,0,0,.5)', pointBorderWidth:2, order:1
+  },{
+    label:'MA (3-pt)', data:ma, hidden:!_portShowMA,
+    borderColor:'#a855f7', borderWidth:2.5, fill:false, tension:.45,
+    pointRadius:0, pointHoverRadius:5, pointBackgroundColor:'#a855f7', borderDash:[4,3], order:2
+  }];
+
+  if(fullProj){
+    datasets.push({
+      label:'Projection', data:fullProj, hidden:!_portShowProj,
+      borderColor:'#fbbf24', borderWidth:2.5, fill:false, tension:.35,
+      pointRadius:function(c){ return c.dataIndex >= amounts.length ? 5 : 0; },
+      pointHoverRadius:7, pointBackgroundColor:'#fbbf24', pointBorderColor:'#fbbf24',
+      borderDash:[8,4], order:3
+    });
+  }
+
+  _portGrowthChart = new Chart(ctx, {
+    type:'line',
+    data:{ labels: fullLabels || glabels, datasets: datasets },
+    options:{ responsive:true, maintainAspectRatio:false, animation:{ duration: reduce ? 0 : 1400 },
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:true, position:'bottom',
+          labels:{ color:'rgba(255,255,255,.4)', font:{ size:10 }, padding:10, boxWidth:12, usePointStyle:true, pointStyleWidth:6 } },
+        tooltip:{ backgroundColor:'rgba(6,11,24,.96)', borderColor:'rgba(45,212,191,.3)', borderWidth:1,
+          titleColor:'#2dd4bf', bodyColor:'rgba(255,255,255,.65)', padding:11,
+          filter:function(item){ return item.parsed.y !== null && item.parsed.y !== undefined; },
+          callbacks:{
+            label:function(c){
+              var base = ' ₨' + Number(c.parsed.y).toLocaleString('en-IN',{ minimumFractionDigits:0, maximumFractionDigits:0 });
+              if(c.datasetIndex === 1) return ' MA:' + base;
+              if(c.datasetIndex === 2) return ' 🔮' + base;
+              var nt = notes[c.dataIndex];
+              return nt ? [base, ' 📌 ' + nt] : base;
+            } } } },
+      scales:{
+        x:{ ticks:{ color:'rgba(255,255,255,.45)', font:{ size:10 }, maxRotation:0, autoSkipPadding:14 },
+            grid:{ color:'rgba(255,255,255,.04)' } },
+        y:{ min:yMin, max:yMax,
+            ticks:{ color:'rgba(255,255,255,.4)', font:{ size:10 }, callback:portTick },
+            grid:{ color:'rgba(255,255,255,.05)' } } } }
+  });
+
+  /* stat tiles */
+  var first = amounts[0] || 0, last = amounts[amounts.length - 1] || 0;
+  var growPct = first > 0 ? (last - first) / first * 100 : 0;
+  var ann = '—';
+  if(amounts.length >= 2 && first > 0 && last > 0){
+    var yrs = Math.max(amounts.length / 12, 0.08);
+    var cagr = (Math.pow(last / first, 1 / yrs) - 1) * 100;
+    if(isFinite(cagr)) ann = (cagr >= 0 ? '+' : '') + cagr.toFixed(1) + '%';
+  }
+  var gs = function(lbl, val, col){
+    return '<div class="pf-gs"><div class="pf-gs-lbl">' + lbl + '</div>' +
+      '<div class="pf-gs-val"' + (col ? ' style="color:' + col + '"' : '') + '>' + val + '</div></div>';
+  };
+  var statsEl = document.getElementById('portGrowthStats');
+  if(statsEl){
+    statsEl.innerHTML =
+      gs('Start',  portFmtShort(first)) +
+      gs('Latest', portFmtShort(last)) +
+      gs('Growth', (growPct >= 0 ? '+' : '') + growPct.toFixed(1) + '%', growPct >= 0 ? '#00ff88' : '#ff4d8d') +
+      gs('Ann. Rate', ann, '#a855f7') +
+      gs('Entries', amounts.length);
+  }
+
+  var msEl = document.getElementById('portGrowthMilestones');
+  if(msEl){
+    msEl.innerHTML = growth.filter(function(g){ return g.note; })
+      .map(function(g){ return '<span class="pf-ms">📌 ' + portEsc(g.date) + ' · ' + portEsc(g.note) + '</span>'; })
+      .join('');
+  }
+
+  var maBtn = document.getElementById('portMAToggle');
+  var pjBtn = document.getElementById('portProjToggle');
+  if(maBtn) maBtn.classList.toggle('active', _portShowMA);
+  if(pjBtn) pjBtn.classList.toggle('active', _portShowProj);
+}
+
+function portToggleMA(){
+  _portShowMA = !_portShowMA;
+  var btn = document.getElementById('portMAToggle');
+  if(btn) btn.classList.toggle('active', _portShowMA);
+  if(!_portGrowthChart) return;
+  var ds = _portGrowthChart.data.datasets;
+  if(ds.length > 1){ ds[1].hidden = !_portShowMA; _portGrowthChart.update(); }
+}
+
+function portToggleProj(){
+  _portShowProj = !_portShowProj;
+  var btn = document.getElementById('portProjToggle');
+  if(btn) btn.classList.toggle('active', _portShowProj);
+  if(!_portGrowthChart) return;
+  var ds = _portGrowthChart.data.datasets;
+  if(ds.length > 2){ ds[2].hidden = !_portShowProj; _portGrowthChart.update(); }
+}
+
+/* ═══════════════════════════════════════════
+   ⑤ ASSETS — toolbar, card grid, drill-down
+═══════════════════════════════════════════ */
+function portToolbarHtml(){
+  var chips = '';
+  [['all','All'],['asset','Assets'],['owe','Owed'],['other','Other']].forEach(function(c){
+    chips += '<button class="pf-chip' + (c[0] === _portFilter ? ' active' : '') + '" type="button" ' +
+      'data-filter="' + c[0] + '" onclick="portSetFilter(\'' + c[0] + '\')">' + c[1] + '</button>';
+  });
+
+  return '<div class="pf-toolbar">' +
+    '<label class="pf-search">' +
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>' +
+      '<input id="portSearch" type="search" placeholder="Search assets…" aria-label="Search assets" oninput="portSetQuery(this.value)">' +
+    '</label>' +
+    '<select class="pf-select" id="portSort" aria-label="Sort assets" onchange="portSetSort(this.value)">' +
+      '<option value="val-desc">Value ↓</option>' +
+      '<option value="val-asc">Value ↑</option>' +
+      '<option value="name">Name A–Z</option>' +
+      '<option value="type">Type</option>' +
+    '</select>' +
+    '<div class="pf-chips" role="group" aria-label="Filter">' + chips + '</div>' +
+  '</div>';
+}
+
+function portSetFilter(f){
+  _portFilter = f;
+  var btns = document.querySelectorAll('#page-port .pf-chip[data-filter]');
+  for(var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i].dataset.filter === f);
+  portRenderAssets();
+}
+
+function portSetSort(s){ _portSort = s; portRenderAssets(); }
+function portSetQuery(q){ _portQuery = (q || '').toLowerCase().trim(); portRenderAssets(); }
+
+function portFilteredAssets(){
+  var out = _portAssets.filter(function(a){
+    if(_portQuery && a.cat.toLowerCase().indexOf(_portQuery) < 0) return false;
+    if(_portFilter === 'asset') return a.cls === 'positive';
+    if(_portFilter === 'owe')   return a.cls === 'negative' || a.amt < 0;
+    if(_portFilter === 'other') return a.cls === 'neutral' && a.amt >= 0;
+    return true;
+  });
+  var s = _portSort;
+  out.sort(function(x, y){
+    if(s === 'val-asc')  return x.amt - y.amt;
+    if(s === 'name')     return x.cat.localeCompare(y.cat);
+    if(s === 'type')     return x.cls.localeCompare(y.cls) || y.amt - x.amt;
+    return y.amt - x.amt;
+  });
+  return out;
+}
+
+function portRenderAssets(){
+  var box = document.getElementById('portAssetsBody'); if(!box) return;
+  var list = portFilteredAssets();
+
+  if(!list.length){
+    box.innerHTML = '<div class="pf-empty">No assets match “' + portEsc(_portQuery) + '”</div>';
+    return;
+  }
+
+  box.innerHTML = portCardsHtml(list);
+
+  setTimeout(function(){
+    var bars = box.querySelectorAll('[data-w]');
+    for(var i = 0; i < bars.length; i++) bars[i].style.width = bars[i].dataset.w + '%';
+  }, 60);
+}
+
+function portBadge(a){
+  var badge = a.cls === 'positive' ? 'badge-positive' : a.cls === 'negative' ? 'badge-negative' : 'badge-neutral';
+  var text  = a.cls === 'positive' ? 'ASSET' : a.cls === 'negative' ? 'OWE' : 'OTHER';
+  return '<span class="asset-badge ' + badge + '">' + text + '</span>';
+}
+
+function portAmtCls(a){
+  return a.amt < 0 ? 'negative' : a.cls === 'positive' ? 'positive' : 'neutral';
+}
+
+function portCardsHtml(list){
+  var html = '';
+  list.forEach(function(a, n){
+    html += '<button class="asset-card" type="button" style="animation-delay:' + Math.min(n * 35, 420) + 'ms" onclick="portOpenAsset(' + a.i + ')">' +
+      '<span class="pf-accent" style="background:' + a.color + '"></span>' +
+      '<span class="asset-card-top">' +
+        '<span style="display:flex;align-items:center;gap:7px;flex:1;min-width:0">' +
+          '<span class="pf-rank">#' + (n + 1) + '</span>' +
+          '<span class="asset-name">' + portEsc(a.cat) + '</span></span>' +
+        portBadge(a) +
+      '</span>' +
+      '<span class="asset-amount ' + portAmtCls(a) + '" style="display:block">' + portFmt(a.amt) + '</span>' +
+      '<span class="pf-share">' +
+        '<span class="asset-bar-wrap"><span class="asset-bar" style="display:block;background:' + a.color + '" data-w="' + a.pct.toFixed(1) + '"></span></span>' +
+        '<span class="pf-share-pct">' + (a.amt > 0 ? a.pct.toFixed(1) + '%' : '—') + '</span>' +
+      '</span>' +
+    '</button>';
+  });
+  return '<div class="assets-grid">' + html + '</div>';
+}
+
+/* ── drill-down sheet ── */
+function portOpenAsset(i){
+  var a = _portAssets[i]; if(!a) return;
+  var panel = document.getElementById('portSheetPanel');
+  var sheet = document.getElementById('portSheet');
+  if(!panel || !sheet) return;
+
+  var ranked = _portAssets.filter(function(x){ return x.amt > 0; }).sort(function(x, y){ return y.amt - x.amt; });
+  var rank   = ranked.indexOf(a) + 1;
+  var amtCol = a.amt < 0 ? 'var(--red2)' : a.cls === 'positive' ? '#00ff88' : 'var(--blue)';
+  var totPos = _portPos.reduce(function(s, x){ return s + x.amt; }, 0);
+  var ofNet  = _portTotals.lkr > 0 ? (a.amt / _portTotals.lkr * 100) : 0;
+
+  panel.innerHTML =
+    '<span class="pf-sheet-grab"></span>' +
+    '<div class="pf-sheet-head">' +
+      '<span class="pf-sheet-dot" style="background:' + a.color + ';box-shadow:0 0 10px ' + a.color + '"></span>' +
+      '<span class="pf-sheet-name">' + portEsc(a.cat) + '</span>' + portBadge(a) +
+      (rank > 0 ? '<span class="pf-sheet-rank">RANK #' + rank + '</span>' : '') +
+    '</div>' +
+    '<div class="pf-sheet-amt" style="color:' + amtCol + '">' + portFmt(a.amt) + '</div>' +
+    '<div class="pf-sheet-stats">' +
+      '<div class="pf-ss"><div class="pf-ss-lbl">Of assets</div><div class="pf-ss-val" style="color:' + a.color + '">' + (a.amt > 0 ? a.pct.toFixed(1) + '%' : '—') + '</div></div>' +
+      '<div class="pf-ss"><div class="pf-ss-lbl">Of net worth</div><div class="pf-ss-val">' + (a.amt !== 0 && _portTotals.lkr > 0 ? ofNet.toFixed(1) + '%' : '—') + '</div></div>' +
+      '<div class="pf-ss"><div class="pf-ss-lbl">Rank</div><div class="pf-ss-val">' + (rank > 0 ? rank + ' / ' + ranked.length : '—') + '</div></div>' +
+    '</div>' +
+    (a.amt > 0 ? '<div class="pf-aim-bar"><div class="pf-aim-fill" style="background-color:' + a.color + ';width:' + a.pct.toFixed(1) + '%"></div></div>' : '') +
+    '<div class="pf-ss" style="border-left:2px solid ' + a.color + '">' +
+      '<div class="pf-ss-lbl">Share of ' + portFmtShort(totPos) + ' in positive balances</div>' +
+      '<div class="pf-ss-val" style="font-size:12px;font-weight:600;color:rgba(255,255,255,.55)">' +
+        (a.amt > 0 ? portFmt(a.amt) + ' of ' + portFmt(totPos) : 'Not counted — this row is a liability') + '</div>' +
+    '</div>' +
+    '<button class="pf-sheet-close" type="button" onclick="portCloseAsset()">Close</button>';
+
+  sheet.classList.add('open');
+  portHaptic();
+}
+
+function portCloseAsset(){
+  var sheet = document.getElementById('portSheet');
+  if(sheet) sheet.classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════
+   TICKER
+═══════════════════════════════════════════ */
+function buildPortTicker(assets, totalLKR){
+  if(typeof _buildTick !== 'function') return;
+  var fmt = function(n){ return '₨' + Math.abs(n).toLocaleString('en-IN',{ minimumFractionDigits:0, maximumFractionDigits:0 }); };
+  var items = assets.map(function(a){
+    var pct = totalLKR > 0 ? (a.amt / totalLKR * 100).toFixed(1) : '0.0';
+    return '<span class="tick-item">' +
+      '<span class="tick-sym">' + portEsc(a.cat.toUpperCase()) + '</span>' +
+      ' <span style="color:rgba(255,255,255,.75)">' + fmt(a.amt) + '</span>' +
+      (totalLKR > 0 && a.amt > 0 ? ' <span class="tick-chg ' + (a.amt < 0 ? 'fl' : 'fr') + '">' + pct + '%</span>' : '') +
+    '</span>';
+  });
+  _buildTick('portTickerWrap', 'portTickerTrack', items, 40);
+}
+
+/* ═══════════════════════════════════════════
+   KEYBOARD
+═══════════════════════════════════════════ */
+document.addEventListener('keydown', function(e){
+  var pop = document.getElementById('portLogPop');
+  var sheet = document.getElementById('portSheet');
+  if(e.key === 'Enter' && pop && pop.classList.contains('open')){ portConfirmLog(); return; }
+  if(e.key === 'Escape'){
+    if(sheet && sheet.classList.contains('open')){ portCloseAsset(); return; }
+    if(pop && pop.classList.contains('open')) portCloseLog();
+  }
+});
+</script>
