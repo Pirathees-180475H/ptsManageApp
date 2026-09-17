@@ -21,7 +21,6 @@ document.title = 'EXP TRACK';
   var _APP_URL = "<?= _APP_URL ?>";
 </script>
 <?!= HtmlService.createHtmlOutputFromFile('docs').getContent(); ?>
-<?!= HtmlService.createHtmlOutputFromFile('BankBalances').getContent(); ?>
 <?!= HtmlService.createHtmlOutputFromFile('ETFCalc').getContent(); ?>
 <?!= include('notification'); ?>
 <?!= include('cardDeck'); ?>
@@ -292,6 +291,9 @@ document.title = 'EXP TRACK';
   </div>
   <iframe id="ae-iframe" style="display:none" src="about:blank"></iframe>
 </div>
+
+<!-- ═══ BANK PAGE (liquid cash) ═══ -->
+<?!= include('BankBalances'); ?>
 
 <?!= include('portfolio'); ?>
 
@@ -782,6 +784,10 @@ document.title = 'EXP TRACK';
     <span class="bnav-ico">📈</span>
     <span class="bnav-lbl">Investments</span>
   </button>
+  <button class="bnav-btn" data-page="bank" onclick="showPage('bank')">
+    <span class="bnav-ico">🏦</span>
+    <span class="bnav-lbl">Bank</span>
+  </button>
   <button class="bnav-btn" data-page="port" onclick="showPage('port')">
     <span class="bnav-ico">💼</span>
     <span class="bnav-lbl">Summary</span>
@@ -899,6 +905,7 @@ function _doShowPage(name){
     if(name==='exp')  expLoad();
     if(name==='port') portLoad();
     if(name==='mf')   mfLoad();
+    if(name==='bank') bankLoad();
   }
 }
 
@@ -928,6 +935,7 @@ function reloadPage(name){
   else if(name==='ca')   { document.getElementById('ca-body').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-txt">Loading Card Analysis…</div></div>'; caLoad(); _spaLoaded.ca=true; }
   else if(name==='exp')  { document.getElementById('exp-root').innerHTML='<div class="exp-loader"><div class="exp-spinner"></div><p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p></div>'; _expDetailReset(); expLoad(); _spaLoaded.exp=true; }
   else if(name==='port') { portLoad(); _spaLoaded.port=true; }
+  else if(name==='bank') { bankLoad(); _spaLoaded.bank=true; }
   else if(name==='mf')   { document.getElementById('mf-root').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px"><div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Flow…</div></div>'; mfLoad(); _spaLoaded.mf=true; }
 }
 

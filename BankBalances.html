@@ -1,1470 +1,2134 @@
-<!-- 🏦 Bank Balances Modal Snippet -->
+<!-- ═══════════════════════════════════════════════════════════════
+     BANK PAGE  —  liquid cash, self-contained
+     ───────────────────────────────────────────────────────────
+     Replaces the old #bank-modal that used to live in this file and
+     stacked three overlays — modal → transactions → confirm — on top
+     of each other. Four zones now, each an anchor of the tab rail:
+
+       ① command bar   pinned · live USD/LKR · save · reload
+       ② overview      hero + donut + allocation ribbon + 4 KPIs
+       ③ passbooks     a shelf of bound savings books; open one and
+                       its two-leaf spread carries the balance (left)
+                       and its ruled ledger (right)
+       ④ move money    transfer (with preview) + converter + pairs
+       ⑤ transactions  inline ledger — search · filter · edit · CSV
+
+     ③ is the only home for a balance edit, a rename and an account's
+     history — all three used to live in three separate places.
+
+     Every backend call from the modal is intact, none added:
+       getBankBalances · updateBankBalances · getUsdToLkrRate
+       getBankTransactions · addBankTransaction ·
+       updateBankTransaction · deleteBankTransaction ·
+       getAdditionalDropdownValues
+
+     KPIs, sparklines, recent pairs and the ribbon are all derived
+     client-side from those same two arrays — zero extra round trips.
+
+     Talks to render.html through four hooks only:
+       in  — bankLoad() · #bank-root      (_doShowPage, reloadPage)
+       out — haptic() · Chart (global) · reloadPage('port')
+
+     moneyToggle() is redefined here as showPage('bank'), so the 💵
+     button in every page header and the tool-wheel spoke keep working.
+
+     Included from render.html via:  <?!= include('BankBalances'); ?>
+═══════════════════════════════════════════════════════════════ -->
 <style>
-#bank-modal{
-  position:fixed; top:10vh; left:calc(50vw - 400px);
-  width:95%; max-width:800px; z-index:8000;
-  background:rgba(6,11,24,.84);backdrop-filter:blur(28px);
-  -webkit-backdrop-filter:blur(28px);
-  border:1px solid rgba(255,255,255,.11);border-radius:18px;
-  box-shadow:0 20px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
-  display:none;flex-direction:column;overflow:hidden;
-}
-#bank-modal.open{display:flex;animation:bankModalIn .3s ease;}
-@media(max-width:850px){ #bank-modal{ left:2.5%; } }
-@media(max-width:600px){
-  #bank-modal {
-    top: 5vh;
-    left: 2.5%;
-    width: 95%;
-    height: 90vh;
-    border-radius: 12px;
-    overflow-y: auto;
-  }
-  .bm-body {
-    padding: 15px;
-    gap: 15px;
-    max-height: none;
-    overflow-y: visible;
-  }
-  .bm-main-row {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  .bm-list {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-  .bm-side {
-    order: -1;
-  }
-  .bm-chart-box {
-    height: 150px;
-  }
-  .bm-bottom-row {
-    grid-template-columns: 1fr;
-    padding: 15px 15px 0;
-  }
-  .bm-rate-badge {
-    display: none;
-  }
-  .bm-title {
-    font-size: .55em;
-  }
-  .bm-item-amt{
-    font-size: 1.1em;
-  }
-  .bm-total-val {
-    font-size: 1.2em;
-  }
-}
-@keyframes bankModalIn{from{opacity:0;transform:scale(.95) translateY(10px);}to{opacity:1;transform:scale(1) translateY(0);}}
-.bm-hdr{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 13px 8px;border-bottom:1px solid rgba(255,255,255,.06);
-  flex-shrink:0;cursor:grab;user-select:none;
-}
-.bm-hdr:active{cursor:grabbing;}
-.bm-title{font-size:.63em;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.35); display:flex; align-items:center; gap: 8px;}
-.bm-close{background:none;border:none;color:rgba(255,255,255,.25);font-size:.85em;cursor:pointer;padding:2px 5px;line-height:1;font-family:inherit;}
-.bm-close:hover{color:#fff;}
-.bm-body{padding:20px 22px;display:flex;flex-direction:column;gap:20px;max-height: 70vh; overflow-y: auto;}
-.bm-main-row{display:grid;grid-template-columns:1fr 220px;gap:24px;align-items:start;}
-.bm-list{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
-.bm-item{
-  background:rgba(255,255,255,.032);
-  border:1px solid rgba(255,255,255,.06);
-  border-radius:16px;
-  padding:16px;
-  transition:all .28s cubic-bezier(.4,0,.2,1);
-  position:relative;
-  overflow:hidden;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
-.bm-item:hover{
-  transform:translateY(-3px);
-  box-shadow:0 12px 36px rgba(0,0,0,.4);
-  background:rgba(255,255,255,.05);
-  border-color:rgba(255,255,255,.1);
-}
-.bm-item::after{
-  content:'';
-  position:absolute;
-  left:0;top:0;bottom:0;
-  width:3px;
-  background:var(--bank-color, #6366f1);
-  box-shadow:2px 0 10px var(--bank-color, #6366f1);
-  opacity:.7;
+/* ═══════════════════════════════════════════════════════════════
+   Every rule is prefixed #page-bank so it out-ranks render-style.html
+   without !important. Palette is flow.html's — bright, few, distinct;
+   no navy or dark-blue banks, which went muddy on this ground.
+═══════════════════════════════════════════════════════════════ */
+#page-bank{
+  --bk-cyan:#00d4ff; --bk-purple:#a855f7; --bk-gold:#ffd700;
+  --bk-green:#00e676; --bk-orange:#ff6b35; --bk-pink:#ff4d8d; --bk-amber:#f59e0b;
+  --bk-panel:rgba(255,255,255,.028);
+  --bk-bdr:rgba(255,255,255,.07);
+  --bk-bdr2:rgba(255,255,255,.13);
+  --bk-ink:rgba(255,255,255,.92);
+  --bk-ink2:rgba(255,255,255,.6);
+  --bk-mut:rgba(255,255,255,.34);
+  --bk-faint:rgba(255,255,255,.2);
 }
 
-.bm-item-row{
-  display:flex;
-  align-items:center;
-  gap:14px;
+/* ═══ ① COMMAND BAR ═══════════════════════════════════════════ */
+#page-bank .bk-hdr-left{display:flex;align-items:center;gap:9px;min-width:0;}
+#page-bank .bk-fx{
+  display:flex;align-items:center;gap:6px;padding:4px 10px;border-radius:10px;
+  background:rgba(0,230,118,.09);border:1px solid rgba(0,230,118,.24);white-space:nowrap;
 }
-.bm-avatar{
-  width:38px;height:38px;
-  border-radius:11px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:.65em;
-  font-weight:800;
-  flex-shrink:0;
+#page-bank .bk-fx-l{font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--bk-mut);}
+#page-bank .bk-fx-v{font-size:12px;font-weight:800;color:var(--bk-green);font-variant-numeric:tabular-nums;}
+#page-bank .bk-fx.loading .bk-fx-v{color:var(--bk-faint);animation:pls 1.2s ease infinite;}
+#page-bank .bk-save-btn{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.55);border-radius:8px;padding:5px 11px;
+  font-size:12px;font-weight:800;font-family:inherit;cursor:pointer;line-height:1;
+  transition:all .18s;white-space:nowrap;
 }
-.bm-info{
-  flex:1;
-  display:flex;
-  flex-direction:column;
+#page-bank .bk-save-btn:disabled{opacity:.4;cursor:default;}
+#page-bank .bk-save-btn.armed{
+  background:rgba(255,215,0,.14);border-color:rgba(255,215,0,.4);color:var(--bk-gold);
 }
-.bm-item-source{
-  background:transparent;
-  border:none;
-  font-family:'Inter',sans-serif;
-  font-size:10px;
-  font-weight:700;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  outline:none;
-  padding:3px 9px;
-  border-radius:7px;
-  width:fit-content;
-  transition:all .2s;
+#page-bank .bk-save-btn.armed:hover{background:rgba(255,215,0,.22);}
+
+/* ═══ ② TAB RAIL ══════════════════════════════════════════════ */
+#page-bank .bk-tabs{
+  display:flex;align-items:center;gap:5px;padding:8px 16px;flex-shrink:0;
+  position:relative;z-index:2;background:rgba(6,11,24,.6);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--bdr);
+  overflow-x:auto;scrollbar-width:none;
+}
+#page-bank .bk-tabs::-webkit-scrollbar{display:none;}
+#page-bank .bk-tab{
+  font-family:'Inter',sans-serif;font-size:11px;font-weight:700;letter-spacing:.4px;
+  padding:6px 14px;border-radius:9px;white-space:nowrap;cursor:pointer;transition:all .2s;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.42);
+}
+#page-bank .bk-tab:hover{color:var(--bk-ink);border-color:var(--bk-bdr2);}
+#page-bank .bk-tab.active{background:rgba(0,212,255,.13);border-color:rgba(0,212,255,.38);color:var(--bk-cyan);}
+
+/* ═══ SCROLLER ════════════════════════════════════════════════ */
+#page-bank .page-wrap{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:1;
+  padding:16px;padding-bottom:96px;scroll-behavior:smooth;
+}
+#page-bank [id^="bkSec"]{scroll-margin-top:12px;margin-bottom:26px;}
+#page-bank [id^="bkSec"]:last-child{margin-bottom:0;}
+
+/* ── one panel shell for every zone (flow.html's) ── */
+#page-bank .bk-panel{
+  border:1px solid var(--bk-bdr);border-radius:18px;background:var(--bk-panel);
+  box-shadow:0 4px 24px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
+  padding:14px 16px 16px;animation:fadeUp .45s ease both;
+}
+#page-bank .bk-panel-hdr{
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.45);
+}
+#page-bank .bk-panel-hdr i{width:7px;height:7px;border-radius:50%;flex-shrink:0;font-style:normal;}
+#page-bank .bk-panel-sub{
+  margin-left:auto;font-size:11px;font-weight:600;letter-spacing:.3px;
+  text-transform:none;color:rgba(255,255,255,.26);display:flex;align-items:center;gap:7px;
 }
 
-.bm-item-amt{
-  background:transparent;
-  border:none;
-  color:rgba(255,255,255,.6);
-  font-family:'Inter',sans-serif;
-  font-size:.80em;
-  font-weight:700;
-  outline:none;
-  padding:2px 0;
-  width:100%;
-  letter-spacing:0.5px;
+/* ═══ ② OVERVIEW ══════════════════════════════════════════════ */
+#page-bank .bk-hero{
+  position:relative;overflow:hidden;border-radius:20px;padding:22px 24px;margin-bottom:14px;
+  background:linear-gradient(145deg,rgba(0,212,255,.09),rgba(168,85,247,.05) 48%,rgba(255,255,255,.02));
+  border:1px solid rgba(0,212,255,.16);animation:fadeUp .45s ease both;
 }
-.bm-item-amt:focus{color:rgba(255,255,255,.95);}
-.bm-item-usd{
-  font-size:.68em;
-  font-weight:600;
-  color:rgba(255,255,255,.35);
-  letter-spacing:.4px;
-  padding-top:2px;
-  font-family:'Inter',sans-serif;
+#page-bank .bk-hero::before{
+  content:'';position:absolute;top:-70px;right:-50px;width:230px;height:230px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,.18),transparent 68%);pointer-events:none;
 }
-.bm-rate-badge{
-  display:flex;align-items:center;gap:5px;
-  background:rgba(16,185,129,.08);
-  border:1px solid rgba(16,185,129,.2);
-  border-radius:10px;
-  padding:4px 10px;
-  font-family:'Inter',sans-serif;
-  animation:fadeIn .4s ease;
+#page-bank .bk-hero-in{position:relative;z-index:1;display:grid;grid-template-columns:1fr 188px;gap:24px;align-items:center;}
+#page-bank .bk-hero-lbl{
+  display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;
+  letter-spacing:2.6px;text-transform:uppercase;color:var(--bk-mut);
 }
-.bm-rate-icon{font-size:.75em;}
-.bm-rate-label{
-  font-size:.55em;
-  font-weight:700;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  color:rgba(255,255,255,.35);
+#page-bank .bk-hero-lbl i{
+  width:7px;height:7px;border-radius:50%;background:var(--bk-cyan);
+  box-shadow:0 0 10px var(--bk-cyan);animation:pls 2.6s ease-in-out infinite;
 }
-.bm-rate-val{
-  font-size:.7em;
-  font-weight:800;
-  color:rgba(16,185,129,.9);
-  letter-spacing:.5px;
+#page-bank .bk-hero-amt{
+  font-size:clamp(28px,5.2vw,48px);font-weight:900;letter-spacing:-2px;line-height:1.05;margin-top:7px;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(92deg,#fff,rgba(0,212,255,.82));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
 }
-.bm-rate-loading .bm-rate-val{color:rgba(255,255,255,.25);animation:pulse 1.2s ease infinite;}
+#page-bank .bk-hero-usd{margin-top:5px;font-size:13px;font-weight:600;color:var(--bk-green);font-variant-numeric:tabular-nums;}
+#page-bank .bk-hero-usd em{font-style:normal;color:var(--bk-faint);font-weight:500;}
+#page-bank .bk-hero-meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:15px;}
+#page-bank .bk-hm{display:flex;flex-direction:column;gap:2px;}
+#page-bank .bk-hm-k{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--bk-faint);}
+#page-bank .bk-hm-v{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--bk-ink);}
+#page-bank .bk-donut{position:relative;height:172px;}
 
-.bm-side{
-  display:flex;
-  flex-direction:column;
-  gap:16px;
-}
-.bm-chart-box{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:14px;height:180px;position:relative;}
-.bm-total-box{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:16px;padding:14px 18px;display:flex;flex-direction:column;gap:4px;}
-.bm-total-lbl{font-size:.58em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:3px;}
-.bm-total-val{font-size:.80em;font-weight:800;color:rgba(255,255,255,.75);letter-spacing:0.5px;line-height:1.2;}
-.bm-total-usd{font-size:.62em;font-weight:600;color:rgba(16,185,129,.6);letter-spacing:.4px;margin-top:3px;}
+#page-bank .bk-ribbon{display:flex;height:13px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,.05);}
+#page-bank .bk-ribbon div{transition:filter .2s;cursor:pointer;}
+#page-bank .bk-ribbon div:hover{filter:brightness(1.35);}
+#page-bank .bk-rkey{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px;}
+#page-bank .bk-rk{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--bk-ink2);}
+#page-bank .bk-rk i{width:9px;height:9px;border-radius:3px;flex:0 0 auto;}
+#page-bank .bk-rk b{font-weight:700;color:var(--bk-ink);}
+#page-bank .bk-rk span{color:var(--bk-faint);font-variant-numeric:tabular-nums;}
 
-/* ── Transaction Table UI ── */
-#bm-txn-overlay{
-  position:absolute; top:0; left:0; width:100%; height:100%;
-  background:rgba(6,11,24,.9); backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  z-index:9000; display:none; flex-direction:column;
-  padding:20px; box-sizing:border-box;
+#page-bank .bk-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;}
+#page-bank .bk-kpi{
+  padding:13px 15px;border-radius:16px;background:var(--bk-panel);border:1px solid var(--bk-bdr);
+  display:flex;flex-direction:column;gap:3px;
 }
-#bm-txn-overlay.open{ display:flex; animation: fadeIn 0.2s ease; }
-.bm-txn-hdr{ display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
-.bm-txn-body{ flex:1; overflow:hidden; display:flex; flex-direction:column; }
-.bm-txn-table-wrap{ flex:1; overflow-y:auto; border:1px solid rgba(255,255,255,.06); border-radius:10px; background:rgba(255,255,255,.02); }
-.bm-txn-table{ width:100%; border-collapse:collapse; font-size:10px; font-family:'Inter', sans-serif; }
-.bm-txn-table th{ position:sticky; top:0; background:rgba(255,255,255,.05); padding:10px; text-align:left; color:rgba(255,255,255,.3); font-weight:700; text-transform:uppercase; font-size:9px; letter-spacing:1px; z-index:1; }
-.bm-txn-table td{ padding:10px 10px; border-bottom:1px solid rgba(255,255,255,.04); color:rgba(255,255,255,.6); }
-.bm-txn-table tr:hover{ background:rgba(255,255,255,.02); }
-.bm-txn-btn-sm{ background:none; border:1px solid rgba(255,255,255,.1); color:rgba(255,255,255,.5); padding:4px 8px; border-radius:4px; cursor:pointer; font-size:.9em; transition:all 0.2s; }
-.bm-txn-btn-sm:hover{ border-color:rgba(255,255,255,.3); color:#fff; }
-.bm-txn-btn-del:hover{ background:rgba(239,68,68,0.15); color:#ef4444; }
-.bm-txn-btn-edit:hover{ background:rgba(59,130,246,0.15); color:#3b82f6; }
-.bm-txn-inline-input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 4px;
-  color: #fff;
-  padding: 4px 6px;
-  width: 100%;
-  box-sizing: border-box;
-  font-family: inherit;
-  font-size: 0.9em;
-}
-.bm-txn-editing { background: rgba(59,130,246,0.05) !important; }
+#page-bank .bk-kpi-k{font-size:9px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--bk-faint);}
+#page-bank .bk-kpi-v{font-size:17px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;color:var(--bk-ink);}
+#page-bank .bk-kpi-s{font-size:11px;color:var(--bk-mut);font-variant-numeric:tabular-nums;}
+#page-bank .bk-kpi.warn{border-color:rgba(255,215,0,.26);background:rgba(255,215,0,.05);}
+#page-bank .bk-kpi.warn .bk-kpi-v{color:var(--bk-gold);}
 
-/* ── Custom Confirm Dialog ── */
-/* Pagination Controls */
-.bm-pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 15px;
-  padding: 15px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-  background: rgba(0,0,0,0.2);
+/* ═══ ③ ACCOUNTS — the passbook shelf ═════════════════════════
+   Each account is a savings passbook. Closed on the shelf, it shows
+   the cover; tapped, it opens into a two-leaf spread whose right
+   page IS the ledger, so the book replaces both the old account card
+   and the old per-account history sheet.
+═══════════════════════════════════════════════════════════════ */
+#page-bank .bk-mini{
+  font-family:'Inter',sans-serif;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;
+  cursor:pointer;background:rgba(255,255,255,.05);border:1px solid var(--bk-bdr);
+  color:var(--bk-mut);transition:all .2s;white-space:nowrap;
 }
-.bm-page-btn {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff;
-  padding: 5px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85em;
-  transition: all 0.2s;
+#page-bank .bk-mini:hover{color:#fff;border-color:var(--bk-bdr2);background:rgba(255,255,255,.09);}
+#page-bank .bk-mini:disabled{opacity:.35;cursor:not-allowed;}
+#page-bank .bk-mini.go{color:var(--bk-cyan);border-color:rgba(0,212,255,.3);background:rgba(0,212,255,.08);}
+
+/* ── the shelf ───────────────────────────────────────────────── */
+#page-bank .bk-shelf{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));
+  gap:22px 20px;padding:6px 2px 10px;perspective:1600px;
 }
-.bm-page-btn:hover:not(:disabled) {
-  background: rgba(255,255,255,0.1);
-  border-color: rgba(255,255,255,0.2);
+#page-bank .bk-shelf.hidden{display:none;}
+
+/* ── a closed passbook ───────────────────────────────────────── */
+#page-bank .bk-book{
+  position:relative;height:196px;cursor:pointer;
+  transform-style:preserve-3d;
+  transition:transform .34s cubic-bezier(.34,1.4,.64,1), filter .28s ease;
+  -webkit-tap-highlight-color:transparent;
+  background:none;border:none;padding:0;text-align:left;font-family:inherit;width:100%;
 }
-.bm-page-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-.bm-page-info {
-  font-size: 0.85em;
-  color: rgba(255,255,255,0.4);
-}
-.bm-search-container {
-  padding: 0 20px 15px;
-}
-.bm-search-input {
-  width: 100%;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  padding: 8px 12px;
-  color: #fff;
-  font-size: 0.9em;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.bm-search-input:focus {
-  border-color: rgba(99, 102, 241, 0.5);
+#page-bank .bk-book:hover{transform:translateY(-6px) rotateY(-9deg) rotateX(3deg);}
+#page-bank .bk-book:active{transform:translateY(-2px) rotateY(-4deg);}
+
+/* paper block — the page edges peeking out of the fore-edge.
+   Its width tracks the account's share of total, so a fat book
+   really is a fat balance. */
+#page-bank .bk-pages{
+  position:absolute;top:5px;bottom:5px;right:-1px;
+  width:var(--bk-thick,9px);border-radius:0 5px 5px 0;
+  background:repeating-linear-gradient(to bottom,
+    #eaf7fd 0 1.5px, #c3e2f2 1.5px 3px);
+  box-shadow:inset -2px 0 4px rgba(0,0,0,.28), 1px 1px 3px rgba(0,0,0,.4);
+  transform:translateZ(-1px);
 }
 
-#bm-confirm-overlay {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0,0,0,0.4); z-index: 10000;
-  display: none; align-items: center; justify-content: center;
-  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+/* cover — bookcloth in the bank's colour, darkened to a bound board */
+#page-bank .bk-cover{
+  position:absolute;inset:0;border-radius:3px 9px 9px 3px;overflow:hidden;
+  background:
+    linear-gradient(118deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 38%),
+    linear-gradient(160deg, var(--bk-cov1) 0%,
+                            var(--bk-cov2) 62%,
+                            var(--bk-cov3) 100%);
+  box-shadow:
+    0 12px 26px rgba(0,0,0,.52),
+    0 2px 5px rgba(0,0,0,.4),
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -2px 6px rgba(0,0,0,.45);
+  display:flex;flex-direction:column;
+  padding:15px 16px 14px 26px;
+  transition:box-shadow .28s ease;
 }
-#bm-confirm-overlay.open { display: flex; }
-.bm-confirm-card {
-  background: #111827; border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px; width: 90%; max-width: 320px;
-  padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-  text-align: center;
+#page-bank .bk-book:hover .bk-cover{
+  box-shadow:0 20px 42px rgba(0,0,0,.6), 0 0 0 1px var(--bk-ring),
+             0 0 30px var(--bk-glow),
+             inset 0 1px 0 rgba(255,255,255,.18);
 }
-.bm-confirm-msg { color: rgba(255,255,255,0.85); font-size: 0.85em; margin-bottom: 20px; line-height: 1.5; }
-.bm-confirm-btns { display: flex; gap: 10px; justify-content: center; }
-.bm-confirm-btn {
-  padding: 8px 16px; border-radius: 6px; border: none; font-size: 0.75em;
-  font-weight: 600; cursor: pointer; transition: all 0.2s;
+/* woven bookcloth */
+#page-bank .bk-cover::before{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.045) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg,  rgba(0,0,0,.14) 0 1px, transparent 1px 3px);
 }
-.bm-confirm-btn-yes { background: #ef4444; color: #fff; }
-.bm-confirm-btn-yes:hover { background: #dc2626; }
-.bm-confirm-btn-no { background: rgba(255,255,255,0.1); color: #fff; }
-.bm-confirm-btn-no:hover { background: rgba(255,255,255,0.15); }
 
-/* Inline Edit Styles */
-.bm-txn-inline-input {
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 4px; color: #fff; font-size: 1em; padding: 4px 6px; width: 100%;
-  font-family: inherit; outline: none;
+/* spine — the bound edge, with two foil bands like a real passbook */
+#page-bank .bk-spine{
+  position:absolute;left:0;top:0;bottom:0;width:15px;
+  background:linear-gradient(90deg,
+    var(--bk-spn1) 0%,
+    var(--bk-spn2) 62%,
+    rgba(0,0,0,.55) 100%);
+  box-shadow:inset -3px 0 7px rgba(0,0,0,.6);
 }
-.bm-txn-inline-input:focus { border-color: rgba(59,130,246,0.5); background: rgba(255,255,255,0.08); }
+#page-bank .bk-spine::before,#page-bank .bk-spine::after{
+  content:'';position:absolute;left:2px;right:3px;height:1.5px;
+  background:linear-gradient(90deg,rgba(255,215,0,.6),rgba(255,215,0,.15));
+}
+#page-bank .bk-spine::before{top:20px;} #page-bank .bk-spine::after{bottom:20px;}
 
-/* ── Bottom Row: Total + Converter ── */
-.bm-bottom-row-upper{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px;
-  padding:20px 22px 0;
+/* embossed foil type */
+#page-bank .bk-foil{
+  font-size:16px;font-weight:900;letter-spacing:3.4px;line-height:1;
+  color:var(--bk-foil);
+  text-shadow:0 1px 0 rgba(0,0,0,.72), 0 -1px 0 rgba(255,255,255,.14);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.bm-bottom-row-lower{
-  padding:16px 22px 0;
+#page-bank .bk-foil-sub{
+  margin-top:5px;font-size:8.5px;font-weight:700;letter-spacing:2.1px;text-transform:uppercase;
+  color:rgba(255,255,255,.34);text-shadow:0 1px 0 rgba(0,0,0,.6);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.bm-transfer{
-  background:rgba(255,255,255,.025);
-  border:1px solid rgba(255,255,255,.07);
-  border-radius:12px;
-  padding:10px 14px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+#page-bank .bk-rule{
+  margin:11px 0 0;height:1px;
+  background:linear-gradient(90deg, rgba(255,215,0,.34), rgba(255,215,0,.05) 70%, transparent);
 }
-.bm-trans-title{
-  font-size:.52em;
-  font-weight:700;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  color:rgba(255,255,255,.3);
-  margin-bottom:2px;
+#page-bank .bk-cover-mid{flex:1;display:flex;flex-direction:column;justify-content:flex-end;}
+#page-bank .bk-cover-lbl{
+  font-size:8px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);margin-bottom:4px;
 }
-.bm-trans-row{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+#page-bank .bk-cover-amt{
+  font-size:21px;font-weight:900;letter-spacing:-.7px;line-height:1;
+  color:rgba(255,255,255,.94);font-variant-numeric:tabular-nums;
+  text-shadow:0 2px 6px rgba(0,0,0,.6);
 }
-.bm-trans-group{
-  display:flex;
-  align-items:center;
-  gap:8px;
+#page-bank .bk-cover-usd{
+  margin-top:4px;font-size:10px;font-weight:600;
+  color:rgba(255,255,255,.4);font-variant-numeric:tabular-nums;
 }
-.bm-trans-field{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  gap:4px;
+#page-bank .bk-cover-foot{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-top:11px;padding-top:9px;border-top:1px solid rgba(255,255,255,.08);
+  font-size:9.5px;color:rgba(255,255,255,.3);
 }
-.bm-trans-lbl{
-  font-size:.52em;
-  font-weight:700;
-  letter-spacing:1.3px;
-  text-transform:uppercase;
-  color:rgba(255,255,255,.35);
+#page-bank .bk-share{font-weight:800;color:var(--bk-lite);letter-spacing:.3px;}
+
+/* cover badges */
+#page-bank .bk-badge-row{position:absolute;top:13px;right:14px;display:flex;gap:6px;z-index:3;}
+#page-bank .bk-cbadge{
+  font-size:8px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;white-space:nowrap;
+  background:rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.14);color:rgba(255,255,255,.55);
+  backdrop-filter:blur(4px);
 }
-.bm-trans-input-wrap{
-  display:flex;
-  align-items:center;
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.09);
-  border-radius:9px;
-  padding:0 8px;
-  height:30px;
+#page-bank .bk-cbadge.unsaved{background:rgba(245,158,11,.2);border-color:rgba(245,158,11,.5);color:#fbbf24;}
+#page-bank .bk-cbadge.idle{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.62);}
+
+/* an untouched book gathers dust */
+#page-bank .bk-book.idle .bk-cover::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(190deg, rgba(220,210,190,.09), transparent 46%);
 }
-.bm-trans-select, .bm-trans-input{
-  background:transparent;
-  border:none;
-  color:#fff;
-  font-family:'Inter',sans-serif;
-  font-size:.75em;
-  font-weight:600;
-  outline:none;
-  width:100%;
+#page-bank .bk-book.dirty .bk-cover{
+  box-shadow:0 12px 26px rgba(0,0,0,.52), 0 0 0 1.5px rgba(245,158,11,.6),
+             inset 0 1px 0 rgba(255,255,255,.14);
 }
-.bm-trans-select option{
-  background:#1a1f2b;
-  color:#fff;
+
+/* ── the open spread ─────────────────────────────────────────── */
+#page-bank .bk-spread{
+  display:none;perspective:2200px;padding:2px 0 4px;
 }
-.bm-trans-btn{
-  background:rgba(0,212,255,.1);
-  border:1px solid rgba(0,212,255,.2);
-  border-radius:9px;
-  color:rgba(0,212,255,.8);
-  font-family:'Inter',sans-serif;
-  font-size:.7em;
-  font-weight:700;
-  cursor:pointer;
-  padding:6px;
-  transition:all .2s;
-  text-transform:uppercase;
-  letter-spacing:1px;
+#page-bank .bk-spread.open{display:block;animation:bkOpenBook .42s cubic-bezier(.34,1.3,.64,1) both;}
+@keyframes bkOpenBook{
+  from{opacity:0;transform:rotateY(-26deg) scale(.94);transform-origin:left center;}
+  to  {opacity:1;transform:none;}
 }
-.bm-trans-btn:disabled{opacity:0.5; cursor:wait;}
-.bm-trans-btn:hover:not(:disabled){
-  background:rgba(0,212,255,.2);
-  border-color:rgba(0,212,255,.4);
+#page-bank .bk-spread-in{
+  display:grid;grid-template-columns:minmax(0,0.88fr) minmax(0,1.12fr);
+  border-radius:8px;overflow:hidden;
+  background:linear-gradient(160deg,
+    var(--bk-cov1),
+    var(--bk-cov2));
+  box-shadow:0 26px 60px rgba(0,0,0,.62), inset 0 1px 0 rgba(255,255,255,.12);
+  padding:11px;gap:0;
 }
-.bm-converter{
-  background:rgba(255,255,255,.025);
-  border:1px solid rgba(255,255,255,.07);
-  border-radius:12px;
-  padding:10px 14px;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+/* the gutter — where the two leaves are sewn together */
+#page-bank .bk-leaf{position:relative;overflow:hidden;background:#e3f2fb;color:#123c52;min-width:0;}
+#page-bank .bk-leaf.left{
+  border-radius:5px 0 0 5px;padding:20px 22px 18px;
+  background:linear-gradient(90deg,#eaf7fd 0%,#dcf0fa 86%,#c3e2f2 100%);
 }
-.bm-conv-title{
-  font-size:.52em;
-  font-weight:700;
-  letter-spacing:1.5px;
-  text-transform:uppercase;
-  color:rgba(255,255,255,.3);
-  margin-bottom:2px;
+#page-bank .bk-leaf.right{
+  border-radius:0 5px 5px 0;padding:18px 20px 16px;
+  background:linear-gradient(270deg,#eaf7fd 0%,#dcf0fa 86%,#c3e2f2 100%);
 }
-.bm-conv-row{
-  display:flex;
-  align-items:flex-end;
-  gap:8px;
+#page-bank .bk-leaf.left::after{
+  content:'';position:absolute;top:0;bottom:0;right:0;width:22px;pointer-events:none;z-index:2;
+  background:linear-gradient(90deg,transparent,rgba(12,64,96,.22));
 }
-.bm-conv-field{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  gap:4px;
+#page-bank .bk-leaf.right::after{
+  content:'';position:absolute;top:0;bottom:0;left:0;width:22px;pointer-events:none;z-index:2;
+  background:linear-gradient(270deg,transparent,rgba(12,64,96,.22));
 }
-.bm-conv-cur{
-  font-size:.52em;
-  font-weight:700;
-  letter-spacing:1.3px;
-  text-transform:uppercase;
-  color:rgba(255,255,255,.35);
+/* security print — the chevron bands, run faintly across the stock */
+#page-bank .bk-leaf::before{
+  content:'';position:absolute;inset:-10% -30%;pointer-events:none;opacity:.42;
+  transform:skewX(-19deg);
+  background:repeating-linear-gradient(90deg,
+    rgba(255,255,255,.62)  0 24px,
+    rgba(255,255,255,0)   24px 44px,
+    rgba(0,140,205,.06)   44px 70px,
+    rgba(255,255,255,0)   70px 100px,
+    rgba(255,255,255,.34) 100px 118px,
+    rgba(255,255,255,0)  118px 152px);
 }
-.bm-conv-input-wrap{
-  display:flex;
-  align-items:center;
-  background:rgba(255,255,255,.05);
-  border:1px solid rgba(255,255,255,.09);
-  border-radius:9px;
-  padding:0 10px;
-  gap:5px;
-  transition:border-color .2s,box-shadow .2s;
-  height:32px;
-}
-.bm-conv-prefix{font-size:.75em;color:rgba(255,255,255,.2);}
-.bm-conv-input{
-  background:transparent;
-  border:none;
-  color:#fff;
-  font-family:'Inter',monospace;
-  font-size:.82em;
-  font-weight:600;
-  outline:none;
-  padding:0;
-  width:100%;
-  letter-spacing:.2px;
-}
-.bm-conv-input::placeholder{color:rgba(255,255,255,.15);}
-.bm-conv-input::-webkit-inner-spin-button,
-.bm-conv-input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
-.bm-conv-swap{
-  background:rgba(0,212,255,.1);
-  border:1px solid rgba(0,212,255,.2);
-  border-radius:50%;
-  width:30px;height:30px;
+#page-bank .bk-leaf > *{position:relative;z-index:1;}
+
+/* ── left leaf: the inside front cover ───────────────────────── */
+#page-bank .bk-crest{display:flex;align-items:center;gap:11px;}
+#page-bank .bk-crest-seal{
+  width:42px;height:42px;border-radius:50%;flex:0 0 auto;
   display:flex;align-items:center;justify-content:center;
-  font-size:.9em;
-  color:rgba(0,212,255,.8);
-  cursor:pointer;
-  flex-shrink:0;
-  transition:all .2s ease;
-  padding:0;
+  font-size:11px;font-weight:900;letter-spacing:.4px;color:#fff;
+  background:radial-gradient(circle at 34% 30%,
+    var(--bk-seal1) 0%, var(--bk-c) 58%,
+    var(--bk-seal2) 100%);
+  box-shadow:0 2px 6px rgba(12,64,96,.34), inset 0 1px 0 rgba(255,255,255,.45);
 }
-.bm-conv-swap:hover{
-  background:rgba(0,212,255,.2);
-  transform:rotate(180deg) scale(1.05);
-  border-color:rgba(0,212,255,.4);
+#page-bank .bk-crest-txt b{
+  display:block;font-size:15px;font-weight:900;letter-spacing:.2px;color:#0e3145;
 }
-.bm-conv-hint{
-  font-size:.55em;
-  color:rgba(255,255,255,.22);
-  letter-spacing:.3px;
-  min-height:.9em;
-  transition:color .2s;
-  margin-top:2px;
+#page-bank .bk-crest-txt span{
+  display:block;font-size:9.5px;font-weight:700;letter-spacing:1.9px;text-transform:uppercase;
+  color:rgba(20,72,102,.62);margin-top:2px;
 }
-.bm-conv-hint.active{
-  color:rgba(16,185,129,.7);
+#page-bank .bk-stamp{
+  margin-top:14px;padding:13px 15px;border-radius:3px;
+  border:1px dashed rgba(20,90,130,.34);background:rgba(255,255,255,.52);
+}
+#page-bank .bk-stamp-lbl{
+  font-size:8.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:rgba(20,72,102,.6);
+}
+#page-bank .bk-stamp-amt{
+  margin-top:5px;font-size:27px;font-weight:900;letter-spacing:-1.2px;line-height:1;
+  color:#0b2c3e;font-variant-numeric:tabular-nums;
+}
+#page-bank .bk-stamp-amt input{
+  width:100%;font-family:inherit;font-size:24px;font-weight:900;letter-spacing:-1px;
+  color:#0b2c3e;background:rgba(255,255,255,.9);
+  border:1.5px solid rgba(20,110,155,.55);border-radius:4px;padding:3px 8px;outline:none;
+  font-variant-numeric:tabular-nums;
+}
+#page-bank .bk-stamp-sub{
+  margin-top:6px;font-size:11px;font-weight:700;color:rgba(12,110,88,.85);font-variant-numeric:tabular-nums;
+}
+#page-bank .bk-flow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+#page-bank .bk-flow-cell{
+  padding:9px 11px;border-radius:3px;background:rgba(255,255,255,.55);
+  border-left:2.5px solid rgba(20,110,155,.3);
+}
+#page-bank .bk-flow-cell span{
+  display:block;font-size:8px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:rgba(20,72,102,.58);
+}
+#page-bank .bk-flow-cell b{display:block;margin-top:3px;font-size:14px;font-weight:900;font-variant-numeric:tabular-nums;}
+#page-bank .bk-flow-cell.in  b{color:#0b7a55;}
+#page-bank .bk-flow-cell.out b{color:#c2410c;}
+#page-bank .bk-trend{margin-top:14px;}
+#page-bank .bk-trend-lbl{
+  font-size:8px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;
+  color:rgba(20,72,102,.58);margin-bottom:5px;
+}
+#page-bank .bk-leaf-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+#page-bank .bk-ink-btn{
+  font-family:inherit;font-size:11px;font-weight:800;letter-spacing:.3px;
+  padding:7px 13px;border-radius:4px;cursor:pointer;
+  background:rgba(255,255,255,.66);border:1px solid rgba(20,110,155,.38);
+  color:#12455e;transition:all .18s;
+}
+#page-bank .bk-ink-btn:hover{background:#fff;border-color:rgba(20,110,155,.7);}
+#page-bank .bk-ink-btn.primary{
+  background:var(--bk-tint);
+  border-color:var(--bk-tintb);
 }
 
-.bm-foot{display:flex;justify-content:flex-end;gap:12px;padding:20px 22px 24px;border-top:1px solid rgba(255,255,255,.04);}
-.bm-btn{display:flex;align-items:center;justify-content:center;padding:11px 22px;border-radius:14px;font-family:'Inter',sans-serif;font-size:.78em;font-weight:700;cursor:pointer;transition:all .25s ease;border:none;letter-spacing:.5px;}
+/* ── right leaf: the ruled ledger ────────────────────────────── */
+#page-bank .bk-ledger-hd{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding-bottom:8px;border-bottom:2px solid rgba(20,100,145,.42);
+}
+#page-bank .bk-ledger-ttl{
+  font-size:10px;font-weight:900;letter-spacing:2.6px;text-transform:uppercase;color:rgba(14,70,100,.78);
+}
+#page-bank .bk-ledger-no{font-size:9.5px;font-weight:700;color:rgba(20,72,102,.55);letter-spacing:.8px;}
+#page-bank .bk-ledger-scroll{overflow-x:auto;margin-top:2px;}
+#page-bank table.bk-ledger{
+  width:100%;border-collapse:collapse;min-width:430px;
+  font-family:'Courier New',ui-monospace,monospace;font-size:12px;color:#123c52;
+}
+#page-bank .bk-ledger th{
+  padding:8px 7px;text-align:left;font-size:8px;font-weight:900;letter-spacing:1.3px;text-transform:uppercase;
+  color:rgba(14,70,100,.7);border-bottom:1px solid rgba(20,100,145,.32);white-space:nowrap;
+  font-family:'Inter',sans-serif;
+}
+#page-bank .bk-ledger th.r,#page-bank .bk-ledger td.r{text-align:right;}
+#page-bank .bk-ledger td{
+  padding:0 7px;height:29px;border-bottom:1px solid rgba(20,110,165,.2);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+#page-bank .bk-ledger tbody tr:hover td{background:rgba(255,255,255,.62);}
+#page-bank .bk-ledger .part{
+  font-family:'Inter',sans-serif;font-size:11.5px;font-weight:600;
+  max-width:190px;overflow:hidden;text-overflow:ellipsis;
+}
+#page-bank .bk-ledger .part i{
+  font-style:normal;font-size:10px;color:rgba(20,72,102,.55);margin-left:5px;
+}
+#page-bank .bk-ledger .wd{color:#c2410c;font-weight:700;}
+#page-bank .bk-ledger .dp{color:#0b7a55;font-weight:700;}
+#page-bank .bk-ledger .bal{color:#0b2c3e;font-weight:700;}
+#page-bank .bk-ledger tr.cf td{
+  border-top:2px solid rgba(20,100,145,.45);border-bottom:none;height:34px;
+  font-weight:900;color:#0b2c3e;font-size:12.5px;
+}
+#page-bank .bk-ledger-empty{
+  padding:34px 10px;text-align:center;font-size:12px;color:rgba(20,72,102,.55);
+  font-family:'Inter',sans-serif;
+}
+/* the red margin rule every passbook page carries */
+#page-bank .bk-leaf.right .bk-ledger-scroll{position:relative;}
+#page-bank .bk-margin{
+  position:absolute;left:62px;top:0;bottom:0;width:1px;
+  background:rgba(196,60,45,.34);pointer-events:none;
+}
 
-.bm-btn-save{
-  background:rgba(255,255,255,.06);
-  border:1px solid rgba(255,255,255,.12);
-  color:rgba(255,255,255,.7);
-  box-shadow:0 4px 15px rgba(0,0,0,.2);
-}
-.bm-btn-save:hover{
-  background:rgba(255,255,255,.1);
-  color:#fff;
-  border-color:rgba(255,255,255,.2);
-  transform:translateY(-2px);
-  box-shadow:0 8px 24px rgba(0,0,0,.35);
-}
-.bm-btn-save:active{transform:translateY(0);}
-.bm-btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;}
+/* ── shelf ↔ spread toolbar ──────────────────────────────────── */
+#page-bank .bk-shelf-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+#page-bank .bk-shelf-bar .sp{flex:1;}
 
-@media(max-width:750px){
-  .bm-main-row{grid-template-columns:1fr;gap:16px;}
-  .bm-list{grid-template-columns:repeat(2,1fr);}
-  .bm-bottom-row-upper{grid-template-columns:1fr;gap:12px;}
+/* ═══ ④ MOVE MONEY ════════════════════════════════════════════ */
+#page-bank .bk-move{display:grid;grid-template-columns:1.2fr 1fr;gap:13px;align-items:start;}
+#page-bank .bk-fld-row{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end;}
+#page-bank .bk-fld-row.two{grid-template-columns:1fr 1fr;}
+#page-bank .bk-fld{display:flex;flex-direction:column;gap:5px;min-width:0;}
+#page-bank .bk-fld label{font-size:9px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--bk-faint);}
+#page-bank .bk-ctl{
+  display:flex;align-items:center;gap:7px;height:37px;padding:0 11px;border-radius:9px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);transition:border-color .2s,box-shadow .2s;
 }
-@media(max-width:500px){
-  .bm-list{grid-template-columns:1fr;}
+#page-bank .bk-ctl:focus-within{border-color:rgba(0,212,255,.45);box-shadow:0 0 0 3px rgba(0,212,255,.08);}
+#page-bank .bk-ctl select,#page-bank .bk-ctl input{
+  flex:1;min-width:0;background:transparent;border:none;outline:none;color:#fff;
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;
+}
+#page-bank .bk-ctl select option{background:#101828;color:#fff;}
+#page-bank .bk-ctl .pre{color:var(--bk-faint);font-size:12px;flex:0 0 auto;}
+#page-bank .bk-ctl input::-webkit-inner-spin-button,
+#page-bank .bk-ctl input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+#page-bank .bk-hint{font-size:10px;color:var(--bk-faint);padding-left:2px;font-variant-numeric:tabular-nums;min-height:12px;}
+#page-bank .bk-swap{
+  width:34px;height:34px;flex:0 0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:14px;color:var(--bk-cyan);background:rgba(0,212,255,.1);
+  border:1px solid rgba(0,212,255,.24);transition:all .25s;margin-bottom:14px;padding:0;
+}
+#page-bank .bk-swap:hover{background:rgba(0,212,255,.2);transform:rotate(180deg);}
+#page-bank .bk-pin{
+  flex:0 0 auto;width:26px;height:26px;padding:0;border-radius:7px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;
+  background:rgba(255,255,255,.06);border:1px solid var(--bk-bdr);
+  color:var(--bk-faint);transition:all .2s;font-family:inherit;
+}
+#page-bank .bk-pin:hover{color:var(--bk-ink);border-color:var(--bk-bdr2);}
+#page-bank .bk-pin.on{
+  background:rgba(245,158,11,.18);border-color:rgba(245,158,11,.5);
+  color:#fbbf24;transform:rotate(-20deg);
+}
+#page-bank .bk-hint.fee{color:rgba(245,158,11,.75);}
+#page-bank .bk-chips{display:flex;gap:6px;flex-wrap:wrap;}
+#page-bank .bk-chip{
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:800;letter-spacing:.6px;padding:4px 10px;
+  border-radius:7px;cursor:pointer;background:rgba(255,255,255,.05);
+  border:1px solid var(--bk-bdr);color:var(--bk-mut);transition:all .2s;
+}
+#page-bank .bk-chip:hover{color:var(--bk-cyan);border-color:rgba(0,212,255,.3);}
+#page-bank .bk-preview{
+  padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.028);
+  border:1px dashed var(--bk-bdr2);display:flex;flex-direction:column;gap:6px;
+}
+#page-bank .bk-pv-k{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--bk-faint);}
+#page-bank .bk-pv-row{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-size:12px;font-variant-numeric:tabular-nums;color:var(--bk-ink2);}
+#page-bank .bk-pv-row .old{color:var(--bk-mut);}
+#page-bank .bk-pv-row b{font-weight:800;color:var(--bk-ink);}
+#page-bank .bk-pv-row b.down{color:var(--bk-orange);}
+#page-bank .bk-pv-row b.up{color:var(--bk-green);}
+#page-bank .bk-pv-row b.over{color:var(--red);}
+#page-bank .bk-cta{
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:800;letter-spacing:.5px;padding:12px;
+  border-radius:12px;cursor:pointer;color:#04222b;border:none;
+  background:linear-gradient(94deg,#00d4ff,#3ee0c8);box-shadow:0 8px 22px rgba(0,212,255,.2);
+  transition:all .22s;width:100%;
+}
+#page-bank .bk-cta:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,212,255,.28);}
+#page-bank .bk-cta:disabled{background:rgba(255,255,255,.07);color:var(--bk-mut);box-shadow:none;cursor:not-allowed;}
+#page-bank .bk-cta.over{background:linear-gradient(94deg,#ff4d6d,#ff8f6b);color:#fff;box-shadow:0 8px 22px rgba(255,77,109,.22);}
+#page-bank .bk-conv-hint{font-size:11px;font-weight:600;color:var(--bk-green);font-variant-numeric:tabular-nums;min-height:14px;}
+#page-bank .bk-pairs{display:flex;flex-direction:column;gap:7px;}
+#page-bank .bk-pair{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 11px;
+  border-radius:9px;background:rgba(255,255,255,.028);border:1px solid var(--bk-bdr);font-size:12px;
+}
+#page-bank .bk-pair .rt{display:flex;align-items:center;gap:9px;font-variant-numeric:tabular-nums;color:var(--bk-ink);font-weight:700;}
+#page-bank .bk-redo{font-family:inherit;font-size:13px;cursor:pointer;background:none;border:none;color:var(--bk-cyan);padding:0 2px;}
+#page-bank .bk-empty{padding:22px;text-align:center;font-size:12px;color:var(--bk-faint);}
+
+/* ═══ ⑤ TRANSACTIONS ══════════════════════════════════════════ */
+#page-bank .bk-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:11px;}
+#page-bank .bk-search{
+  flex:1;min-width:180px;height:35px;padding:0 12px;border-radius:9px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:#fff;font-family:inherit;font-size:12.5px;outline:none;transition:border-color .2s;
+}
+#page-bank .bk-search::placeholder{color:var(--bk-faint);}
+#page-bank .bk-search:focus{border-color:rgba(0,212,255,.45);}
+#page-bank .bk-sel{
+  height:35px;padding:0 10px;border-radius:9px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);color:var(--bk-ink2);
+  font-family:inherit;font-size:12px;font-weight:600;outline:none;cursor:pointer;
+}
+#page-bank .bk-sel option{background:#101828;}
+#page-bank .bk-tbl-wrap{border:1px solid var(--bk-bdr);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.016);}
+#page-bank .bk-tbl-scroll{overflow-x:auto;max-height:52vh;overflow-y:auto;}
+#page-bank table.bk-tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px;}
+#page-bank .bk-tbl th{
+  position:sticky;top:0;z-index:1;background:rgba(13,20,38,.97);text-align:left;padding:10px 13px;
+  font-size:9px;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--bk-faint);
+}
+#page-bank .bk-tbl th.r,#page-bank .bk-tbl td.r{text-align:right;}
+#page-bank .bk-tbl td{padding:10px 13px;border-top:1px solid rgba(255,255,255,.045);color:var(--bk-ink2);vertical-align:middle;}
+#page-bank .bk-tbl tbody tr:hover td{background:rgba(255,255,255,.025);}
+#page-bank .bk-tbl tr.grp td{
+  padding:7px 13px;background:rgba(255,255,255,.035);font-size:9px;font-weight:800;
+  letter-spacing:1.7px;text-transform:uppercase;color:var(--bk-mut);border-top:1px solid var(--bk-bdr);
+}
+#page-bank .bk-tbl tr.editing td{background:rgba(0,212,255,.05);}
+#page-bank .bk-bchip{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--bk-ink);white-space:nowrap;}
+#page-bank .bk-bchip i{width:8px;height:14px;border-radius:2px;flex:0 0 auto;}
+#page-bank .bk-amt{font-weight:800;color:var(--bk-ink);font-variant-numeric:tabular-nums;white-space:nowrap;}
+#page-bank .bk-ref{color:var(--bk-faint);font-style:italic;}
+#page-bank .bk-tag{
+  font-size:9px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;padding:2px 7px;border-radius:20px;
+  background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.28);color:var(--bk-gold);white-space:nowrap;
+}
+#page-bank .bk-rowact{display:flex;gap:5px;justify-content:flex-end;}
+#page-bank .bk-ra{
+  width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;
+  cursor:pointer;border-radius:7px;background:none;border:1px solid var(--bk-bdr);
+  color:var(--bk-mut);transition:all .18s;font-family:inherit;padding:0;
+}
+#page-bank .bk-ra:hover{color:#fff;border-color:var(--bk-bdr2);}
+#page-bank .bk-ra.back:hover{color:var(--bk-gold);background:rgba(255,215,0,.14);}
+#page-bank .bk-ra.edit:hover{color:var(--bk-cyan);background:rgba(0,212,255,.14);}
+#page-bank .bk-ra.del:hover{color:var(--red);background:rgba(255,77,109,.14);}
+#page-bank .bk-ra.ok{color:var(--bk-green);border-color:rgba(0,230,118,.3);}
+#page-bank .bk-inline{
+  background:rgba(255,255,255,.06);border:1px solid rgba(0,212,255,.35);border-radius:6px;
+  color:#fff;font-family:inherit;font-size:12px;padding:4px 7px;width:100%;outline:none;
+  font-variant-numeric:tabular-nums;
+}
+#page-bank .bk-rolled .bk-amt,#page-bank .bk-rolled .bk-bchip{text-decoration:line-through;opacity:.55;}
+#page-bank .bk-pager{
+  display:flex;align-items:center;justify-content:center;gap:14px;padding:11px;
+  border-top:1px solid var(--bk-bdr);background:rgba(0,0,0,.18);
+}
+#page-bank .bk-pbtn{
+  font-family:inherit;font-size:11.5px;font-weight:700;padding:6px 13px;border-radius:8px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid var(--bk-bdr);color:var(--bk-ink2);transition:all .2s;
+}
+#page-bank .bk-pbtn:hover:not(:disabled){background:rgba(255,255,255,.1);border-color:var(--bk-bdr2);}
+#page-bank .bk-pbtn:disabled{opacity:.3;cursor:not-allowed;}
+#page-bank .bk-pinfo{font-size:11.5px;color:var(--bk-faint);font-variant-numeric:tabular-nums;}
+
+/* ═══ CONFIRM + TOAST ═════════════════════════════════════════ */
+#page-bank .bk-confirm-bg{
+  position:absolute;inset:0;z-index:160;background:rgba(0,0,0,.5);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+#page-bank .bk-confirm-bg.open{display:flex;}
+#page-bank .bk-confirm{
+  background:#0d1426;border:1px solid var(--bk-bdr2);border-radius:14px;
+  width:100%;max-width:340px;padding:20px;box-shadow:0 20px 50px rgba(0,0,0,.6);text-align:center;
+}
+#page-bank .bk-confirm-msg{color:rgba(255,255,255,.85);font-size:13px;line-height:1.55;margin-bottom:18px;}
+#page-bank .bk-confirm-btns{display:flex;gap:10px;justify-content:center;}
+#page-bank .bk-cbtn{
+  padding:9px 18px;border-radius:9px;border:none;font-family:inherit;font-size:12px;
+  font-weight:800;cursor:pointer;transition:all .2s;
+  background:rgba(255,255,255,.1);color:#fff;
+}
+#page-bank .bk-cbtn.no{background:rgba(255,255,255,.1);color:#fff;}
+#page-bank .bk-cbtn.no:hover{background:rgba(255,255,255,.16);}
+#page-bank .bk-cbtn.yes{background:var(--red);color:#fff;}
+#page-bank .bk-cbtn.yes:hover{filter:brightness(1.12);}
+#page-bank .bk-toast{
+  position:absolute;left:50%;bottom:18px;transform:translate(-50%,16px);
+  z-index:170;padding:10px 18px;border-radius:12px;font-size:12.5px;font-weight:700;
+  background:rgba(13,20,38,.96);border:1px solid var(--bk-bdr2);color:var(--bk-ink);
+  box-shadow:0 12px 34px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:all .25s;white-space:nowrap;
+}
+#page-bank .bk-toast.show{opacity:1;transform:translate(-50%,0);}
+#page-bank .bk-toast.good{border-color:rgba(0,230,118,.4);color:var(--bk-green);}
+#page-bank .bk-toast.bad{border-color:rgba(255,77,109,.4);color:var(--red);}
+
+#page-bank .bk-loading{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:46vh;gap:14px;
+}
+#page-bank .bk-spin{
+  width:42px;height:42px;border:3px solid rgba(0,212,255,.15);border-top-color:var(--bk-cyan);
+  border-radius:50%;animation:spin .8s linear infinite;
+}
+#page-bank .bk-loading div:last-child{color:rgba(255,255,255,.3);font-size:12px;letter-spacing:2px;text-transform:uppercase;}
+
+/* ═══ RESPONSIVE ══════════════════════════════════════════════ */
+@media(max-width:860px){
+  #page-bank .bk-hero-in{grid-template-columns:1fr;}
+  #page-bank .bk-donut{height:180px;max-width:250px;width:100%;margin:0 auto;}
+  #page-bank .bk-kpis{grid-template-columns:repeat(2,1fr);}
+  #page-bank .bk-move{grid-template-columns:1fr;}
+  /* a two-page spread does not fit — the book becomes one page,
+     inside cover stacked above the ledger, gutter shadow dropped */
+  #page-bank .bk-spread-in{grid-template-columns:1fr;padding:9px;}
+  #page-bank .bk-leaf.left{border-radius:5px 5px 0 0;padding:18px 18px 16px;
+    background:linear-gradient(180deg,#eaf7fd 0%,#dcf0fa 100%);}
+  #page-bank .bk-leaf.right{border-radius:0 0 5px 5px;padding:16px 16px 14px;
+    background:linear-gradient(0deg,#eaf7fd 0%,#dcf0fa 100%);
+    border-top:1px dashed rgba(20,100,145,.4);}
+  #page-bank .bk-leaf.left::after,#page-bank .bk-leaf.right::after{display:none;}
+}
+@media(max-width:560px){
+  #page-bank .page-wrap{padding:13px;padding-bottom:96px;}
+  #page-bank .bk-hero{padding:18px 16px;}
+  #page-bank .bk-fld-row{grid-template-columns:1fr;}
+  #page-bank .bk-swap{margin:0 auto;transform:rotate(90deg);}
+  #page-bank .bk-swap:hover{transform:rotate(270deg);}
+  #page-bank .bk-tbl-scroll{max-height:none;}
+  #page-bank .bk-shelf{grid-template-columns:1fr;gap:18px;}
+  #page-bank .bk-book{height:178px;}
+  /* no hover on a touch screen — the tilt would stick after a tap */
+  #page-bank .bk-book:hover{transform:none;}
+  #page-bank .bk-stamp-amt{font-size:23px;}
+}
+@media(hover:none){
+  #page-bank .bk-book:hover{transform:none;}
+}
+@media(prefers-reduced-motion:reduce){
+  #page-bank .bk-book,#page-bank .bk-cover{transition:none;}
+  #page-bank .bk-book:hover{transform:none;}
+  #page-bank .bk-spread.open{animation:none;}
 }
 </style>
 
-<div id="bank-modal">
-  <div class="bm-hdr">
-    <span class="bm-title">🏦 Bank Balances</span>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <div class="bm-rate-badge" id="bmRateBadge" title="USD/LKR rate from Google Finance">
-        <span class="bm-rate-icon">💱</span>
-        <span class="bm-rate-label">USD/LKR</span>
-        <span class="bm-rate-val" id="bmRateVal">—</span>
-      </div>
-      <button class="bm-close" onclick="moneyToggle()">✕</button>
+<section id="page-bank" class="spa-page">
+
+  <!-- ① COMMAND BAR -->
+  <div class="pg-hdr">
+    <div class="bk-hdr-left">
+      <span class="pg-hdr-title">🏦 Bank</span>
+      <span class="bk-fx loading" id="bkFx" title="USD/LKR from Google Finance">
+        <span class="bk-fx-l">USD/LKR</span>
+        <span class="bk-fx-v" id="bkFxVal">—</span>
+      </span>
+    </div>
+    <div class="pg-hdr-actions">
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
+      <button class="bk-save-btn" id="bkSaveBtn" onclick="bkSave()" disabled>💾 Saved</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('bank')">↺ Reload</button>
     </div>
   </div>
-  <div class="bm-body">
-    <div id="bm-txn-overlay">
-      <!-- Custom Confirm Inside -->
-      <div id="bm-confirm-overlay">
-        <div class="bm-confirm-card">
-          <div class="bm-confirm-msg" id="bmConfirmMsg">Are you sure?</div>
-          <div class="bm-confirm-btns">
-            <button class="bm-confirm-btn bm-confirm-btn-no" onclick="bmConfirmClose(false)">Cancel</button>
-            <button class="bm-confirm-btn bm-confirm-btn-yes" id="bmConfirmYes" onclick="bmConfirmClose(true)">Confirm</button>
-          </div>
-        </div>
-      </div>
-      <div class="bm-txn-hdr">
-        <span class="bm-title">📋 Transactions</span>
-        <button class="bm-close" onclick="bmHideTransactions()">✕</button>
-      </div>
-      <div class="bm-txn-body">
-        <div class="bm-search-container">
-          <input type="text" class="bm-search-input" placeholder="Search transactions (source, destination, reference...)" oninput="bmSearchTransactions(this.value)">
-        </div>
-        <div class="bm-txn-table-wrap">
-          <table class="bm-txn-table">
-            <thead>
-              <tr>
-                <th style="width:80px;">Date</th>
-                <th>Source</th>
-                <th>Dest</th>
-                <th style="width:110px;">Amount</th>
-                <th>Ref</th>
-                <th style="width:100px; text-align:right;">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="bm-txn-list">
-              <tr><td colspan="6" style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">Loading transactions...</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="bm-pagination" id="bm-pagination-controls"></div>
-      </div>
-    </div>
-    <div class="bm-main-row">
-      <div class="bm-list" id="bmList">
-        <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;">Loading bank data…</div>
-      </div>
-      <div class="bm-side">
-        <div class="bm-chart-box">
-          <canvas id="bmChart"></canvas>
-        </div>
-      </div>
-    </div>
 
-    <!-- Bottom Row: Total Balance + Converter -->
-    <div class="bm-bottom-row-upper">
-      <div class="bm-total-box">
-        <span class="bm-total-lbl">Total Liquid Balance</span>
-        <span class="bm-total-val" id="bmTotal">₨ 0.00</span>
-        <span class="bm-total-usd" id="bmTotalUsd">≈ — USD</span>
-      </div>
+  <!-- ② TAB RAIL -->
+  <nav class="bk-tabs" id="bkTabs" aria-label="Bank sections">
+    <button class="bk-tab active" type="button" data-sec="bkSecOverview" onclick="bkGoSec('bkSecOverview')">Overview</button>
+    <button class="bk-tab" type="button" data-sec="bkSecAccounts" onclick="bkGoSec('bkSecAccounts')">Accounts</button>
+    <button class="bk-tab" type="button" data-sec="bkSecMove"     onclick="bkGoSec('bkSecMove')">Move Money</button>
+    <button class="bk-tab" type="button" data-sec="bkSecTxns"     onclick="bkGoSec('bkSecTxns')">Transactions</button>
+  </nav>
 
-      <!-- USD ↔ LKR Converter -->
-      <div class="bm-converter">
-        <div class="bm-conv-title">💱 Convert</div>
-        <div class="bm-conv-row">
-          <div class="bm-conv-field">
-            <label class="bm-conv-cur">USD</label>
-            <div class="bm-conv-input-wrap">
-              <span class="bm-conv-prefix">$</span>
-              <input type="number" id="bm-conv-usd" class="bm-conv-input" placeholder="0.00" oninput="bmConvFromUsd()" step="any" min="0">
-            </div>
-          </div>
-          <button class="bm-conv-swap" onclick="bmConvSwap()" title="Swap currencies">⇄</button>
-          <div class="bm-conv-field">
-            <label class="bm-conv-cur">LKR</label>
-            <div class="bm-conv-input-wrap">
-              <span class="bm-conv-prefix">₨</span>
-              <input type="number" id="bm-conv-lkr" class="bm-conv-input" placeholder="0.00" oninput="bmConvFromLkr()" step="any" min="0">
-            </div>
-          </div>
-        </div>
-        <div class="bm-conv-hint" id="bm-conv-hint">Enter amount</div>
-      </div>
-    </div>
-
-    <!-- Next Line: Bank Transfers -->
-    <div class="bm-bottom-row-lower">
-      <div class="bm-transfer">
-        <div class="bm-trans-title">💸 Transfer</div>
-        <div class="bm-trans-row">
-          <div class="bm-trans-group">
-            <div class="bm-trans-field">
-              <label class="bm-trans-lbl">From</label>
-              <div class="bm-trans-input-wrap">
-                <select id="bm-trans-from" class="bm-trans-select"></select>
-              </div>
-            </div>
-            <div class="bm-trans-field">
-              <label class="bm-trans-lbl">To</label>
-              <div class="bm-trans-input-wrap">
-                <select id="bm-trans-to" class="bm-trans-select"></select>
-              </div>
-            </div>
-          </div>
-          <div class="bm-trans-group">
-            <div class="bm-trans-field">
-              <label class="bm-trans-lbl">Amount</label>
-              <div class="bm-trans-input-wrap">
-                <input type="number" id="bm-trans-amt" class="bm-trans-input" placeholder="0.00" step="any" min="0">
-              </div>
-            </div>
-            <div class="bm-trans-field">
-              <label class="bm-trans-lbl">Reference</label>
-              <div class="bm-trans-input-wrap">
-                <input type="text" id="bm-trans-ref" class="bm-trans-input" placeholder="Ref...">
-              </div>
-            </div>
-          </div>
-          <button class="bm-trans-btn" onclick="bmPerformTransfer()" style="margin-top:4px;">Transfer</button>
-        </div>
-      </div>
-    </div>
-
+  <!-- SCROLLER -->
+  <div class="page-wrap" id="bank-root">
+    <div class="bk-loading"><div class="bk-spin"></div><div>Loading bank data…</div></div>
   </div>
-  <div class="bm-foot" style="justify-content: flex-end; gap: 8px;">
-    <button class="bm-btn" style="background:rgba(255,255,255,0.05); color:rgba(255,255,255,0.5); border:1px solid rgba(255,255,255,0.1); padding: 0 12px; height: 36px; display: flex; align-items: center; justify-content: center;" onclick="bmViewTransactions()" title="View Transactions">
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-    </button>
-    <button class="bm-btn bm-btn-save" id="bmSaveBtn" onclick="bmSave()" title="Save Changes" style="height: 36px; width: auto; padding: 0 12px;">
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
-    </button>
+
+  <!-- CONFIRM -->
+  <div class="bk-confirm-bg" id="bkConfirmBg">
+    <div class="bk-confirm">
+      <div class="bk-confirm-msg" id="bkConfirmMsg">Are you sure?</div>
+      <div class="bk-confirm-btns">
+        <button class="bk-cbtn no"  id="bkConfirmNo"  type="button" onclick="bkConfirmClose(false)">Cancel</button>
+        <button class="bk-cbtn yes" id="bkConfirmYes" type="button" onclick="bkConfirmClose(true)">Confirm</button>
+      </div>
+    </div>
   </div>
-</div>
+
+  <div class="bk-toast" id="bkToast"></div>
+</section>
 
 <script>
-// Utility function to escape HTML special characters
-function esc(str) {
-  if (!str) return '';
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+/* ═══════════════════════════════════════════════════════════════
+   BANK PAGE — state
+   _bkData         [{row, source, amount}]  from getBankBalances()
+   _bkTxns         [{row, date, source, destination, amount, reference}]
+   _bkExtras       [String]                 non-bank dropdown values
+   _bkDirty        {rowKey:true}            accounts edited but unsaved
+═══════════════════════════════════════════════════════════════ */
+var _bkData    = [];
+var _bkTxns    = [];
+var _bkExtras  = [];
+var _bkRate    = 0;
+var _bkDirty   = {};
+var _bkDonut   = null;
+var _bkEditRow = -1;
+var _bkOpenBook = -1;   /* index of the passbook currently open, -1 = shelf */
+var _bkPage    = 1;
+var _bkQuery   = '';
+var _bkBankFilter = 'all';
+var _bkRangeDays  = 90;
+/* Transfer fee — charged to the source only, never written to the sheet.
+   Pinning keeps it across transfers instead of clearing it each time. */
+var _bkFeePin  = false;
+var _bkFeeVal  = 25;
+const _BK_FEE_DEFAULT = 25;
+var _bkConfirmCb  = null;
+var _bkBuilt   = false;
+var _bkPending = 0;
+const _BK_PAGE_SIZE = 20;
+
+/* ── Data colours, taken from the expense page's category palette
+      (EXP_CAT_COLORS / EXP_FALLBACK in render.html) so a bank reads the
+      same weight as a spend category. These are the muted 500-level
+      hues, not the neon accents — the neon stays for UI chrome only. ── */
+var _BK_PALETTE = ['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981',
+                   '#ec4899','#f97316','#ef4444','#84cc16','#64748b'];
+var _BK_KNOWN = {
+  'boc':        {c:'#f59e0b', fg:'#1f2937', full:'Bank of Ceylon'},
+  'hnb':        {c:'#6366f1', fg:'#ffffff', full:'Hatton National'},
+  'commercial': {c:'#06b6d4', fg:'#04222b', full:'Commercial Bank'},
+  'sampath':    {c:'#ef4444', fg:'#ffffff', full:'Sampath Bank'},
+  'ntb':        {c:'#10b981', fg:'#04120a', full:'Nations Trust'}
+};
+function bkStyle(name){
+  var n = String(name || '').toLowerCase();
+  for (var k in _BK_KNOWN){ if (n.indexOf(k) > -1) return _BK_KNOWN[k]; }
+  /* stable hue for anything not in the known list */
+  var h = 0;
+  for (var i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+  var c = _BK_PALETTE[h % _BK_PALETTE.length];
+  return {c:c, fg:'#04222b', full:''};
+}
+function bkColorOf(name){
+  var n = String(name || '').toLowerCase();
+  for (var i = 0; i < _bkData.length; i++){
+    if (String(_bkData[i].source).toLowerCase() === n) return bkStyle(_bkData[i].source).c;
+  }
+  return 'rgba(255,255,255,.26)';
 }
 
-// ── Bank Balance Manager ──
-var _bmData = [];
-var _bmChart = null;
-var _positionedBank = false;
-var _bmTransactions = [];
-var _bmEditingIdx = -1;
-var _bmCurrentPage = 1;
-const _bmPageSize = 20;
-var _bmSearchQuery = '';
-var _bmAdditionalDropdownValues = [];
-var _bmConfirmCallback = null;
-
-function bmConfirm(msg, callback, isAlert) {
-  _bmConfirmCallback = callback;
-  document.getElementById('bmConfirmMsg').textContent = msg;
-  const yesBtn = document.getElementById('bmConfirmYes');
-  const noBtn = document.querySelector('.bm-confirm-btn-no');
-  
-  if (isAlert) {
-    noBtn.style.display = 'none';
-    yesBtn.textContent = 'OK';
-    yesBtn.classList.remove('bm-confirm-btn-yes');
-    yesBtn.style.background = 'rgba(255,255,255,0.1)';
-  } else {
-    noBtn.style.display = 'block';
-    yesBtn.textContent = 'Confirm';
-    yesBtn.classList.add('bm-confirm-btn-yes');
-    yesBtn.style.background = '';
-  }
-  
-  document.getElementById('bm-confirm-overlay').classList.add('open');
+/* ── formatting ── */
+/* escapes quotes too — these strings land inside value="" and title="" */
+function bkEsc(s){
+  var d = document.createElement('div');
+  d.textContent = (s === 0 ? '0' : (s || ''));
+  return d.innerHTML.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function bkLkr(n, dec){
+  dec = dec || 0;
+  return '₨ ' + (Number(n) || 0).toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+function bkUsd(n){ return '$' + (Number(n) || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function bkPct(n, total){ return total > 0 ? (n / total * 100).toFixed(1) + '%' : '0%'; }
+function bkTotal(){ return _bkData.reduce(function(s, b){ return s + (Number(b.amount) || 0); }, 0); }
+function bkDate(v){ var d = new Date(v); return isNaN(d.getTime()) ? null : d; }
+function bkDaysAgo(d){ return Math.floor((Date.now() - d.getTime()) / 86400000); }
+function bkAgo(d){
+  if (!d) return 'never';
+  var n = bkDaysAgo(d);
+  if (n <= 0) return 'today';
+  if (n === 1) return 'yesterday';
+  if (n < 30) return n + ' days ago';
+  if (n < 365) return Math.round(n / 30) + ' mo ago';
+  return Math.round(n / 365) + ' yr ago';
 }
 
-function bmAlert(msg, callback) {
-  bmConfirm(msg, callback, true);
+/* ═══ CONFIRM / TOAST ═════════════════════════════════════════ */
+function bkConfirm(msg, cb, isAlert){
+  _bkConfirmCb = cb;
+  document.getElementById('bkConfirmMsg').textContent = msg;
+  var yes = document.getElementById('bkConfirmYes'), no = document.getElementById('bkConfirmNo');
+  no.style.display = isAlert ? 'none' : '';
+  yes.textContent = isAlert ? 'OK' : 'Confirm';
+  yes.classList.toggle('yes', !isAlert);
+  document.getElementById('bkConfirmBg').classList.add('open');
+}
+function bkAlert(msg, cb){ bkConfirm(msg, cb, true); }
+function bkConfirmClose(ok){
+  document.getElementById('bkConfirmBg').classList.remove('open');
+  var cb = _bkConfirmCb; _bkConfirmCb = null;
+  if (cb) cb(ok);
+}
+var _bkToastT = null;
+function bkToast(msg, kind){
+  var t = document.getElementById('bkToast');
+  t.textContent = msg;
+  t.className = 'bk-toast show' + (kind ? ' ' + kind : '');
+  clearTimeout(_bkToastT);
+  _bkToastT = setTimeout(function(){ t.className = 'bk-toast' + (kind ? ' ' + kind : ''); }, 2600);
 }
 
-function bmConfirmClose(result) {
-  document.getElementById('bm-confirm-overlay').classList.remove('open');
-  if (_bmConfirmCallback) {
-    _bmConfirmCallback(result);
-    _bmConfirmCallback = null;
-  }
-}
+/* ═══ LOAD ════════════════════════════════════════════════════ */
+function bankLoad(){
+  _bkBuilt = false;
+  _bkDirty = {};
+  _bkEditRow = -1;
+  _bkOpenBook = -1;
+  _bkPage = 1;
+  document.getElementById('bank-root').innerHTML =
+    '<div class="bk-loading"><div class="bk-spin"></div><div>Loading bank data…</div></div>';
+  bkRefreshSaveBtn();
 
-function moneyToggle() {
-  const p = document.getElementById('bank-modal');
-  if (p.classList.contains('open')) {
-    p.classList.remove('open');
-  } else {
-    if(!_positionedBank) {
-      _positionedBank = true;
-    }
-    p.classList.add('open');
-    bmLoad();
-  }
-}
+  bkLoadFeePin();
 
-// Draggable Bank Modal
-document.addEventListener('DOMContentLoaded', function(){
-  var panel = document.getElementById('bank-modal');
-  if (!panel) return;
-  var topbar = panel.querySelector('.bm-hdr');
-  var _drag = false, _ox = 0, _oy = 0;
-  
-  function startDrag(cx, cy){
-    var r = panel.getBoundingClientRect();
-    _ox = cx - r.left;
-    _oy = cy - r.top;
-    _drag = true;
-    topbar.style.cursor = 'grabbing';
-  }
-  function moveDrag(cx, cy){
-    if(!_drag) return;
-    var pw = panel.offsetWidth, ph = panel.offsetHeight;
-    var maxX = window.innerWidth - pw;
-    var maxY = window.innerHeight - ph;
-    var nx = Math.max(0, Math.min(cx - _ox, maxX));
-    var ny = Math.max(0, Math.min(cy - _oy, maxY));
-    panel.style.left = nx + 'px';
-    panel.style.top = ny + 'px';
-  }
-  function endDrag(){
-    _drag = false;
-    topbar.style.cursor = 'grab';
-  }
+  _bkPending = 2;
+  function done(){ if (--_bkPending <= 0) bkBuild(); }
 
-  topbar.addEventListener('mousedown', function(e){ if(e.target.closest('button')) return; startDrag(e.clientX, e.clientY); });
-  document.addEventListener('mousemove', function(e){ moveDrag(e.clientX, e.clientY); });
-  document.addEventListener('mouseup', endDrag);
-
-  topbar.addEventListener('touchstart', function(e){ if(e.target.closest('button')) return; var t=e.touches[0]; startDrag(t.clientX, t.clientY); },{passive:true});
-  document.addEventListener('touchmove', function(e){ if(!_drag) return; e.preventDefault(); var t=e.touches[0]; moveDrag(t.clientX, t.clientY); },{passive:false});
-  document.addEventListener('touchend', endDrag);
-});
-
-var _bmUsdRate = 0;
-
-function bmLoad() {
-  const list = document.getElementById('bmList');
-  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;"><div class="edm-spin" style="margin:0 auto 10px"></div>Fetching bank data…</div>';
-
-  bmFetchRate();
-  bmFetchAdditionalValues();
-  
   google.script.run
-    .withSuccessHandler(function(data) {
-      _bmData = data;
-      bmRender();
-    })
-    .withFailureHandler(function(err) {
-      list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);font-size:.8em;">⚠ ' + (err.message || err) + '</div>';
+    .withSuccessHandler(function(d){ _bkData = d || []; done(); })
+    .withFailureHandler(function(e){
+      document.getElementById('bank-root').innerHTML =
+        '<div class="bk-loading"><div style="font-size:30px">⚠</div><div style="color:var(--red)">' +
+        bkEsc(e.message || e) + '</div></div>';
+      _bkPending = -99;
     })
     .getBankBalances();
-}
-
-function bmFetchRate() {
-  const badge = document.getElementById('bmRateBadge');
-  const valEl = document.getElementById('bmRateVal');
-  if (badge) badge.classList.add('bm-rate-loading');
-  if (valEl) valEl.textContent = '…';
 
   google.script.run
-    .withSuccessHandler(function(rate) {
-      _bmUsdRate = parseFloat(rate) || 0;
-      if (valEl) valEl.textContent = _bmUsdRate > 0 ? _bmUsdRate.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) : 'N/A';
-      if (badge) badge.classList.remove('bm-rate-loading');
-      if (_bmData && _bmData.length) bmRender();
+    .withSuccessHandler(function(t){ _bkTxns = t || []; done(); })
+    .withFailureHandler(function(){ _bkTxns = []; done(); })
+    .getBankTransactions();
+
+  /* both of these only enrich the page — they never gate the first paint */
+  bkFetchRate();
+  google.script.run
+    .withSuccessHandler(function(v){ _bkExtras = v || []; if (_bkBuilt) bkFillSelects(); })
+    .withFailureHandler(function(){ _bkExtras = []; })
+    .getAdditionalDropdownValues();
+}
+
+function bkFetchRate(){
+  var badge = document.getElementById('bkFx'), val = document.getElementById('bkFxVal');
+  badge.classList.add('loading');
+  val.textContent = '…';
+  google.script.run
+    .withSuccessHandler(function(r){
+      _bkRate = parseFloat(r) || 0;
+      badge.classList.remove('loading');
+      val.textContent = _bkRate > 0 ? _bkRate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : 'N/A';
+      if (_bkBuilt){ bkRenderOverview(); bkRenderAccounts(); bkRefreshTransfer(); bkConvFromUsd(); }
     })
-    .withFailureHandler(function() {
-      _bmUsdRate = 0;
-      if (valEl) valEl.textContent = 'N/A';
-      if (badge) badge.classList.remove('bm-rate-loading');
+    .withFailureHandler(function(){
+      _bkRate = 0; badge.classList.remove('loading'); val.textContent = 'N/A';
     })
     .getUsdToLkrRate();
 }
 
-const _BANK_COLORS = {
-  'boc': { bg: '#fbbf24', fg: '#1f2937' },
-  'hnb': { bg: '#1e3a8a', fg: '#ffffff' },
-  'commercial': { bg: '#2563eb', fg: '#ffffff' },
-  'sampath': { bg: '#ea580c', fg: '#ffffff' },
-  'ntb': { bg: '#7dd3fc', fg: '#0c4a6e' }
-};
-
-function getBankStyle(name) {
-  const n = (name||'').toLowerCase();
-  for (let k in _BANK_COLORS) {
-    if (n.includes(k)) return _BANK_COLORS[k];
-  }
-  return { bg: 'rgba(255,255,255,0.1)', fg: '#ffffff' };
+/* ═══ BUILD — the page shell is written once, sections re-render ═ */
+function bkBuild(){
+  document.getElementById('bank-root').innerHTML =
+    '<div id="bkSecOverview"></div>' +
+    '<div id="bkSecAccounts"></div>' +
+    '<div id="bkSecMove"></div>' +
+    '<div id="bkSecTxns"></div>';
+  _bkBuilt = true;
+  bkRenderOverview();
+  bkRenderAccounts();
+  bkRenderMove();
+  bkRenderTxnPanel();
+  bkBindScrollSpy();
 }
 
-function bmRender() {
-  const list = document.getElementById('bmList');
-  const totalEl = document.getElementById('bmTotal');
-  
-  if (!_bmData || !_bmData.length) {
-    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8em;">No bank rows found in Portfolio G1:I10.</div>';
-    totalEl.textContent = '₨ 0.00';
-    if (_bmChart) _bmChart.destroy();
-    _bmChart = null;
+/* ═══ ② OVERVIEW ══════════════════════════════════════════════ */
+function bkRenderOverview(){
+  if (!_bkBuilt) return;
+  var total = bkTotal();
+  var host = document.getElementById('bkSecOverview');
+
+  if (!_bkData.length){
+    host.innerHTML = '<div class="bk-panel"><div class="bk-empty">' +
+      'No bank rows found in Portfolio G1:I10. Add rows tagged BANK or TEMP to see them here.</div></div>';
     return;
   }
-  
-  let total = 0;
-  let html = '';
-  
-  _bmData.forEach((item, i) => {
-    total += item.amount;
-    const style = getBankStyle(item.source);
-    const initials = (item.source || '??').substring(0, 3).toUpperCase();
-    const usdAmt = (_bmUsdRate > 0) ? (item.amount / _bmUsdRate).toFixed(2) : null;
-    const usdLine = usdAmt ? `<div class="bm-item-usd" id="bm-usd-${i}">≈ $${Number(usdAmt).toLocaleString('en-US',{minimumFractionDigits:2})} USD</div>` : `<div class="bm-item-usd" id="bm-usd-${i}">≈ — USD</div>`;
-    html += `
-      <div class="bm-item" style="--bank-color: ${style.bg}">
-        <div class="bm-item-row">
-          <div class="bm-avatar" style="background:${style.bg}; color:${style.fg}">${initials}</div>
-          <div class="bm-info">
-            <input type="text" id="bm-src-${i}" class="bm-item-source" style="background:${style.bg};color:${style.fg};" value="${esc(item.source)}" onchange="bmUpdateData(${i}, 'source', this.value)" placeholder="Bank Name">
-            <input type="number" class="bm-item-amt" value="${item.amount}" onchange="bmUpdateData(${i}, 'amount', this.value)" step="0.01">
-            ${usdLine}
-          </div>
-        </div>
-      </div>
-    `;
-  });
-  
-  list.innerHTML = html;
-  totalEl.textContent = '₨ ' + total.toLocaleString('en-IN', {minimumFractionDigits:2});
-  bmUpdateTotalUsd(total);
-  bmUpdateChart(total);
-  bmPopulateTransferSelects();
+
+  var sorted = _bkData.slice().sort(function(a,b){ return b.amount - a.amount; });
+  var top = sorted[0];
+  var stats = bkTxnStats();
+
+  host.innerHTML =
+    '<div class="bk-hero">' +
+      '<div class="bk-hero-in">' +
+        '<div>' +
+          '<div class="bk-hero-lbl"><i></i>Total liquid balance · ' + _bkData.length + ' account' + (_bkData.length === 1 ? '' : 's') + '</div>' +
+          '<div class="bk-hero-amt">' + bkLkr(total, 2) + '</div>' +
+          '<div class="bk-hero-usd">' + (_bkRate > 0
+              ? '≈ ' + bkUsd(total / _bkRate) + ' USD <em>@ ' + _bkRate.toFixed(2) + '</em>'
+              : '≈ — USD') + '</div>' +
+          '<div class="bk-hero-meta">' +
+            '<div class="bk-hm"><span class="bk-hm-k">Moved · 30 days</span><span class="bk-hm-v">' + bkLkr(stats.moved30) + '</span></div>' +
+            '<div class="bk-hm"><span class="bk-hm-k">Transfers · 30 days</span><span class="bk-hm-v">' + stats.count30 + '</span></div>' +
+            '<div class="bk-hm"><span class="bk-hm-k">Largest hold</span><span class="bk-hm-v">' + bkEsc(top.source) + ' · ' + bkPct(top.amount, total) + '</span></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="bk-donut">' +
+          '<canvas id="bkDonut"></canvas>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="bk-panel">' +
+      '<div class="bk-panel-hdr"><i style="background:var(--bk-cyan)"></i>Allocation</div>' +
+      '<div class="bk-ribbon">' + sorted.map(function(b){
+          return '<div style="flex:' + Math.max(b.amount, 0.0001) + ';background:' + bkStyle(b.source).c + '" ' +
+                 'title="' + bkEsc(b.source) + ' · ' + bkPct(b.amount, total) + '"></div>';
+        }).join('') + '</div>' +
+      '<div class="bk-rkey">' + sorted.map(function(b){
+          return '<span class="bk-rk"><i style="background:' + bkStyle(b.source).c + '"></i>' +
+                 '<b>' + bkEsc(b.source) + '</b><span>' + bkPct(b.amount, total) + '</span></span>';
+        }).join('') + '</div>' +
+      '<div class="bk-kpis">' +
+        '<div class="bk-kpi"><span class="bk-kpi-k">Largest account</span>' +
+          '<span class="bk-kpi-v">' + bkEsc(top.source) + '</span>' +
+          '<span class="bk-kpi-s">' + bkLkr(top.amount) + ' · ' + bkPct(top.amount, total) + '</span></div>' +
+        '<div class="bk-kpi"><span class="bk-kpi-k">Moved · 30 days</span>' +
+          '<span class="bk-kpi-v">' + bkLkr(stats.moved30) + '</span>' +
+          '<span class="bk-kpi-s">across ' + stats.count30 + ' transfer' + (stats.count30 === 1 ? '' : 's') + '</span></div>' +
+        '<div class="bk-kpi"><span class="bk-kpi-k">Last transfer</span>' +
+          '<span class="bk-kpi-v">' + (stats.last ? bkAgo(stats.last.d) : '—') + '</span>' +
+          '<span class="bk-kpi-s">' + (stats.last
+              ? bkEsc(stats.last.t.source) + ' → ' + bkEsc(stats.last.t.destination) + ' · ' + bkLkr(stats.last.t.amount)
+              : 'no transfers logged') + '</span></div>' +
+        (stats.idle
+          ? '<div class="bk-kpi warn"><span class="bk-kpi-k">Idle &gt; 60 days</span>' +
+            '<span class="bk-kpi-v">' + bkEsc(stats.idle.source) + '</span>' +
+            '<span class="bk-kpi-s">' + bkLkr(stats.idle.amount) + ' untouched</span></div>'
+          : '<div class="bk-kpi"><span class="bk-kpi-k">Idle accounts</span>' +
+            '<span class="bk-kpi-v">None</span>' +
+            '<span class="bk-kpi-s">every account moved &lt; 60d</span></div>') +
+      '</div>' +
+    '</div>';
+
+  bkDrawDonut(total);
 }
 
-function bmPopulateTransferSelects() {
-  const fromSelect = document.getElementById('bm-trans-from');
-  const toSelect = document.getElementById('bm-trans-to');
-  if (!fromSelect || !toSelect) return;
-  
-  const fromVal = fromSelect.value;
-  const toVal = toSelect.value;
-  
-  let options = '<option value="">Select Bank/Value</option>';
-  
-  // Add banks
-  _bmData.forEach((item, i) => {
-    options += `<option value="bank_${i}">${esc(item.source)}</option>`;
-  });
 
-  // Add additional values from sheet
-  if (_bmAdditionalDropdownValues && _bmAdditionalDropdownValues.length > 0) {
-    _bmAdditionalDropdownValues.forEach((val, i) => {
-       options += `<option value="extra_${i}">${esc(val)}</option>`;
+/* derived facts — no extra backend calls */
+function bkTxnStats(){
+  var cut30 = Date.now() - 30 * 86400000, moved30 = 0, count30 = 0, last = null;
+  var lastPer = {};
+  _bkTxns.forEach(function(t){
+    var d = bkDate(t.date);
+    if (!d) return;
+    if (d.getTime() >= cut30){ moved30 += Number(t.amount) || 0; count30++; }
+    if (!last || d.getTime() > last.d.getTime()) last = {d:d, t:t};
+    [t.source, t.destination].forEach(function(n){
+      var k = String(n || '').toLowerCase();
+      if (!lastPer[k] || d.getTime() > lastPer[k].getTime()) lastPer[k] = d;
     });
-  }
-  
-  fromSelect.innerHTML = options;
-  toSelect.innerHTML = options;
-  
-  if (fromVal && fromSelect.querySelector(`option[value="${fromVal}"]`)) fromSelect.value = fromVal;
-  if (toVal && toSelect.querySelector(`option[value="${toVal}"]`)) toSelect.value = toVal;
+  });
+  var idle = null;
+  _bkData.forEach(function(b){
+    var d = lastPer[String(b.source).toLowerCase()];
+    var days = d ? bkDaysAgo(d) : 999;
+    if (days > 60 && b.amount > 0 && (!idle || b.amount > idle.amount)) idle = b;
+  });
+  return {moved30:moved30, count30:count30, last:last, idle:idle, lastPer:lastPer};
 }
 
-function bmFetchAdditionalValues() {
-  google.script.run
-    .withSuccessHandler(function(values) {
-      _bmAdditionalDropdownValues = values;
-      bmPopulateTransferSelects();
-    })
-    .getAdditionalDropdownValues();
-}
+/* A plain pie. The hero already carries the total, so the chart does not
+   need a hollow centre to hold one — every slice runs to the middle and
+   the share is printed on any slice with room for it. */
+function bkDrawDonut(total){
+  var cv = document.getElementById('bkDonut');
+  if (!cv || typeof Chart === 'undefined') return;
+  if (_bkDonut){ _bkDonut.destroy(); _bkDonut = null; }
+  var sorted = _bkData.slice().sort(function(a,b){ return b.amount - a.amount; });
 
-function bmPerformTransfer() {
-  const fromKey = document.getElementById('bm-trans-from').value;
-  const toKey = document.getElementById('bm-trans-to').value;
-  const amtInput = document.getElementById('bm-trans-amt');
-  const refInput = document.getElementById('bm-trans-ref');
-  const amount = parseFloat(amtInput.value) || 0;
-  const reference = (refInput.value || '').trim();
-  
-  if (fromKey === "" || toKey === "") {
-    bmAlert("Please select both source and destination.");
-    return;
-  }
-  if (fromKey === toKey) {
-    bmAlert("Source and destination must be different.");
-    return;
-  }
-  if (amount <= 0) {
-    bmAlert("Please enter a valid transfer amount.");
-    return;
-  }
-  
-  let fromBank = null;
-  let toBank = null;
-  let fromName = "";
-  let toName = "";
-
-  if (fromKey.startsWith('bank_')) {
-    const idx = parseInt(fromKey.split('_')[1]);
-    fromBank = _bmData[idx];
-    fromName = fromBank.source;
-  } else if (fromKey.startsWith('extra_')) {
-    const idx = parseInt(fromKey.split('_')[1]);
-    fromName = _bmAdditionalDropdownValues[idx];
-  }
-
-  if (toKey.startsWith('bank_')) {
-    const idx = parseInt(toKey.split('_')[1]);
-    toBank = _bmData[idx];
-    toName = toBank.source;
-  } else if (toKey.startsWith('extra_')) {
-    const idx = parseInt(toKey.split('_')[1]);
-    toName = _bmAdditionalDropdownValues[idx];
-  }
-
-  const performAction = () => bmPerformTransferFinal(fromBank, toBank, fromName, toName, amount, reference, amtInput, refInput);
-
-  if (fromBank && amount > fromBank.amount) {
-    bmConfirm(`Transfer amount (₨${amount}) exceeds source bank balance (₨${fromBank.amount}). Proceed anyway?`, function(ok) {
-      if (ok) performAction();
-    });
-    return;
-  }
-  performAction();
-}
-
-function bmPerformTransferFinal(fromBank, toBank, fromName, toName, amount, reference, amtInput, refInput) {
-  const btn = document.querySelector('.bm-trans-btn');
-  const oldText = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = '...';
-
-  const txn = {
-    date: new Date().toISOString(),
-    source: fromName,
-    destination: toName,
-    amount: amount,
-    reference: reference
+  /* percentage labels, drawn straight onto the slices */
+  var sliceLabels = {
+    id:'bkSliceLabels',
+    afterDatasetsDraw:function(chart){
+      var meta = chart.getDatasetMeta(0), ctx = chart.ctx;
+      ctx.save();
+      ctx.font = '800 11px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      meta.data.forEach(function(arc, i){
+        var v = chart.data.datasets[0].data[i];
+        if (!total || v / total < 0.07) return;        /* no room — skip it */
+        var mid = (arc.startAngle + arc.endAngle) / 2;
+        var r   = arc.outerRadius * 0.64;
+        var x   = arc.x + Math.cos(mid) * r;
+        var y   = arc.y + Math.sin(mid) * r;
+        ctx.fillStyle = 'rgba(255,255,255,.92)';
+        ctx.shadowColor = 'rgba(0,0,0,.45)';
+        ctx.shadowBlur = 3;
+        ctx.fillText((v / total * 100).toFixed(0) + '%', x, y);
+      });
+      ctx.restore();
+    }
   };
 
-  console.log('[DEBUG_LOG] Performing transfer:', txn);
+  _bkDonut = new Chart(cv.getContext('2d'), {
+    type:'pie',
+    data:{
+      labels: sorted.map(function(b){ return b.source; }),
+      datasets:[{
+        data: sorted.map(function(b){ return b.amount; }),
+        backgroundColor: sorted.map(function(b){ return bkStyle(b.source).c; }),
+        borderColor:'rgba(6,11,24,.85)', borderWidth:2, hoverOffset:8
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{padding:4},
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:function(c){
+          return ' ' + c.label + ': ' + bkLkr(c.parsed) + ' (' + bkPct(c.parsed, total) + ')';
+        }}}
+      }
+    },
+    plugins:[sliceLabels]
+  });
+}
 
+/* ═══ ③ ACCOUNTS — the passbook shelf ═════════════════════════
+   Closed books sit on a shelf; opening one turns to a two-leaf
+   spread whose right page is that account's ledger. The book is
+   therefore the only home for a balance edit, a rename, and an
+   account's history — all three used to live in three places.
+═══════════════════════════════════════════════════════════════ */
+/* ── colour helpers ───────────────────────────────────────────
+   Every shade on a cover is mixed here rather than in CSS, so the
+   page doesn't depend on color-mix() being available.           */
+function bkHexRgb(hex){
+  var h = String(hex).replace('#','');
+  if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)];
+}
+function bkMix(a, b, p){           /* p = how much of `a`, 0..1 */
+  var A = bkHexRgb(a), B = bkHexRgb(b);
+  return 'rgb(' + A.map(function(v, i){ return Math.round(v * p + B[i] * (1 - p)); }).join(',') + ')';
+}
+function bkAlpha(hex, a){
+  var c = bkHexRgb(hex);
+  return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')';
+}
+function bkBookVars(c){
+  return '--bk-c:' + c + ';' +
+    '--bk-cov1:'  + bkMix(c, '#0b1020', .32) + ';' +
+    '--bk-cov2:'  + bkMix(c, '#070c18', .15) + ';' +
+    '--bk-cov3:'  + bkMix(c, '#0a0f1c', .26) + ';' +
+    '--bk-spn1:'  + bkMix(c, '#05080f', .54) + ';' +
+    '--bk-spn2:'  + bkMix(c, '#05080f', .20) + ';' +
+    '--bk-foil:'  + bkMix(c, '#fff8dc', .74) + ';' +
+    '--bk-lite:'  + bkMix(c, '#ffffff', .70) + ';' +
+    '--bk-seal1:' + bkMix(c, '#ffffff', .82) + ';' +
+    '--bk-seal2:' + bkMix(c, '#06263a', .58) + ';' +
+    '--bk-tint:'  + bkMix(c, '#e8f6fd', .22) + ';' +
+    '--bk-tintb:' + bkMix(c, '#2d6d8c', .5)  + ';' +
+    '--bk-ring:'  + bkAlpha(c, .42) + ';' +
+    '--bk-glow:'  + bkAlpha(c, .22) + ';';
+}
+
+/* ── this account's transfers, newest first, with a running balance ──
+   The sheet stores no per-row balance, so replay backwards from the
+   balance we hold now: the newest row closes at today's figure.     */
+function bkLedgerRows(name, current){
+  var mine = _bkTxns.filter(function(t){ return t.source === name || t.destination === name; });
+  var running = current, out = [];
+  mine.forEach(function(t){
+    var amt = Number(t.amount) || 0;
+    var isOut = (t.source === name);
+    out.push({ t:t, isOut:isOut, amount:amt, after:running, d:bkDate(t.date) });
+    running -= isOut ? -amt : amt;       /* undo this row to reach the one before */
+  });
+  return out;
+}
+
+function bkSpark(name, current){
+  var rows = bkLedgerRows(name, current).slice(0, 7);
+  var pts = [current];
+  rows.forEach(function(r){ pts.unshift(r.after - (r.isOut ? -r.amount : r.amount)); });
+  if (pts.length < 2) pts = [current, current];
+
+  var w = 150, h = 34, min = Math.min.apply(null, pts), max = Math.max.apply(null, pts), rng = (max - min) || 1;
+  var xy = pts.map(function(v, i){
+    var x = (i / (pts.length - 1)) * (w - 2) + 1;
+    var y = h - 4 - ((v - min) / rng) * (h - 9);
+    return [x, y];
+  });
+  var line = xy.map(function(p){ return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+  var area = line + ' ' + (w - 1).toFixed(1) + ',' + (h - 1) + ' 1,' + (h - 1);
+  var last = xy[xy.length - 1];
+  return '<svg width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
+    '<polygon points="' + area + '" fill="rgba(20,110,165,.16)"/>' +
+    '<polyline points="' + line + '" fill="none" stroke="rgba(14,84,120,.7)" stroke-width="1.4" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="2.4" fill="#c2410c"/></svg>';
+}
+
+/* ── the shelf ───────────────────────────────────────────────── */
+function bkRenderAccounts(){
+  if (!_bkBuilt) return;
+  var total = bkTotal();
+  var stats = bkTxnStats();
+  var host  = document.getElementById('bkSecAccounts');
+
+  if (!_bkData.length){
+    host.innerHTML =
+      '<div class="bk-panel">' +
+        '<div class="bk-panel-hdr"><i style="background:var(--bk-gold)"></i>Accounts</div>' +
+        '<div class="bk-empty">No bank rows found in Portfolio G1:I10. ' +
+          'Add rows tagged BANK or TEMP to see them here.</div>' +
+      '</div>';
+    return;
+  }
+
+  var books = _bkData.map(function(b, i){
+    var st    = bkStyle(b.source);
+    var dirty = !!_bkDirty[b.row];
+    var lastD = stats.lastPer[String(b.source).toLowerCase()];
+    /* only meaningful once there is a ledger to be idle against */
+    var idle  = _bkTxns.length > 0 && (!lastD || bkDaysAgo(lastD) > 60);
+    var mine  = _bkTxns.filter(function(t){ return t.source === b.source || t.destination === b.source; });
+    /* fore-edge thickness reads the share of total, 7px → 20px */
+    var thick = total > 0 ? 7 + Math.round((b.amount / total) * 34) : 9;
+    if (thick > 20) thick = 20;
+
+    var badges = '';
+    if (dirty) badges += '<span class="bk-cbadge unsaved">● unsaved</span>';
+    else if (idle) badges += '<span class="bk-cbadge idle">idle</span>';
+
+    return '' +
+    '<button class="bk-book' + (dirty ? ' dirty' : '') + (idle && !dirty ? ' idle' : '') + '" type="button" ' +
+        'style="' + bkBookVars(st.c) + '--bk-thick:' + thick + 'px" ' +
+        'onclick="bkOpenBook(' + i + ')" ' +
+        'aria-label="Open the ' + bkEsc(b.source) + ' passbook">' +
+      '<span class="bk-pages"></span>' +
+      '<span class="bk-cover">' +
+        '<span class="bk-spine"></span>' +
+        '<span class="bk-badge-row">' + badges + '</span>' +
+        '<span class="bk-foil">' + bkEsc(b.source || 'UNNAMED') + '</span>' +
+        '<span class="bk-foil-sub">' + bkEsc(st.full || 'Savings account') + '</span>' +
+        '<span class="bk-rule"></span>' +
+        '<span class="bk-cover-mid">' +
+          '<span class="bk-cover-lbl">Balance carried forward</span>' +
+          '<span class="bk-cover-amt">' + bkLkr(b.amount, 2) + '</span>' +
+          '<span class="bk-cover-usd">' + (_bkRate > 0 ? '≈ ' + bkUsd(b.amount / _bkRate) + ' USD' : '≈ — USD') + '</span>' +
+        '</span>' +
+        '<span class="bk-cover-foot">' +
+          '<span>' + mine.length + ' entr' + (mine.length === 1 ? 'y' : 'ies') + ' · ' + bkAgo(lastD) + '</span>' +
+          '<span class="bk-share">' + bkPct(b.amount, total) + '</span>' +
+        '</span>' +
+      '</span>' +
+    '</button>';
+  }).join('');
+
+  host.innerHTML =
+    '<div class="bk-panel">' +
+      '<div class="bk-panel-hdr"><i style="background:var(--bk-gold)"></i>Passbooks' +
+        '<span class="bk-panel-sub" id="bkShelfSub">' + _bkData.length +
+          ' on the shelf · tap one to open it</span></div>' +
+      '<div class="bk-shelf-bar" id="bkShelfBar" style="display:none;">' +
+        '<button class="bk-mini" type="button" onclick="bkCloseBook()">← Back to the shelf</button>' +
+        '<span class="sp"></span>' +
+        '<button class="bk-mini" type="button" onclick="bkFlipBook(-1)" title="Previous passbook">‹</button>' +
+        '<button class="bk-mini" type="button" onclick="bkFlipBook(1)" title="Next passbook">›</button>' +
+      '</div>' +
+      '<div class="bk-shelf" id="bkShelf">' + books + '</div>' +
+      '<div class="bk-spread" id="bkSpread"></div>' +
+    '</div>';
+
+  if (_bkOpenBook >= 0 && _bkOpenBook < _bkData.length) bkRenderSpread();
+}
+
+/* ── open / close / flip ─────────────────────────────────────── */
+function bkOpenBook(i){
+  _bkOpenBook = i;
+  bkRenderSpread();
+  if (typeof haptic === 'function') haptic('select');
+}
+function bkCloseBook(){
+  _bkOpenBook = -1;
+  var shelf = document.getElementById('bkShelf'), spread = document.getElementById('bkSpread'),
+      bar = document.getElementById('bkShelfBar'), sub = document.getElementById('bkShelfSub');
+  if (shelf)  shelf.classList.remove('hidden');
+  if (spread){ spread.classList.remove('open'); spread.innerHTML = ''; }
+  if (bar)    bar.style.display = 'none';
+  if (sub)    sub.textContent = _bkData.length + ' on the shelf · tap one to open it';
+  if (typeof haptic === 'function') haptic('tick');
+}
+function bkFlipBook(dir){
+  if (_bkOpenBook < 0 || !_bkData.length) return;
+  _bkOpenBook = (_bkOpenBook + dir + _bkData.length) % _bkData.length;
+  bkRenderSpread();
+  if (typeof haptic === 'function') haptic('tick');
+}
+
+/* ── the open spread ─────────────────────────────────────────── */
+function bkRenderSpread(){
+  var i = _bkOpenBook;
+  var b = _bkData[i];
+  var spread = document.getElementById('bkSpread');
+  if (!b || !spread){ bkCloseBook(); return; }
+
+  var st = bkStyle(b.source), total = bkTotal();
+  var rows = bkLedgerRows(b.source, b.amount);
+  var cut = Date.now() - 90 * 86400000, inAmt = 0, outAmt = 0;
+  rows.forEach(function(r){
+    if (!r.d || r.d.getTime() < cut) return;
+    if (r.isOut) outAmt += r.amount; else inAmt += r.amount;
+  });
+
+  var shown = rows.slice(0, 12);
+  var ledger = shown.length
+    ? '<table class="bk-ledger">' +
+        '<thead><tr>' +
+          '<th style="width:62px">Date</th><th>Particulars</th>' +
+          '<th class="r">Withdrawn</th><th class="r">Deposited</th><th class="r">Balance</th>' +
+        '</tr></thead><tbody>' +
+        shown.map(function(r){
+          var other = r.isOut ? r.t.destination : r.t.source;
+          return '<tr>' +
+            '<td>' + (r.d ? r.d.toLocaleDateString('en-GB', {day:'2-digit', month:'short'}) : '—') + '</td>' +
+            '<td class="part">' + bkEsc(other) +
+              (r.t.reference ? '<i>' + bkEsc(r.t.reference) + '</i>' : '') + '</td>' +
+            '<td class="r wd">' + (r.isOut  ? bkLkr(r.amount) : '') + '</td>' +
+            '<td class="r dp">' + (!r.isOut ? bkLkr(r.amount) : '') + '</td>' +
+            '<td class="r bal">' + bkLkr(r.after) + '</td>' +
+          '</tr>';
+        }).join('') +
+        '<tr class="cf"><td colspan="4">Balance carried forward</td>' +
+          '<td class="r">' + bkLkr(b.amount, 2) + '</td></tr>' +
+      '</tbody></table>'
+    : '<div class="bk-ledger-empty">No entries posted to this account yet.<br>' +
+      'Transfers logged in Move Money appear here.</div>';
+
+  spread.setAttribute('style', bkBookVars(st.c));
+  spread.innerHTML =
+    '<div class="bk-spread-in">' +
+
+      '<div class="bk-leaf left">' +
+        '<div class="bk-crest">' +
+          '<div class="bk-crest-seal">' + bkEsc(String(b.source || '??').substring(0, 3).toUpperCase()) + '</div>' +
+          '<div class="bk-crest-txt"><b>' + bkEsc(b.source || 'Unnamed') + '</b>' +
+            '<span>' + bkEsc(st.full || 'Savings account') + '</span></div>' +
+        '</div>' +
+
+        '<div class="bk-stamp">' +
+          '<div class="bk-stamp-lbl">Balance carried forward</div>' +
+          '<div class="bk-stamp-amt" id="bkStampAmt">' + bkLkr(b.amount, 2) + '</div>' +
+          '<div class="bk-stamp-sub">' +
+            (_bkRate > 0 ? '≈ ' + bkUsd(b.amount / _bkRate) + ' USD · ' : '') +
+            bkPct(b.amount, total) + ' of liquid</div>' +
+        '</div>' +
+
+        '<div class="bk-flow">' +
+          '<div class="bk-flow-cell in"><span>Deposited · 90d</span><b>' + bkLkr(inAmt) + '</b></div>' +
+          '<div class="bk-flow-cell out"><span>Withdrawn · 90d</span><b>' + bkLkr(outAmt) + '</b></div>' +
+        '</div>' +
+
+        '<div class="bk-trend">' +
+          '<div class="bk-trend-lbl">Balance over the last ' + Math.min(rows.length, 7) + ' entries</div>' +
+          bkSpark(b.source, b.amount) +
+        '</div>' +
+
+        '<div class="bk-leaf-acts">' +
+          '<button class="bk-ink-btn primary" type="button" onclick="bkEditAmount(' + i + ')">✎ Edit balance</button>' +
+          '<button class="bk-ink-btn" type="button" onclick="bkRenameAccount(' + i + ')">Rename</button>' +
+          '<button class="bk-ink-btn" type="button" onclick="bkTransferFrom(' + i + ')">⇄ Transfer from here</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="bk-leaf right">' +
+        '<div class="bk-ledger-hd">' +
+          '<span class="bk-ledger-ttl">Statement of account</span>' +
+          '<span class="bk-ledger-no">' + rows.length + ' entr' + (rows.length === 1 ? 'y' : 'ies') +
+            (rows.length > 12 ? ' · latest 12 shown' : '') + '</span>' +
+        '</div>' +
+        '<div class="bk-ledger-scroll"><span class="bk-margin"></span>' + ledger + '</div>' +
+      '</div>' +
+
+    '</div>';
+
+  document.getElementById('bkShelf').classList.add('hidden');
+  spread.classList.add('open');
+  var bar = document.getElementById('bkShelfBar');
+  if (bar) bar.style.display = 'flex';
+  var sub = document.getElementById('bkShelfSub');
+  if (sub) sub.textContent = 'Book ' + (i + 1) + ' of ' + _bkData.length + ' · ' + bkEsc(b.source);
+}
+
+/* ── edits, made on the open page ────────────────────────────── */
+function bkEditAmount(i){
+  if (_bkOpenBook !== i){ bkOpenBook(i); }
+  var cell = document.getElementById('bkStampAmt');
+  if (!cell || cell.querySelector('input')) return;
+  var b = _bkData[i];
+  cell.innerHTML = '<input type="number" step="0.01" value="' + b.amount + '" aria-label="' + bkEsc(b.source) + ' balance">';
+  var inp = cell.querySelector('input');
+  inp.focus(); inp.select();
+  var done = false;
+  function commit(){
+    if (done) return;
+    done = true;
+    var v = parseFloat(inp.value);
+    if (isNaN(v)) v = b.amount;
+    if (v !== b.amount){ b.amount = v; _bkDirty[b.row] = true; if (typeof haptic === 'function') haptic('tick'); }
+    bkRefreshSaveBtn();
+    bkRenderAccounts();
+    bkRenderOverview();
+    bkRefreshTransfer();
+  }
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', function(e){
+    if (e.key === 'Enter'){ inp.blur(); }
+    if (e.key === 'Escape'){ done = true; bkRenderSpread(); }
+  });
+}
+
+function bkRenameAccount(i){
+  var b = _bkData[i];
+  var name = window.prompt('Rename this account', b.source);
+  if (name === null) return;
+  name = name.trim();
+  if (!name || name === b.source) return;
+  b.source = name;
+  _bkDirty[b.row] = true;
+  bkRefreshSaveBtn();
+  bkRenderAccounts();
+  bkRenderOverview();
+  bkRenderMove();
+}
+
+/* jump to Move Money with this account preselected as the source */
+function bkTransferFrom(i){
+  var sel = document.getElementById('bkFrom');
+  if (sel){
+    sel.value = 'bank_' + i;
+    if (document.getElementById('bkTo').value === sel.value){
+      var other = (i === 0 && _bkData.length > 1) ? 1 : 0;
+      document.getElementById('bkTo').value = 'bank_' + other;
+    }
+    bkRefreshTransfer();
+  }
+  bkGoSec('bkSecMove');
+}
+
+function bkRefreshSaveBtn(){
+  var n = Object.keys(_bkDirty).length;
+  var btn = document.getElementById('bkSaveBtn');
+  if (!btn) return;
+  btn.disabled = n === 0;
+  btn.classList.toggle('armed', n > 0);
+  btn.textContent = n === 0 ? '💾 Saved' : '💾 Save ' + n + ' change' + (n === 1 ? '' : 's');
+}
+
+function bkSave(){
+  var btn = document.getElementById('bkSaveBtn');
+  var old = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
   google.script.run
-    .withSuccessHandler(function(res) {
-      console.log('[DEBUG_LOG] Transaction logged successfully:', res);
-      
-      // Update local balances if they are banks
-      if (fromBank) fromBank.amount -= amount;
-      if (toBank) toBank.amount += amount;
-      
-      // Clear inputs
-      amtInput.value = "";
-      refInput.value = "";
-      
-      console.log('[DEBUG_LOG] Updating bank balances locally and on server.');
-      // Save updated balances to Portfolio sheet
-      google.script.run
-        .withSuccessHandler(function(res2) {
-          console.log('[DEBUG_LOG] Bank balances updated on server:', res2);
-          btn.disabled = false;
-          btn.textContent = oldText;
-          bmRender();
-        })
-        .withFailureHandler(function(err) {
-          console.error('[DEBUG_LOG] Failed to update bank balances:', err);
-          btn.disabled = false;
-          btn.textContent = oldText;
-          bmAlert("Transaction logged, but failed to update bank balances: " + (err.message || err));
-          bmRender();
-        })
-        .updateBankBalances(_bmData);
+    .withSuccessHandler(function(){
+      _bkDirty = {};
+      bkRefreshSaveBtn();
+      bkRenderAccounts();
+      bkToast('Balances saved', 'good');
+      if (typeof haptic === 'function') haptic('select');
+      /* Summary reads the same Portfolio cells — keep it honest */
+      if (typeof _spaLoaded !== 'undefined') _spaLoaded.port = false;
     })
-    .withFailureHandler(function(err) {
-      console.error('[DEBUG_LOG] Failed to log transaction:', err);
+    .withFailureHandler(function(e){
       btn.disabled = false;
-      btn.textContent = oldText;
-      bmAlert("Failed to log transaction: " + (err.message || err));
+      btn.textContent = old;
+      bkAlert('Failed to save: ' + (e.message || e));
     })
-    .addBankTransaction(txn);
+    .updateBankBalances(_bkData);
 }
 
-var _bmTransactions = [];
+/* ═══ ④ MOVE MONEY ════════════════════════════════════════════ */
+function bkRenderMove(){
+  if (!_bkBuilt) return;
+  var pairs = bkRecentPairs();
+  document.getElementById('bkSecMove').innerHTML =
+    '<div class="bk-move">' +
 
-function bmViewTransactions() {
-  const overlay = document.getElementById('bm-txn-overlay');
-  overlay.classList.add('open');
-  _bmCurrentPage = 1;
-  _bmSearchQuery = '';
-  const searchInput = overlay.querySelector('.bm-search-input');
-  if (searchInput) searchInput.value = '';
-  bmFetchTransactions();
+      '<div class="bk-panel">' +
+        '<div class="bk-panel-hdr"><i style="background:var(--bk-green)"></i>Transfer</div>' +
+        '<div style="display:flex;flex-direction:column;gap:12px;">' +
+          '<div class="bk-fld-row">' +
+            '<div class="bk-fld"><label for="bkFrom">From</label>' +
+              '<div class="bk-ctl"><select id="bkFrom" onchange="bkRefreshTransfer()"></select></div>' +
+              '<span class="bk-hint" id="bkFromBal"></span></div>' +
+            '<button class="bk-swap" type="button" onclick="bkSwapBanks()" title="Swap from and to">⇄</button>' +
+            '<div class="bk-fld"><label for="bkTo">To</label>' +
+              '<div class="bk-ctl"><select id="bkTo" onchange="bkRefreshTransfer()"></select></div>' +
+              '<span class="bk-hint" id="bkToBal"></span></div>' +
+          '</div>' +
+          '<div class="bk-fld-row two">' +
+            '<div class="bk-fld"><label for="bkAmt">Amount</label>' +
+              '<div class="bk-ctl"><span class="pre">₨</span>' +
+                '<input id="bkAmt" type="number" step="any" min="0" placeholder="0.00" oninput="bkRefreshTransfer()"></div>' +
+              '<span class="bk-hint" id="bkAmtUsd">≈ — USD</span></div>' +
+            '<div class="bk-fld"><label for="bkFee">Fee</label>' +
+              '<div class="bk-ctl"><span class="pre">₨</span>' +
+                '<input id="bkFee" type="number" step="any" min="0" placeholder="0.00" oninput="bkFeeTyped()">' +
+                '<button class="bk-pin" id="bkFeePin" type="button" onclick="bkToggleFeePin()" ' +
+                  'title="Pin the fee so it stays between transfers" aria-pressed="false">📌</button>' +
+              '</div>' +
+              '<span class="bk-hint" id="bkFeeHint">charged to the source</span></div>' +
+          '</div>' +
+          '<div class="bk-fld"><label for="bkRef">Reference</label>' +
+            '<div class="bk-ctl"><input id="bkRef" type="text" placeholder="What is this for?"></div></div>' +
+          '<div class="bk-chips">' +
+            '<button class="bk-chip" type="button" onclick="bkFillPct(25)">25%</button>' +
+            '<button class="bk-chip" type="button" onclick="bkFillPct(50)">50%</button>' +
+            '<button class="bk-chip" type="button" onclick="bkFillPct(100)">All</button>' +
+          '</div>' +
+          '<div class="bk-preview">' +
+            '<span class="bk-pv-k">After this transfer</span>' +
+            '<div class="bk-pv-row"><span id="bkPvFromName">—</span>' +
+              '<span><span class="old" id="bkPvFromOld">—</span> → <b id="bkPvFromNew">—</b></span></div>' +
+            '<div class="bk-pv-row"><span id="bkPvToName">—</span>' +
+              '<span><span class="old" id="bkPvToOld">—</span> → <b id="bkPvToNew">—</b></span></div>' +
+            '<div class="bk-pv-row" id="bkPvFeeRow" style="display:none;">' +
+              '<span>of which fee</span><span><b class="down" id="bkPvFee">—</b></span></div>' +
+          '</div>' +
+          '<button class="bk-cta" id="bkCta" type="button" onclick="bkTransfer()">⇄ Transfer</button>' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="display:flex;flex-direction:column;gap:13px;">' +
+        '<div class="bk-panel">' +
+          '<div class="bk-panel-hdr"><i style="background:var(--bk-purple)"></i>Converter</div>' +
+          '<div style="display:flex;flex-direction:column;gap:10px;">' +
+            '<div class="bk-fld-row">' +
+              '<div class="bk-fld"><label for="bkConvUsd">USD</label>' +
+                '<div class="bk-ctl"><span class="pre">$</span>' +
+                  '<input id="bkConvUsd" type="number" step="any" min="0" placeholder="0.00" oninput="bkConvFromUsd()"></div></div>' +
+              '<button class="bk-swap" type="button" onclick="bkConvSwap()" title="Swap currencies" style="margin-bottom:0;">⇄</button>' +
+              '<div class="bk-fld"><label for="bkConvLkr">LKR</label>' +
+                '<div class="bk-ctl"><span class="pre">₨</span>' +
+                  '<input id="bkConvLkr" type="number" step="any" min="0" placeholder="0.00" oninput="bkConvFromLkr()"></div></div>' +
+            '</div>' +
+            '<div class="bk-conv-hint" id="bkConvHint">Enter an amount</div>' +
+            '<div class="bk-chips">' +
+              '<button class="bk-chip" type="button" onclick="bkConvQuick(100)">$100</button>' +
+              '<button class="bk-chip" type="button" onclick="bkConvQuick(500)">$500</button>' +
+              '<button class="bk-chip" type="button" onclick="bkConvQuick(1000)">$1K</button>' +
+              '<button class="bk-chip" type="button" onclick="bkConvQuick(5000)">$5K</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="bk-panel">' +
+          '<div class="bk-panel-hdr"><i style="background:var(--bk-orange)"></i>Recent pairs</div>' +
+          (pairs.length
+            ? '<div class="bk-pairs">' + pairs.map(function(p, i){
+                return '<div class="bk-pair">' +
+                  '<span class="bk-bchip">' +
+                    '<i style="background:' + bkColorOf(p.from) + '"></i>' + bkEsc(p.from) + ' → ' +
+                    '<i style="background:' + bkColorOf(p.to) + '"></i>' + bkEsc(p.to) + '</span>' +
+                  '<span class="rt">' + bkLkr(p.amount) +
+                    '<button class="bk-redo" type="button" title="Use this pair" onclick="bkUsePair(' + i + ')">↻</button>' +
+                  '</span></div>';
+              }).join('') + '</div>'
+            : '<div class="bk-empty">No transfers logged yet.</div>') +
+        '</div>' +
+      '</div>' +
+
+    '</div>';
+
+  bkFillSelects();
+  bkApplyFeePin();
+  bkRefreshTransfer();
+  bkConvFromUsd();
 }
 
-function bmHideTransactions() {
-  const overlay = document.getElementById('bm-txn-overlay');
-  overlay.classList.remove('open');
-}
-
-function bmFetchTransactions() {
-  const list = document.getElementById('bm-txn-list');
-  list.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">Loading transactions...</td></tr>';
-
-  google.script.run
-    .withSuccessHandler(function(data) {
-      _bmTransactions = data;
-      bmRenderTransactions();
-    })
-    .withFailureHandler(function(err) {
-      list.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#ef4444;">Failed to load: ' + err.message + '</td></tr>';
-    })
-    .getBankTransactions();
-}
-
-function bmSearchTransactions(query) {
-  _bmSearchQuery = (query || '').toLowerCase().trim();
-  _bmCurrentPage = 1;
-  bmRenderTransactions();
-}
-
-function bmGoToPage(page) {
-  _bmCurrentPage = page;
-  bmRenderTransactions();
-}
-
-function bmRenderTransactions() {
-  console.log('[DEBUG_LOG] bmRenderTransactions called');
-  const list = document.getElementById('bm-txn-list');
-  const pagination = document.getElementById('bm-pagination-controls');
-  
-  if (!_bmTransactions || !_bmTransactions.length) {
-    list.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">No transactions found.</td></tr>';
-    if (pagination) pagination.innerHTML = '';
-    return;
-  }
-
-  // Filter based on search query
-  let filtered = _bmTransactions;
-  if (_bmSearchQuery) {
-    filtered = _bmTransactions.filter(t => 
-      (t.source || '').toLowerCase().includes(_bmSearchQuery) ||
-      (t.destination || '').toLowerCase().includes(_bmSearchQuery) ||
-      (t.reference || '').toLowerCase().includes(_bmSearchQuery) ||
-      String(t.amount).includes(_bmSearchQuery)
-    );
-  }
-
-  if (filtered.length === 0) {
-    list.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">No matching transactions found.</td></tr>';
-    if (pagination) pagination.innerHTML = '';
-    return;
-  }
-
-  // Pagination logic
-  const totalPages = Math.ceil(filtered.length / _bmPageSize);
-  if (_bmCurrentPage > totalPages) _bmCurrentPage = totalPages;
-  if (_bmCurrentPage < 1) _bmCurrentPage = 1;
-
-  const startIdx = (_bmCurrentPage - 1) * _bmPageSize;
-  const pageData = filtered.slice(startIdx, startIdx + _bmPageSize);
-
-  let html = '';
-  pageData.forEach((t) => {
-    // Find original index in _bmTransactions for edit/delete/rollback
-    const originalIdx = _bmTransactions.indexOf(t);
-    
-    let dateStr = 'N/A';
-    try {
-      const dt = new Date(t.date);
-      if (!isNaN(dt.getTime())) {
-        dateStr = dt.toLocaleDateString('en-GB', {day:'2-digit', month:'short'});
-      } else {
-        dateStr = String(t.date).substring(0, 10);
-      }
-    } catch(e) {
-      console.error('[DEBUG_LOG] Error formatting date:', e, t.date);
+/* ── the fee pin ──────────────────────────────────────────────
+   Pinned, the fee survives each transfer and is remembered for the
+   next visit; unpinned, it clears once the transfer is logged.
+   Browser storage can throw or come back empty, so every read and
+   write is guarded and the panel works without it.              */
+function bkLoadFeePin(){
+  try {
+    var raw = localStorage.getItem('bkFeePin');
+    if (raw){
+      var o = JSON.parse(raw);
+      _bkFeePin = !!o.on;
+      _bkFeeVal = (typeof o.val === 'number' && o.val >= 0) ? o.val : _BK_FEE_DEFAULT;
     }
-    
-    if (_bmEditingIdx === originalIdx) {
-      html += `
-        <tr class="bm-txn-editing">
-          <td>${dateStr}</td>
-          <td>${esc(t.source)}</td>
-          <td>${esc(t.destination)}</td>
-          <td><input type="number" id="bm-edit-amt-${originalIdx}" class="bm-txn-inline-input" value="${t.amount}" step="any"></td>
-          <td><input type="text" id="bm-edit-ref-${originalIdx}" class="bm-txn-inline-input" value="${esc(t.reference)}"></td>
-          <td style="display:flex;gap:4px;justify-content:flex-end;">
-            <button class="bm-txn-btn-sm" style="color:#10b981;" onclick="bmSaveInlineEdit(${originalIdx})" title="Save">✓</button>
-            <button class="bm-txn-btn-sm" style="color:#ef4444;" onclick="bmCancelEdit()" title="Cancel">✕</button>
-          </td>
-        </tr>
-      `;
-    } else {
-      html += `
-        <tr>
-          <td>${dateStr}</td>
-          <td>${esc(t.source)}</td>
-          <td>${esc(t.destination)}</td>
-          <td style="font-weight:700; color:rgba(255,255,255,0.7);">₨ ${t.amount.toLocaleString()}</td>
-          <td style="color:rgba(255,255,255,0.3); font-style: italic;">${esc(t.reference)}</td>
-          <td style="display:flex;gap:4px;justify-content:flex-end;">
-            <button class="bm-txn-btn-sm" style="color:#fbbf24; border-color:rgba(251,191,36,0.1);" onclick="bmRollbackTxn(${originalIdx})" title="Rollback">↺</button>
-            <button class="bm-txn-btn-sm bm-txn-btn-edit" onclick="bmEditTxn(${originalIdx})" title="Edit">✎</button>
-            <button class="bm-txn-btn-sm bm-txn-btn-del" onclick="bmDeleteTxn(${originalIdx})" title="Delete">✕</button>
-          </td>
-        </tr>
-      `;
-    }
-  });
-  list.innerHTML = html;
+  } catch(e){ /* private window, blocked storage — carry on unpinned */ }
+}
+function bkSaveFeePin(){
+  try { localStorage.setItem('bkFeePin', JSON.stringify({on:_bkFeePin, val:_bkFeeVal})); }
+  catch(e){ /* nothing to do — the pin just won't outlive the session */ }
+}
+function bkApplyFeePin(){
+  var inp = document.getElementById('bkFee'), pin = document.getElementById('bkFeePin');
+  if (!inp || !pin) return;
+  pin.classList.toggle('on', _bkFeePin);
+  pin.setAttribute('aria-pressed', _bkFeePin ? 'true' : 'false');
+  pin.title = _bkFeePin ? 'Fee is pinned — it stays between transfers' : 'Pin the fee so it stays between transfers';
+  if (_bkFeePin) inp.value = _bkFeeVal;
+  bkFeeHint();
+}
+function bkToggleFeePin(){
+  _bkFeePin = !_bkFeePin;
+  var inp = document.getElementById('bkFee');
+  if (_bkFeePin){
+    /* a pin with nothing to hold isn't a pin — start it at the default */
+    var v = parseFloat(inp.value);
+    _bkFeeVal = (!isNaN(v) && v > 0) ? v : _BK_FEE_DEFAULT;
+    inp.value = _bkFeeVal;
+  } else {
+    inp.value = '';
+  }
+  bkSaveFeePin();
+  bkApplyFeePin();
+  bkRefreshTransfer();
+  if (typeof haptic === 'function') haptic('tick');
+}
+function bkFeeTyped(){
+  if (_bkFeePin){
+    _bkFeeVal = parseFloat(document.getElementById('bkFee').value) || 0;
+    bkSaveFeePin();
+  }
+  bkRefreshTransfer();
+}
+function bkFeeHint(){
+  var h = document.getElementById('bkFeeHint');
+  if (!h) return;
+  h.textContent = _bkFeePin ? 'pinned at ₨' + _bkFeeVal.toLocaleString('en-US') + ' — stays after each transfer'
+                            : 'charged to the source, not logged';
+  h.classList.toggle('fee', _bkFeePin);
+}
 
-  // Render pagination controls
-  if (pagination) {
-    let pagHtml = `
-      <button class="bm-page-btn" onclick="bmGoToPage(${_bmCurrentPage - 1})" ${_bmCurrentPage === 1 ? 'disabled' : ''}>Prev</button>
-      <span class="bm-page-info">Page ${_bmCurrentPage} of ${totalPages} (${filtered.length} total)</span>
-      <button class="bm-page-btn" onclick="bmGoToPage(${_bmCurrentPage + 1})" ${_bmCurrentPage === totalPages ? 'disabled' : ''}>Next</button>
-    `;
-    pagination.innerHTML = pagHtml;
+function bkRecentPairs(){
+  var seen = {}, out = [];
+  for (var i = 0; i < _bkTxns.length && out.length < 3; i++){
+    var t = _bkTxns[i];
+    var k = t.source + '→' + t.destination;
+    if (seen[k]) continue;
+    seen[k] = true;
+    out.push({from:t.source, to:t.destination, amount:t.amount});
+  }
+  return out;
+}
+function bkUsePair(i){
+  var p = bkRecentPairs()[i];
+  if (!p) return;
+  var from = document.getElementById('bkFrom'), to = document.getElementById('bkTo');
+  bkSelectByName(from, p.from);
+  bkSelectByName(to, p.to);
+  document.getElementById('bkAmt').value = p.amount;
+  bkRefreshTransfer();
+  bkGoSec('bkSecMove');
+}
+function bkSelectByName(sel, name){
+  for (var i = 0; i < sel.options.length; i++){
+    if (sel.options[i].textContent === name){ sel.selectedIndex = i; return; }
   }
 }
 
-function bmDeleteTxn(idx) {
-  bmConfirm('Are you sure you want to delete this transaction?', function(ok) {
-    if (!ok) return;
-    const txn = _bmTransactions[idx];
-    
-    google.script.run
-      .withSuccessHandler(function() {
-        // Revert bank balances
-        const sourceBank = _bmData.find(b => b.source === txn.source);
-        const destBank = _bmData.find(b => b.source === txn.destination);
-        if (sourceBank && destBank) {
-          sourceBank.amount += txn.amount;
-          destBank.amount -= txn.amount;
-          
-          // Save updated balances to Portfolio sheet
-          google.script.run
-            .withSuccessHandler(function() {
-              bmRender();
-            })
-            .withFailureHandler(function(err) {
-              bmAlert("Transaction deleted, but failed to update bank balances: " + (err.message || err));
-              bmRender();
-            })
-            .updateBankBalances(_bmData);
-        }
-        
-        _bmTransactions.splice(idx, 1);
-        bmRenderTransactions();
-      })
-      .withFailureHandler(function(err) {
-        bmAlert("Failed to delete: " + err.message);
-      })
-      .deleteBankTransaction(txn.row);
-  });
+function bkFillSelects(){
+  var from = document.getElementById('bkFrom'), to = document.getElementById('bkTo');
+  if (!from || !to) return;
+  var fv = from.value, tv = to.value;
+  var opts = '<option value="">Select…</option>' +
+    _bkData.map(function(b, i){ return '<option value="bank_' + i + '">' + bkEsc(b.source) + '</option>'; }).join('') +
+    _bkExtras.map(function(v, i){ return '<option value="extra_' + i + '">' + bkEsc(v) + '</option>'; }).join('');
+  from.innerHTML = opts;
+  to.innerHTML = opts;
+  if (fv && from.querySelector('option[value="' + fv + '"]')) from.value = fv;
+  else if (_bkData.length) from.value = 'bank_0';
+  if (tv && to.querySelector('option[value="' + tv + '"]')) to.value = tv;
+  else if (_bkData.length > 1) to.value = 'bank_1';
 }
 
-function bmEditTxn(idx) {
-  _bmEditingIdx = idx;
-  bmRenderTransactions();
+function bkResolve(v){
+  if (!v) return null;
+  if (v.indexOf('bank_') === 0){
+    var b = _bkData[parseInt(v.split('_')[1], 10)];
+    return b ? {name:b.source, amount:b.amount, bank:b} : null;
+  }
+  var x = _bkExtras[parseInt(v.split('_')[1], 10)];
+  return x ? {name:x, amount:null, bank:null} : null;
 }
 
-function bmCancelEdit() {
-  _bmEditingIdx = -1;
-  bmRenderTransactions();
+function bkSwapBanks(){
+  var from = document.getElementById('bkFrom'), to = document.getElementById('bkTo');
+  var a = from.value; from.value = to.value; to.value = a;
+  bkRefreshTransfer();
+}
+function bkFillPct(p){
+  var f = bkResolve(document.getElementById('bkFrom').value);
+  if (!f || !f.bank) return;
+  document.getElementById('bkAmt').value = Math.round(f.amount * p / 100 * 100) / 100;
+  bkRefreshTransfer();
 }
 
-function bmSaveInlineEdit(idx) {
-  const txn = _bmTransactions[idx];
-  const newAmt = parseFloat(document.getElementById(`bm-edit-amt-${idx}`).value) || 0;
-  const newRef = document.getElementById(`bm-edit-ref-${idx}`).value;
+function bkRefreshTransfer(){
+  var fromSel = document.getElementById('bkFrom');
+  if (!fromSel) return;
+  var f = bkResolve(fromSel.value);
+  var t = bkResolve(document.getElementById('bkTo').value);
+  var amt = parseFloat(document.getElementById('bkAmt').value) || 0;
+  /* the fee rides on the source only: A pays amount + fee, B receives amount */
+  var fee   = parseFloat(document.getElementById('bkFee').value) || 0;
+  var debit = amt + fee;
 
-  google.script.run
-    .withSuccessHandler(function() {
-      // Find and update local bank balance data
-      const sourceBank = _bmData.find(b => b.source === txn.source);
-      const destBank = _bmData.find(b => b.source === txn.destination);
-      
-      if (sourceBank && destBank) {
-        // Reverse old txn impact
-        sourceBank.amount += txn.amount;
-        destBank.amount -= txn.amount;
-        
-        // Apply new txn impact
-        sourceBank.amount -= newAmt;
-        destBank.amount += newAmt;
-        
-        // Save updated balances to Portfolio sheet
-        google.script.run
-          .withSuccessHandler(function() {
-            bmRender();
-          })
-          .withFailureHandler(function(err) {
-            bmAlert("Transaction updated, but failed to update bank balances: " + (err.message || err));
-            bmRender();
-          })
-          .updateBankBalances(_bmData);
-      }
+  document.getElementById('bkFromBal').textContent = f ? (f.bank ? 'balance ' + bkLkr(f.amount) : 'not a tracked bank') : '';
+  document.getElementById('bkToBal').textContent   = t ? (t.bank ? 'balance ' + bkLkr(t.amount) : 'not a tracked bank') : '';
+  document.getElementById('bkAmtUsd').textContent  = (_bkRate > 0 && amt) ? '≈ ' + bkUsd(amt / _bkRate) + ' USD' : '≈ — USD';
+  bkFeeHint();
 
-      txn.reference = newRef;
-      txn.amount = newAmt;
-      _bmEditingIdx = -1;
-      bmRenderTransactions();
-    })
-    .withFailureHandler(function(err) {
-      bmAlert("Failed to update: " + err.message);
-    })
-    .updateBankTransaction(txn.row, { reference: newRef, amount: newAmt });
+  document.getElementById('bkPvFromName').textContent = f ? f.name : '—';
+  document.getElementById('bkPvToName').textContent   = t ? t.name : '—';
+  document.getElementById('bkPvFromOld').textContent  = (f && f.bank) ? bkLkr(f.amount) : '—';
+  document.getElementById('bkPvToOld').textContent    = (t && t.bank) ? bkLkr(t.amount) : '—';
+
+  var over = !!(f && f.bank && debit > f.amount);
+  var fNew = document.getElementById('bkPvFromNew'), tNew = document.getElementById('bkPvToNew');
+  fNew.textContent = (f && f.bank) ? bkLkr(f.amount - debit) : '—';
+  tNew.textContent = (t && t.bank) ? bkLkr(t.amount + amt) : '—';
+  fNew.className = over ? 'over' : 'down';
+  tNew.className = 'up';
+
+  var feeRow = document.getElementById('bkPvFeeRow');
+  feeRow.style.display = fee > 0 ? '' : 'none';
+  if (fee > 0) document.getElementById('bkPvFee').textContent = bkLkr(fee, 2);
+
+  var cta = document.getElementById('bkCta');
+  cta.classList.remove('over');
+  if (!f || !t){ cta.disabled = true; cta.textContent = 'Pick a source and a destination'; }
+  else if (fromSel.value === document.getElementById('bkTo').value){ cta.disabled = true; cta.textContent = 'Pick two different accounts'; }
+  else if (amt <= 0){ cta.disabled = true; cta.textContent = 'Enter an amount'; }
+  else if (over){ cta.disabled = false; cta.classList.add('over'); cta.textContent = '⚠ Transfer ' + bkLkr(amt) + ' — overdraws ' + f.name; }
+  else if (fee > 0){ cta.disabled = false; cta.textContent = '⇄ Transfer ' + bkLkr(amt) + ' · ' + bkLkr(debit) + ' debited'; }
+  else { cta.disabled = false; cta.textContent = '⇄ Transfer ' + bkLkr(amt); }
 }
 
-function bmRollbackTxn(idx) {
-  const originalTxn = _bmTransactions[idx];
-  bmConfirm(`Rollback this transaction? This will create a new transaction swapping ${originalTxn.source} and ${originalTxn.destination}.`, function(ok) {
-    if (!ok) return;
+function bkTransfer(){
+  var f = bkResolve(document.getElementById('bkFrom').value);
+  var t = bkResolve(document.getElementById('bkTo').value);
+  var amtEl = document.getElementById('bkAmt'), refEl = document.getElementById('bkRef');
+  var feeEl = document.getElementById('bkFee');
+  var amount = parseFloat(amtEl.value) || 0;
+  var fee    = parseFloat(feeEl.value) || 0;
+  var debit  = amount + fee;
+  var reference = (refEl.value || '').trim();
+  if (!f || !t || amount <= 0 || f.name === t.name) return;
 
-    const rollbackTxn = {
+  var run = function(){
+    var cta = document.getElementById('bkCta');
+    var old = cta.textContent;
+    cta.disabled = true;
+    cta.textContent = 'Transferring…';
+
+    var txn = {
       date: new Date().toISOString(),
-      source: originalTxn.destination,
-      destination: originalTxn.source,
-      amount: originalTxn.amount,
-      reference: (originalTxn.reference || '') + " - rollbacked"
+      source: f.name,
+      destination: t.name,
+      amount: amount,
+      reference: reference
     };
 
     google.script.run
-      .withSuccessHandler(function() {
-        // Update local balances
-        const sBank = _bmData.find(b => b.source === rollbackTxn.source);
-        const dBank = _bmData.find(b => b.source === rollbackTxn.destination);
-        if (sBank) sBank.amount -= rollbackTxn.amount;
-        if (dBank) dBank.amount += rollbackTxn.amount;
-
-        // Persist balance changes
+      .withSuccessHandler(function(){
+        /* source pays the fee too; the destination only ever sees `amount`,
+           which is also the figure the sheet keeps */
+        if (f.bank) f.bank.amount -= debit;
+        if (t.bank) t.bank.amount += amount;
+        amtEl.value = ''; refEl.value = '';
+        if (!_bkFeePin) feeEl.value = '';
         google.script.run
-          .withSuccessHandler(function() {
-            bmRender();
-            bmFetchTransactions(); // Refresh list to see the new rollback entry
+          .withSuccessHandler(function(){
+            cta.disabled = false; cta.textContent = old;
+            bkToast(fee > 0 ? 'Transferred ' + bkLkr(amount) + ' · ' + bkLkr(debit) + ' debited'
+                            : 'Transferred ' + bkLkr(amount), 'good');
+            if (typeof haptic === 'function') haptic('select');
+            if (typeof _spaLoaded !== 'undefined') _spaLoaded.port = false;
+            bkReloadTxns();
+            bkRenderOverview(); bkRenderAccounts(); bkRefreshTransfer();
           })
-          .withFailureHandler(function(err) {
-            bmAlert("Rollback logged, but failed to update balances: " + (err.message || err));
-            bmRender();
+          .withFailureHandler(function(e){
+            cta.disabled = false; cta.textContent = old;
+            bkAlert('Transfer logged, but balances did not save: ' + (e.message || e));
+            bkRenderOverview(); bkRenderAccounts();
           })
-          .updateBankBalances(_bmData);
+          .updateBankBalances(_bkData);
       })
-      .withFailureHandler(function(err) {
-        bmAlert("Rollback failed: " + (err.message || err));
+      .withFailureHandler(function(e){
+        cta.disabled = false; cta.textContent = old;
+        bkAlert('Failed to log transfer: ' + (e.message || e));
       })
-      .addBankTransaction(rollbackTxn);
+      .addBankTransaction(txn);
+  };
+
+  if (f.bank && debit > f.amount){
+    bkConfirm('This overdraws ' + f.name + ' by ' + bkLkr(debit - f.amount) +
+              (fee > 0 ? ' (including the ' + bkLkr(fee) + ' fee)' : '') +
+              '. Log it anyway?', function(ok){ if (ok) run(); });
+    return;
+  }
+  run();
+}
+
+/* ── converter ── */
+function bkConvFromUsd(){
+  var u = document.getElementById('bkConvUsd'), l = document.getElementById('bkConvLkr'), h = document.getElementById('bkConvHint');
+  if (!u) return;
+  if (_bkRate <= 0){ h.textContent = '⏳ Fetching exchange rate…'; return; }
+  var v = parseFloat(u.value) || 0;
+  if (v > 0){ l.value = (v * _bkRate).toFixed(2); h.textContent = '✓ ' + bkLkr(v * _bkRate, 2) + ' at ' + _bkRate.toFixed(2); }
+  else { l.value = ''; h.textContent = 'Rate ₨' + _bkRate.toFixed(2) + ' per USD'; }
+}
+function bkConvFromLkr(){
+  var u = document.getElementById('bkConvUsd'), l = document.getElementById('bkConvLkr'), h = document.getElementById('bkConvHint');
+  if (!l) return;
+  if (_bkRate <= 0){ h.textContent = '⏳ Fetching exchange rate…'; return; }
+  var v = parseFloat(l.value) || 0;
+  if (v > 0){ u.value = (v / _bkRate).toFixed(2); h.textContent = '✓ ' + bkUsd(v / _bkRate) + ' at ' + _bkRate.toFixed(2); }
+  else { u.value = ''; h.textContent = 'Rate ₨' + _bkRate.toFixed(2) + ' per USD'; }
+}
+function bkConvSwap(){
+  var u = document.getElementById('bkConvUsd'), l = document.getElementById('bkConvLkr');
+  var a = u.value; u.value = l.value; l.value = a;
+  if (u.value) bkConvFromUsd(); else bkConvFromLkr();
+}
+function bkConvQuick(v){
+  document.getElementById('bkConvUsd').value = v;
+  bkConvFromUsd();
+}
+
+/* ═══ ⑤ TRANSACTIONS ══════════════════════════════════════════ */
+function bkRenderTxnPanel(){
+  if (!_bkBuilt) return;
+  var banks = _bkData.map(function(b){ return b.source; });
+  document.getElementById('bkSecTxns').innerHTML =
+    '<div class="bk-panel">' +
+      '<div class="bk-panel-hdr"><i style="background:var(--bk-pink)"></i>Transactions' +
+        '<span class="bk-panel-sub" id="bkTxnMeta">—</span></div>' +
+      '<div class="bk-filters">' +
+        '<input class="bk-search" id="bkSearch" type="search" placeholder="Search source, destination or reference…" oninput="bkSearch(this.value)">' +
+        '<select class="bk-sel" id="bkBankFilter" onchange="bkSetBankFilter(this.value)">' +
+          '<option value="all">All banks</option>' +
+          banks.map(function(b){ return '<option value="' + bkEsc(b) + '">' + bkEsc(b) + '</option>'; }).join('') +
+        '</select>' +
+        '<select class="bk-sel" id="bkRange" onchange="bkSetRange(this.value)">' +
+          '<option value="90">Last 90 days</option>' +
+          '<option value="30">Last 30 days</option>' +
+          '<option value="365">Last year</option>' +
+          '<option value="0">All time</option>' +
+        '</select>' +
+        '<button class="bk-mini" type="button" onclick="bkExportCsv()">↓ Export CSV</button>' +
+      '</div>' +
+      '<div class="bk-tbl-wrap">' +
+        '<div class="bk-tbl-scroll">' +
+          '<table class="bk-tbl">' +
+            '<thead><tr>' +
+              '<th style="width:84px">Date</th><th>Source</th><th>Destination</th>' +
+              '<th class="r" style="width:128px">Amount</th><th>Reference</th>' +
+              '<th class="r" style="width:108px">Actions</th>' +
+            '</tr></thead>' +
+            '<tbody id="bkTxnBody"></tbody>' +
+          '</table>' +
+        '</div>' +
+        '<div class="bk-pager" id="bkPager"></div>' +
+      '</div>' +
+    '</div>';
+  bkRenderTxns();
+}
+
+function bkFilteredTxns(){
+  var cut = _bkRangeDays > 0 ? Date.now() - _bkRangeDays * 86400000 : 0;
+  return _bkTxns.filter(function(t){
+    if (cut){ var d = bkDate(t.date); if (!d || d.getTime() < cut) return false; }
+    if (_bkBankFilter !== 'all' && t.source !== _bkBankFilter && t.destination !== _bkBankFilter) return false;
+    if (_bkQuery){
+      var hay = (t.source + ' ' + t.destination + ' ' + (t.reference || '') + ' ' + t.amount).toLowerCase();
+      if (hay.indexOf(_bkQuery) === -1) return false;
+    }
+    return true;
   });
 }
 
-function bmUpdateData(index, key, value) {
-  if (key === 'amount') {
-    _bmData[index].amount = parseFloat(value) || 0;
-    const usdEl = document.getElementById('bm-usd-' + index);
-    if (usdEl) {
-      const usdAmt = (_bmUsdRate > 0) ? (_bmData[index].amount / _bmUsdRate) : null;
-      usdEl.textContent = usdAmt !== null ? '≈ $' + usdAmt.toLocaleString('en-US',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' USD' : '≈ — USD';
-    }
-  } else {
-    _bmData[index].source = value;
-    const style = getBankStyle(value);
-    const inp = document.getElementById('bm-src-' + index);
-    const itemEl = inp.closest('.bm-item');
-    const avatar = itemEl.querySelector('.bm-avatar');
-    if(inp) {
-      inp.style.background = style.bg;
-      inp.style.color = style.fg;
-    }
-    if(avatar) {
-      avatar.style.background = style.bg;
-      avatar.style.color = style.fg;
-      avatar.textContent = (value || '??').substring(0, 3).toUpperCase();
-    }
-    if(itemEl) {
-      itemEl.style.setProperty('--bank-color', style.bg);
-    }
-  }
-  
-  let total = _bmData.reduce((s, item) => s + item.amount, 0);
-  document.getElementById('bmTotal').textContent = '₨ ' + total.toLocaleString('en-IN', {minimumFractionDigits:2});
-  bmUpdateTotalUsd(total);
-  bmUpdateChart(total);
+function bkGroupOf(d){
+  if (!d) return 'Undated';
+  var n = bkDaysAgo(d);
+  if (n <= 0) return 'Today';
+  if (n <= 7) return 'This week';
+  if (n <= 31) return 'This month';
+  return 'Earlier';
 }
 
-function bmUpdateTotalUsd(total) {
-  const el = document.getElementById('bmTotalUsd');
-  if (!el) return;
-  if (_bmUsdRate > 0) {
-    const usd = total / _bmUsdRate;
-    el.textContent = '≈ $' + usd.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' USD';
-  } else {
-    el.textContent = '≈ — USD';
+function bkRenderTxns(){
+  var body = document.getElementById('bkTxnBody');
+  if (!body) return;
+  var rows = bkFilteredTxns();
+  var pager = document.getElementById('bkPager');
+  var meta  = document.getElementById('bkTxnMeta');
+
+  if (!rows.length){
+    body.innerHTML = '<tr><td colspan="6" class="bk-empty">' +
+      (_bkTxns.length ? 'No transactions match these filters.' : 'No transactions logged yet.') + '</td></tr>';
+    pager.innerHTML = '';
+    meta.textContent = '0 of ' + _bkTxns.length;
+    return;
   }
+
+  var pages = Math.ceil(rows.length / _BK_PAGE_SIZE);
+  if (_bkPage > pages) _bkPage = pages;
+  if (_bkPage < 1) _bkPage = 1;
+  var start = (_bkPage - 1) * _BK_PAGE_SIZE;
+  var page = rows.slice(start, start + _BK_PAGE_SIZE);
+
+  var html = '', grp = '';
+  page.forEach(function(t){
+    var idx = _bkTxns.indexOf(t);
+    var d = bkDate(t.date);
+    var g = bkGroupOf(d);
+    if (g !== grp){ grp = g; html += '<tr class="grp"><td colspan="6">' + g + '</td></tr>'; }
+    var dateStr = d ? d.toLocaleDateString('en-GB', {day:'2-digit', month:'short'}) : String(t.date).substring(0, 10);
+    var rolled = /rollbacked|rolled back/i.test(t.reference || '');
+
+    if (_bkEditRow === idx){
+      html +=
+        '<tr class="editing">' +
+          '<td>' + dateStr + '</td>' +
+          '<td><span class="bk-bchip"><i style="background:' + bkColorOf(t.source) + '"></i>' + bkEsc(t.source) + '</span></td>' +
+          '<td><span class="bk-bchip"><i style="background:' + bkColorOf(t.destination) + '"></i>' + bkEsc(t.destination) + '</span></td>' +
+          '<td class="r"><input class="bk-inline" id="bkEditAmt" type="number" step="any" value="' + t.amount + '"></td>' +
+          '<td><input class="bk-inline" id="bkEditRef" type="text" value="' + bkEsc(t.reference) + '"></td>' +
+          '<td class="r"><span class="bk-rowact">' +
+            '<button class="bk-ra ok" type="button" title="Save" onclick="bkSaveEdit(' + idx + ')">✓</button>' +
+            '<button class="bk-ra del" type="button" title="Cancel" onclick="bkCancelEdit()">✕</button>' +
+          '</span></td>' +
+        '</tr>';
+    } else {
+      html +=
+        '<tr' + (rolled ? ' class="bk-rolled"' : '') + '>' +
+          '<td>' + dateStr + '</td>' +
+          '<td><span class="bk-bchip"><i style="background:' + bkColorOf(t.source) + '"></i>' + bkEsc(t.source) + '</span></td>' +
+          '<td><span class="bk-bchip"><i style="background:' + bkColorOf(t.destination) + '"></i>' + bkEsc(t.destination) + '</span></td>' +
+          '<td class="r"><span class="bk-amt">' + bkLkr(t.amount) + '</span></td>' +
+          '<td><span class="bk-ref">' + (bkEsc(t.reference) || '—') + '</span>' +
+            (rolled ? ' <span class="bk-tag">↺ rolled back</span>' : '') + '</td>' +
+          '<td class="r"><span class="bk-rowact">' +
+            '<button class="bk-ra back" type="button" title="Rollback" onclick="bkRollback(' + idx + ')">↺</button>' +
+            '<button class="bk-ra edit" type="button" title="Edit" onclick="bkEditTxn(' + idx + ')">✎</button>' +
+            '<button class="bk-ra del"  type="button" title="Delete" onclick="bkDeleteTxn(' + idx + ')">✕</button>' +
+          '</span></td>' +
+        '</tr>';
+    }
+  });
+  body.innerHTML = html;
+
+  var moved = rows.reduce(function(s, t){ return s + (Number(t.amount) || 0); }, 0);
+  meta.textContent = rows.length + ' of ' + _bkTxns.length + ' · ' + bkLkr(moved) + ' moved';
+  pager.innerHTML =
+    '<button class="bk-pbtn" type="button" onclick="bkGoPage(' + (_bkPage - 1) + ')"' + (_bkPage === 1 ? ' disabled' : '') + '>‹ Prev</button>' +
+    '<span class="bk-pinfo">Page ' + _bkPage + ' of ' + pages + ' · ' + rows.length + ' transaction' + (rows.length === 1 ? '' : 's') + '</span>' +
+    '<button class="bk-pbtn" type="button" onclick="bkGoPage(' + (_bkPage + 1) + ')"' + (_bkPage === pages ? ' disabled' : '') + '>Next ›</button>';
 }
 
-function bmUpdateChart(total) {
-  const canvas = document.getElementById('bmChart');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const labels = _bmData.map(d => d.source);
-  const data = _bmData.map(d => d.amount);
-  const bgColors = labels.map(l => getBankStyle(l).bg);
-  
-  if (_bmChart) {
-    _bmChart.data.labels = labels;
-    _bmChart.data.datasets[0].data = data;
-    _bmChart.data.datasets[0].backgroundColor = bgColors;
-    _bmChart.data.datasets[0].borderColor = bgColors;
-    _bmChart.update();
-  } else {
-    _bmChart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: labels,
-        datasets: [{
-          data: data,
-          backgroundColor: bgColors,
-          borderColor: bgColors,
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '70%',
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: function(ctx) {
-                const val = ctx.parsed;
-                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
-                return ' ' + ctx.label + ': ₨ ' + val.toLocaleString() + ' (' + pct + '%)';
-              }
-            }
-          }
-        }
-      }
-    });
-  }
-}
+function bkSearch(q){ _bkQuery = (q || '').toLowerCase().trim(); _bkPage = 1; bkRenderTxns(); }
+function bkSetBankFilter(v){ _bkBankFilter = v; _bkPage = 1; bkRenderTxns(); }
+function bkSetRange(v){ _bkRangeDays = parseInt(v, 10) || 0; _bkPage = 1; bkRenderTxns(); }
+function bkGoPage(p){ _bkPage = p; bkRenderTxns(); }
+function bkEditTxn(i){ _bkEditRow = i; bkRenderTxns(); }
+function bkCancelEdit(){ _bkEditRow = -1; bkRenderTxns(); }
 
-function bmSave() {
-  const btn = document.getElementById('bmSaveBtn');
-  const oldHtml = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = '<div class="ld-spin" style="width:16px;height:16px;border-width:2px;"></div>';
-  
+function bkReloadTxns(){
   google.script.run
-    .withSuccessHandler(function() {
-      btn.innerHTML = '✓';
-      btn.style.color = 'var(--green)';
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.innerHTML = oldHtml;
-        btn.style.color = '';
-        moneyToggle();
-        if (typeof reloadPage === 'function') {
-          const activePage = document.querySelector('.spa-page.active').id.replace('page-', '');
-          if (activePage === 'port' || activePage === 'cse') reloadPage(activePage);
+    .withSuccessHandler(function(t){
+      _bkTxns = t || [];
+      bkRenderTxns();
+      bkRenderMove();
+      bkRenderAccounts();
+      bkRenderOverview();
+    })
+    .withFailureHandler(function(){})
+    .getBankTransactions();
+}
+
+function bkSaveEdit(i){
+  var t = _bkTxns[i];
+  var newAmt = parseFloat(document.getElementById('bkEditAmt').value) || 0;
+  var newRef = document.getElementById('bkEditRef').value;
+  var delta  = newAmt - t.amount;
+
+  google.script.run
+    .withSuccessHandler(function(){
+      var src = _bkData.find(function(b){ return b.source === t.source; });
+      var dst = _bkData.find(function(b){ return b.source === t.destination; });
+      t.amount = newAmt;
+      t.reference = newRef;
+      _bkEditRow = -1;
+
+      if ((src || dst) && delta !== 0){
+        if (src) src.amount -= delta;
+        if (dst) dst.amount += delta;
+        google.script.run
+          .withSuccessHandler(function(){
+            bkToast('Transaction updated', 'good');
+            bkRenderTxns(); bkRenderAccounts(); bkRenderOverview();
+            if (typeof _spaLoaded !== 'undefined') _spaLoaded.port = false;
+          })
+          .withFailureHandler(function(e){
+            bkAlert('Transaction updated, but balances did not save: ' + (e.message || e));
+            bkRenderTxns(); bkRenderAccounts(); bkRenderOverview();
+          })
+          .updateBankBalances(_bkData);
+      } else {
+        bkToast('Transaction updated', 'good');
+        bkRenderTxns();
+      }
+    })
+    .withFailureHandler(function(e){ bkAlert('Failed to update: ' + (e.message || e)); })
+    .updateBankTransaction(t.row, {reference:newRef, amount:newAmt});
+}
+
+function bkDeleteTxn(i){
+  var t = _bkTxns[i];
+  bkConfirm('Delete this ' + bkLkr(t.amount) + ' transfer from ' + t.source + ' to ' + t.destination + '? Balances will be reverted.', function(ok){
+    if (!ok) return;
+    google.script.run
+      .withSuccessHandler(function(){
+        var src = _bkData.find(function(b){ return b.source === t.source; });
+        var dst = _bkData.find(function(b){ return b.source === t.destination; });
+        _bkTxns.splice(i, 1);
+        /* rows below the deleted one shift up by one in the sheet */
+        _bkTxns.forEach(function(x){ if (x.row > t.row) x.row -= 1; });
+        _bkEditRow = -1;
+
+        if (src || dst){
+          if (src) src.amount += t.amount;
+          if (dst) dst.amount -= t.amount;
+          google.script.run
+            .withSuccessHandler(function(){
+              bkToast('Transaction deleted', 'good');
+              bkRenderTxns(); bkRenderAccounts(); bkRenderOverview(); bkRefreshTransfer();
+              if (typeof _spaLoaded !== 'undefined') _spaLoaded.port = false;
+            })
+            .withFailureHandler(function(e){
+              bkAlert('Transaction deleted, but balances did not save: ' + (e.message || e));
+              bkRenderTxns(); bkRenderAccounts(); bkRenderOverview();
+            })
+            .updateBankBalances(_bkData);
+        } else {
+          bkToast('Transaction deleted', 'good');
+          bkRenderTxns(); bkRenderOverview();
         }
-      }, 1000);
-    })
-    .withFailureHandler(function(err) {
-      btn.disabled = false;
-      btn.innerHTML = oldHtml;
-      bmAlert('Failed to save: ' + (err.message || err));
-    })
-    .updateBankBalances(_bmData);
+      })
+      .withFailureHandler(function(e){ bkAlert('Failed to delete: ' + (e.message || e)); })
+      .deleteBankTransaction(t.row);
+  });
 }
 
-// ── USD ↔ LKR Converter ──
-function bmConvFromUsd() {
-  const usdInput = document.getElementById('bm-conv-usd');
-  const lkrInput = document.getElementById('bm-conv-lkr');
-  const hint = document.getElementById('bm-conv-hint');
-  
-  if (_bmUsdRate <= 0) {
-    hint.textContent = '⏳ Fetching exchange rate...';
-    hint.classList.remove('active');
-    return;
-  }
-
-  const usd = parseFloat(usdInput.value) || 0;
-  if (usd > 0) {
-    const lkr = usd * _bmUsdRate;
-    lkrInput.value = lkr.toFixed(2);
-    hint.textContent = `₨${lkr.toFixed(2)} LKR @ ${_bmUsdRate.toFixed(2)}`;
-    hint.classList.add('active');
-  } else {
-    lkrInput.value = '';
-    hint.textContent = `Rate: ₨${_bmUsdRate.toFixed(2)}/USD`;
-    hint.classList.remove('active');
-  }
+function bkRollback(i){
+  var o = _bkTxns[i];
+  bkConfirm('Roll back this transfer? A new ' + bkLkr(o.amount) + ' transfer from ' + o.destination + ' back to ' + o.source + ' will be logged.', function(ok){
+    if (!ok) return;
+    var rb = {
+      date: new Date().toISOString(),
+      source: o.destination,
+      destination: o.source,
+      amount: o.amount,
+      reference: (o.reference || '') + ' - rollbacked'
+    };
+    google.script.run
+      .withSuccessHandler(function(){
+        var src = _bkData.find(function(b){ return b.source === rb.source; });
+        var dst = _bkData.find(function(b){ return b.source === rb.destination; });
+        if (src) src.amount -= rb.amount;
+        if (dst) dst.amount += rb.amount;
+        google.script.run
+          .withSuccessHandler(function(){
+            bkToast('Rolled back ' + bkLkr(rb.amount), 'good');
+            if (typeof _spaLoaded !== 'undefined') _spaLoaded.port = false;
+            bkReloadTxns();
+          })
+          .withFailureHandler(function(e){
+            bkAlert('Rollback logged, but balances did not save: ' + (e.message || e));
+            bkReloadTxns();
+          })
+          .updateBankBalances(_bkData);
+      })
+      .withFailureHandler(function(e){ bkAlert('Rollback failed: ' + (e.message || e)); })
+      .addBankTransaction(rb);
+  });
 }
 
-function bmConvFromLkr() {
-  const usdInput = document.getElementById('bm-conv-usd');
-  const lkrInput = document.getElementById('bm-conv-lkr');
-  const hint = document.getElementById('bm-conv-hint');
-  
-  if (_bmUsdRate <= 0) {
-    hint.textContent = '⏳ Fetching exchange rate...';
-    hint.classList.remove('active');
-    return;
-  }
-
-  const lkr = parseFloat(lkrInput.value) || 0;
-  if (lkr > 0) {
-    const usd = lkr / _bmUsdRate;
-    usdInput.value = usd.toFixed(2);
-    hint.textContent = `$${usd.toFixed(2)} USD @ ${_bmUsdRate.toFixed(2)}`;
-    hint.classList.add('active');
-  } else {
-    usdInput.value = '';
-    hint.textContent = `Rate: ₨${_bmUsdRate.toFixed(2)}/USD`;
-    hint.classList.remove('active');
-  }
+function bkExportCsv(){
+  var rows = bkFilteredTxns();
+  if (!rows.length){ bkToast('Nothing to export', 'bad'); return; }
+  var lines = ['Date,Source,Destination,Amount,Reference'];
+  rows.forEach(function(t){
+    var d = bkDate(t.date);
+    var q = function(s){ return '"' + String(s === undefined || s === null ? '' : s).replace(/"/g, '""') + '"'; };
+    lines.push([q(d ? d.toISOString().substring(0, 10) : t.date), q(t.source), q(t.destination), t.amount, q(t.reference)].join(','));
+  });
+  var blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'bank-transactions-' + new Date().toISOString().substring(0, 10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  bkToast('Exported ' + rows.length + ' rows', 'good');
 }
 
-function bmConvSwap() {
-  const usdInput = document.getElementById('bm-conv-usd');
-  const lkrInput = document.getElementById('bm-conv-lkr');
-  const temp = usdInput.value;
-  usdInput.value = lkrInput.value;
-  lkrInput.value = temp;
-  
-  if (usdInput.value) {
-    bmConvFromUsd();
-  } else if (lkrInput.value) {
-    bmConvFromLkr();
-  }
+/* ═══ TAB RAIL — scroll spy ═══════════════════════════════════ */
+function bkGoSec(id){
+  var el = document.getElementById(id);
+  if (el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  bkMarkTab(id);
+  if (typeof haptic === 'function') haptic('tick');
+}
+function bkMarkTab(id){
+  document.querySelectorAll('#bkTabs .bk-tab').forEach(function(t){
+    t.classList.toggle('active', t.getAttribute('data-sec') === id);
+  });
+}
+var _bkSpyBound = false;
+function bkBindScrollSpy(){
+  if (_bkSpyBound) return;
+  _bkSpyBound = true;
+  var root = document.getElementById('bank-root');
+  var ids = ['bkSecOverview','bkSecAccounts','bkSecMove','bkSecTxns'];
+  var ticking = false;
+  root.addEventListener('scroll', function(){
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){
+      ticking = false;
+      var best = ids[0];
+      ids.forEach(function(id){
+        var el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top < 190) best = id;
+      });
+      bkMarkTab(best);
+    });
+  }, {passive:true});
+}
+
+/* Esc closes whatever is open, innermost first */
+document.addEventListener('keydown', function(e){
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('bkConfirmBg') && document.getElementById('bkConfirmBg').classList.contains('open')){ bkConfirmClose(false); return; }
+  if (_bkOpenBook >= 0) bkCloseBook();
+});
+
+/* ── the 💵 button in every page header and the tool-wheel spoke ── */
+function moneyToggle(){
+  if (typeof showPage === 'function') showPage('bank');
 }
 </script>
