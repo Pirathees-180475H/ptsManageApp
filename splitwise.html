@@ -1,164 +1,235 @@
 <!-- ═══════════════════════════════════════════════════════════════
      SPLITWISE MODAL  —  small, tool-wheel opened
 
-     Two things only: the net position amount, and the month detail.
+     Two things only: the overall balance, and the month detail.
      No page, no charts, no ledger table.
 
        ① header   🤝 title · ↻ refresh · ✕ close   (drag handle)
-       ② net      the one number, straight from Portfolio!B14
-       ③ month    ◀ Sep 2026 ▶ · I covered / They covered / Net
-                  · day cards, newest day first (month end → start)
+       ② balance  the one number — Portfolio!B14, ledger as fallback
+       ③ month    ◀ Sep 2026 ▶ · three tiles · day cards,
+                  newest day first (month end → start)
+
+     Styling is the portfolio page's vocabulary, scoped to #sw-modal:
+     .glass-card, .card-header dot + title, the hero gradient amount,
+     .pf-tile stat tiles, the .pf-seg segmented control and the
+     .asset-card row with its left accent bar.
 
      Data is prefetched at app start by swPrefetch(), fired from
      render.html's window.onload — nothing blocks on it, and by the
      time the wheel is used the modal opens straight from cache.
 
-     Card vocabulary follows the subscription tracker: .sub-sum-card
-     summary tiles and .sub-platform-card rows, same radii, same
-     2px top gradient bar, same muted uppercase micro-labels.
-
      Backend (unchanged):
        getSplitwiseSheetBalance · getSplitwiseMonthEntries
+       getSplitwiseLedger  (only as the balance fallback)
 
      Included from render.html via:  <?!= include('splitwise'); ?>
      Opened from the tool wheel:     swToggle()
 ═══════════════════════════════════════════════════════════════ -->
 <style>
+/* Every rule is scoped to #sw-modal so nothing leaks into the app. */
+
 /* ── ① shell ── */
 #sw-modal{
-  position:fixed;top:12vh;left:50%;transform:translateX(-50%);
-  width:calc(100% - 24px);max-width:430px;max-height:76vh;z-index:8000;
+  position:fixed;top:10vh;left:50%;transform:translateX(-50%);
+  width:calc(100% - 24px);max-width:440px;z-index:8000;
+  /* stop short of the fixed bottom nav, and use dvh where the mobile
+     URL bar makes vh lie */
+  max-height:calc(100vh - 10vh - var(--nav-h,62px) - 16px);
+  max-height:calc(100dvh - 10dvh - var(--nav-h,62px) - 16px);
   background:#0a0e1c;backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
   border:1px solid rgba(255,255,255,.1);border-radius:20px;
   box-shadow:0 28px 80px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.07);
-  display:none;flex-direction:column;overflow:hidden;
+  display:none;
+  /* the modal is the scroll owner — a flex child with only a max-height
+     parent does not get a definite height on mobile, and never scrolls */
+  overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;touch-action:pan-y;
 }
-#sw-modal.open{display:flex;animation:swModalIn .28s ease;}
+#sw-modal.open{display:block;animation:swModalIn .28s ease;}
+#sw-modal::-webkit-scrollbar{width:5px;}
+#sw-modal::-webkit-scrollbar-track{background:transparent;}
+#sw-modal::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
 @keyframes swModalIn{from{opacity:0;transform:translateX(-50%) scale(.95);}to{opacity:1;transform:translateX(-50%) scale(1);}}
-#sw-modal::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:2;pointer-events:none;
-  background:linear-gradient(90deg,transparent 5%,rgba(0,212,255,.7) 35%,rgba(168,85,247,.6) 65%,transparent 95%);
-}
-.swm-hdr{
+#sw-modal .swm-hdr{
+  position:sticky;top:0;z-index:5;
   display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,.07);
-  flex-shrink:0;cursor:grab;user-select:none;
-  background:linear-gradient(180deg,rgba(0,212,255,.06) 0%,transparent 100%);
+  padding:13px 16px 11px;border-bottom:1px solid var(--bdr);
+  background:#0a0e1c;flex-shrink:0;cursor:grab;user-select:none;
 }
-.swm-hdr:active{cursor:grabbing;}
-.swm-title{
-  font-size:.63em;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
-  display:flex;align-items:center;gap:8px;
-  background:linear-gradient(135deg,#fff 0%,#7dd3fc 55%,#c084fc 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+#sw-modal .swm-hdr::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);
 }
-.swm-hdr-btns{display:flex;align-items:center;gap:7px;}
-.swm-btn{
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
-  color:rgba(255,255,255,.4);font-size:.72em;cursor:pointer;
-  padding:4px 9px;line-height:1;font-family:inherit;border-radius:8px;transition:all .15s;
+#sw-modal .swm-hdr:active{cursor:grabbing;}
+#sw-modal .swm-title{
+  font-size:13px;font-weight:800;letter-spacing:-.2px;
+  display:flex;align-items:center;gap:8px;color:#fff;
 }
-.swm-btn:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);}
-.swm-btn.spin{color:var(--blue);pointer-events:none;}
-.swm-btn.spin span{display:inline-block;animation:spin .7s linear infinite;}
-.swm-body{flex:1;overflow-y:auto;padding:14px;min-height:0;display:flex;flex-direction:column;gap:13px;}
-.swm-body::-webkit-scrollbar{width:5px;}
-.swm-body::-webkit-scrollbar-track{background:transparent;}
-.swm-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
+#sw-modal .swm-hdr-btns{display:flex;align-items:center;gap:7px;}
+#sw-modal .swm-btn{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  line-height:1;font-family:'Inter',sans-serif;border-radius:9px;transition:all .18s;padding:0;
+}
+#sw-modal .swm-btn:hover{color:#fff;background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.2);}
+#sw-modal .swm-btn.spin{color:var(--blue);pointer-events:none;}
+#sw-modal .swm-btn.spin span{display:inline-block;animation:spin .7s linear infinite;}
+#sw-modal .swm-body{padding:14px;display:flex;flex-direction:column;gap:14px;}
 
-/* ── ② net position ── */
-.swm-net{
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
-  border-radius:14px;padding:16px 16px 15px;position:relative;overflow:hidden;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-}
-.swm-net::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,rgba(0,212,255,.55),rgba(168,85,247,.35));
-}
-.swm-net::after{
-  content:'';position:absolute;right:-16px;bottom:-16px;width:60px;height:60px;border-radius:50%;
-  background:#00d4ff;filter:blur(24px);opacity:.12;pointer-events:none;
-}
-.swm-net-lbl{font-size:.52em;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
-  color:rgba(255,255,255,.35);margin-bottom:5px;}
-.swm-net-val{font-size:1.9em;font-weight:800;letter-spacing:-1px;line-height:1;
-  font-variant-numeric:tabular-nums;color:#fff;}
-.swm-net-sub{font-size:.62em;color:rgba(255,255,255,.35);margin-top:6px;}
-.swm-net.loading .swm-net-val{color:rgba(255,255,255,.2);}
+/* ── shared card vocabulary (portfolio) ── */
+#sw-modal .glass-card{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+  border-radius:18px;padding:16px;backdrop-filter:blur(20px);position:relative;overflow:hidden;
+  box-shadow:0 4px 24px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.05);}
+#sw-modal .card-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+#sw-modal .card-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+#sw-modal .card-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.45);}
+
+/* ── ② balance hero ── */
+#sw-modal .swm-hero{
+  position:relative;border-radius:20px;padding:20px 20px 18px;overflow:hidden;
+  background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(168,85,247,.05),rgba(0,255,136,.04));
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 8px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);}
+#sw-modal .swm-hero::before{
+  content:'';position:absolute;top:-40px;right:-40px;width:170px;height:170px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,.13),transparent 70%);pointer-events:none;}
+#sw-modal .swm-hero-inner{position:relative;z-index:1;}
+#sw-modal .swm-hero-label{
+  font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  color:rgba(255,255,255,.4);display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+#sw-modal .swm-hero-label i{width:7px;height:7px;border-radius:50%;flex-shrink:0;
+  background:#00ff88;box-shadow:0 0 10px #00ff88;animation:swPulse 2.4s ease-in-out infinite;}
+@keyframes swPulse{0%,100%{opacity:1}50%{opacity:.3}}
+#sw-modal .swm-hero-amt{
+  font-size:clamp(28px,8vw,40px);font-weight:900;letter-spacing:-1.6px;line-height:1;
+  font-variant-numeric:tabular-nums;
+  background:linear-gradient(135deg,#fff 0%,var(--blue) 55%,var(--purple) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#sw-modal .swm-hero-amt.up  {background:linear-gradient(135deg,#fff 0%,#00ff88 60%,#2dd4bf 100%);
+  -webkit-background-clip:text;background-clip:text;}
+#sw-modal .swm-hero-amt.down{background:linear-gradient(135deg,#fff 0%,var(--red2,#ff4d8d) 55%,var(--purple) 100%);
+  -webkit-background-clip:text;background-clip:text;}
+#sw-modal .swm-hero-amt.dim {background:none;-webkit-text-fill-color:rgba(255,255,255,.22);
+  color:rgba(255,255,255,.22);}
+#sw-modal .swm-deltas{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+#sw-modal .swm-delta{font-size:11px;font-weight:700;padding:4px 11px;border-radius:8px;white-space:nowrap;}
+#sw-modal .swm-delta.up  {background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);color:#00ff88;}
+#sw-modal .swm-delta.down{background:rgba(255,77,141,.1);border:1px solid rgba(255,77,141,.25);color:#ff4d8d;}
+#sw-modal .swm-delta.flat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.45);}
+#sw-modal .swm-delta.warn{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);color:var(--gold);}
+#sw-modal .swm-retry{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);
+  color:rgba(255,255,255,.6);border-radius:8px;padding:4px 11px;font-size:11px;font-weight:700;
+  font-family:'Inter',sans-serif;cursor:pointer;transition:all .18s;}
+#sw-modal .swm-retry:hover{color:#fff;background:rgba(255,255,255,.11);}
 
 /* ── ③ month detail ── */
-.swm-month-bar{display:flex;align-items:center;gap:8px;}
-.swm-month-lbl{font-size:.62em;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
-  color:rgba(255,255,255,.45);flex:1;text-align:center;}
-.swm-nav{
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
-  color:rgba(255,255,255,.5);border-radius:8px;width:26px;height:26px;flex-shrink:0;
-  cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:all .13s;
-}
-.swm-nav:hover:not(:disabled){color:#fff;background:rgba(255,255,255,.11);}
-.swm-nav:disabled{opacity:.25;cursor:not-allowed;pointer-events:none;}
-
-.swm-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.swm-sum-card{
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
-  border-radius:13px;padding:10px 11px;position:relative;overflow:hidden;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-}
-.swm-sum-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,rgba(99,102,241,.4),rgba(168,85,247,.3));
-}
-.swm-sum-card.green::before{background:linear-gradient(90deg,rgba(0,230,118,.5),rgba(0,230,118,.2));}
-.swm-sum-card.red::before  {background:linear-gradient(90deg,rgba(255,77,109,.5),rgba(255,77,109,.2));}
-.swm-sum-lbl{font-size:.5em;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;
-  color:rgba(255,255,255,.35);margin-bottom:3px;}
-.swm-sum-val{font-size:.85em;font-weight:800;color:#fff;letter-spacing:-.3px;font-variant-numeric:tabular-nums;}
-.swm-sum-val.green{color:var(--green);}
-.swm-sum-val.red{color:var(--red);}
-
-.swm-days{display:flex;flex-direction:column;gap:8px;}
-.swm-day-card{
-  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);
-  border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:11px;
-  position:relative;overflow:hidden;transition:border-color .15s,background .15s;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
-}
-.swm-day-card:hover{background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.13);}
-.swm-day-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent,var(--blue));}
-.swm-day-tag{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;
-  min-width:34px;padding:4px 0;border-radius:9px;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
-}
-.swm-day-num{font-size:.85em;font-weight:800;color:rgba(255,255,255,.85);line-height:1;}
-.swm-day-dow{font-size:.5em;font-weight:600;letter-spacing:.6px;text-transform:uppercase;
-  color:rgba(255,255,255,.3);margin-top:2px;}
-.swm-day-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
-.swm-day-ref{font-size:.68em;color:rgba(255,255,255,.62);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.swm-day-ref.none{color:rgba(255,255,255,.22);font-style:italic;}
-.swm-day-legs{display:flex;gap:8px;flex-wrap:wrap;}
-.swm-leg{font-size:.55em;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap;
-  font-variant-numeric:tabular-nums;}
-.swm-leg.i{background:rgba(0,230,118,.12);color:var(--green);}
-.swm-leg.o{background:rgba(255,77,109,.12);color:var(--red);}
-.swm-day-net{font-size:.82em;font-weight:800;letter-spacing:-.3px;flex-shrink:0;
+#sw-modal .swm-seg{display:flex;gap:2px;padding:3px;border-radius:10px;margin-left:auto;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);flex-shrink:0;
+  align-items:center;}
+#sw-modal .swm-seg-btn{display:flex;align-items:center;justify-content:center;
+  width:24px;height:23px;border-radius:7px;border:1px solid transparent;background:none;
+  color:rgba(255,255,255,.35);cursor:pointer;font-family:'Inter',sans-serif;font-size:10px;
+  font-weight:700;transition:all .18s;padding:0;}
+#sw-modal .swm-seg-btn:hover:not(:disabled){color:var(--blue);background:rgba(0,212,255,.14);}
+#sw-modal .swm-seg-btn:disabled{opacity:.25;cursor:not-allowed;}
+#sw-modal .swm-seg-lbl{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
+  color:rgba(255,255,255,.55);padding:0 8px;min-width:62px;text-align:center;
   font-variant-numeric:tabular-nums;}
 
-.swm-empty{text-align:center;padding:26px 10px;color:rgba(255,255,255,.25);font-size:.72em;}
-.swm-err{text-align:center;padding:22px 10px;color:var(--red);font-size:.72em;}
-.swm-skel{height:52px;border-radius:12px;background:rgba(255,255,255,.04);
+#sw-modal .swm-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:13px;}
+#sw-modal .swm-tile{position:relative;display:flex;flex-direction:column;gap:4px;padding:12px;
+  border-radius:16px;overflow:hidden;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
+  transition:transform .22s ease,box-shadow .22s ease;}
+#sw-modal .swm-tile:hover{transform:translateY(-2px);}
+#sw-modal .swm-tile-glow{position:absolute;right:-14px;bottom:-14px;width:56px;height:56px;
+  border-radius:50%;filter:blur(26px);opacity:.2;pointer-events:none;}
+#sw-modal .swm-tile-lbl{font-size:9px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);line-height:1.25;}
+#sw-modal .swm-tile-val{font-size:clamp(11px,3.4vw,15px);font-weight:800;letter-spacing:-.5px;
+  line-height:1.15;font-variant-numeric:tabular-nums;color:#fff;white-space:nowrap;}
+#sw-modal .swm-tile.inn{background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,212,255,.04));
+  border-color:rgba(0,255,136,.22);}
+#sw-modal .swm-tile.out{background:linear-gradient(135deg,rgba(255,77,141,.08),rgba(168,85,247,.04));
+  border-color:rgba(255,77,141,.22);}
+#sw-modal .swm-tile.inn .swm-tile-val{color:#00ff88;text-shadow:0 0 18px rgba(0,255,136,.32);}
+#sw-modal .swm-tile.out .swm-tile-val{color:#ff4d8d;text-shadow:0 0 18px rgba(255,77,141,.32);}
+
+#sw-modal .swm-days{display:flex;flex-direction:column;gap:9px;}
+#sw-modal .swm-day{position:relative;border-radius:14px;padding:11px 12px 11px 16px;overflow:hidden;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;gap:11px;
+  animation:swRise .4s cubic-bezier(.34,1.2,.64,1) both;
+  transition:transform .2s,border-color .2s,background .2s;}
+#sw-modal .swm-day:hover{transform:translateY(-2px);background:rgba(255,255,255,.06);
+  border-color:rgba(255,255,255,.13);}
+@keyframes swRise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+#sw-modal .swm-accent{position:absolute;left:0;top:0;bottom:0;width:3px;}
+#sw-modal .swm-daytag{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex-shrink:0;min-width:32px;}
+#sw-modal .swm-daynum{font-size:16px;font-weight:800;letter-spacing:-.5px;color:rgba(255,255,255,.88);line-height:1;
+  font-variant-numeric:tabular-nums;}
+#sw-modal .swm-daydow{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+  color:rgba(255,255,255,.28);margin-top:3px;}
+#sw-modal .swm-daymid{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;}
+#sw-modal .swm-dayref{font-size:12px;font-weight:500;color:rgba(255,255,255,.55);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#sw-modal .swm-dayref.none{color:rgba(255,255,255,.2);font-style:italic;}
+#sw-modal .swm-legs{display:flex;gap:6px;flex-wrap:wrap;}
+#sw-modal .swm-leg{font-size:9px;font-weight:700;letter-spacing:.6px;padding:2px 7px;border-radius:6px;
+  white-space:nowrap;font-variant-numeric:tabular-nums;}
+#sw-modal .swm-leg.i{background:rgba(0,255,136,.13);color:#00ff88;}
+#sw-modal .swm-leg.o{background:rgba(255,77,141,.13);color:#ff4d8d;}
+#sw-modal .swm-daynet{font-size:14px;font-weight:800;letter-spacing:-.4px;flex-shrink:0;
+  font-variant-numeric:tabular-nums;}
+
+#sw-modal .swm-empty{color:rgba(255,255,255,.25);font-size:11px;padding:22px 0;text-align:center;}
+#sw-modal .swm-err{background:rgba(255,77,141,.08);border:1px solid rgba(255,77,141,.25);
+  border-radius:14px;padding:18px;text-align:center;color:#ff4d8d;font-size:11px;}
+#sw-modal .swm-skel{height:56px;border-radius:14px;background:rgba(255,255,255,.04);
   border:1px solid rgba(255,255,255,.05);position:relative;overflow:hidden;}
-.swm-skel::after{content:'';position:absolute;inset:0;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
-  transform:translateX(-100%);animation:swmSweep 1.4s ease-in-out infinite;}
-@keyframes swmSweep{100%{transform:translateX(100%)}}
+#sw-modal .swm-skel + .swm-skel{margin-top:9px;}
+#sw-modal .swm-skel::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
+  transform:translateX(-100%);animation:swSweep 1.4s ease-in-out infinite;}
+@keyframes swSweep{100%{transform:translateX(100%)}}
+
+#sw-modal button:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
 
 @media(max-width:600px){
-  #sw-modal{top:8vh;max-height:84vh;}
+  #sw-modal{top:5vh;width:calc(100% - 16px);border-radius:18px;
+    max-height:calc(100vh - 5vh - var(--nav-h,62px) - 10px);
+    max-height:calc(100dvh - 5dvh - var(--nav-h,62px) - 10px);}
+  #sw-modal .swm-hdr{padding:11px 13px 9px;}
+  #sw-modal .swm-body{padding:11px;gap:11px;}
+  #sw-modal .swm-hero{padding:16px 15px 14px;border-radius:17px;}
+  #sw-modal .swm-hero-amt{font-size:clamp(24px,7.4vw,34px);letter-spacing:-1.2px;}
+  #sw-modal .swm-hero-label{font-size:9px;letter-spacing:2.2px;}
+  #sw-modal .swm-delta{font-size:10px;padding:3px 9px;}
+  #sw-modal .glass-card{padding:13px;border-radius:16px;}
+  #sw-modal .swm-tiles{gap:6px;margin-bottom:11px;}
+  #sw-modal .swm-tile{padding:9px 8px;border-radius:13px;gap:2px;}
+  #sw-modal .swm-tile-lbl{font-size:8px;letter-spacing:.9px;}
+  #sw-modal .swm-day{padding:10px 10px 10px 14px;border-radius:13px;gap:9px;}
+  #sw-modal .swm-daynum{font-size:15px;}
+  #sw-modal .swm-dayref{font-size:11px;}
+  #sw-modal .swm-daynet{font-size:clamp(11px,3.5vw,14px);}
+  #sw-modal .swm-leg{font-size:8.5px;padding:2px 6px;}
+  #sw-modal .swm-seg-lbl{min-width:56px;letter-spacing:1px;}
+}
+/* very narrow phones — the day row gives up its middle column before it wraps */
+@media(max-width:360px){
+  #sw-modal .swm-tile-lbl{font-size:7.5px;letter-spacing:.6px;}
+  #sw-modal .swm-daytag{min-width:26px;}
+  #sw-modal .swm-day{gap:7px;padding-left:12px;}
 }
 @media(prefers-reduced-motion:reduce){
-  #sw-modal,.swm-skel::after,.swm-btn.spin span{animation:none!important;}
+  #sw-modal,#sw-modal *,#sw-modal *::before,#sw-modal *::after{
+    animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;}
 }
 </style>
 
@@ -166,25 +237,32 @@
   <div class="swm-hdr" id="swm-hdr">
     <span class="swm-title">🤝 Splitwise</span>
     <div class="swm-hdr-btns">
-      <button class="swm-btn" id="swm-refresh" onclick="swRefresh()" title="Refresh net position"><span>↻</span></button>
-      <button class="swm-btn" onclick="swClose()" title="Close">✕</button>
+      <button class="swm-btn" id="swm-refresh" type="button" onclick="swRefresh()" title="Refresh balance" aria-label="Refresh balance"><span>↻</span></button>
+      <button class="swm-btn" type="button" onclick="swClose()" title="Close" aria-label="Close">✕</button>
     </div>
   </div>
   <div class="swm-body">
 
-    <div class="swm-net loading" id="swm-net">
-      <div class="swm-net-lbl">Net Position</div>
-      <div class="swm-net-val" id="swm-net-val">—</div>
-      <div class="swm-net-sub" id="swm-net-sub">loading…</div>
+    <div class="swm-hero">
+      <div class="swm-hero-inner">
+        <div class="swm-hero-label"><i></i>Overall Balance</div>
+        <div class="swm-hero-amt dim" id="swm-hero-amt">₨ —</div>
+        <div class="swm-deltas" id="swm-deltas"><span class="swm-delta flat">loading…</span></div>
+      </div>
     </div>
 
-    <div class="swm-month-bar">
-      <button class="swm-nav" id="swm-prev" onclick="swMonthNav(-1)" title="Previous month">◀</button>
-      <span class="swm-month-lbl" id="swm-month-lbl">—</span>
-      <button class="swm-nav" id="swm-next" onclick="swMonthNav(1)" title="Next month">▶</button>
+    <div class="glass-card">
+      <div class="card-header">
+        <span class="card-dot" style="background:var(--gold);box-shadow:0 0 6px var(--gold)"></span>
+        <span class="card-title">Month Detail</span>
+        <div class="swm-seg" role="group" aria-label="Month">
+          <button class="swm-seg-btn" id="swm-prev" type="button" onclick="swMonthNav(-1)" title="Previous month">◀</button>
+          <span class="swm-seg-lbl" id="swm-month-lbl">—</span>
+          <button class="swm-seg-btn" id="swm-next" type="button" onclick="swMonthNav(1)" title="Next month">▶</button>
+        </div>
+      </div>
+      <div id="swm-month"><div class="swm-skel"></div><div class="swm-skel"></div></div>
     </div>
-
-    <div id="swm-month"><div class="swm-skel"></div></div>
 
   </div>
 </div>
@@ -197,10 +275,10 @@
 var SW_MON = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 var SW_DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-var _swBal      = null;   /* {success, sheetBalance} — null until it lands */
+var _swBal      = null;    /* {ok, value, from, error} once resolved */
 var _swBalBusy  = false;
-var _swMonthCache = {};   /* 'YYYY-M' -> payload from getSplitwiseMonthEntries */
-var _swM = 0, _swY = 0;   /* month currently shown */
+var _swMonthCache = {};    /* 'YYYY-M' -> payload from getSplitwiseMonthEntries */
+var _swM = 0, _swY = 0;    /* month currently shown */
 
 function swFmt(n){ return '₨ ' + Math.abs(Math.round(n||0)).toLocaleString('en-IN'); }
 function swSigned(n){ n = n||0; return (n<0?'− ':n>0?'+ ':'') + swFmt(n); }
@@ -218,14 +296,36 @@ function swPrefetch(){
   swFetchMonth(_swM, _swY);
 }
 
+/* Portfolio!B14 is the number of record. If that read fails we still owe
+   the user a figure, so fall back to summing the ledger rather than
+   showing a dash and nothing else. */
 function swFetchBalance(cb){
   if(_swBalBusy){ if(cb) cb(); return; }
   _swBalBusy = true;
+  var done = function(state){ _swBal = state; _swBalBusy = false; swPaintBalance(); if(cb) cb(); };
+
   google.script.run
-    .withSuccessHandler(function(d){ _swBal = d; _swBalBusy = false; swPaintNet(); if(cb) cb(); })
-    .withFailureHandler(function(e){ _swBal = { success:false, error:(e && e.message) || e };
-                                     _swBalBusy = false; swPaintNet(); if(cb) cb(); })
+    .withSuccessHandler(function(d){
+      if(d && d.success){ done({ ok:true, value: parseFloat(d.sheetBalance) || 0, from:'sheet' }); }
+      else swBalanceFromLedger((d && d.error) || 'sheet read failed', done);
+    })
+    .withFailureHandler(function(e){ swBalanceFromLedger((e && e.message) || e, done); })
     .getSplitwiseSheetBalance();
+}
+
+function swBalanceFromLedger(why, done){
+  google.script.run
+    .withSuccessHandler(function(d){
+      if(d && d.success && d.entries){
+        var net = 0;
+        d.entries.forEach(function(e){ if(!e.isError) net += (e.amount || 0); });
+        done({ ok:true, value:net, from:'ledger', error:why });
+      } else {
+        done({ ok:false, error:why });
+      }
+    })
+    .withFailureHandler(function(){ done({ ok:false, error:why }); })
+    .getSplitwiseLedger();
 }
 
 /* one flight per month — a second ask while it is in the air just waits */
@@ -251,29 +351,37 @@ function swFetchMonth(m, y, force){
 }
 
 /* ═══════════════════════════════════════════
-   ② NET POSITION
+   ② OVERALL BALANCE
 ═══════════════════════════════════════════ */
-function swPaintNet(){
-  var box = document.getElementById('swm-net');
-  var val = document.getElementById('swm-net-val');
-  var sub = document.getElementById('swm-net-sub');
-  if(!box || !val || !sub) return;
+function swPaintBalance(){
+  var amt = document.getElementById('swm-hero-amt');
+  var del = document.getElementById('swm-deltas');
+  if(!amt || !del) return;
 
-  if(!_swBal){ box.classList.add('loading'); val.textContent = '—'; sub.textContent = 'loading…'; return; }
-  box.classList.remove('loading');
-
-  if(!_swBal.success){
-    val.textContent = '—';
-    val.style.color = 'var(--red)';
-    sub.textContent = '⚠ ' + swEsc(_swBal.error || 'could not read the sheet');
+  if(!_swBal){
+    amt.className = 'swm-hero-amt dim';
+    amt.textContent = '₨ —';
+    del.innerHTML = '<span class="swm-delta flat">loading…</span>';
     return;
   }
-  var bal = parseFloat(_swBal.sheetBalance) || 0;
-  val.textContent  = swSigned(bal);
-  val.style.color  = bal < 0 ? 'var(--red)' : bal > 0 ? 'var(--green)' : '#fff';
-  sub.textContent  = bal < -1 ? 'You owe this much overall'
-                   : bal >  1 ? 'This much is owed to you'
-                   : 'All settled up 🎉';
+
+  if(!_swBal.ok){
+    amt.className = 'swm-hero-amt dim';
+    amt.textContent = '₨ —';
+    del.innerHTML = '<span class="swm-delta warn">⚠ ' + swEsc(_swBal.error || 'could not read the balance') + '</span>'
+      + '<button class="swm-retry" type="button" onclick="swRefresh()">Retry</button>';
+    return;
+  }
+
+  var v = _swBal.value;
+  amt.className = 'swm-hero-amt ' + (v < 0 ? 'down' : v > 0 ? 'up' : '');
+  amt.textContent = swSigned(v);
+
+  var state = v < -1 ? '<span class="swm-delta down">▼ You owe this overall</span>'
+            : v >  1 ? '<span class="swm-delta up">▲ Owed to you overall</span>'
+            :          '<span class="swm-delta flat">→ All settled up 🎉</span>';
+  if(_swBal.from === 'ledger') state += '<span class="swm-delta warn">⚠ from the ledger — sheet unreadable</span>';
+  del.innerHTML = state;
 }
 
 /* ═══════════════════════════════════════════
@@ -294,7 +402,7 @@ function swPaintMonth(m, y){
   swPaintMonthLabel();
 
   var data = _swMonthCache[swKey(m, y)];
-  if(!data || data.pending){ box.innerHTML = '<div class="swm-skel"></div>'; return; }
+  if(!data || data.pending){ box.innerHTML = '<div class="swm-skel"></div><div class="swm-skel"></div>'; return; }
   if(!data.success){
     box.innerHTML = '<div class="swm-err">⚠ ' + swEsc(data.error || 'Failed to load') + '</div>';
     return;
@@ -302,15 +410,16 @@ function swPaintMonth(m, y){
 
   var iPaid = data.totalIPaid || 0, other = data.totalOther || 0;
   var net   = iPaid - other;
-  var netCls = net < 0 ? 'red' : net > 0 ? 'green' : '';
+  var netCol = net < 0 ? '#ff4d8d' : net > 0 ? '#00ff88' : '#fff';
 
-  var html = '<div class="swm-sum">'
-    + '<div class="swm-sum-card green"><div class="swm-sum-lbl">I Covered</div>'
-      + '<div class="swm-sum-val green">' + swFmt(iPaid) + '</div></div>'
-    + '<div class="swm-sum-card red"><div class="swm-sum-lbl">They Covered</div>'
-      + '<div class="swm-sum-val red">' + swFmt(other) + '</div></div>'
-    + '<div class="swm-sum-card"><div class="swm-sum-lbl">Net</div>'
-      + '<div class="swm-sum-val ' + netCls + '">' + swSigned(net) + '</div></div>'
+  var html = '<div class="swm-tiles">'
+    + '<div class="swm-tile inn"><span class="swm-tile-glow" style="background:#00ff88"></span>'
+      + '<span class="swm-tile-lbl">I Covered</span><span class="swm-tile-val">' + swFmt(iPaid) + '</span></div>'
+    + '<div class="swm-tile out"><span class="swm-tile-glow" style="background:#ff4d8d"></span>'
+      + '<span class="swm-tile-lbl">They Covered</span><span class="swm-tile-val">' + swFmt(other) + '</span></div>'
+    + '<div class="swm-tile"><span class="swm-tile-glow" style="background:' + netCol + '"></span>'
+      + '<span class="swm-tile-lbl">Net</span>'
+      + '<span class="swm-tile-val" style="color:' + netCol + '">' + swSigned(net) + '</span></div>'
   + '</div>';
 
   /* month end → start, the way the sheet is read back */
@@ -319,22 +428,23 @@ function swPaintMonth(m, y){
   if(!days.length){
     html += '<div class="swm-empty">No entries in ' + SW_MON[m] + ' ' + y + '.</div>';
   } else {
-    html += '<div class="swm-days">' + days.map(function(e){
+    html += '<div class="swm-days">' + days.map(function(e, n){
       var dNet = (e.iPaid || 0) - (e.otherPaid || 0);
-      var col  = dNet < 0 ? 'var(--red)' : dNet > 0 ? 'var(--green)' : 'rgba(255,255,255,.5)';
+      var col  = dNet < 0 ? '#ff4d8d' : dNet > 0 ? '#00ff88' : 'rgba(255,255,255,.4)';
       var dow  = SW_DOW[new Date(y, m - 1, e.day).getDay()];
       var legs = '';
       if(e.iPaid > 0)     legs += '<span class="swm-leg i">I paid ' + swFmt(e.iPaid) + '</span>';
       if(e.otherPaid > 0) legs += '<span class="swm-leg o">They paid ' + swFmt(e.otherPaid) + '</span>';
-      return '<div class="swm-day-card" style="--accent:' + col + '">'
-        + '<div class="swm-day-tag"><span class="swm-day-num">' + e.day + '</span>'
-          + '<span class="swm-day-dow">' + dow + '</span></div>'
-        + '<div class="swm-day-mid">'
-          + '<span class="swm-day-ref' + (e.reference ? '' : ' none') + '" title="' + swEsc(e.reference) + '">'
+      return '<div class="swm-day" style="animation-delay:' + Math.min(n * 35, 300) + 'ms">'
+        + '<span class="swm-accent" style="background:' + col + '"></span>'
+        + '<span class="swm-daytag"><span class="swm-daynum">' + e.day + '</span>'
+          + '<span class="swm-daydow">' + dow + '</span></span>'
+        + '<span class="swm-daymid">'
+          + '<span class="swm-dayref' + (e.reference ? '' : ' none') + '" title="' + swEsc(e.reference) + '">'
             + (e.reference ? swEsc(e.reference) : 'no reference') + '</span>'
-          + '<span class="swm-day-legs">' + legs + '</span>'
-        + '</div>'
-        + '<span class="swm-day-net" style="color:' + col + '">' + swSigned(dNet) + '</span>'
+          + '<span class="swm-legs">' + legs + '</span>'
+        + '</span>'
+        + '<span class="swm-daynet" style="color:' + col + '">' + swSigned(dNet) + '</span>'
       + '</div>';
     }).join('') + '</div>';
   }
@@ -349,7 +459,7 @@ function swMonthNav(dir){
   swPaintMonthLabel();
   var box = document.getElementById('swm-month');
   var cached = _swMonthCache[swKey(_swM, _swY)];
-  if(box && (!cached || cached.pending)) box.innerHTML = '<div class="swm-skel"></div>';
+  if(box && (!cached || cached.pending)) box.innerHTML = '<div class="swm-skel"></div><div class="swm-skel"></div>';
   swFetchMonth(_swM, _swY);
 }
 
@@ -363,10 +473,13 @@ function swToggle(){
 
   var now = new Date();
   if(!_swM){ _swM = now.getMonth() + 1; _swY = now.getFullYear(); }
+
+  if(window.innerWidth <= 700){ p.style.left = ''; p.style.top = ''; p.style.transform = ''; }
   p.classList.add('open');
+  p.scrollTop = 0;          /* only lands once the element is displayed */
 
   /* paint whatever the prefetch already has, then fill the gaps */
-  swPaintNet();
+  swPaintBalance();
   swPaintMonth(_swM, _swY);
   if(!_swBal) swFetchBalance();
   swFetchMonth(_swM, _swY);
@@ -377,15 +490,17 @@ function swClose(){
   if(p) p.classList.remove('open');
 }
 
-/* the net position is one cell read — refresh it on its own, fast,
-   and pull the visible month behind it */
+/* the balance is one cell read — refresh it on its own, fast,
+   and pull the visible month in behind it */
 function swRefresh(){
   var btn = document.getElementById('swm-refresh');
   if(btn) btn.classList.add('spin');
+  _swBal = null;
+  swPaintBalance();
   swFetchBalance(function(){ if(btn) btn.classList.remove('spin'); });
   swFetchMonth(_swM, _swY, true);
   var box = document.getElementById('swm-month');
-  if(box) box.innerHTML = '<div class="swm-skel"></div>';
+  if(box) box.innerHTML = '<div class="swm-skel"></div><div class="swm-skel"></div>';
 }
 
 /* ── Esc closes, header drags ── */
@@ -401,8 +516,12 @@ document.addEventListener('DOMContentLoaded', function(){
   var bar = document.getElementById('swm-hdr');
   if(!bar) return;
   var drag = false, ox = 0, oy = 0;
+  /* on a phone the modal is nearly full-bleed: dragging it has no value and
+     its preventDefault would compete with the scroll */
+  function canDrag(){ return window.innerWidth > 700; }
 
   function start(cx, cy){
+    if(!canDrag()) return;
     var r = panel.getBoundingClientRect();
     /* drop the centring transform on first drag so left/top are absolute */
     panel.style.transform = 'none';
