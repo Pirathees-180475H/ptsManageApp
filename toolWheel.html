@@ -245,7 +245,9 @@
     { ico:'🧮', name:'Calculator', desc:'Quick maths',           fn:'calcToggle',    color:'#a855f7',
       live:{ sel:'.pg-calc-btn',    cls:'calc-active' } },
     { ico:'⚖️', name:'Divider',    desc:'Split an expense',      fn:'edToggle',      color:'#fbbf24',
-      live:{ sel:'#ed-overlay',     cls:'open' } }
+      live:{ sel:'#ed-overlay',     cls:'open' } },
+    { ico:'🤝', name:'Splitwise',   desc:'Net position & month',  fn:'swToggle',      color:'#00d4ff',
+      live:{ sel:'#sw-modal',       cls:'open' } }
   ];
   register('tools', function(){
     return { title:'Tools', rich:false, items:TOOLS };

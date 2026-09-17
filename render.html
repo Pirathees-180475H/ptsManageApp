@@ -26,6 +26,7 @@ document.title = 'EXP TRACK';
 <?!= include('notification'); ?>
 <?!= include('cardDeck'); ?>
 <?!= include('toolWheel'); ?>
+<?!= include('splitwise'); ?>
 
 <!-- ── Quick Add Modal ── -->
 <div id="qa-bg" onclick="if(event.target===this)closeQuickAdd()">
@@ -317,27 +318,6 @@ document.title = 'EXP TRACK';
   </div>
 </div>
 
-<section id="page-sw" class="spa-page">
-  <div class="pg-hdr">
-    <span class="pg-hdr-title">🤝 Splitwise</span>
-    <div class="pg-hdr-actions">
-      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
-      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
-      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
-      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
-      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
-      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
-      <button class="pg-reload-btn" onclick="reloadPage('sw')">↺ Reload</button>
-    </div>
-  </div>
-  <div id="sw-root" class="sw-scroll-wrap" style="display:flex;flex-direction:column;height:100%;">
-    <div id="sw-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px">
-      <div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div>
-      <div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Splitwise…</div>
-    </div>
-    <iframe id="sw-iframe" style="display:none;width:100%;flex:1;border:0" src="about:blank"></iframe>
-  </div>
-</section>
 
 <!-- ═══════════════════════════════════════════
      EXPENSE DETAIL POPUP
@@ -802,10 +782,6 @@ document.title = 'EXP TRACK';
     <span class="bnav-ico">📈</span>
     <span class="bnav-lbl">Investments</span>
   </button>
-  <button class="bnav-btn" data-page="sw" onclick="showPage('sw')">
-    <span class="bnav-ico">🤝</span>
-    <span class="bnav-lbl">Splits</span>
-  </button>
   <button class="bnav-btn" data-page="port" onclick="showPage('port')">
     <span class="bnav-ico">💼</span>
     <span class="bnav-lbl">Summary</span>
@@ -923,7 +899,6 @@ function _doShowPage(name){
     if(name==='exp')  expLoad();
     if(name==='port') portLoad();
     if(name==='mf')   mfLoad();
-    if(name==='sw')   swLoad();
   }
 }
 
@@ -954,12 +929,13 @@ function reloadPage(name){
   else if(name==='exp')  { document.getElementById('exp-root').innerHTML='<div class="exp-loader"><div class="exp-spinner"></div><p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p></div>'; _expDetailReset(); expLoad(); _spaLoaded.exp=true; }
   else if(name==='port') { portLoad(); _spaLoaded.port=true; }
   else if(name==='mf')   { document.getElementById('mf-root').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px"><div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Flow…</div></div>'; mfLoad(); _spaLoaded.mf=true; }
-  else if(name==='sw')   { swLoad(); _spaLoaded.sw=true; }
 }
 
 window.onload = function(){ 
   showPage('exp'); 
   initCmdPalette();
+  /* splitwise month + balance warm up in the background — nothing waits on it */
+  if (typeof swPrefetch === 'function') setTimeout(swPrefetch, 0);
   initQuickAdd();
   if (typeof checkNotifications === 'function') {
     checkNotifications();
@@ -1163,7 +1139,6 @@ var _cmdPages = [
   { id: 'cc',   name: 'Credit Card',desc: 'CC statements & summaries',  icon: '💳' },
   { id: 'mf',   name: 'Money Flow', desc: 'Investment & portfolio flow',icon: '🌊' },
   { id: 'cse',  name: 'Investments',desc: 'Stocks, Gold & FDs',        icon: '📈' },
-  { id: 'sw',   name: 'Splitwise',  desc: 'Shared balances & debts',    icon: '🤝' },
   { id: 'port', name: 'Portfolio',  desc: 'Net worth & asset summary',  icon: '📊' },
   
   // Subsections
@@ -1180,7 +1155,8 @@ var _cmdPages = [
   { action: 'docsToggle',  name: 'Document Vault', desc: 'Open shared documents & files', icon: '📂' },
   { action: 'calcToggle',  name: 'Calculator',     desc: 'Open financial calculator',    icon: '🧮' },
   { action: 'calToggle',   name: 'Calendar',       desc: 'Open investment calendar',    icon: '📅' },
-  { action: 'trackerToggle', name: 'Task Tracker',   desc: 'Open maintenance checklist',  icon: '📋' }
+  { action: 'trackerToggle', name: 'Task Tracker',   desc: 'Open maintenance checklist',  icon: '📋' },
+  { action: 'swToggle',    name: 'Splitwise',      desc: 'Net position & month detail',  icon: '🤝' }
 ];
 
 function initCmdPalette() {
@@ -5254,87 +5230,6 @@ function csePerfRender(rows){
            '<div class="insight-sub">'+i.sub+'</div></div></div>';
   }).join('');
 }
-/* ═══════════════════════════════════════════
-   SPLITWISE PAGE — loaded from external splitwise.html via an
-   iframe, same pattern as the Add Expense overlay (ADD_EXP.html).
-   A postMessage bridge relays google.script.run calls out of the
-   sandboxed srcdoc iframe to the real API in this parent page.
-═══════════════════════════════════════════ */
-(function(){
-  var SW_BRIDGE_SCRIPT = [
-    '(function(){',
-    '  var _cbs={};',
-    '  window.addEventListener("message",function(e){',
-    '    if(!e.data||e.data.type!=="gsres")return;',
-    '    var c=_cbs[e.data.cbId];',
-    '    if(!c)return;',
-    '    if(e.data.isErr)c._f&&c._f(e.data.payload);',
-    '    else c._s&&c._s(e.data.payload);',
-    '    delete _cbs[e.data.cbId];',
-    '  });',
-    '  function mk(){',
-    '    var o={_s:null,_f:null};',
-    '    o.withSuccessHandler=function(c){o._s=c;return o;};',
-    '    o.withFailureHandler=function(c){o._f=c;return o;};',
-    '    var fns=["getSplitwiseSheetBalance","getSplitwiseLedger","getSplitwiseMonthEntries"];',
-    '    fns.forEach(function(fn){',
-    '      o[fn]=function(){',
-    '        var id=Math.random().toString(36).slice(2);',
-    '        _cbs[id]={_s:o._s,_f:o._f};',
-    '        o._s=null;o._f=null;',
-    '        window.parent.postMessage({type:"gsrun",fn:fn,args:Array.prototype.slice.call(arguments),cbId:id},"*");',
-    '      };',
-    '    });',
-    '    return o;',
-    '  }',
-    '  var _runner=mk();',
-    '  window.google={script:{run:{',
-    '    withSuccessHandler:function(c){_runner=mk();_runner._s=c;return _runner;},',
-    '    withFailureHandler:function(c){_runner._f=c;return _runner;},',
-    '    getSplitwiseSheetBalance:function(){_runner.getSplitwiseSheetBalance.apply(_runner,arguments);_runner=mk();},',
-    '    getSplitwiseLedger:function(){_runner.getSplitwiseLedger.apply(_runner,arguments);_runner=mk();},',
-    '    getSplitwiseMonthEntries:function(){_runner.getSplitwiseMonthEntries.apply(_runner,arguments);_runner=mk();}',
-    '  }}};',
-    '})();'
-  ].join('\n');
-
-  /* ── Relay: parent listens for the sw iframe's gsrun messages ── */
-  window.addEventListener('message', function(e){
-    if(!e.data || e.data.type!=='gsrun') return;
-    var iframe = document.getElementById('sw-iframe');
-    if(!iframe || !iframe.contentWindow || e.source!==iframe.contentWindow) return;
-    var cbId = e.data.cbId;
-    google.script.run
-      .withSuccessHandler(function(r){
-        iframe.contentWindow.postMessage({type:'gsres', cbId:cbId, isErr:false, payload:r}, '*');
-      })
-      .withFailureHandler(function(err){
-        iframe.contentWindow.postMessage({type:'gsres', cbId:cbId, isErr:true, payload:err}, '*');
-      })
-      [e.data.fn].apply(null, e.data.args);
-  });
-
-  window.swLoad = function(){
-    var loading = document.getElementById('sw-loading');
-    var iframe  = document.getElementById('sw-iframe');
-    loading.style.display = 'flex';
-    iframe.style.display  = 'none';
-    google.script.run
-      .withSuccessHandler(function(html){
-        var patched = html.replace('</head>', '<script>' + SW_BRIDGE_SCRIPT + '<\/script></head>');
-        iframe.srcdoc = patched;
-        iframe.onload = function(){
-          loading.style.display = 'none';
-          iframe.style.display  = 'block';
-        };
-      })
-      .withFailureHandler(function(err){
-        loading.innerHTML =
-          '<div style="color:#ff4d6d;text-align:center;padding:40px;font-size:.9em">⚠ Failed to load: '+((err&&err.message)||err)+'</div>';
-      })
-      .getSplitwiseHtmlContent();
-  };
-})();
 
 /* ═══════════════════════════════════════════
    PIN MODAL — Summary tab only, every visit

@@ -1,652 +1,432 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Splitwise</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <!-- ═══════════════════════════════════════════════════════════════
-     SPLITWISE PAGE — shared money, self-contained iframe page
+     SPLITWISE MODAL  —  small, tool-wheel opened
 
-     Four blocks, in document order:
-       ① header      title · refresh
-       ② balance     net position + sparkline + in / out / entries
-       ③ trend       cumulative balance line, 6M / 1Y / All
-       ④ records     ledger table | month detail
+     Two things only: the net position amount, and the month detail.
+     No page, no charts, no ledger table.
 
-     Colours and card vocabulary follow render-style.html, same as
-     the portfolio page: glass card, card-header dot + title,
-     segmented range control.
+       ① header   🤝 title · ↻ refresh · ✕ close   (drag handle)
+       ② net      the one number, straight from Portfolio!B14
+       ③ month    ◀ Sep 2026 ▶ · I covered / They covered / Net
+                  · day cards, newest day first (month end → start)
 
-     Talks to the parent only through the three bridged calls:
-       getSplitwiseSheetBalance · getSplitwiseLedger · getSplitwiseMonthEntries
+     Data is prefetched at app start by swPrefetch(), fired from
+     render.html's window.onload — nothing blocks on it, and by the
+     time the wheel is used the modal opens straight from cache.
 
-     Sign convention: amount > 0 = owed TO me, amount < 0 = I owe.
-     Monthly sheet: iPaid = I covered (green), otherPaid = they covered (red).
+     Card vocabulary follows the subscription tracker: .sub-sum-card
+     summary tiles and .sub-platform-card rows, same radii, same
+     2px top gradient bar, same muted uppercase micro-labels.
+
+     Backend (unchanged):
+       getSplitwiseSheetBalance · getSplitwiseMonthEntries
+
+     Included from render.html via:  <?!= include('splitwise'); ?>
+     Opened from the tool wheel:     swToggle()
 ═══════════════════════════════════════════════════════════════ -->
 <style>
-:root{
-  --bg:#060b18; --card:rgba(255,255,255,0.04); --bdr:rgba(255,255,255,0.07);
-  --red:#ff4d6d; --green:#00e676; --blue:#00d4ff; --purple:#a855f7;
-  --gold:#ffd700; --amber:#fb923c; --teal:#2dd4bf;
-  --muted:rgba(255,255,255,0.3); --dim:rgba(255,255,255,0.12);
+/* ── ① shell ── */
+#sw-modal{
+  position:fixed;top:12vh;left:50%;transform:translateX(-50%);
+  width:calc(100% - 24px);max-width:430px;max-height:76vh;z-index:8000;
+  background:#0a0e1c;backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  border:1px solid rgba(255,255,255,.1);border-radius:20px;
+  box-shadow:0 28px 80px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.07);
+  display:none;flex-direction:column;overflow:hidden;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-html,body{height:100%;}
-/* This page fills the whole iframe and scrolls its own content internally —
-   the iframe is the single scroll owner, so the outer page never fights it
-   for scroll on mobile. */
-body{background:var(--bg);color:#fff;font-family:'Inter',system-ui,sans-serif;
-  padding:16px 16px 28px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-@keyframes spin{to{transform:rotate(360deg);}}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+#sw-modal.open{display:flex;animation:swModalIn .28s ease;}
+@keyframes swModalIn{from{opacity:0;transform:translateX(-50%) scale(.95);}to{opacity:1;transform:translateX(-50%) scale(1);}}
+#sw-modal::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:2;pointer-events:none;
+  background:linear-gradient(90deg,transparent 5%,rgba(0,212,255,.7) 35%,rgba(168,85,247,.6) 65%,transparent 95%);
+}
+.swm-hdr{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 14px 10px;border-bottom:1px solid rgba(255,255,255,.07);
+  flex-shrink:0;cursor:grab;user-select:none;
+  background:linear-gradient(180deg,rgba(0,212,255,.06) 0%,transparent 100%);
+}
+.swm-hdr:active{cursor:grabbing;}
+.swm-title{
+  font-size:.63em;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,#fff 0%,#7dd3fc 55%,#c084fc 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.swm-hdr-btns{display:flex;align-items:center;gap:7px;}
+.swm-btn{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  color:rgba(255,255,255,.4);font-size:.72em;cursor:pointer;
+  padding:4px 9px;line-height:1;font-family:inherit;border-radius:8px;transition:all .15s;
+}
+.swm-btn:hover{color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);}
+.swm-btn.spin{color:var(--blue);pointer-events:none;}
+.swm-btn.spin span{display:inline-block;animation:spin .7s linear infinite;}
+.swm-body{flex:1;overflow-y:auto;padding:14px;min-height:0;display:flex;flex-direction:column;gap:13px;}
+.swm-body::-webkit-scrollbar{width:5px;}
+.swm-body::-webkit-scrollbar-track{background:transparent;}
+.swm-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
 
-/* ── ① header ── */
-.sw-hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
-.pg-corner-title{display:flex;align-items:center;gap:8px;}
-.pg-ct-icon{font-size:1.15em;line-height:1;}
-.pg-ct-text{font-size:.72em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.38);}
-.sw-header-sub{color:rgba(255,255,255,.28);font-size:.68em;}
-.sw-refresh{margin-left:auto;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-  color:rgba(255,255,255,.55);border-radius:9px;padding:6px 12px;cursor:pointer;
-  font-size:.66em;font-weight:600;letter-spacing:.5px;font-family:inherit;transition:all .15s;}
-.sw-refresh:hover{color:#fff;background:rgba(255,255,255,.1);}
-.sw-refresh:disabled{opacity:.4;cursor:not-allowed;}
+/* ── ② net position ── */
+.swm-net{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:14px;padding:16px 16px 15px;position:relative;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.swm-net::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,rgba(0,212,255,.55),rgba(168,85,247,.35));
+}
+.swm-net::after{
+  content:'';position:absolute;right:-16px;bottom:-16px;width:60px;height:60px;border-radius:50%;
+  background:#00d4ff;filter:blur(24px);opacity:.12;pointer-events:none;
+}
+.swm-net-lbl{font-size:.52em;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);margin-bottom:5px;}
+.swm-net-val{font-size:1.9em;font-weight:800;letter-spacing:-1px;line-height:1;
+  font-variant-numeric:tabular-nums;color:#fff;}
+.swm-net-sub{font-size:.62em;color:rgba(255,255,255,.35);margin-top:6px;}
+.swm-net.loading .swm-net-val{color:rgba(255,255,255,.2);}
 
-/* ── loading / error ── */
-.sw-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;min-height:40vh;}
-.sw-spinner{width:40px;height:40px;border:3px solid rgba(0,212,255,.15);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
-.sw-loading-txt{color:rgba(255,255,255,.3);font-size:.78em;letter-spacing:2px;text-transform:uppercase;}
-.error-box{text-align:center;padding:32px;color:var(--red);font-size:.85em;}
+/* ── ③ month detail ── */
+.swm-month-bar{display:flex;align-items:center;gap:8px;}
+.swm-month-lbl{font-size:.62em;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
+  color:rgba(255,255,255,.45);flex:1;text-align:center;}
+.swm-nav{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);
+  color:rgba(255,255,255,.5);border-radius:8px;width:26px;height:26px;flex-shrink:0;
+  cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:all .13s;
+}
+.swm-nav:hover:not(:disabled){color:#fff;background:rgba(255,255,255,.11);}
+.swm-nav:disabled{opacity:.25;cursor:not-allowed;pointer-events:none;}
 
-/* ── shared card ── */
-.sw-card{background:var(--card);border:1px solid var(--bdr);border-radius:16px;
-  backdrop-filter:blur(20px);overflow:hidden;}
-.card-header{display:flex;align-items:center;gap:8px;padding:14px 16px;
-  border-bottom:1px solid rgba(255,255,255,.05);flex-wrap:wrap;}
-.card-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.card-title{font-size:.68em;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.4);}
-.card-count{font-size:.62em;color:rgba(255,255,255,.25);margin-left:auto;}
+.swm-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.swm-sum-card{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:13px;padding:10px 11px;position:relative;overflow:hidden;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+}
+.swm-sum-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,rgba(99,102,241,.4),rgba(168,85,247,.3));
+}
+.swm-sum-card.green::before{background:linear-gradient(90deg,rgba(0,230,118,.5),rgba(0,230,118,.2));}
+.swm-sum-card.red::before  {background:linear-gradient(90deg,rgba(255,77,109,.5),rgba(255,77,109,.2));}
+.swm-sum-lbl{font-size:.5em;font-weight:700;letter-spacing:1.1px;text-transform:uppercase;
+  color:rgba(255,255,255,.35);margin-bottom:3px;}
+.swm-sum-val{font-size:.85em;font-weight:800;color:#fff;letter-spacing:-.3px;font-variant-numeric:tabular-nums;}
+.swm-sum-val.green{color:var(--green);}
+.swm-sum-val.red{color:var(--red);}
 
-/* segmented range control — same shape as the portfolio page */
-.sw-seg{display:flex;gap:2px;padding:3px;border-radius:10px;margin-left:auto;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);}
-.sw-seg-btn{min-width:32px;height:23px;padding:0 10px;border-radius:7px;border:1px solid transparent;
-  background:none;color:rgba(255,255,255,.35);cursor:pointer;font-family:inherit;
-  font-size:.58em;font-weight:700;letter-spacing:.6px;transition:all .18s;}
-.sw-seg-btn:hover{color:rgba(255,255,255,.65);}
-.sw-seg-btn.active{background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.32);color:var(--blue);}
-
-/* ── ② balance ── */
-.sw-bal{position:relative;border-radius:18px;padding:20px 22px;margin-bottom:14px;overflow:hidden;
-  background:var(--card);border:1px solid var(--bdr);backdrop-filter:blur(20px);
-  animation:fadeUp .4s ease both;}
-.sw-bal-spark{position:absolute;right:0;bottom:0;width:55%;height:76px;opacity:.16;pointer-events:none;}
-.sw-bal-inner{position:relative;z-index:1;}
-.sw-bal-lbl{font-size:.62em;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;
-  color:rgba(255,255,255,.35);margin-bottom:6px;}
-.sw-bal-amt{font-size:clamp(26px,5vw,40px);font-weight:800;letter-spacing:-1.5px;line-height:1;
+.swm-days{display:flex;flex-direction:column;gap:8px;}
+.swm-day-card{
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);
+  border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:11px;
+  position:relative;overflow:hidden;transition:border-color .15s,background .15s;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+}
+.swm-day-card:hover{background:rgba(255,255,255,.055);border-color:rgba(255,255,255,.13);}
+.swm-day-card::after{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent,var(--blue));}
+.swm-day-tag{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;
+  min-width:34px;padding:4px 0;border-radius:9px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);
+}
+.swm-day-num{font-size:.85em;font-weight:800;color:rgba(255,255,255,.85);line-height:1;}
+.swm-day-dow{font-size:.5em;font-weight:600;letter-spacing:.6px;text-transform:uppercase;
+  color:rgba(255,255,255,.3);margin-top:2px;}
+.swm-day-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.swm-day-ref{font-size:.68em;color:rgba(255,255,255,.62);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.swm-day-ref.none{color:rgba(255,255,255,.22);font-style:italic;}
+.swm-day-legs{display:flex;gap:8px;flex-wrap:wrap;}
+.swm-leg{font-size:.55em;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap;
   font-variant-numeric:tabular-nums;}
-.sw-bal-note{font-size:.68em;color:rgba(255,255,255,.4);margin-top:7px;}
-.sw-bal-note .ok{color:var(--green);}
-.sw-bal-note .warn{color:var(--gold);}
-.sw-bal-stats{display:flex;gap:20px;flex-wrap:wrap;margin-top:15px;padding-top:13px;
-  border-top:1px solid rgba(255,255,255,.06);}
-.sw-st{display:flex;align-items:baseline;gap:6px;font-size:.7em;color:rgba(255,255,255,.35);}
-.sw-st b{font-size:1.25em;font-weight:800;letter-spacing:-.3px;font-variant-numeric:tabular-nums;}
-.sw-st.inn b{color:var(--green);}
-.sw-st.out b{color:var(--red);}
-.sw-st.cnt b{color:var(--blue);}
+.swm-leg.i{background:rgba(0,230,118,.12);color:var(--green);}
+.swm-leg.o{background:rgba(255,77,109,.12);color:var(--red);}
+.swm-day-net{font-size:.82em;font-weight:800;letter-spacing:-.3px;flex-shrink:0;
+  font-variant-numeric:tabular-nums;}
 
-/* ── ③ trend ── */
-.sw-chart-wrap{height:210px;position:relative;padding:14px 16px 10px;}
-.sw-chart-empty{display:flex;align-items:center;justify-content:center;height:100%;
-  color:rgba(255,255,255,.25);font-size:.75em;}
-#sw-trend-card{margin-bottom:14px;animation:fadeUp .4s ease .08s both;}
+.swm-empty{text-align:center;padding:26px 10px;color:rgba(255,255,255,.25);font-size:.72em;}
+.swm-err{text-align:center;padding:22px 10px;color:var(--red);font-size:.72em;}
+.swm-skel{height:52px;border-radius:12px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.05);position:relative;overflow:hidden;}
+.swm-skel::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
+  transform:translateX(-100%);animation:swmSweep 1.4s ease-in-out infinite;}
+@keyframes swmSweep{100%{transform:translateX(100%)}}
 
-/* ── ④ records ── */
-.sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start;
-  animation:fadeUp .4s ease .14s both;}
-.sw-search-wrap{padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.05);}
-.sw-search{width:100%;padding:8px 12px;border-radius:9px;background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.08);color:#fff;font-size:.73em;font-family:inherit;
-  outline:none;transition:border-color .15s;}
-.sw-search:focus{border-color:rgba(0,212,255,.45);background:rgba(255,255,255,.06);}
-.sw-search::placeholder{color:rgba(255,255,255,.25);}
-.sw-table-scroll{overflow-x:auto;}
-.sw-table{width:100%;border-collapse:collapse;font-size:.78em;}
-.sw-table th{padding:9px 12px;text-align:left;font-size:.62em;font-weight:700;letter-spacing:1.5px;
-  text-transform:uppercase;color:rgba(255,255,255,.35);border-bottom:1px solid rgba(255,255,255,.06);
-  background:rgba(255,255,255,.02);white-space:nowrap;}
-.sw-table td{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.04);color:rgba(255,255,255,.8);}
-.sw-table tr:hover td{background:rgba(255,255,255,.03);}
-.sw-table .r{text-align:right;}
-.sw-cell-date{color:rgba(255,255,255,.5);font-weight:500;white-space:nowrap;}
-.sw-cell-amt{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;}
-.sw-cell-green{color:var(--green);}
-.sw-cell-red{color:var(--red);}
-.sw-cell-gold{color:var(--gold);}
-.sw-run{color:rgba(255,255,255,.32);font-variant-numeric:tabular-nums;white-space:nowrap;}
-.sw-cat-badge{font-size:.62em;font-weight:700;letter-spacing:.5px;color:rgba(255,255,255,.5);
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:20px;
-  padding:2px 8px;white-space:nowrap;}
-.sw-desc{display:block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.sw-ref{display:block;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);}
-.sw-day{font-size:.68em;color:rgba(255,255,255,.55);font-weight:600;}
-.sw-dayname{display:block;font-size:.56em;color:rgba(255,255,255,.28);font-weight:500;margin-top:1px;}
-
-.sw-pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
-  padding:10px 16px;border-top:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02);}
-.sw-pag-info{font-size:.62em;color:rgba(255,255,255,.3);}
-.sw-pag-btns{display:flex;align-items:center;gap:6px;}
-.sw-page-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-  color:rgba(255,255,255,.55);border-radius:9px;padding:5px 12px;cursor:pointer;
-  font-size:.62em;font-weight:600;font-family:inherit;text-transform:uppercase;letter-spacing:.3px;transition:all .12s;}
-.sw-page-btn:hover:not(:disabled){color:#fff;background:rgba(255,255,255,.1);}
-.sw-page-btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none;}
-.sw-pag-num{font-size:.62em;font-weight:700;color:rgba(255,255,255,.5);min-width:56px;text-align:center;}
-
-/* month detail head */
-.sw-month-nav{display:flex;align-items:center;gap:6px;margin-left:auto;}
-.sw-month-label{font-size:.7em;font-weight:700;color:rgba(255,255,255,.55);min-width:62px;text-align:right;}
-.sw-nav-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-  color:rgba(255,255,255,.55);border-radius:8px;width:26px;height:26px;cursor:pointer;font-size:10px;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .12s;}
-.sw-nav-btn:hover:not(:disabled){color:#fff;background:rgba(255,255,255,.12);}
-.sw-nav-btn:disabled{opacity:.25;cursor:not-allowed;pointer-events:none;}
-.sw-month-sum{display:flex;gap:18px;flex-wrap:wrap;padding:12px 16px;
-  border-bottom:1px solid rgba(255,255,255,.05);}
-.sw-empty{text-align:center;padding:32px;color:var(--dim);font-size:.78em;}
-
-@media(max-width:980px){ .sw-grid{grid-template-columns:1fr;} }
 @media(max-width:600px){
-  body{padding:14px 12px 28px;}
-  .sw-bal-stats{gap:14px;}
-  .sw-desc{max-width:110px;}
-  .sw-ref{max-width:100px;}
+  #sw-modal{top:8vh;max-height:84vh;}
 }
 @media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;}
+  #sw-modal,.swm-skel::after,.swm-btn.spin span{animation:none!important;}
 }
 </style>
-</head>
-<body>
 
-  <div id="sw-body">
-    <div class="sw-loading"><div class="sw-spinner"></div><div class="sw-loading-txt">Loading Splitwise…</div></div>
+<div id="sw-modal" role="dialog" aria-modal="true" aria-label="Splitwise">
+  <div class="swm-hdr" id="swm-hdr">
+    <span class="swm-title">🤝 Splitwise</span>
+    <div class="swm-hdr-btns">
+      <button class="swm-btn" id="swm-refresh" onclick="swRefresh()" title="Refresh net position"><span>↻</span></button>
+      <button class="swm-btn" onclick="swClose()" title="Close">✕</button>
+    </div>
   </div>
+  <div class="swm-body">
+
+    <div class="swm-net loading" id="swm-net">
+      <div class="swm-net-lbl">Net Position</div>
+      <div class="swm-net-val" id="swm-net-val">—</div>
+      <div class="swm-net-sub" id="swm-net-sub">loading…</div>
+    </div>
+
+    <div class="swm-month-bar">
+      <button class="swm-nav" id="swm-prev" onclick="swMonthNav(-1)" title="Previous month">◀</button>
+      <span class="swm-month-lbl" id="swm-month-lbl">—</span>
+      <button class="swm-nav" id="swm-next" onclick="swMonthNav(1)" title="Next month">▶</button>
+    </div>
+
+    <div id="swm-month"><div class="swm-skel"></div></div>
+
+  </div>
+</div>
 
 <script>
 /* ═══════════════════════════════════════════
-   HELPERS
+   SPLITWISE MODAL
+   Prefetched at app start by swPrefetch() — see render.html onload.
 ═══════════════════════════════════════════ */
-var swCharts = {};
-function swEscErr(e){ return (e && e.message) || e || 'Unknown error'; }
-function swEsc(s){ return (s==null?'':s).toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtAmt(n){ return '₨ ' + Math.abs(Math.round(n||0)).toLocaleString('en-IN'); }
-function swSigned(n){ n = n||0; return (n<0?'− ':n>0?'+ ':'') + fmtAmt(n); }
-function swShort(n){
-  var a = Math.abs(n||0), s = (n||0) < 0 ? '−' : '';
-  if(a >= 1e6) return s + '₨' + (a/1e6).toFixed(2) + 'M';
-  if(a >= 1e3) return s + '₨' + Math.round(a/1e3) + 'K';
-  return s + '₨' + Math.round(a);
-}
-function swTick(v){ var a = Math.abs(v); return '₨' + (a>=1e6 ? (v/1e6).toFixed(1)+'M' : a>=1e3 ? Math.round(v/1e3)+'K' : Math.round(v)); }
-function swDestroyChart(k){ if(swCharts[k]){ try{ swCharts[k].destroy(); }catch(e){} delete swCharts[k]; } }
-function swReduced(){ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
-var SW_TIP = {backgroundColor:'rgba(5,8,15,0.95)',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,
-  titleColor:'#fff',bodyColor:'rgba(255,255,255,0.65)',padding:11};
-var CAT_COLORS = { 'Initial Entry':'#00d4ff', 'Monthly':'#a855f7', 'Adjustment':'#ffd700' };
-function catColor(cat){ return CAT_COLORS[cat] || '#6366f1'; }
+var SW_MON = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var SW_DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+var _swBal      = null;   /* {success, sheetBalance} — null until it lands */
+var _swBalBusy  = false;
+var _swMonthCache = {};   /* 'YYYY-M' -> payload from getSplitwiseMonthEntries */
+var _swM = 0, _swY = 0;   /* month currently shown */
+
+function swFmt(n){ return '₨ ' + Math.abs(Math.round(n||0)).toLocaleString('en-IN'); }
+function swSigned(n){ n = n||0; return (n<0?'− ':n>0?'+ ':'') + swFmt(n); }
+function swEsc(s){ return (s==null?'':s).toString()
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function swKey(m,y){ return y + '-' + m; }
 
 /* ═══════════════════════════════════════════
-   STATE
+   PREFETCH — fired from window.onload, never awaited
 ═══════════════════════════════════════════ */
-var _swBalance = null;      // {success, sheetBalance}
-var _swLedger  = [];        // newest first, straight from the sheet
-var _swSeries  = [];        // oldest first, with a running balance
-var _swFiltered = [];
-var _swPage = 0, _swPs = 15;
-var _swRange = 'all';
-
-var _swMonth = null, _swYear = null;
-var _swMonthCache = {};
-var _swMonthData = null, _swMonthEntries = [], _swMonthPage = 0, _swMonthPs = 10;
-var MON_NAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-var DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-
-/* ═══════════════════════════════════════════
-   SHELL
-═══════════════════════════════════════════ */
-function swShell(){
-  return ''
-  + '<div class="sw-hdr">'
-    + '<div class="pg-corner-title"><span class="pg-ct-icon">🤝</span><span class="pg-ct-text">Splitwise</span></div>'
-    + '<span class="sw-header-sub">Shared money · sheet-tracked</span>'
-    + '<button class="sw-refresh" id="sw-refresh" onclick="swRefresh()">↺ Refresh</button>'
-  + '</div>'
-
-  + '<div id="sw-bal"></div>'
-
-  + '<div class="sw-card" id="sw-trend-card">'
-    + '<div class="card-header">'
-      + '<span class="card-dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></span>'
-      + '<span class="card-title">Balance Trend</span>'
-      + '<div class="sw-seg" id="sw-seg" role="group" aria-label="Range">'
-        + '<button class="sw-seg-btn" type="button" data-range="6m" onclick="swSetRange(\'6m\')">6M</button>'
-        + '<button class="sw-seg-btn" type="button" data-range="1y" onclick="swSetRange(\'1y\')">1Y</button>'
-        + '<button class="sw-seg-btn active" type="button" data-range="all" onclick="swSetRange(\'all\')">All</button>'
-      + '</div>'
-    + '</div>'
-    + '<div class="sw-chart-wrap" id="sw-trend-wrap"><canvas id="swChartTrend"></canvas></div>'
-  + '</div>'
-
-  + '<div class="sw-grid">'
-
-    + '<div class="sw-card">'
-      + '<div class="card-header">'
-        + '<span class="card-dot" style="background:var(--purple);box-shadow:0 0 6px var(--purple)"></span>'
-        + '<span class="card-title">📒 Ledger</span>'
-        + '<span class="card-count" id="sw-count">—</span>'
-      + '</div>'
-      + '<div class="sw-search-wrap"><input class="sw-search" id="sw-search" type="search" placeholder="🔍 Search description, category or date…" oninput="swSetQuery(this.value)"></div>'
-      + '<div class="sw-table-scroll"><table class="sw-table"><thead><tr>'
-        + '<th>Date</th><th>Description</th><th>Category</th><th class="r">Amount</th><th class="r">Balance</th>'
-      + '</tr></thead><tbody id="sw-tbody"></tbody></table></div>'
-      + '<div class="sw-pagination"><span class="sw-pag-info" id="sw-pag-info">—</span>'
-        + '<div class="sw-pag-btns">'
-          + '<button class="sw-page-btn" id="sw-pg-prev" onclick="swLedgerPage(_swPage-1)">◀ Prev</button>'
-          + '<span class="sw-pag-num" id="sw-pg-num">1 / 1</span>'
-          + '<button class="sw-page-btn" id="sw-pg-next" onclick="swLedgerPage(_swPage+1)">Next ▶</button>'
-        + '</div></div>'
-    + '</div>'
-
-    + '<div class="sw-card" id="sw-month-card">'
-      + '<div class="card-header">'
-        + '<span class="card-dot" style="background:var(--gold);box-shadow:0 0 6px var(--gold)"></span>'
-        + '<span class="card-title">📅 Month Detail</span>'
-        + '<div class="sw-month-nav">'
-          + '<span class="sw-month-label" id="sw-month-label">…</span>'
-          + '<button class="sw-nav-btn" id="sw-nav-prev" onclick="swMonthNav(-1)" title="Previous month">◀</button>'
-          + '<button class="sw-nav-btn" id="sw-nav-next" onclick="swMonthNav(1)" title="Next month">▶</button>'
-        + '</div>'
-      + '</div>'
-      + '<div id="sw-month-inner"><div class="sw-loading" style="min-height:160px"><div class="sw-spinner"></div></div></div>'
-    + '</div>'
-
-  + '</div>';
+function swPrefetch(){
+  var now = new Date();
+  if(!_swM){ _swM = now.getMonth() + 1; _swY = now.getFullYear(); }
+  swFetchBalance();
+  swFetchMonth(_swM, _swY);
 }
 
-/* ═══════════════════════════════════════════
-   ② BALANCE
-═══════════════════════════════════════════ */
-function swSparkPath(values, w, h, pad){
-  if(!values || values.length < 2) return null;
-  pad = pad == null ? 4 : pad;
-  var min = Math.min.apply(null, values), max = Math.max.apply(null, values);
-  var span = (max - min) || 1, d = [];
-  for(var i = 0; i < values.length; i++){
-    var x = (i / (values.length - 1)) * w;
-    var y = h - pad - ((values[i] - min) / span) * (h - pad * 2);
-    d.push((i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1));
-  }
-  var line = d.join(' ');
-  return { line:line, area:line + ' L' + w + ',' + h + ' L0,' + h + ' Z' };
-}
-
-function swRenderBalance(){
-  var box = document.getElementById('sw-bal');
-  if(!box) return;
-
-  var ledgerNet = _swSeries.length ? _swSeries[_swSeries.length-1].run : 0;
-  var hasSheet  = !!(_swBalance && _swBalance.success);
-  var bal       = hasSheet ? (parseFloat(_swBalance.sheetBalance) || 0) : ledgerNet;
-  var col       = bal < 0 ? 'var(--red)' : bal > 0 ? 'var(--green)' : '#fff';
-  var state     = bal < -1 ? 'You owe this much overall'
-                : bal >  1 ? 'This much is owed to you'
-                : 'All settled up 🎉';
-
-  /* the one check nothing else does: sheet cell vs the ledger it summarises */
-  var check = '';
-  if(hasSheet){
-    var drift = Math.round((bal - ledgerNet) * 100) / 100;
-    check = Math.abs(drift) < 1
-      ? ' · <span class="ok">✓ sheet matches ledger</span>'
-      : ' · <span class="warn">⚠ sheet is ' + swShort(Math.abs(drift)) + ' ' + (drift > 0 ? 'above' : 'below') + ' the ledger</span>';
-  }
-
-  var inn = 0, out = 0;
-  _swSeries.forEach(function(p){ if(p.amount > 0) inn += p.amount; else out += -p.amount; });
-
-  var spark = '';
-  var sp = swSparkPath(_swSeries.map(function(p){ return p.run; }), 600, 76, 6);
-  if(sp){
-    spark = '<svg class="sw-bal-spark" viewBox="0 0 600 76" preserveAspectRatio="none" aria-hidden="true">'
-      + '<defs><linearGradient id="swSparkG" x1="0" y1="0" x2="0" y2="1">'
-        + '<stop offset="0%" stop-color="#00d4ff" stop-opacity=".85"/>'
-        + '<stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/></linearGradient></defs>'
-      + '<path d="' + sp.area + '" fill="url(#swSparkG)"/>'
-      + '<path d="' + sp.line + '" fill="none" stroke="#00d4ff" stroke-width="2"/></svg>';
-  }
-
-  box.innerHTML = '<div class="sw-bal">' + spark
-    + '<div class="sw-bal-inner">'
-      + '<div class="sw-bal-lbl">Net Position</div>'
-      + '<div class="sw-bal-amt" style="color:' + col + '">' + swSigned(bal) + '</div>'
-      + '<div class="sw-bal-note">' + state + check + '</div>'
-      + '<div class="sw-bal-stats">'
-        + '<span class="sw-st inn">📥 In <b>' + swShort(inn) + '</b></span>'
-        + '<span class="sw-st out">📤 Out <b>' + swShort(out) + '</b></span>'
-        + '<span class="sw-st cnt">🧾 <b>' + _swSeries.length + '</b> entries</span>'
-      + '</div>'
-    + '</div>'
-  + '</div>';
-}
-
-/* ═══════════════════════════════════════════
-   ③ TREND
-═══════════════════════════════════════════ */
-function swRangedSeries(){
-  if(_swRange === 'all' || !_swSeries.length) return _swSeries;
-  var cut = new Date();
-  cut.setMonth(cut.getMonth() - (_swRange === '6m' ? 6 : 12));
-  var t = cut.getTime();
-  var out = _swSeries.filter(function(p){ return p.ts >= t; });
-  return out.length > 1 ? out : _swSeries.slice(-2);
-}
-
-function swSetRange(r){
-  _swRange = r;
-  var btns = document.querySelectorAll('#sw-seg .sw-seg-btn');
-  for(var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i].dataset.range === r);
-  swRenderTrend();
-}
-
-function swRenderTrend(){
-  var wrap = document.getElementById('sw-trend-wrap');
-  if(!wrap) return;
-  swDestroyChart('trend');
-
-  var pts = swRangedSeries();
-  if(pts.length < 2){
-    wrap.innerHTML = '<div class="sw-chart-empty">Not enough ledger data to plot</div>';
-    return;
-  }
-  /* an empty state replaces the canvas, so rebuild it every render */
-  wrap.innerHTML = '<canvas id="swChartTrend"></canvas>';
-  var el = document.getElementById('swChartTrend');
-
-  var ctx  = el.getContext('2d');
-  var fill = ctx.createLinearGradient(0, 0, 0, 200);
-  fill.addColorStop(0, 'rgba(0,212,255,.3)');
-  fill.addColorStop(1, 'rgba(0,212,255,.02)');
-
-  swCharts.trend = new Chart(el, {
-    type:'line',
-    data:{ labels: pts.map(function(p){ return p.date; }), datasets:[{
-      label:'Balance', data: pts.map(function(p){ return p.run; }),
-      borderColor:'#00d4ff', backgroundColor:fill, borderWidth:2.2, fill:true, tension:.3,
-      pointBackgroundColor:'#00d4ff', pointRadius:2, pointHoverRadius:6
-    }]},
-    options:{
-      responsive:true, maintainAspectRatio:false, animation:{ duration: swReduced() ? 0 : 900 },
-      interaction:{ mode:'index', intersect:false },
-      plugins:{
-        legend:{ display:false },
-        tooltip: Object.assign({}, SW_TIP, { callbacks:{ label:function(c){
-          var p = pts[c.dataIndex];
-          var lines = [' Balance ' + swSigned(p.run)];
-          if(p.amount) lines.push(' Entry ' + swSigned(p.amount));
-          if(p.desc)   lines.push(' ' + p.desc);
-          return lines;
-        } } })
-      },
-      scales:{
-        x:{ ticks:{ color:'rgba(255,255,255,.35)', font:{ size:9 }, maxRotation:0, autoSkip:true, maxTicksLimit:6 },
-            grid:{ color:'rgba(255,255,255,.04)' } },
-        y:{ ticks:{ color:'rgba(255,255,255,.4)', font:{ size:9 }, callback:swTick },
-            grid:{ color:'rgba(255,255,255,.04)' } }
-      }
-    }
-  });
-}
-
-/* ═══════════════════════════════════════════
-   ④ LEDGER
-═══════════════════════════════════════════ */
-function swSetQuery(q){
-  q = (q || '').trim().toLowerCase();
-  _swFiltered = !q ? _swLedger.slice() : _swLedger.filter(function(e){
-    return ((e.description||'') + ' ' + (e.category||'') + ' ' + (e.date||'')).toLowerCase().indexOf(q) >= 0;
-  });
-  swLedgerPage(0);
-}
-
-function swLedgerPage(page){
-  var tbody = document.getElementById('sw-tbody');
-  if(!tbody) return;
-
-  var totalPages = Math.max(1, Math.ceil(_swFiltered.length / _swPs));
-  if(page < 0) page = 0;
-  if(page > totalPages - 1) page = totalPages - 1;
-  _swPage = page;
-
-  var start = page * _swPs;
-  var shown = _swFiltered.slice(start, start + _swPs);
-
-  tbody.innerHTML = shown.map(function(e){
-    var cls = e.isError ? 'sw-cell-gold' : e.amount < 0 ? 'sw-cell-red' : e.amount > 0 ? 'sw-cell-green' : '';
-    var amt = e.isError ? '⚠ #ERROR!' : swSigned(e.amount);
-    return '<tr>'
-      + '<td class="sw-cell-date">' + swEsc(e.date) + '</td>'
-      + '<td><span class="sw-desc" title="' + swEsc(e.description) + '">' + (e.description ? swEsc(e.description) : '—') + '</span></td>'
-      + '<td>' + (e.category ? '<span class="sw-cat-badge" style="color:' + catColor(e.category) + '">' + swEsc(e.category) + '</span>' : '—') + '</td>'
-      + '<td class="sw-cell-amt ' + cls + '">' + amt + '</td>'
-      + '<td class="sw-cell-amt"><span class="sw-run">' + (e.run == null ? '—' : swSigned(e.run)) + '</span></td>'
-      + '</tr>';
-  }).join('') || '<tr><td colspan="5" class="sw-empty">🔍 No entries match.</td></tr>';
-
-  var cnt = document.getElementById('sw-count');
-  if(cnt) cnt.textContent = _swLedger.length + ' entries';
-  var info = document.getElementById('sw-pag-info');
-  if(info) info.textContent = _swFiltered.length
-    ? 'Showing ' + (start+1) + '–' + Math.min(start+_swPs, _swFiltered.length) + ' of ' + _swFiltered.length
-    : '0 entries';
-  var num = document.getElementById('sw-pg-num');
-  if(num) num.textContent = (page+1) + ' / ' + totalPages;
-  var prev = document.getElementById('sw-pg-prev');
-  if(prev) prev.disabled = (page <= 0);
-  var next = document.getElementById('sw-pg-next');
-  if(next) next.disabled = (page >= totalPages - 1);
-}
-
-/* ═══════════════════════════════════════════
-   ④ MONTH DETAIL
-═══════════════════════════════════════════ */
-function swMonthNav(dir){
-  _swMonth += dir;
-  if(_swMonth > 12){ _swMonth = 1;  _swYear++; }
-  if(_swMonth < 1) { _swMonth = 12; _swYear--; }
-  swLoadMonth();
-}
-
-function swLoadMonth(){
-  var key  = _swYear + '-' + _swMonth;
-  var now  = new Date();
-  var nowM = now.getMonth() + 1, nowY = now.getFullYear();
-
-  var label = document.getElementById('sw-month-label');
-  if(label) label.textContent = MON_NAMES[_swMonth] + ' ' + _swYear;
-  var nextBtn = document.getElementById('sw-nav-next');
-  if(nextBtn) nextBtn.disabled = (_swYear > nowY || (_swYear === nowY && _swMonth >= nowM));
-
-  _swMonthPage = 0;
-  if(_swMonthCache[key]){ swRenderMonth(_swMonthCache[key]); return; }
-
-  var inner = document.getElementById('sw-month-inner');
-  if(inner) inner.innerHTML = '<div class="sw-loading" style="min-height:160px"><div class="sw-spinner"></div></div>';
-
-  var reqM = _swMonth, reqY = _swYear;
+function swFetchBalance(cb){
+  if(_swBalBusy){ if(cb) cb(); return; }
+  _swBalBusy = true;
   google.script.run
-    .withSuccessHandler(function(data){
-      _swMonthCache[reqY + '-' + reqM] = data;
-      if(_swMonth === reqM && _swYear === reqY) swRenderMonth(data);
-    })
-    .withFailureHandler(function(err){
-      var b = document.getElementById('sw-month-inner');
-      if(b) b.innerHTML = '<div class="error-box">⚠ ' + swEscErr(err) + '</div>';
-    })
-    .getSplitwiseMonthEntries(_swMonth, _swYear);
+    .withSuccessHandler(function(d){ _swBal = d; _swBalBusy = false; swPaintNet(); if(cb) cb(); })
+    .withFailureHandler(function(e){ _swBal = { success:false, error:(e && e.message) || e };
+                                     _swBalBusy = false; swPaintNet(); if(cb) cb(); })
+    .getSplitwiseSheetBalance();
 }
 
-function swRenderMonth(data){
-  var inner = document.getElementById('sw-month-inner');
-  if(!inner) return;
-  if(!data || !data.success){
-    inner.innerHTML = '<div class="error-box">⚠ ' + swEsc((data && data.error) || 'Failed to load') + '</div>';
+/* one flight per month — a second ask while it is in the air just waits */
+function swFetchMonth(m, y, force){
+  var k = swKey(m, y);
+  var hit = _swMonthCache[k];
+  if(hit && !force){
+    if(hit.pending) return;          /* already on the wire */
+    swPaintMonth(m, y);
     return;
   }
-  _swMonthData    = data;
-  _swMonthEntries = data.entries || [];
+  _swMonthCache[k] = { pending:true };
+  google.script.run
+    .withSuccessHandler(function(d){
+      _swMonthCache[k] = d || { success:false, error:'Empty response' };
+      if(_swM === m && _swY === y) swPaintMonth(m, y);
+    })
+    .withFailureHandler(function(e){
+      _swMonthCache[k] = { success:false, error:(e && e.message) || e };
+      if(_swM === m && _swY === y) swPaintMonth(m, y);
+    })
+    .getSplitwiseMonthEntries(m, y);
+}
+
+/* ═══════════════════════════════════════════
+   ② NET POSITION
+═══════════════════════════════════════════ */
+function swPaintNet(){
+  var box = document.getElementById('swm-net');
+  var val = document.getElementById('swm-net-val');
+  var sub = document.getElementById('swm-net-sub');
+  if(!box || !val || !sub) return;
+
+  if(!_swBal){ box.classList.add('loading'); val.textContent = '—'; sub.textContent = 'loading…'; return; }
+  box.classList.remove('loading');
+
+  if(!_swBal.success){
+    val.textContent = '—';
+    val.style.color = 'var(--red)';
+    sub.textContent = '⚠ ' + swEsc(_swBal.error || 'could not read the sheet');
+    return;
+  }
+  var bal = parseFloat(_swBal.sheetBalance) || 0;
+  val.textContent  = swSigned(bal);
+  val.style.color  = bal < 0 ? 'var(--red)' : bal > 0 ? 'var(--green)' : '#fff';
+  sub.textContent  = bal < -1 ? 'You owe this much overall'
+                   : bal >  1 ? 'This much is owed to you'
+                   : 'All settled up 🎉';
+}
+
+/* ═══════════════════════════════════════════
+   ③ MONTH DETAIL — newest day first
+═══════════════════════════════════════════ */
+function swPaintMonthLabel(){
+  var lbl = document.getElementById('swm-month-lbl');
+  if(lbl) lbl.textContent = SW_MON[_swM] + ' ' + _swY;
+  var now = new Date();
+  var next = document.getElementById('swm-next');
+  if(next) next.disabled = (_swY > now.getFullYear() ||
+                           (_swY === now.getFullYear() && _swM >= now.getMonth() + 1));
+}
+
+function swPaintMonth(m, y){
+  var box = document.getElementById('swm-month');
+  if(!box) return;
+  swPaintMonthLabel();
+
+  var data = _swMonthCache[swKey(m, y)];
+  if(!data || data.pending){ box.innerHTML = '<div class="swm-skel"></div>'; return; }
+  if(!data.success){
+    box.innerHTML = '<div class="swm-err">⚠ ' + swEsc(data.error || 'Failed to load') + '</div>';
+    return;
+  }
 
   var iPaid = data.totalIPaid || 0, other = data.totalOther || 0;
   var net   = iPaid - other;
-  var netCol = net < 0 ? 'var(--red)' : net > 0 ? 'var(--green)' : '#fff';
+  var netCls = net < 0 ? 'red' : net > 0 ? 'green' : '';
 
-  inner.innerHTML =
-      '<div class="sw-month-sum">'
-      + '<span class="sw-st inn">I covered <b>' + swShort(iPaid) + '</b></span>'
-      + '<span class="sw-st out">They covered <b>' + swShort(other) + '</b></span>'
-      + '<span class="sw-st">Net <b style="color:' + netCol + '">' + swSigned(net) + '</b></span>'
-    + '</div>'
-    + '<div class="sw-table-scroll"><table class="sw-table"><thead><tr>'
-      + '<th>Day</th><th class="r">I Paid</th><th class="r">They Paid</th><th>Reference</th>'
-    + '</tr></thead><tbody id="sw-month-tbody"></tbody></table></div>'
-    + '<div class="sw-pagination"><span class="sw-pag-info" id="sw-month-pag-info">—</span>'
-      + '<div class="sw-pag-btns">'
-        + '<button class="sw-page-btn" id="sw-month-pg-prev" onclick="swMonthTablePage(_swMonthPage-1)">◀ Prev</button>'
-        + '<span class="sw-pag-num" id="sw-month-pg-num">1 / 1</span>'
-        + '<button class="sw-page-btn" id="sw-month-pg-next" onclick="swMonthTablePage(_swMonthPage+1)">Next ▶</button>'
-      + '</div></div>';
+  var html = '<div class="swm-sum">'
+    + '<div class="swm-sum-card green"><div class="swm-sum-lbl">I Covered</div>'
+      + '<div class="swm-sum-val green">' + swFmt(iPaid) + '</div></div>'
+    + '<div class="swm-sum-card red"><div class="swm-sum-lbl">They Covered</div>'
+      + '<div class="swm-sum-val red">' + swFmt(other) + '</div></div>'
+    + '<div class="swm-sum-card"><div class="swm-sum-lbl">Net</div>'
+      + '<div class="swm-sum-val ' + netCls + '">' + swSigned(net) + '</div></div>'
+  + '</div>';
 
-  swMonthTablePage(0);
-}
+  /* month end → start, the way the sheet is read back */
+  var days = (data.entries || []).slice().sort(function(a, b){ return b.day - a.day; });
 
-function swMonthTablePage(page){
-  var data = _swMonthData, entries = _swMonthEntries;
-  if(!data) return;
-
-  var totalPages = Math.max(1, Math.ceil(entries.length / _swMonthPs));
-  if(page < 0) page = 0;
-  if(page > totalPages - 1) page = totalPages - 1;
-  _swMonthPage = page;
-
-  var tbody = document.getElementById('sw-month-tbody');
-  if(!tbody) return;
-
-  if(!entries.length){
-    tbody.innerHTML = '<tr><td colspan="4" class="sw-empty">No entries for ' + MON_NAMES[data.month] + ' ' + data.year + '.</td></tr>';
+  if(!days.length){
+    html += '<div class="swm-empty">No entries in ' + SW_MON[m] + ' ' + y + '.</div>';
   } else {
-    var start = page * _swMonthPs;
-    tbody.innerHTML = entries.slice(start, start + _swMonthPs).map(function(e){
-      var dayName = DAY_NAMES[new Date(data.year, data.month - 1, e.day).getDay()];
-      return '<tr>'
-        + '<td><span class="sw-day">' + e.day + '</span><span class="sw-dayname">' + dayName + '</span></td>'
-        + '<td class="sw-cell-amt' + (e.iPaid>0?' sw-cell-green':'') + '">' + (e.iPaid>0?fmtAmt(e.iPaid):'—') + '</td>'
-        + '<td class="sw-cell-amt' + (e.otherPaid>0?' sw-cell-red':'') + '">' + (e.otherPaid>0?fmtAmt(e.otherPaid):'—') + '</td>'
-        + '<td><span class="sw-ref" title="' + swEsc(e.reference) + '">' + (e.reference ? swEsc(e.reference) : '—') + '</span></td>'
-        + '</tr>';
-    }).join('');
+    html += '<div class="swm-days">' + days.map(function(e){
+      var dNet = (e.iPaid || 0) - (e.otherPaid || 0);
+      var col  = dNet < 0 ? 'var(--red)' : dNet > 0 ? 'var(--green)' : 'rgba(255,255,255,.5)';
+      var dow  = SW_DOW[new Date(y, m - 1, e.day).getDay()];
+      var legs = '';
+      if(e.iPaid > 0)     legs += '<span class="swm-leg i">I paid ' + swFmt(e.iPaid) + '</span>';
+      if(e.otherPaid > 0) legs += '<span class="swm-leg o">They paid ' + swFmt(e.otherPaid) + '</span>';
+      return '<div class="swm-day-card" style="--accent:' + col + '">'
+        + '<div class="swm-day-tag"><span class="swm-day-num">' + e.day + '</span>'
+          + '<span class="swm-day-dow">' + dow + '</span></div>'
+        + '<div class="swm-day-mid">'
+          + '<span class="swm-day-ref' + (e.reference ? '' : ' none') + '" title="' + swEsc(e.reference) + '">'
+            + (e.reference ? swEsc(e.reference) : 'no reference') + '</span>'
+          + '<span class="swm-day-legs">' + legs + '</span>'
+        + '</div>'
+        + '<span class="swm-day-net" style="color:' + col + '">' + swSigned(dNet) + '</span>'
+      + '</div>';
+    }).join('') + '</div>';
   }
 
-  var start2 = page * _swMonthPs;
-  var info = document.getElementById('sw-month-pag-info');
-  if(info) info.textContent = entries.length
-    ? 'Showing ' + (start2+1) + '–' + Math.min(start2+_swMonthPs, entries.length) + ' of ' + entries.length
-    : '0 entries';
-  var num = document.getElementById('sw-month-pg-num');
-  if(num) num.textContent = (page+1) + ' / ' + totalPages;
-  var prev = document.getElementById('sw-month-pg-prev');
-  if(prev) prev.disabled = (page <= 0);
-  var next = document.getElementById('sw-month-pg-next');
-  if(next) next.disabled = (page >= totalPages - 1);
+  box.innerHTML = html;
+}
+
+function swMonthNav(dir){
+  _swM += dir;
+  if(_swM > 12){ _swM = 1;  _swY++; }
+  if(_swM < 1) { _swM = 12; _swY--; }
+  swPaintMonthLabel();
+  var box = document.getElementById('swm-month');
+  var cached = _swMonthCache[swKey(_swM, _swY)];
+  if(box && (!cached || cached.pending)) box.innerHTML = '<div class="swm-skel"></div>';
+  swFetchMonth(_swM, _swY);
 }
 
 /* ═══════════════════════════════════════════
-   LOAD
+   OPEN · CLOSE · REFRESH
 ═══════════════════════════════════════════ */
-function swBuildSeries(){
-  var asc = _swLedger.filter(function(e){ return !e.isError && e.rawDate; })
-                     .slice().sort(function(a,b){ return a.rawDate - b.rawDate; });
-  var run = 0;
-  _swSeries = asc.map(function(e){
-    run += e.amount;
-    e.run = Math.round(run * 100) / 100;   /* the ledger table reads this back */
-    return { date:e.date, ts:e.rawDate, run:e.run, amount:e.amount, desc:e.description };
-  });
-}
+function swToggle(){
+  var p = document.getElementById('sw-modal');
+  if(!p) return;
+  if(p.classList.contains('open')){ swClose(); return; }
 
-function swRenderAll(){
-  Chart.defaults.color = 'rgba(255,255,255,0.4)';
-  Chart.defaults.font.family = 'Inter';
-  swBuildSeries();
-  swRenderBalance();
-  swRenderTrend();
-  _swFiltered = _swLedger.slice();
-  swLedgerPage(0);
-}
-
-/* both calls land before anything paints, so the sheet-vs-ledger
-   check is always made on a matched pair */
-function swFetchAll(done){
-  var pending = 2;
-  var step = function(){ if(--pending === 0){ swRenderAll(); if(done) done(); } };
-
-  google.script.run
-    .withSuccessHandler(function(data){ _swBalance = data; step(); })
-    .withFailureHandler(function(err){ _swBalance = { success:false, error:swEscErr(err) }; step(); })
-    .getSplitwiseSheetBalance();
-
-  google.script.run
-    .withSuccessHandler(function(data){
-      if(!data || !data.success){
-        _swLedger = [];
-        var host = document.getElementById('sw-bal');
-        if(host) host.innerHTML = '<div class="error-box">⚠ ' + swEsc((data && data.error) || 'Failed to load ledger') + '</div>';
-      } else {
-        _swLedger = data.entries || [];
-      }
-      step();
-    })
-    .withFailureHandler(function(err){
-      _swLedger = [];
-      var host = document.getElementById('sw-bal');
-      if(host) host.innerHTML = '<div class="error-box">⚠ ' + swEscErr(err) + '</div>';
-      step();
-    })
-    .getSplitwiseLedger();
-}
-
-function swRefresh(){
-  var btn = document.getElementById('sw-refresh');
-  if(btn) btn.disabled = true;
-  _swMonthCache = {};
-  swFetchAll(function(){ if(btn) btn.disabled = false; });
-  swLoadMonth();
-}
-
-function swLoad(){
   var now = new Date();
-  _swMonth = now.getMonth() + 1;
-  _swYear  = now.getFullYear();
+  if(!_swM){ _swM = now.getMonth() + 1; _swY = now.getFullYear(); }
+  p.classList.add('open');
 
-  document.getElementById('sw-body').innerHTML = swShell();
-  swFetchAll();
-  swLoadMonth();
+  /* paint whatever the prefetch already has, then fill the gaps */
+  swPaintNet();
+  swPaintMonth(_swM, _swY);
+  if(!_swBal) swFetchBalance();
+  swFetchMonth(_swM, _swY);
 }
 
-swLoad();
-</script>
+function swClose(){
+  var p = document.getElementById('sw-modal');
+  if(p) p.classList.remove('open');
+}
 
-</body>
-</html>
+/* the net position is one cell read — refresh it on its own, fast,
+   and pull the visible month behind it */
+function swRefresh(){
+  var btn = document.getElementById('swm-refresh');
+  if(btn) btn.classList.add('spin');
+  swFetchBalance(function(){ if(btn) btn.classList.remove('spin'); });
+  swFetchMonth(_swM, _swY, true);
+  var box = document.getElementById('swm-month');
+  if(box) box.innerHTML = '<div class="swm-skel"></div>';
+}
+
+/* ── Esc closes, header drags ── */
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Escape') return;
+  var p = document.getElementById('sw-modal');
+  if(p && p.classList.contains('open')) swClose();
+});
+
+document.addEventListener('DOMContentLoaded', function(){
+  var panel = document.getElementById('sw-modal');
+  if(!panel) return;
+  var bar = document.getElementById('swm-hdr');
+  if(!bar) return;
+  var drag = false, ox = 0, oy = 0;
+
+  function start(cx, cy){
+    var r = panel.getBoundingClientRect();
+    /* drop the centring transform on first drag so left/top are absolute */
+    panel.style.transform = 'none';
+    panel.style.left = r.left + 'px';
+    panel.style.top  = r.top  + 'px';
+    ox = cx - r.left; oy = cy - r.top; drag = true;
+    bar.style.cursor = 'grabbing';
+  }
+  function move(cx, cy){
+    if(!drag) return;
+    var maxX = window.innerWidth  - panel.offsetWidth;
+    var maxY = window.innerHeight - panel.offsetHeight;
+    panel.style.left = Math.max(0, Math.min(cx - ox, maxX)) + 'px';
+    panel.style.top  = Math.max(0, Math.min(cy - oy, maxY)) + 'px';
+  }
+  function end(){ drag = false; bar.style.cursor = 'grab'; }
+
+  bar.addEventListener('mousedown', function(e){ if(e.target.closest('button')) return; start(e.clientX, e.clientY); });
+  document.addEventListener('mousemove', function(e){ move(e.clientX, e.clientY); });
+  document.addEventListener('mouseup', end);
+  bar.addEventListener('touchstart', function(e){ if(e.target.closest('button')) return;
+    var t = e.touches[0]; start(t.clientX, t.clientY); }, { passive:true });
+  document.addEventListener('touchmove', function(e){ if(!drag) return; e.preventDefault();
+    var t = e.touches[0]; move(t.clientX, t.clientY); }, { passive:false });
+  document.addEventListener('touchend', end);
+});
+</script>
