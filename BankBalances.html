@@ -6,7 +6,7 @@
      of each other. Four zones now, each an anchor of the tab rail:
 
        ① command bar   pinned · live USD/LKR · save · reload
-       ② overview      hero + donut + allocation ribbon + 4 KPIs
+       ② overview      hero + concentric arc dial + ring rows + 3 KPIs
        ③ passbooks     a shelf of bound savings books; open one and
                        its two-leaf spread carries the balance (left)
                        and its ruled ledger (right)
@@ -27,7 +27,7 @@
 
      Talks to render.html through four hooks only:
        in  — bankLoad() · #bank-root      (_doShowPage, reloadPage)
-       out — haptic() · Chart (global) · reloadPage('port')
+       out — haptic() · reloadPage('port')
 
      moneyToggle() is redefined here as showPage('bank'), so the 💵
      button in every page header and the tool-wheel spoke keep working.
@@ -124,7 +124,7 @@
   content:'';position:absolute;top:-70px;right:-50px;width:230px;height:230px;border-radius:50%;
   background:radial-gradient(circle,rgba(0,212,255,.18),transparent 68%);pointer-events:none;
 }
-#page-bank .bk-hero-in{position:relative;z-index:1;display:grid;grid-template-columns:1fr 188px;gap:24px;align-items:center;}
+#page-bank .bk-hero-in{position:relative;z-index:1;display:grid;grid-template-columns:268px 1fr;gap:32px;align-items:center;}
 #page-bank .bk-hero-lbl{
   display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;
   letter-spacing:2.6px;text-transform:uppercase;color:var(--bk-mut);
@@ -141,22 +141,31 @@
 }
 #page-bank .bk-hero-usd{margin-top:5px;font-size:13px;font-weight:600;color:var(--bk-green);font-variant-numeric:tabular-nums;}
 #page-bank .bk-hero-usd em{font-style:normal;color:var(--bk-faint);font-weight:500;}
-#page-bank .bk-hero-meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:15px;}
-#page-bank .bk-hm{display:flex;flex-direction:column;gap:2px;}
-#page-bank .bk-hm-k{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--bk-faint);}
-#page-bank .bk-hm-v{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--bk-ink);}
-#page-bank .bk-donut{position:relative;height:172px;}
+/* ── the arc dial ──────────────────────────────────────────────
+   One ring per account, outermost first, each swept to its share of
+   the total. Beyond four holdings the tail is folded into a single
+   "Other" ring: a fifth hairline ring reads as noise, and the rows
+   beside the dial name what went into it. Drawn as plain SVG — the
+   page no longer loads Chart.js for this. */
+#page-bank .bk-arcs{position:relative;width:268px;height:268px;}
+#page-bank .bk-arcs svg{display:block;width:100%;height:100%;overflow:visible;}
+#page-bank .bk-arc{transition:stroke-dasharray .55s cubic-bezier(.22,1,.36,1);}
+#page-bank .bk-arc:hover{filter:brightness(1.28);}
 
-#page-bank .bk-ribbon{display:flex;height:13px;border-radius:7px;overflow:hidden;background:rgba(255,255,255,.05);}
-#page-bank .bk-ribbon div{transition:filter .2s;cursor:pointer;}
-#page-bank .bk-ribbon div:hover{filter:brightness(1.35);}
-#page-bank .bk-rkey{display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:10px;}
-#page-bank .bk-rk{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--bk-ink2);}
-#page-bank .bk-rk i{width:9px;height:9px;border-radius:3px;flex:0 0 auto;}
-#page-bank .bk-rk b{font-weight:700;color:var(--bk-ink);}
-#page-bank .bk-rk span{color:var(--bk-faint);font-variant-numeric:tabular-nums;}
+#page-bank .bk-rings{margin-top:16px;}
+#page-bank .bk-ring{
+  display:flex;align-items:center;gap:10px;padding:8px 0;
+  border-bottom:1px solid var(--bk-bdr);
+}
+#page-bank .bk-ring:last-child{border-bottom:0;}
+#page-bank .bk-ring i{width:10px;height:10px;border-radius:3px;flex:0 0 auto;}
+#page-bank .bk-ring b{flex:1 1 auto;min-width:0;font-size:12px;font-weight:700;color:var(--bk-ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-bank .bk-ring-amt{font-size:12px;color:var(--bk-mut);font-variant-numeric:tabular-nums;}
+#page-bank .bk-ring-pct{font-size:13px;font-weight:800;color:var(--bk-ink);
+  font-variant-numeric:tabular-nums;min-width:48px;text-align:right;}
 
-#page-bank .bk-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px;}
+#page-bank .bk-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
 #page-bank .bk-kpi{
   padding:13px 15px;border-radius:16px;background:var(--bk-panel);border:1px solid var(--bk-bdr);
   display:flex;flex-direction:column;gap:3px;
@@ -671,9 +680,9 @@
 
 /* ═══ RESPONSIVE ══════════════════════════════════════════════ */
 @media(max-width:860px){
-  #page-bank .bk-hero-in{grid-template-columns:1fr;}
-  #page-bank .bk-donut{height:180px;max-width:250px;width:100%;margin:0 auto;}
-  #page-bank .bk-kpis{grid-template-columns:repeat(2,1fr);}
+  #page-bank .bk-hero-in{grid-template-columns:1fr;gap:18px;}
+  #page-bank .bk-arcs{width:240px;height:240px;margin:0 auto;}
+  #page-bank .bk-kpis{grid-template-columns:1fr;}
   #page-bank .bk-move{grid-template-columns:1fr;}
   /* a two-page spread does not fit — the book becomes one page,
      inside cover stacked above the ledger, gutter shadow dropped */
@@ -769,7 +778,6 @@ var _bkTxns    = [];
 var _bkExtras  = [];
 var _bkRate    = 0;
 var _bkDirty   = {};
-var _bkDonut   = null;
 var _bkEditRow = -1;
 var _bkOpenBook = -1;   /* index of the passbook currently open, -1 = shelf */
 var _bkPage    = 1;
@@ -790,14 +798,19 @@ const _BK_PAGE_SIZE = 20;
       (EXP_CAT_COLORS / EXP_FALLBACK in render.html) so a bank reads the
       same weight as a spend category. These are the muted 500-level
       hues, not the neon accents — the neon stays for UI chrome only. ── */
-var _BK_PALETTE = ['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981',
-                   '#ec4899','#f97316','#ef4444','#84cc16','#64748b'];
+/* None of these may equal a colour in _BK_KNOWN below, or an unnamed
+   account can come out the same shade as COMMERCIAL or SAMPATH. */
+var _BK_PALETTE = ['#f97316','#ec4899','#38bdf8','#84cc16','#c084fc',
+                   '#2dd4bf','#facc15','#94a3b8'];
 var _BK_KNOWN = {
-  'boc':        {c:'#f59e0b', fg:'#1f2937', full:'Bank of Ceylon'},
-  'hnb':        {c:'#6366f1', fg:'#ffffff', full:'Hatton National'},
-  'commercial': {c:'#06b6d4', fg:'#04222b', full:'Commercial Bank'},
-  'sampath':    {c:'#ef4444', fg:'#ffffff', full:'Sampath Bank'},
-  'ntb':        {c:'#10b981', fg:'#04120a', full:'Nations Trust'}
+  /* Re-stepped so every pair clears the colour-blind separation floor:
+     the old orange/red (NDB vs SAMPATH) and cyan/green (COMMERCIAL vs NTB)
+     were indistinguishable to a deuteranope, and near-identical to anyone. */
+  'boc':        {c:'#d97f0a', fg:'#1f2937', full:'Bank of Ceylon'},
+  'hnb':        {c:'#8b5cf6', fg:'#ffffff', full:'Hatton National'},
+  'commercial': {c:'#0aa8c7', fg:'#04222b', full:'Commercial Bank'},
+  'sampath':    {c:'#f2385a', fg:'#ffffff', full:'Sampath Bank'},
+  'ntb':        {c:'#4ade80', fg:'#04120a', full:'Nations Trust'}
 };
 function bkStyle(name){
   var n = String(name || '').toLowerCase();
@@ -915,12 +928,27 @@ function bkFetchRate(){
       _bkRate = parseFloat(r) || 0;
       badge.classList.remove('loading');
       val.textContent = _bkRate > 0 ? _bkRate.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : 'N/A';
-      if (_bkBuilt){ bkRenderOverview(); bkRenderAccounts(); bkRefreshTransfer(); bkConvFromUsd(); }
+      /* patch only the USD captions — a full re-render here made the hero
+         and the passbooks flash a second time right after first paint */
+      if (_bkBuilt){ bkPaintUsd(); bkRefreshTransfer(); bkConvFromUsd(); }
     })
     .withFailureHandler(function(){
       _bkRate = 0; badge.classList.remove('loading'); val.textContent = 'N/A';
     })
     .getUsdToLkrRate();
+}
+
+/* every element that prints a USD figure carries its LKR amount on
+   data-lkr, so the rate can land without redrawing whole sections */
+function bkPaintUsd(){
+  var nodes = document.querySelectorAll('[data-lkr]');
+  for (var i = 0; i < nodes.length; i++){
+    var el = nodes[i], amt = parseFloat(el.getAttribute('data-lkr')) || 0;
+    var tail = el.getAttribute('data-usd-tail') || '';
+    el.innerHTML = (_bkRate > 0 ? '\u2248 ' + bkUsd(amt / _bkRate) + ' USD' : '\u2248 \u2014 USD') + tail;
+  }
+  var rateHost = document.getElementById('bkHeroRate');
+  if (rateHost) rateHost.innerHTML = _bkRate > 0 ? ' <em>@ ' + _bkRate.toFixed(2) + '</em>' : '';
 }
 
 /* ═══ BUILD — the page shell is written once, sections re-render ═ */
@@ -951,44 +979,35 @@ function bkRenderOverview(){
   }
 
   var sorted = _bkData.slice().sort(function(a,b){ return b.amount - a.amount; });
-  var top = sorted[0];
   var stats = bkTxnStats();
+  var rings = bkRings(sorted, total);
 
   host.innerHTML =
     '<div class="bk-hero">' +
       '<div class="bk-hero-in">' +
+        '<div class="bk-arcs">' + bkArcSvg(rings, total) + '</div>' +
         '<div>' +
           '<div class="bk-hero-lbl"><i></i>Total liquid balance · ' + _bkData.length + ' account' + (_bkData.length === 1 ? '' : 's') + '</div>' +
           '<div class="bk-hero-amt">' + bkLkr(total, 2) + '</div>' +
-          '<div class="bk-hero-usd">' + (_bkRate > 0
-              ? '≈ ' + bkUsd(total / _bkRate) + ' USD <em>@ ' + _bkRate.toFixed(2) + '</em>'
-              : '≈ — USD') + '</div>' +
-          '<div class="bk-hero-meta">' +
-            '<div class="bk-hm"><span class="bk-hm-k">Moved · 30 days</span><span class="bk-hm-v">' + bkLkr(stats.moved30) + '</span></div>' +
-            '<div class="bk-hm"><span class="bk-hm-k">Transfers · 30 days</span><span class="bk-hm-v">' + stats.count30 + '</span></div>' +
-            '<div class="bk-hm"><span class="bk-hm-k">Largest hold</span><span class="bk-hm-v">' + bkEsc(top.source) + ' · ' + bkPct(top.amount, total) + '</span></div>' +
+          '<div class="bk-hero-usd" data-lkr="' + total + '" data-usd-tail="<span id=&quot;bkHeroRate&quot;></span>">' +
+              (_bkRate > 0 ? '≈ ' + bkUsd(total / _bkRate) + ' USD' : '≈ — USD') +
+              '<span id="bkHeroRate">' + (_bkRate > 0 ? ' <em>@ ' + _bkRate.toFixed(2) + '</em>' : '') + '</span>' +
           '</div>' +
-        '</div>' +
-        '<div class="bk-donut">' +
-          '<canvas id="bkDonut"></canvas>' +
+          '<div class="bk-rings">' + rings.map(function(r){
+              return '<div class="bk-ring" title="' + bkEsc(r.title) + '">' +
+                '<i style="background:' + r.c + '"></i>' +
+                '<b>' + bkEsc(r.name) + '</b>' +
+                '<span class="bk-ring-amt">' + bkLkr(r.amount) + '</span>' +
+                '<span class="bk-ring-pct">' + bkPct(r.amount, total) + '</span></div>';
+            }).join('') + '</div>' +
         '</div>' +
       '</div>' +
     '</div>' +
 
     '<div class="bk-panel">' +
-      '<div class="bk-panel-hdr"><i style="background:var(--bk-cyan)"></i>Allocation</div>' +
-      '<div class="bk-ribbon">' + sorted.map(function(b){
-          return '<div style="flex:' + Math.max(b.amount, 0.0001) + ';background:' + bkStyle(b.source).c + '" ' +
-                 'title="' + bkEsc(b.source) + ' · ' + bkPct(b.amount, total) + '"></div>';
-        }).join('') + '</div>' +
-      '<div class="bk-rkey">' + sorted.map(function(b){
-          return '<span class="bk-rk"><i style="background:' + bkStyle(b.source).c + '"></i>' +
-                 '<b>' + bkEsc(b.source) + '</b><span>' + bkPct(b.amount, total) + '</span></span>';
-        }).join('') + '</div>' +
+      '<div class="bk-panel-hdr"><i style="background:var(--bk-cyan)"></i>Activity' +
+        '<span class="bk-panel-sub">last 30 days</span></div>' +
       '<div class="bk-kpis">' +
-        '<div class="bk-kpi"><span class="bk-kpi-k">Largest account</span>' +
-          '<span class="bk-kpi-v">' + bkEsc(top.source) + '</span>' +
-          '<span class="bk-kpi-s">' + bkLkr(top.amount) + ' · ' + bkPct(top.amount, total) + '</span></div>' +
         '<div class="bk-kpi"><span class="bk-kpi-k">Moved · 30 days</span>' +
           '<span class="bk-kpi-v">' + bkLkr(stats.moved30) + '</span>' +
           '<span class="bk-kpi-s">across ' + stats.count30 + ' transfer' + (stats.count30 === 1 ? '' : 's') + '</span></div>' +
@@ -1007,7 +1026,6 @@ function bkRenderOverview(){
       '</div>' +
     '</div>';
 
-  bkDrawDonut(total);
 }
 
 
@@ -1034,62 +1052,61 @@ function bkTxnStats(){
   return {moved30:moved30, count30:count30, last:last, idle:idle, lastPer:lastPer};
 }
 
-/* A plain pie. The hero already carries the total, so the chart does not
-   need a hollow centre to hold one — every slice runs to the middle and
-   the share is printed on any slice with room for it. */
-function bkDrawDonut(total){
-  var cv = document.getElementById('bkDonut');
-  if (!cv || typeof Chart === 'undefined') return;
-  if (_bkDonut){ _bkDonut.destroy(); _bkDonut = null; }
-  var sorted = _bkData.slice().sort(function(a,b){ return b.amount - a.amount; });
+/* ═══ THE ARC DIAL ════════════════════════════════════════════
+   Concentric rings, one per holding, outermost = largest. Each ring
+   is a full track with a coloured arc swept over it, so a 0.1%
+   account is still a visible tick on its own circle instead of a
+   sub-pixel pie slice. Past four holdings the tail folds into one
+   "Other" ring — its members are listed in its tooltip.
+═══════════════════════════════════════════════════════════════ */
+var BK_MAX_RINGS = 4;
 
-  /* percentage labels, drawn straight onto the slices */
-  var sliceLabels = {
-    id:'bkSliceLabels',
-    afterDatasetsDraw:function(chart){
-      var meta = chart.getDatasetMeta(0), ctx = chart.ctx;
-      ctx.save();
-      ctx.font = '800 11px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      meta.data.forEach(function(arc, i){
-        var v = chart.data.datasets[0].data[i];
-        if (!total || v / total < 0.07) return;        /* no room — skip it */
-        var mid = (arc.startAngle + arc.endAngle) / 2;
-        var r   = arc.outerRadius * 0.64;
-        var x   = arc.x + Math.cos(mid) * r;
-        var y   = arc.y + Math.sin(mid) * r;
-        ctx.fillStyle = 'rgba(255,255,255,.92)';
-        ctx.shadowColor = 'rgba(0,0,0,.45)';
-        ctx.shadowBlur = 3;
-        ctx.fillText((v / total * 100).toFixed(0) + '%', x, y);
-      });
-      ctx.restore();
-    }
-  };
-
-  _bkDonut = new Chart(cv.getContext('2d'), {
-    type:'pie',
-    data:{
-      labels: sorted.map(function(b){ return b.source; }),
-      datasets:[{
-        data: sorted.map(function(b){ return b.amount; }),
-        backgroundColor: sorted.map(function(b){ return bkStyle(b.source).c; }),
-        borderColor:'rgba(6,11,24,.85)', borderWidth:2, hoverOffset:8
-      }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      layout:{padding:4},
-      plugins:{
-        legend:{display:false},
-        tooltip:{ callbacks:{ label:function(c){
-          return ' ' + c.label + ': ' + bkLkr(c.parsed) + ' (' + bkPct(c.parsed, total) + ')';
-        }}}
-      }
-    },
-    plugins:[sliceLabels]
+function bkRings(sorted, total){
+  if (sorted.length <= BK_MAX_RINGS){
+    return sorted.map(function(b){
+      return {name:b.source, amount:b.amount, c:bkStyle(b.source).c,
+              title:b.source + ' · ' + bkLkr(b.amount) + ' · ' + bkPct(b.amount, total)};
+    });
+  }
+  var head = sorted.slice(0, BK_MAX_RINGS - 1).map(function(b){
+    return {name:b.source, amount:b.amount, c:bkStyle(b.source).c,
+            title:b.source + ' · ' + bkLkr(b.amount) + ' · ' + bkPct(b.amount, total)};
   });
+  var tail = sorted.slice(BK_MAX_RINGS - 1);
+  var sum  = tail.reduce(function(a, b){ return a + b.amount; }, 0);
+  head.push({
+    name:'Other · ' + tail.length + ' accounts',
+    amount:sum,
+    c:'#56637a',
+    title:tail.map(function(b){ return b.source + ' ' + bkLkr(b.amount); }).join('  ·  ')
+  });
+  return head;
+}
+
+/* 276-unit box, rings stepped inward by 22 with a 15-wide stroke, so
+   four of them clear the centred total without crowding it. */
+function bkArcSvg(rings, total){
+  var CX = 138, R0 = 120, STEP = 22, SW = 15;
+  var track = '', arc = '';
+  rings.forEach(function(r, i){
+    var rad  = R0 - i * STEP;
+    var circ = 2 * Math.PI * rad;
+    var len  = total > 0 ? circ * Math.max(r.amount, 0) / total : 0;
+    track += '<circle cx="' + CX + '" cy="' + CX + '" r="' + rad + '" fill="none" ' +
+             'stroke="rgba(255,255,255,.05)" stroke-width="' + SW + '"></circle>';
+    arc   += '<circle class="bk-arc" cx="' + CX + '" cy="' + CX + '" r="' + rad + '" fill="none" ' +
+             'stroke="' + r.c + '" stroke-width="' + SW + '" stroke-linecap="round" ' +
+             'stroke-dasharray="' + len.toFixed(1) + ' ' + circ.toFixed(1) + '" ' +
+             'transform="rotate(-90 ' + CX + ' ' + CX + ')">' +
+             '<title>' + bkEsc(r.name) + ' · ' + bkPct(r.amount, total) + '</title></circle>';
+  });
+  return '<svg viewBox="0 0 276 276" role="img" aria-label="Share of liquid cash by account">' +
+    track + arc +
+    '<text x="' + CX + '" y="' + (CX - 6) + '" text-anchor="middle" fill="rgba(255,255,255,.34)" ' +
+      'font-family="Inter,system-ui,sans-serif" font-size="9" font-weight="800" letter-spacing="1.8">TOTAL LIQUID</text>' +
+    '<text x="' + CX + '" y="' + (CX + 19) + '" text-anchor="middle" fill="rgba(255,255,255,.92)" ' +
+      'font-family="Inter,system-ui,sans-serif" font-size="22" font-weight="900" letter-spacing="-.8">' + bkLkr(total) + '</text>' +
+  '</svg>';
 }
 
 /* ═══ ③ ACCOUNTS — the passbook shelf ═════════════════════════
@@ -1223,7 +1240,8 @@ function bkRenderAccounts(){
         '<span class="bk-cover-mid">' +
           '<span class="bk-cover-lbl">Balance carried forward</span>' +
           '<span class="bk-cover-amt">' + bkLkr(b.amount, 2) + '</span>' +
-          '<span class="bk-cover-usd">' + (_bkRate > 0 ? '≈ ' + bkUsd(b.amount / _bkRate) + ' USD' : '≈ — USD') + '</span>' +
+          '<span class="bk-cover-usd" data-lkr="' + b.amount + '">' +
+            (_bkRate > 0 ? '≈ ' + bkUsd(b.amount / _bkRate) + ' USD' : '≈ — USD') + '</span>' +
         '</span>' +
         '<span class="bk-cover-foot">' +
           '<span>' + mine.length + ' entr' + (mine.length === 1 ? 'y' : 'ies') + ' · ' + bkAgo(lastD) + '</span>' +

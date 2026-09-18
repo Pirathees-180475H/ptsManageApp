@@ -44,11 +44,11 @@
      parent does not get a definite height on mobile, and never scrolls */
   overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
   overscroll-behavior:contain;touch-action:pan-y;
+  /* scrolls, but the bar itself stays out of the way */
+  scrollbar-width:none;-ms-overflow-style:none;
 }
 #sw-modal.open{display:block;animation:swModalIn .28s ease;}
-#sw-modal::-webkit-scrollbar{width:5px;}
-#sw-modal::-webkit-scrollbar-track{background:transparent;}
-#sw-modal::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px;}
+#sw-modal::-webkit-scrollbar{width:0;height:0;display:none;}
 @keyframes swModalIn{from{opacity:0;transform:translateX(-50%) scale(.95);}to{opacity:1;transform:translateX(-50%) scale(1);}}
 #sw-modal .swm-hdr{
   position:sticky;top:0;z-index:5;
