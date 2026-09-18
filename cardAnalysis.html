@@ -1,10 +1,92 @@
-<!-- ═══════════════════════════════════════════════════════════
-     CREDIT CARD ANALYSIS
-     CARD_ANALYSIS sheet: Date, Card, Reference, Total, Paid, Offers, Fees
+<!-- ═══════════════════════════════════════════════════════════════
+     CREDIT CARDS  —  the whole module, self-contained
+     ───────────────────────────────────────────────────────────
+     Everything credit-card lives here: both SPA pages and every
+     cc*/ca* function. render.html holds none of it.
+
+       ① #page-cc   the card page. A tab rail over four zones on one
+                    scroller, the way the Bank page works:
+                      ccSecWallet   the deck first, then the card
+                                    sheet, then the KPI ribbon
+                      ccSecRunway   a 30-day lane per card, beside the
+                                    due-vs-available chart on a window
+                      ccSecStmt     the per-card ledger, inline, with
+                                    the CARD_ANALYSIS form as a rail
+                      Analysis      the 4th tab hands off to #page-ca
+       ② #page-ca   the analysis page — CARD_ANALYSIS sheet
+       ③ script     cc* (page) · ccExp* (statement) · buildCCTicker ·
+                    ca* (analysis)
+
+     What the revamp changed, and why:
+       · the floating #cc-exp-panel is gone. Its ledger is the
+         Statement zone now, so it scrolls with the page instead of
+         being dragged around over it, and the card is picked from a
+         row of brand tabs rather than by reopening it per card.
+       · the CARD_ANALYSIS form is a permanent rail beside that
+         ledger. It used to be three levels down behind a toggle.
+       · the due doughnut and the payment timeline are replaced by the
+         Due runway: ONE LANE PER CARD, sorted soonest first, each with
+         the card's name, a bar running today -> due date and the
+         countdown. A single shared axis was tried first and failed —
+         two cards falling due in the same week landed on the same
+         position and covered each other, labels and all. Lanes cannot
+         collide at any width. No figures on a lane: the amount is
+         already on the card face and in the ribbon, and a phone has no
+         room for it. The due-vs-available bar chart stays beside it —
+         it is the only view of headroom — and the pair drop to one
+         column below 1040px.
+       · the two per-row Save buttons are one armed Save in the
+         header, over a dirty-row model.
+       · the card sheet no longer edits or explains the statement
+         balance — the box and the interest indicator are both gone,
+         so saveLastStatementBalance() is not called from this page.
+         Column H is still read: it is what the Underpaid tile and the
+         red ring on a card face are computed from.
+       · render.html warms this page from window.onload via
+         ccPrefetch(), the way it warms splitwise. It reads the card
+         rows and then EVERY card's current-month statement in the
+         background, into _ccStmtCache keyed by card|month|year.
+         Opening the tab costs no round trip, and switching between
+         cards in the Statement zone never spins again for this month.
+         A month you page back to is cached on first read. ↺ Reload
+         empties the cache, so it always goes back to the sheet.
+
+     The card faces are drawn by cardDeck.html — included ahead of
+     this file in render.html, so cardDeckInit() is already defined
+     by the time ccDisplayData() calls it. Its fan/stack, tilt, drag
+     and dots are untouched; only what sits beside it changed.
+
+     Backend calls:
+       getCardData · saveMonthlySettled · getCardExpenses ·
+       addCardAnalysisEntry · getCardAnalysisData ·
+       updateCardAnalysisEntry · deleteCardAnalysisEntry
+     saveLastStatementBalance() still exists in Code.gs but nothing
+     calls it now that the balance box is gone — column H is read
+     only. Leave it there if that value is ever edited again.
+
+     Talks to render.html through these hooks only:
+       in  — ccLoad() · caLoad()        (_doShowPage, reloadPage)
+             ccPrefetch()                (window.onload)
+       out — esc() · haptic() · _buildTick() · showPage() · _spaLoaded ·
+             toolWheelRegister() · toolWheelRefresh() · cardDeckInit()
+
+     Included from render.html via:  <?!= include('cardAnalysis'); ?>
+     The .ca-* and revamped #page-cc rules are in this file; the older
+     shared .cc-*/.cd-* rules stay in render-style.html.
 ═══════════════════════════════════════════════════════════════ -->
+
 <style>
 /* ── Card Analysis ── */
 .ca-page{padding:14px;max-width:1400px;margin:0 auto;width:100%;}
+/* The .loading markup here and in render.html's reloadPage('ca') both use
+   .spinner, but that class is only defined in showCreditCardSummary.html and
+   expenseDashboard.html — neither of which render.html includes, so the
+   analysis loading state has always been a blank box. Scoped, not global,
+   so no other page's spinner changes. */
+#page-ca .spinner{
+  width:42px;height:42px;border:3px solid rgba(168,85,247,.15);
+  border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite;
+}
 /* ── Card Analysis header (uses global pg-corner-title classes) ── */
 .ca-header-sub{color:rgba(255,255,255,.3);font-size:.72em;margin:0 0 16px;}
 
@@ -105,18 +187,1381 @@
   .ca-filters{flex-wrap:wrap;}
   .ca-add-btn{margin-left:0;width:100%;justify-content:center;}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   REVAMPED CARDS PAGE  —  every rule scoped to #page-cc so it
+   out-ranks render-style.html without !important and leaks nowhere.
+   Zones: ① command bar ② tab rail ③ wallet ④ runway ⑤ statement
+═══════════════════════════════════════════════════════════════ */
+#page-cc{
+  --cc-cyan:#00d4ff; --cc-green:#00e676; --cc-amber:#f59e0b;
+  --cc-red:#ff4d6d;  --cc-gold:#ffd700;  --cc-purple:#a855f7;
+  --cc-panel:rgba(255,255,255,.028);
+  --cc-bdr:rgba(255,255,255,.08);
+  --cc-bdr2:rgba(255,255,255,.14);
+  --cc-ink:rgba(255,255,255,.92);
+  --cc-ink2:rgba(255,255,255,.62);
+  --cc-mut:rgba(255,255,255,.44);
+  --cc-faint:rgba(255,255,255,.28);
+}
+
+/* ═══ ① the one armed Save ═══════════════════════════════════ */
+#page-cc .cc-save-btn{
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  color:rgba(255,255,255,.5);border-radius:8px;padding:5px 11px;
+  font-size:.66em;font-weight:800;font-family:inherit;cursor:pointer;line-height:1;
+  transition:all .18s;white-space:nowrap;
+}
+#page-cc .cc-save-btn:disabled{opacity:.45;cursor:default;}
+#page-cc .cc-save-btn.armed{background:rgba(255,215,0,.14);border-color:rgba(255,215,0,.42);color:var(--cc-gold);}
+#page-cc .cc-save-btn.armed:hover{background:rgba(255,215,0,.22);}
+
+/* ═══ ② TAB RAIL ═════════════════════════════════════════════ */
+#page-cc .cc-tabs{
+  display:flex;align-items:center;gap:5px;padding:8px 16px;flex-shrink:0;
+  position:relative;z-index:2;background:rgba(6,11,24,.6);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--bdr);
+  overflow-x:auto;scrollbar-width:none;
+}
+#page-cc .cc-tabs::-webkit-scrollbar{display:none;}
+#page-cc .cc-tab{
+  font-family:inherit;font-size:.66em;font-weight:700;letter-spacing:.4px;
+  padding:6px 14px;border-radius:9px;white-space:nowrap;cursor:pointer;transition:all .2s;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.44);
+}
+#page-cc .cc-tab:hover{color:var(--cc-ink);border-color:var(--cc-bdr2);}
+#page-cc .cc-tab.active{background:rgba(0,212,255,.13);border-color:rgba(0,212,255,.38);color:#67e8f9;}
+
+#page-cc [id^="ccSec"]{scroll-margin-top:10px;margin-bottom:22px;}
+#page-cc [id^="ccSec"]:last-child{margin-bottom:0;}
+
+/* ── one panel shell for every zone ── */
+#page-cc .cc-panel{
+  border:1px solid var(--cc-bdr);border-radius:18px;background:var(--cc-panel);
+  box-shadow:0 4px 24px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
+  padding:14px 16px 16px;animation:fadeUp .45s ease both;
+}
+#page-cc .cc-panel-hdr{
+  display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  font-size:.62em;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.45);
+}
+#page-cc .cc-panel-hdr i{width:7px;height:7px;border-radius:50%;flex-shrink:0;font-style:normal;}
+#page-cc .cc-panel-sub{margin-left:auto;font-size:.92em;font-weight:600;letter-spacing:.3px;
+  text-transform:none;color:rgba(255,255,255,.3);}
+
+/* ═══ KPI RIBBON ═════════════════════════════════════════════ */
+/* the ribbon sits under the deck now, so its spacing is above it */
+#page-cc .cc-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px;}
+#page-cc .cc-kpi{
+  padding:13px 15px;border-radius:15px;background:var(--cc-panel);border:1px solid var(--cc-bdr);
+  display:flex;flex-direction:column;gap:3px;min-width:0;
+}
+#page-cc .cc-kpi.red  {background:rgba(255,77,109,.06);border-color:rgba(255,77,109,.22);}
+#page-cc .cc-kpi.warn {background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.3);}
+#page-cc .cc-kpi.good {background:rgba(0,230,118,.05);border-color:rgba(0,230,118,.24);}
+#page-cc .cc-kpi-k{font-size:.54em;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.5);}
+#page-cc .cc-kpi-v{font-size:1.15em;font-weight:800;letter-spacing:-.6px;color:#fff;
+  font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-cc .cc-kpi.red  .cc-kpi-v{color:#ff8093;}
+#page-cc .cc-kpi.warn .cc-kpi-v{color:#fbbf24;}
+#page-cc .cc-kpi.good .cc-kpi-v{color:#4ade80;}
+#page-cc .cc-kpi-s{font-size:.6em;color:rgba(255,255,255,.48);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-cc .cc-pips{display:flex;gap:4px;margin-top:4px;}
+#page-cc .cc-pips span{height:4px;flex:1;border-radius:2px;background:rgba(255,255,255,.14);}
+#page-cc .cc-pips span.on{background:var(--cc-green);}
+
+/* ═══ ③ THE CARD SHEET (inside .cd-detail, deck untouched) ═══ */
+#page-cc .cc-sheet{padding:16px 18px;}
+#page-cc .cc-sheet-hdr{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+#page-cc .cc-sheet-logo{
+  width:44px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  font-size:.58em;font-weight:900;letter-spacing:.5px;color:#fff;border:1px solid rgba(255,255,255,.12);
+}
+#page-cc .cc-sheet-name{font-size:.92em;font-weight:800;letter-spacing:-.2px;color:#fff;}
+#page-cc .cc-sheet-meta{font-size:.62em;color:rgba(255,255,255,.4);margin-top:2px;}
+#page-cc .cc-seg{display:flex;padding:3px;gap:3px;border-radius:10px;flex-shrink:0;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);}
+#page-cc .cc-seg button{
+  padding:6px 13px;border-radius:7px;border:none;cursor:pointer;font-family:inherit;
+  font-size:.62em;font-weight:800;background:none;color:rgba(255,255,255,.45);transition:all .18s;
+}
+#page-cc .cc-seg button.on.pending{background:rgba(255,152,0,.2);color:#ffd08a;}
+#page-cc .cc-seg button.on.settled{background:rgba(0,230,118,.18);color:#7cffb2;}
+
+#page-cc .cc-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-bottom:12px;}
+#page-cc .cc-tile{padding:11px 13px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--cc-bdr);min-width:0;}
+#page-cc .cc-tile-k{font-size:.54em;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.5);display:block;}
+#page-cc .cc-tile-v{margin-top:5px;font-size:1em;font-weight:800;letter-spacing:-.4px;
+  font-variant-numeric:tabular-nums;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-cc .cc-tile-v.due{color:#ff8093;}
+#page-cc .cc-tile-v.avail{color:var(--cc-green);}
+#page-cc .cc-tile-s{margin-top:3px;font-size:.58em;color:rgba(255,255,255,.4);}
+
+/* ── statement + due dates ──────────────────────────────────── */
+#page-cc .cc-dates2{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:13px;}
+#page-cc .cc-date2{
+  display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:12px;
+  background:rgba(255,255,255,.03);border:1px solid var(--cc-bdr);min-width:0;
+}
+#page-cc .cc-date2.due{background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.11);}
+#page-cc .cc-date2-ic{
+  width:30px;height:30px;flex-shrink:0;border-radius:9px;display:flex;align-items:center;
+  justify-content:center;font-size:.8em;background:rgba(255,255,255,.05);border:1px solid var(--cc-bdr);
+}
+/* only the label and the date may be ellipsised. The pill is a SIBLING of the
+   text box, not a child of it — nested inside, its border was being clipped by
+   overflow:hidden, which is what made the whole row read as plain text. */
+#page-cc .cc-date2-txt{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1;}
+#page-cc .cc-date2-k{font-size:.53em;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;
+  color:rgba(255,255,255,.48);line-height:1;}
+#page-cc .cc-date2-v{font-size:.78em;font-weight:700;color:#fff;line-height:1.25;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-cc .cc-due-pill{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:5px;
+  padding:5px 10px;border-radius:999px;white-space:nowrap;
+  font-size:.6em;font-weight:800;letter-spacing:.3px;line-height:1;
+}
+#page-cc .cc-due-pill i{width:6px;height:6px;border-radius:50%;flex-shrink:0;font-style:normal;}
+#page-cc .cc-due-pill.red{background:rgba(255,77,109,.14);border:1px solid rgba(255,77,109,.45);color:#ff8093;}
+#page-cc .cc-due-pill.red i{background:#ff4d6d;box-shadow:0 0 7px rgba(255,77,109,.8);}
+#page-cc .cc-due-pill.amb{background:rgba(245,158,11,.13);border:1px solid rgba(245,158,11,.45);color:#fbbf24;}
+#page-cc .cc-due-pill.amb i{background:#f59e0b;box-shadow:0 0 7px rgba(245,158,11,.8);}
+#page-cc .cc-due-pill.ok {background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.34);color:#4ade80;}
+#page-cc .cc-due-pill.ok i{background:#00e676;box-shadow:0 0 7px rgba(0,230,118,.7);}
+#page-cc .cc-due-pill.non{background:rgba(255,255,255,.05);border:1px solid var(--cc-bdr);color:var(--cc-mut);}
+#page-cc .cc-due-pill.non i{background:rgba(255,255,255,.3);}
+
+/* ── the two actions at the foot of the sheet ───────────────── */
+#page-cc .cc-sheet-acts{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+#page-cc .cc-act{
+  display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;cursor:pointer;
+  font-family:inherit;font-size:.68em;font-weight:800;letter-spacing:.2px;transition:all .2s;
+  background:rgba(255,255,255,.05);border:1px solid var(--cc-bdr);color:var(--cc-ink2);
+}
+#page-cc .cc-act:hover{color:#fff;border-color:var(--cc-bdr2);background:rgba(255,255,255,.09);transform:translateY(-1px);}
+#page-cc .cc-act.go{background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.38);color:#67e8f9;}
+#page-cc .cc-act.go:hover{background:rgba(0,212,255,.2);}
+#page-cc .cc-act.an{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.38);color:#c084fc;}
+#page-cc .cc-act.an:hover{background:rgba(168,85,247,.2);}
+#page-cc .cc-sheet-hint{margin-left:auto;font-size:.6em;color:var(--cc-faint);}
+
+/* ═══ ④ DUE RUNWAY ═══════════════════════════════════════════ */
+/* ── ④ DUE RUNWAY ───────────────────────────────────────────
+   One lane per card. A single shared axis put every marker on the
+   same line, so two cards falling due in the same week sat on top of
+   each other and their labels ran together. Lanes cannot collide at
+   any width, and the name is always legible. */
+#page-cc .cc-rw{display:flex;flex-direction:column;gap:2px;}
+#page-cc .cc-rw-row{
+  display:grid;grid-template-columns:104px minmax(0,1fr) 112px;
+  align-items:center;gap:12px;width:100%;
+  padding:9px 10px;border-radius:11px;cursor:pointer;
+  background:none;border:1px solid transparent;font-family:inherit;text-align:left;
+  transition:background .18s, border-color .18s;
+}
+#page-cc .cc-rw-row:hover{background:rgba(255,255,255,.04);border-color:var(--cc-bdr);}
+#page-cc .cc-rw-name{display:flex;align-items:center;gap:8px;min-width:0;}
+#page-cc .cc-rw-name i{width:9px;height:9px;border-radius:50%;flex-shrink:0;font-style:normal;
+  box-shadow:0 0 0 1.5px rgba(0,0,0,.4);}
+#page-cc .cc-rw-name b{font-size:.72em;font-weight:800;letter-spacing:.4px;color:var(--cc-ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-cc .cc-rw-name em{font-style:normal;font-size:.66em;color:#4ade80;flex-shrink:0;}
+
+#page-cc .cc-rw-track{position:relative;height:16px;min-width:0;}
+#page-cc .cc-rw-track::before{
+  content:'';position:absolute;left:0;right:0;top:7px;height:2px;border-radius:1px;
+  background:rgba(255,255,255,.07);
+}
+#page-cc .cc-rw-fill{position:absolute;left:0;top:7px;height:2px;border-radius:1px;}
+#page-cc .cc-rw-node{
+  position:absolute;top:2px;width:12px;height:12px;border-radius:50%;
+  transform:translateX(-50%);border:2px solid #0a0f1c;
+}
+#page-cc .cc-rw-fill.red{background:rgba(255,77,109,.55);} #page-cc .cc-rw-node.red{background:#ff4d6d;box-shadow:0 0 9px rgba(255,77,109,.85);}
+#page-cc .cc-rw-fill.amb{background:rgba(245,158,11,.55);} #page-cc .cc-rw-node.amb{background:#f59e0b;box-shadow:0 0 9px rgba(245,158,11,.85);}
+#page-cc .cc-rw-fill.cy {background:rgba(0,212,255,.45);}  #page-cc .cc-rw-node.cy {background:#00d4ff;box-shadow:0 0 9px rgba(0,212,255,.8);}
+#page-cc .cc-rw-fill.gr {background:rgba(0,230,118,.4);}   #page-cc .cc-rw-node.gr {background:#00e676;box-shadow:0 0 9px rgba(0,230,118,.75);}
+
+#page-cc .cc-rw-meta{display:flex;flex-direction:column;gap:2px;text-align:right;min-width:0;}
+#page-cc .cc-rw-meta b{font-size:.68em;font-weight:700;color:var(--cc-ink2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-cc .cc-rw-meta em{font-style:normal;font-size:.62em;font-weight:800;white-space:nowrap;}
+#page-cc .cc-rw-meta em.red{color:#ff8093;}
+#page-cc .cc-rw-meta em.amb{color:#fbbf24;}
+#page-cc .cc-rw-meta em.cy {color:#67e8f9;}
+#page-cc .cc-rw-meta em.gr {color:#4ade80;}
+
+/* the scale sits in the same grid, so its ticks line up with the tracks */
+#page-cc .cc-rw-scale{
+  display:grid;grid-template-columns:104px minmax(0,1fr) 112px;gap:12px;
+  padding:6px 10px 0;margin-top:4px;border-top:1px solid rgba(255,255,255,.05);
+}
+#page-cc .cc-rw-ticks{grid-column:2;display:flex;justify-content:space-between;
+  font-size:.58em;color:rgba(255,255,255,.34);letter-spacing:.4px;}
+#page-cc .cc-rw-legend{
+  display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;
+  border-top:1px solid rgba(255,255,255,.05);
+}
+#page-cc .cc-rw-legend span{display:inline-flex;align-items:center;gap:6px;
+  font-size:.6em;font-weight:600;color:rgba(255,255,255,.44);}
+#page-cc .cc-rw-legend i{width:8px;height:8px;border-radius:50%;font-style:normal;}
+#page-cc .cc-rw-legend i.red{background:#ff4d6d;}
+#page-cc .cc-rw-legend i.amb{background:#f59e0b;}
+#page-cc .cc-rw-legend i.cy {background:#00d4ff;}
+#page-cc .cc-rw-legend i.gr {background:#00e676;}
+#page-cc .cc-rw-later{
+  margin-top:10px;display:flex;gap:7px;flex-wrap:wrap;padding-top:10px;
+  border-top:1px solid rgba(255,255,255,.05);
+}
+#page-cc .cc-rw-chip{
+  display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+  font-size:.6em;font-weight:700;background:rgba(255,255,255,.04);
+  border:1px solid var(--cc-bdr);color:var(--cc-mut);cursor:pointer;font-family:inherit;
+}
+#page-cc .cc-rw-chip i{width:7px;height:7px;border-radius:50%;font-style:normal;}
+#page-cc .cc-rw-chip:hover{color:#fff;border-color:var(--cc-bdr2);}
+
+/* the runway and the due-vs-available chart sit side by side on a window */
+#page-cc .cc-rw-grid{display:grid;grid-template-columns:1fr;gap:14px;align-items:start;}
+@media(min-width:1040px){
+  #page-cc .cc-rw-grid{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);}
+}
+
+/* ═══ ⑤ STATEMENT (inline — replaces the floating panel) ═════ */
+#page-cc .cc-stmt{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start;}
+#page-cc .cc-stmt-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+#page-cc .cc-cardtab{
+  display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:9px;cursor:pointer;
+  font-family:inherit;font-size:.66em;font-weight:700;transition:all .18s;
+  background:rgba(255,255,255,.04);border:1px solid var(--cc-bdr);color:rgba(255,255,255,.58);
+}
+#page-cc .cc-cardtab:hover{color:#fff;border-color:var(--cc-bdr2);}
+#page-cc .cc-cardtab i{width:8px;height:14px;border-radius:2px;flex-shrink:0;font-style:normal;}
+#page-cc .cc-cardtab.on{color:#fff;font-weight:800;}
+#page-cc .cc-month-nav{display:flex;align-items:center;gap:2px;padding:3px;border-radius:10px;
+  background:rgba(255,255,255,.05);border:1px solid var(--cc-bdr);margin-left:auto;}
+#page-cc .cc-mn-btn{
+  width:26px;height:26px;display:flex;align-items:center;justify-content:center;border:none;
+  background:none;border-radius:7px;color:rgba(255,255,255,.6);cursor:pointer;font-family:inherit;font-size:.8em;
+}
+#page-cc .cc-mn-btn:hover:not(:disabled){background:rgba(255,255,255,.1);color:#fff;}
+#page-cc .cc-mn-btn:disabled{opacity:.28;cursor:not-allowed;}
+#page-cc .cc-mn-lbl{padding:0 9px;font-size:.66em;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;}
+#page-cc .cc-stmt-tot{display:flex;gap:10px;margin-bottom:11px;flex-wrap:wrap;}
+#page-cc .cc-stmt-tot > div{padding:9px 13px;border-radius:11px;min-width:150px;}
+#page-cc .cc-stmt-tot .exp{background:rgba(255,77,109,.07);border:1px solid rgba(255,77,109,.2);}
+#page-cc .cc-stmt-tot .pay{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);}
+#page-cc .cc-stmt-tot span{font-size:.54em;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;
+  color:rgba(255,255,255,.45);display:block;}
+#page-cc .cc-stmt-tot b{display:block;margin-top:3px;font-size:.92em;font-weight:800;font-variant-numeric:tabular-nums;}
+#page-cc .cc-stmt-tot .exp b{color:#ff8093;}
+#page-cc .cc-stmt-tot .pay b{color:#4ade80;}
+#page-cc .cc-stmt-search{display:flex;gap:8px;margin-bottom:11px;}
+#page-cc .cc-stmt-search input{
+  flex:1;min-width:0;height:35px;padding:0 12px;border-radius:9px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);color:#fff;font-family:inherit;font-size:.74em;outline:none;transition:border-color .2s;
+}
+#page-cc .cc-stmt-search input:focus{border-color:rgba(0,212,255,.45);}
+#page-cc .cc-stmt-search input::placeholder{color:var(--cc-faint);}
+
+#page-cc .cc-an-rail{border:1px solid rgba(168,85,247,.28);border-radius:16px;
+  background:rgba(168,85,247,.05);padding:14px 15px 15px;}
+#page-cc .cc-an-fld{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;}
+#page-cc .cc-an-fld label{font-size:.54em;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:rgba(255,255,255,.48);}
+#page-cc .cc-an-fld input{
+  height:34px;padding:0 11px;border-radius:9px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);color:#fff;font-family:inherit;font-size:.74em;outline:none;
+  font-variant-numeric:tabular-nums;box-sizing:border-box;width:100%;
+}
+#page-cc .cc-an-fld input:focus{border-color:rgba(168,85,247,.5);background:rgba(255,255,255,.07);}
+#page-cc .cc-an-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#page-cc .cc-an-note{font-size:.6em;color:rgba(255,255,255,.4);line-height:1.5;margin-bottom:10px;}
+#page-cc .cc-an-save{
+  width:100%;height:37px;border-radius:10px;border:none;cursor:pointer;font-family:inherit;
+  font-size:.72em;font-weight:800;color:#fff;background:linear-gradient(94deg,#a855f7,#7e22ce);
+  box-shadow:0 6px 18px rgba(168,85,247,.22);transition:all .2s;
+}
+#page-cc .cc-an-save:hover:not(:disabled){transform:translateY(-1px);}
+#page-cc .cc-an-save:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+#page-cc .cc-an-msg{display:block;margin-top:8px;font-size:.64em;font-weight:700;min-height:14px;text-align:center;}
+
+#page-cc .cc-led-wrap{border:1px solid var(--cc-bdr);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.016);}
+#page-cc .cc-led-scroll{overflow-x:auto;max-height:46vh;overflow-y:auto;}
+#page-cc table.cc-led{width:100%;border-collapse:collapse;font-size:.74em;min-width:460px;}
+#page-cc .cc-led th{
+  position:sticky;top:0;z-index:1;background:rgba(13,20,38,.97);text-align:left;padding:9px 13px;
+  font-size:.74em;font-weight:800;letter-spacing:1.3px;text-transform:uppercase;color:var(--cc-faint);
+}
+#page-cc .cc-led th.r,#page-cc .cc-led td.r{text-align:right;}
+#page-cc .cc-led td{padding:9px 13px;border-top:1px solid rgba(255,255,255,.045);color:var(--cc-ink2);
+  font-variant-numeric:tabular-nums;}
+#page-cc .cc-led tbody tr:hover td{background:rgba(255,255,255,.025);}
+#page-cc .cc-led tr.pay td{background:rgba(0,230,118,.035);}
+#page-cc .cc-led td.dt{color:rgba(255,255,255,.5);white-space:nowrap;}
+#page-cc .cc-led td.ref{color:rgba(255,255,255,.86);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#page-cc .cc-led td.ex{color:#ff8093;font-weight:700;white-space:nowrap;}
+#page-cc .cc-led td.pa{color:#4ade80;font-weight:700;white-space:nowrap;}
+#page-cc .cc-led td.no{color:rgba(255,255,255,.22);}
+#page-cc .cc-led-pager{
+  display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;
+  border-top:1px solid var(--cc-bdr);background:rgba(0,0,0,.18);flex-wrap:wrap;
+}
+#page-cc .cc-pbtn{
+  font-family:inherit;font-size:.66em;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;
+  background:rgba(255,255,255,.05);border:1px solid var(--cc-bdr);color:var(--cc-ink2);transition:all .2s;
+}
+#page-cc .cc-pbtn:hover:not(:disabled){background:rgba(255,255,255,.1);border-color:var(--cc-bdr2);}
+#page-cc .cc-pbtn:disabled{opacity:.3;cursor:not-allowed;}
+#page-cc .cc-pinfo{font-size:.66em;color:var(--cc-faint);font-variant-numeric:tabular-nums;}
+#page-cc .cc-empty{padding:30px 16px;text-align:center;font-size:.72em;color:var(--cc-faint);line-height:1.7;}
+
+/* ═══ RESPONSIVE ═════════════════════════════════════════════ */
+@media(max-width:900px){
+  #page-cc .cc-stmt{grid-template-columns:1fr;}
+}
+@media(max-width:760px){
+  #page-cc .cc-kpis{grid-template-columns:1fr 1fr;}
+  #page-cc .cc-tiles{grid-template-columns:1fr;}
+  #page-cc .cc-dates2{grid-template-columns:1fr;}
+  /* a phone has no room for name | track | date on one line */
+  #page-cc .cc-rw-row{grid-template-columns:minmax(0,1fr) auto;gap:5px 10px;padding:9px 8px;}
+  #page-cc .cc-rw-track{grid-column:1 / -1;order:3;}
+  #page-cc .cc-rw-meta{flex-direction:row;align-items:baseline;gap:7px;}
+  #page-cc .cc-rw-scale{grid-template-columns:1fr;padding:6px 8px 0;}
+  #page-cc .cc-rw-ticks{grid-column:1;}
+}
+@media(max-width:520px){
+  #page-cc .cc-kpis{grid-template-columns:1fr;}
+  #page-cc .cc-month-nav{margin-left:0;}
+  #page-cc .cc-led-scroll{max-height:none;}
+}
+@media(prefers-reduced-motion:reduce){
+  #page-cc .cc-panel{animation:none;}
+}
+
 </style>
 
-<div class="ca-page" id="ca-body">
-  <div class="loading">
-    <div class="spinner"></div>
-    <div class="loading-txt">Loading Card Analysis…</div>
+<!-- ═══════════════════════════════════════════
+     ① CREDIT CARD PAGE  —  the deck, the KPIs, the timeline
+═══════════════════════════════════════════ -->
+<section id="page-cc" class="spa-page">
+  <div class="ticker-wrap" id="ccTickerWrap" style="display:none;"><div class="ticker-track" id="ccTickerTrack"></div></div>
+  <div class="pg-hdr">
+    <span class="pg-hdr-title">💳 Cards</span>
+    <div class="pg-hdr-actions">
+      <button class="tw-trigger tw-cards" type="button" data-tw-wheel="cards" title="Cards — hover or tap" aria-label="Open card wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="M2 10.5h20"/><path d="M6 15h3.5"/></svg></button>
+      <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
+      <button class="cc-save-btn" id="ccSaveBtn" type="button" onclick="ccSaveAll()" disabled>💾 Saved</button>
+      <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
+      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
+      <button class="pg-cal-btn" onclick="calToggle()">📅</button>
+      <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
+      <button class="pg-reload-btn" onclick="reloadPage('cc')">↺ Reload</button>
+    </div>
   </div>
-</div>
+
+  <!-- ② TAB RAIL — anchors the zones; the spy follows #cc-root's scroll -->
+  <nav class="cc-tabs" id="ccTabs" aria-label="Card sections">
+    <button class="cc-tab active" type="button" data-sec="ccSecWallet" onclick="ccGoSec('ccSecWallet')">Wallet</button>
+    <button class="cc-tab" type="button" data-sec="ccSecRunway" onclick="ccGoSec('ccSecRunway')">Runway</button>
+    <button class="cc-tab" type="button" data-sec="ccSecStmt"   onclick="ccGoSec('ccSecStmt')">Statement</button>
+    <button class="cc-tab" type="button" onclick="showPage('ca')" title="Open the Card Analysis page">Analysis ↗</button>
+  </nav>
+
+  <div class="page" id="cc-root">
+    <div class="loading">
+      <div class="cc-spinner"></div>
+      <div class="loading-txt">Loading credit card data…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     ② CARD ANALYSIS PAGE  —  CARD_ANALYSIS sheet
+═══════════════════════════════════════════ -->
+<section id="page-ca" class="spa-page">
+  <div class="pg-hdr">
+    <span class="pg-hdr-title">📊 Card Analysis</span>
+    <div class="pg-hdr-actions">
+      <button class="pg-reload-btn" onclick="reloadPage('ca')">↺ Reload</button>
+      <button class="pg-back-btn" onclick="showPage('cc')" title="Back to Credit Cards">← Back</button>
+    </div>
+  </div>
+  <div class="page">
+    <div class="ca-page" id="ca-body">
+      <div class="loading">
+        <div class="spinner"></div>
+        <div class="loading-txt">Loading Card Analysis…</div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <script>
 /* ═══════════════════════════════════════════
-   CARD ANALYSIS JS
+   CREDIT CARD PAGE JS
+   ───────────────────────────────────────────
+   Four zones on one scroller, anchored by the tab rail:
+     ccSecWallet   KPI ribbon · the deck (cardDeck.html, untouched) ·
+                   the card sheet · needs-attention
+     ccSecRunway   one 30-day due axis + due-vs-available
+     ccSecStmt     the per-card ledger, inline, with the
+                   CARD_ANALYSIS form as a permanent rail
+     (Analysis)    the 4th tab hands off to #page-ca via showPage('ca')
+
+   Editing is one dirty-state model: toggling Settled or typing a
+   statement balance marks the row dirty and arms the single Save in
+   the header, which flushes every pending change through the same
+   two backend calls the per-row buttons used to make.
+═══════════════════════════════════════════ */
+var ccCurrentData = [];
+var _ccDirty      = {};      /* { rowIndex: {settled:true, bal:true} } */
+var _ccSaving     = false;
+var _ccSpyBound   = false;
+var CC_SECTIONS   = ['ccSecWallet','ccSecRunway','ccSecStmt'];
+var CC_RUNWAY_DAYS = 30;
+
+/* ── Startup prefetch ────────────────────────────────────────
+   render.html kicks ccPrefetch() off from window.onload, the same way
+   it warms splitwise, so the cards and the first card's statement are
+   already in hand by the time the Cards tab is opened — no spinner on
+   arrival. The cache is consumed once: ↺ Reload always refetches.   */
+var _ccPre      = { cards:null, busy:false };
+var _ccStmtCache = {};   /* "CARD|M|YYYY" -> the getCardExpenses result */
+
+function ccStmtKey(card, m, y){ return String(card)+'|'+m+'|'+y; }
+
+function ccPrefetch(){
+  if(_ccPre.busy || _ccPre.cards) return;
+  _ccPre.busy = true;
+  google.script.run
+    .withSuccessHandler(function(d){
+      _ccPre.busy = false;
+      _ccPre.cards = d || [];
+      ccPrefetchStmts(_ccPre.cards);
+    })
+    .withFailureHandler(function(){ _ccPre.busy = false; })
+    .getCardData();
+}
+
+/* Warm EVERY card's current month, not just the first. Four small reads at
+   boot means the Statement zone never spins again for this month, whichever
+   card you pick. Each lands in _ccStmtCache and is served from there. */
+function ccPrefetchStmts(cards){
+  if(!cards || !cards.length) return;
+  var now=new Date(), m=now.getMonth()+1, y=now.getFullYear();
+  cards.forEach(function(row){
+    var name=row && row[0];
+    if(!name) return;
+    var key=ccStmtKey(name, m, y);
+    if(_ccStmtCache[key]) return;
+    google.script.run
+      .withSuccessHandler(function(res){
+        if(!res || !res.success) return;   // never cache a failure
+        _ccStmtCache[key]=res;
+        /* if the page is already open on exactly this, paint it now */
+        if(_ccExpState.cardName===name && _ccExpState.month===m && _ccExpState.year===y
+           && document.getElementById('cc-exp-table-wrap') && !_ccExpEntriesAll.length){
+          ccExpRender(res);
+        }
+      })
+      .withFailureHandler(function(){})
+      .getCardExpenses(name, m, y);
+  });
+}
+
+function ccLoad(){
+  if(_ccPre.cards && _ccPre.cards.length){
+    var cached=_ccPre.cards;
+    _ccPre.cards=null;              // one use only
+    ccDisplayData(cached);
+    return;
+  }
+  /* a real fetch means ↺ Reload — the statements on file are stale too */
+  _ccStmtCache={};
+  google.script.run
+    .withSuccessHandler(ccDisplayData)
+    .withFailureHandler(ccShowError)
+    .getCardData();
+}
+
+function ccBrandCfg(name){
+  var n=(name||'').toLowerCase();
+  if(n.includes('ndb'))  return {color:'#db0011',bg:'linear-gradient(135deg,#db0011,#a00)',label:'NDB', dot:'#db0011'};
+  if(n.includes('amex'))  return {color:'#006fcf',bg:'linear-gradient(135deg,#006fcf,#004a99)',label:'AMEX', dot:'#006fcf'};
+  if(n.includes('selan')) return {color:'#ffd700',bg:'linear-gradient(135deg,#ffd700,#cc9900)',label:'SELAN',dot:'#ffd700'};
+  if(n.includes('hnb'))   return {color:'#ff6b35',bg:'linear-gradient(135deg,#ff6b35,#cc4400)',label:'HNB',  dot:'#ff6b35'};
+  if(n.includes('com'))   return {color:'#00d4ff',bg:'linear-gradient(135deg,#00d4ff,#0099cc)',label:'COM',  dot:'#00d4ff'};
+  if(n.includes('ntb')) return {color:'#a855f7', bg:'linear-gradient(135deg,#a855f7,#7e22ce)', label:'NTB', dot:'#a855f7'};
+  return {color:'#a855f7',bg:'linear-gradient(135deg,#a855f7,#7c3aed)',label:'CARD',dot:'#a855f7'};
+}
+
+function ccNum(v){ var n=parseFloat((v+'').replace(/,/g,'')); return isNaN(n)?0:n; }
+
+function ccFmt(v){
+  if(!v&&v!==0)return '—';
+  var n=parseFloat((v+'').replace(/,/g,''));
+  if(isNaN(n))return v;
+  return '₨ '+Math.abs(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+/* compact form for pills and chips, where two decimals only add noise */
+function ccFmtS(v){ return '₨ '+Math.abs(ccNum(v)).toLocaleString('en-IN',{maximumFractionDigits:0}); }
+
+function ccFmtDate(v){if(!v||v===''||v===0)return '—';return (v+'').trim();}
+
+function ccDaysUntilDue(v){
+  if(!v||v===''||v===0)return null;
+  var s=(v+'').trim();
+  var MONTHS={january:0,february:1,march:2,april:3,may:4,june:5,
+              july:6,august:7,september:8,october:9,november:10,december:11};
+  // Parse "26 th of April", "1 st of March", "3rd of May" etc.
+  var m=s.match(/^(\d{1,2})\s*(?:st|nd|rd|th)?\s*(?:of\s+)?([A-Za-z]+)/i);
+  var d;
+  if(m){
+    var day=parseInt(m[1],10), mon=MONTHS[(m[2]||'').toLowerCase()];
+    if(mon!==undefined&&day>=1&&day<=31){
+      d=new Date(new Date().getFullYear(),mon,day);
+    }
+  }
+  if(!d||isNaN(d.getTime())){ d=new Date(s); if(isNaN(d.getTime()))return null; }
+  var today=new Date();today.setHours(0,0,0,0);d.setHours(0,0,0,0);
+  return Math.round((d-today)/86400000);
+}
+/* the countdown beside the due date, as a real chip rather than loose text */
+function ccDuePill(v, settled){
+  if(settled) return '<span class="cc-due-pill ok"><i></i>Settled</span>';
+  var d=ccDaysUntilDue(v);
+  if(d===null)  return '<span class="cc-due-pill non"><i></i>No date</span>';
+  if(d<0)       return '<span class="cc-due-pill red"><i></i>'+Math.abs(d)+'d overdue</span>';
+  if(d===0)     return '<span class="cc-due-pill red"><i></i>Due today</span>';
+  if(d<=3)      return '<span class="cc-due-pill red"><i></i>'+d+'d left</span>';
+  if(d<=7)      return '<span class="cc-due-pill amb"><i></i>'+d+'d left</span>';
+  return '<span class="cc-due-pill ok"><i></i>'+d+'d left</span>';
+}
+function ccDaysWord(d){
+  if(d===null)  return 'no due date';
+  if(d<0)       return Math.abs(d)+'d overdue';
+  if(d===0)     return 'due today';
+  if(d===1)     return 'due tomorrow';
+  return 'in '+d+' days';
+}
+function ccSettled(row){ return row[3]===true||row[3]==='TRUE'||row[3]==='true'; }
+/* the sheet's own "has a statement balance" test — deliberately the same
+   truthiness the old alert badge used, so a 0 still reads as "not filled in" */
+function ccHasBal(row){ return !!(row[7] && row[7]!==''); }
+function ccIsWatch(row){ return ccHasBal(row) && ccNum(row[6]) <= ccNum(row[7]); }
+
+/* ═══ BUILD ══════════════════════════════════════════════════ */
+function ccDisplayData(data){
+  if(!data||!data.length){
+    document.getElementById('cc-root').innerHTML='<div class="error-box">⚠️ No card data found.</div>';
+    return;
+  }
+  ccCurrentData=data;
+  _ccDirty={};
+
+  document.getElementById('cc-root').innerHTML =
+    '<div id="ccSecWallet">'+ccWalletHTML(data)+'</div>'+
+    '<div id="ccSecRunway">'+ccRunwayPanelHTML(data)+'</div>'+
+    '<div id="ccSecStmt">'+ccStmtPanelHTML(data)+'</div>';
+
+  buildCCTicker(data);
+  if(typeof cardDeckInit === 'function') cardDeckInit();
+  if(typeof toolWheelRefresh === 'function') toolWheelRefresh();
+  ccRefreshSaveBtn();
+  ccBindSpy();
+  ccAvailChart(data);
+  ccStmtBoot(data);
+}
+
+/* Land on the first card's ledger rather than an empty "pick a card".
+   If the prefetch already has that month, paint it with no round trip. */
+function ccStmtBoot(data){
+  var first=data[0];
+  if(!first || !first[0]) return;
+  var now=new Date();
+  _ccExpState={ cardName:first[0], month:now.getMonth()+1, year:now.getFullYear() };
+  ccExpLoad();   // cache-first: paints instantly when the prefetch has landed
+}
+
+/* ── ③ WALLET: KPI ribbon · deck · sheet · attention ───────── */
+function ccWalletHTML(data){
+  var deckHTML = data.map(function(row,i){ return ccFaceHTML(row,i); }).join('');
+  var dotsHTML = data.map(function(row,i){
+    return '<button class="cd-dot'+(i===0?' on':'')+'" type="button" aria-label="'+ccAttr(row[0])+
+           '" title="'+ccAttr(row[0])+'"></button>';
+  }).join('');
+  var sheets = data.map(function(row,i){
+    return '<div class="cd-detail" data-i="'+i+'">'+
+             '<div class="cc-card cc-sheet">'+ccSheetHTML(row,i)+'</div>'+
+           '</div>';
+  }).join('');
+
+  /* the deck leads — the cards are the page. The ribbon reads as a
+     footnote to them, so it sits underneath. */
+  return '<div class="cd-wrap">'+
+      '<div class="cd-deck" id="cd-deck">'+deckHTML+'</div>'+
+      '<div class="cd-bar"><div class="cd-dots" id="cd-dots">'+dotsHTML+'</div>'+
+        '<button class="cd-fan-btn" id="cd-fan-btn" type="button">⤢ Fan</button></div>'+
+      '<div class="cd-details" id="cd-details">'+sheets+'</div>'+
+    '</div>'+
+    '<div class="cc-kpis" id="ccKpis">'+ccKpiHTML(data)+'</div>';
+}
+
+/* esc() leaves quotes alone; attributes need them escaped too */
+function ccAttr(v){ return esc(v).replace(/"/g,'&quot;'); }
+function ccHexA(c,a){
+  var h=String(c).replace('#','');
+  if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')';
+}
+
+/* the physical card face — exactly the markup cardDeck.html expects */
+function ccFaceHTML(row,i){
+  var b=ccBrandCfg(row[0]), st=ccSettled(row), watch=ccIsWatch(row);
+  var d=ccDaysUntilDue(row[5]), t=ccFmtDate(row[5]);
+  var dueTxt = d===null ? t : (d<0 ? t+' · '+Math.abs(d)+'d ago' : d===0 ? t+' · today' : t+' · '+d+'d');
+  return '<div class="cd-card'+(watch?' cd-warn':'')+'" data-i="'+i+'"'+
+           ' data-brand="'+b.color+'" data-soft="'+ccHexA(b.color,.4)+'"'+
+           ' style="--brand-bg:'+b.bg+';--brand-soft:'+ccHexA(b.color,.4)+';--brand-glow:'+ccHexA(b.color,.32)+'">'+
+    '<div class="cd-face">'+
+      '<div class="cd-guilloche"></div>'+
+      '<div class="cd-sheen"></div>'+
+      '<div class="cd-body">'+
+        '<div class="cd-row1">'+
+          '<div class="cd-chip"></div>'+
+          '<div class="cd-pip '+(st?'settled':'pending')+'"><i></i>'+(st?'Settled':'Pending')+'</div>'+
+        '</div>'+
+        '<div class="cd-mid">'+
+          '<div class="cd-due-lbl">Total Due</div>'+
+          '<div class="cd-due">'+ccFmt(row[1])+'</div>'+
+          '<div class="cd-avail">Available <b>'+ccFmt(row[8])+'</b></div>'+
+        '</div>'+
+        '<div class="cd-row3">'+
+          '<div><div class="cd-brand">'+esc(b.label)+'</div><div class="cd-bank">'+esc(row[0])+'</div></div>'+
+          '<div class="cd-due-date"><div class="cd-dd-lbl">Due</div><div class="cd-dd-val">'+esc(dueTxt)+'</div></div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function ccSheetHTML(row,i){
+  var b=ccBrandCfg(row[0]), st=ccSettled(row);
+  var nm=(row[0]||'Card');
+  return ''+
+  '<div class="cc-sheet-hdr">'+
+    '<div class="cc-sheet-logo" style="background:'+b.bg+';box-shadow:0 0 12px '+b.color+'44">'+esc(b.label)+'</div>'+
+    '<div style="flex:1;min-width:0">'+
+      '<div class="cc-sheet-name">'+esc(nm)+'</div>'+
+      '<div class="cc-sheet-meta">'+esc(row[2]||'No month')+' statement · sheet row '+(i+4)+'</div>'+
+    '</div>'+
+    '<div class="cc-seg" role="group" aria-label="Settlement status for '+ccAttr(nm)+'">'+
+      '<button type="button" id="ccSegP-'+i+'" class="pending'+(st?'':' on')+'" onclick="ccSetSettled('+i+',false)">Pending</button>'+
+      '<button type="button" id="ccSegS-'+i+'" class="settled'+(st?' on':'')+'" onclick="ccSetSettled('+i+',true)">Settled</button>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="cc-tiles">'+
+    '<div class="cc-tile"><span class="cc-tile-k">Total due</span>'+
+      '<div class="cc-tile-v due">'+ccFmt(row[1])+'</div>'+
+      '<div class="cc-tile-s">from the sheet · read-only</div></div>'+
+    '<div class="cc-tile"><span class="cc-tile-k">Available to spend</span>'+
+      '<div class="cc-tile-v avail">'+ccFmt(row[8])+'</div>'+
+      '<div class="cc-tile-s">headroom on this card</div></div>'+
+  '</div>'+
+
+  '<div class="cc-dates2">'+
+    '<div class="cc-date2">'+
+      '<span class="cc-date2-ic">📋</span>'+
+      '<span class="cc-date2-txt"><span class="cc-date2-k">Statement</span>'+
+        '<span class="cc-date2-v">'+esc(ccFmtDate(row[4]))+'</span></span>'+
+    '</div>'+
+    '<div class="cc-date2 due">'+
+      '<span class="cc-date2-ic">⏰</span>'+
+      '<span class="cc-date2-txt"><span class="cc-date2-k">Due date</span>'+
+        '<span class="cc-date2-v">'+esc(ccFmtDate(row[5]))+'</span></span>'+
+      ccDuePill(row[5], ccSettled(row))+
+    '</div>'+
+  '</div>'+
+
+  '<div class="cc-sheet-acts">'+
+    '<button class="cc-act go" type="button" onclick="showCardExpenses(\''+ccJs(row[0])+'\')">☰ Statement lines</button>'+
+    '<button class="cc-act an" type="button" onclick="ccLogAnalysis(\''+ccJs(row[0])+'\')">+ Log an analysis entry</button>'+
+    '<span class="cc-sheet-hint">drag the deck to change card</span>'+
+  '</div>';
+}
+/* a card name landing inside a single-quoted inline handler */
+function ccJs(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+/* ── KPI ribbon ──────────────────────────────────────────── */
+function ccKpiHTML(data){
+  var totalDue=data.reduce(function(s,r){return s+ccNum(r[1]);},0);
+  var settledCnt=data.filter(ccSettled).length;
+  var watch=data.filter(ccIsWatch);
+  var pips='';
+  data.forEach(function(r){ pips+='<span class="'+(ccSettled(r)?'on':'')+'"></span>'; });
+
+  var next=null;
+  data.forEach(function(r,i){
+    if(ccSettled(r)) return;
+    var d=ccDaysUntilDue(r[5]);
+    if(d===null) return;
+    if(!next || d<next.d) next={d:d,r:r,i:i};
+  });
+
+  var shortBy=watch.reduce(function(s,r){ return s+(ccNum(r[7])-ccNum(r[6])); },0);
+
+  return ''+
+  '<div class="cc-kpi red"><span class="cc-kpi-k">Total due</span>'+
+    '<span class="cc-kpi-v">'+ccFmt(totalDue)+'</span>'+
+    '<span class="cc-kpi-s">across '+data.length+' card'+(data.length===1?'':'s')+'</span></div>'+
+  '<div class="cc-kpi'+(settledCnt===data.length?' good':'')+'"><span class="cc-kpi-k">Settled</span>'+
+    '<span class="cc-kpi-v">'+settledCnt+' of '+data.length+'</span>'+
+    '<div class="cc-pips">'+pips+'</div></div>'+
+  (watch.length
+    ? '<div class="cc-kpi warn"><span class="cc-kpi-k">Underpaid</span>'+
+      '<span class="cc-kpi-v">'+watch.length+' card'+(watch.length===1?'':'s')+'</span>'+
+      '<span class="cc-kpi-s">'+esc(watch.map(function(r){return r[0];}).join(', '))+
+        ' · short by '+ccFmtS(shortBy)+'</span></div>'
+    : '<div class="cc-kpi good"><span class="cc-kpi-k">Underpaid</span>'+
+      '<span class="cc-kpi-v">None</span>'+
+      '<span class="cc-kpi-s">no interest expected</span></div>')+
+  (next
+    ? '<div class="cc-kpi'+(next.d<=3?' red':'')+'"><span class="cc-kpi-k">Next payment</span>'+
+      '<span class="cc-kpi-v">'+ccDaysWord(next.d)+'</span>'+
+      '<span class="cc-kpi-s">'+esc(next.r[0])+' · '+ccFmtS(next.r[1])+' · '+esc(ccFmtDate(next.r[5]))+'</span></div>'
+    : '<div class="cc-kpi good"><span class="cc-kpi-k">Next payment</span>'+
+      '<span class="cc-kpi-v">Nothing due</span>'+
+      '<span class="cc-kpi-s">every card settled or undated</span></div>');
+}
+function ccRefreshKpis(){
+  var host=document.getElementById('ccKpis');
+  if(host) host.innerHTML=ccKpiHTML(ccCurrentData);
+}
+
+/* ── edits: one dirty model, one Save ────────────────────── */
+function ccSetSettled(i,val){
+  var row=ccCurrentData[i];
+  if(!row || ccSettled(row)===val) return;
+  row[3]=val;
+  _ccDirty[i]=_ccDirty[i]||{};
+  _ccDirty[i].settled=true;
+
+  var p=document.getElementById('ccSegP-'+i), s=document.getElementById('ccSegS-'+i);
+  if(p) p.classList.toggle('on',!val);
+  if(s) s.classList.toggle('on',val);
+  var pip=document.querySelector('#cd-deck .cd-card[data-i="'+i+'"] .cd-pip');
+  if(pip){ pip.className='cd-pip '+(val?'settled':'pending'); pip.innerHTML='<i></i>'+(val?'Settled':'Pending'); }
+
+  ccRefreshKpis(); ccRefreshSaveBtn();
+  if(typeof toolWheelRefresh === 'function') toolWheelRefresh();
+  if(typeof haptic==='function') haptic('tick');
+}
+
+function ccRefreshSaveBtn(){
+  var btn=document.getElementById('ccSaveBtn');
+  if(!btn || _ccSaving) return;
+  var n=0;
+  Object.keys(_ccDirty).forEach(function(k){ n+=Object.keys(_ccDirty[k]).length; });
+  btn.disabled = n===0;
+  btn.classList.toggle('armed', n>0);
+  btn.textContent = n===0 ? '💾 Saved' : '💾 Save '+n+' change'+(n===1?'':'s');
+}
+
+function ccSaveAll(){
+  if(_ccSaving) return;
+  var jobs=[];
+  Object.keys(_ccDirty).forEach(function(k){
+    var i=parseInt(k,10), d=_ccDirty[k];
+    if(d.settled) jobs.push({i:i,kind:'settled'});
+  });
+  if(!jobs.length) return;
+
+  _ccSaving=true;
+  var btn=document.getElementById('ccSaveBtn');
+  if(btn){ btn.disabled=true; btn.classList.remove('armed'); btn.textContent='Saving…'; }
+
+  var left=jobs.length, fails=[];
+  function done(){
+    if(--left>0) return;
+    _ccSaving=false;
+    ccRefreshSaveBtn();
+    if(fails.length){
+      if(typeof haptic==='function') haptic('error');
+      alert('Some changes did not save:\n\n'+fails.join('\n'));
+    } else {
+      if(typeof haptic==='function') haptic('success');
+      if(btn){ btn.textContent='✓ Saved'; setTimeout(ccRefreshSaveBtn,1800); }
+    }
+  }
+  jobs.forEach(function(j){
+    var name=ccCurrentData[j.i][0]||('row '+(j.i+4));
+    var run=google.script.run
+      .withSuccessHandler(function(){
+        if(_ccDirty[j.i]){
+          delete _ccDirty[j.i][j.kind];
+          if(!Object.keys(_ccDirty[j.i]).length) delete _ccDirty[j.i];
+        }
+        done();
+      })
+      .withFailureHandler(function(err){
+        fails.push('• '+name+' (settled status): '+(err.message||err));
+        done();
+      });
+    run.saveMonthlySettled(j.i+4, ccCurrentData[j.i][3]);
+  });
+}
+
+function ccFocusCard(i){
+  if(typeof cardDeckSetActive === 'function') cardDeckSetActive(i);
+  ccGoSec('ccSecWallet');
+}
+
+/* ── ④ DUE RUNWAY — one axis, replaces the doughnut + timeline ── */
+/* which colour band a marker sits in */
+function ccRwTone(o){
+  if(o.st)       return 'gr';
+  if(o.d===null) return 'cy';
+  if(o.d<=3)     return 'red';
+  if(o.d<=7)     return 'amb';
+  return 'cy';
+}
+
+function ccRunwayPanelHTML(data){
+  var soon=[], later=[];
+  data.forEach(function(row,i){
+    var d=ccDaysUntilDue(row[5]);
+    var o={i:i,row:row,d:d,b:ccBrandCfg(row[0]),st:ccSettled(row)};
+    if(d===null || d>CC_RUNWAY_DAYS) later.push(o); else soon.push(o);
+  });
+  soon.sort(function(a,b){ return a.d-b.d; });
+
+  var falls=soon.reduce(function(s,o){ return s+(o.st?0:ccNum(o.row[1])); },0);
+
+  /* One lane per card, sorted soonest first. The bar runs from today to the
+     due date, so the eye reads the order down the column and nothing can
+     ever sit on top of anything else. */
+  var lanes=soon.map(function(o){
+    var pct=Math.max(0, Math.min(100, ((o.d<0?0:o.d)/CC_RUNWAY_DAYS)*100));
+    var tone=ccRwTone(o);
+    return '<button class="cc-rw-row" type="button" onclick="ccFocusCard('+o.i+')" '+
+        'title="'+ccAttr(o.row[0])+' · '+ccAttr(ccFmtDate(o.row[5]))+' · '+ccDaysWord(o.d)+'">'+
+      /* the card's own name, not the brand label — an unknown bank falls back
+         to the label "CARD", and three of those would read identically */
+      '<span class="cc-rw-name"><i style="background:'+o.b.color+'"></i>'+
+        '<b>'+esc(o.row[0]||o.b.label)+'</b>'+(o.st?'<em>✓</em>':'')+'</span>'+
+      '<span class="cc-rw-track">'+
+        '<span class="cc-rw-fill '+tone+'" style="width:'+pct.toFixed(1)+'%"></span>'+
+        '<span class="cc-rw-node '+tone+'" style="left:'+pct.toFixed(1)+'%"></span>'+
+      '</span>'+
+      '<span class="cc-rw-meta"><b>'+esc(ccFmtDate(o.row[5]))+'</b>'+
+        '<em class="'+tone+'">'+(o.st?'settled':ccDaysWord(o.d))+'</em></span>'+
+    '</button>';
+  }).join('');
+
+  var laterChips=later.map(function(o){
+    return '<button class="cc-rw-chip" type="button" onclick="ccFocusCard('+o.i+')">'+
+      '<i style="background:'+o.b.color+'"></i>'+esc(o.row[0])+' · '+
+      (o.d===null?'no due date':'in '+o.d+' days')+'</button>';
+  }).join('');
+
+  return '<div class="cc-rw-grid">'+
+    '<div class="cc-panel">'+
+      '<div class="cc-panel-hdr"><i style="background:var(--cc-cyan)"></i>Due runway'+
+        '<span class="cc-panel-sub">'+ccFmtS(falls)+' in the next '+CC_RUNWAY_DAYS+' days</span></div>'+
+      (soon.length
+        ? '<div class="cc-rw">'+lanes+
+            '<div class="cc-rw-scale"><span class="cc-rw-ticks">'+
+              '<span>Today</span><span>+7d</span><span>+14d</span><span>+21d</span><span>+'+CC_RUNWAY_DAYS+'d</span>'+
+            '</span></div>'+
+            '<div class="cc-rw-legend">'+
+              '<span><i class="red"></i>3 days or less</span>'+
+              '<span><i class="amb"></i>within a week</span>'+
+              '<span><i class="cy"></i>later this month</span>'+
+              '<span><i class="gr"></i>settled</span>'+
+            '</div>'+
+          '</div>'
+        : '<div class="cc-empty">Nothing falls due in the next '+CC_RUNWAY_DAYS+' days.</div>')+
+      (laterChips ? '<div class="cc-rw-later">'+laterChips+'</div>' : '')+
+    '</div>'+
+    '<div class="cc-panel">'+
+      '<div class="cc-panel-hdr"><i style="background:var(--cc-green)"></i>Due vs available'+
+        '<span class="cc-panel-sub">per card</span></div>'+
+      '<div class="chart-wrap"><canvas id="availChart"></canvas></div>'+
+    '</div>'+
+  '</div>';
+}
+
+function ccAvailChart(data){
+  var el=document.getElementById('availChart');
+  if(!el || typeof Chart === 'undefined') return;
+  var TIP={backgroundColor:'rgba(5,8,15,.95)',borderColor:'rgba(255,255,255,.1)',borderWidth:1,
+           titleColor:'#fff',bodyColor:'rgba(255,255,255,.65)',padding:11};
+  Chart.defaults.color='rgba(255,255,255,0.4)';
+  Chart.defaults.font.family='Inter';
+  var labels=data.map(function(r){return r[0]||'Card';});
+  var dues  =data.map(function(r){return ccNum(r[1]);});
+  var avail =data.map(function(r){return ccNum(r[8]);});
+  var cols  =data.map(function(r){return ccBrandCfg(r[0]).color;});
+  new Chart(el,{
+    type:'bar',
+    data:{labels:labels,datasets:[
+      {label:'Total Due',data:dues,backgroundColor:cols.map(function(c){return c+'33';}),
+       borderColor:cols,borderWidth:1.5,borderRadius:6,borderSkipped:false},
+      {label:'Available to Spend',data:avail,backgroundColor:'rgba(0,230,118,0.18)',
+       borderColor:'#00e676',borderWidth:1.5,borderRadius:6,borderSkipped:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:1100},
+      plugins:{legend:{labels:{color:'rgba(255,255,255,.5)',font:{size:10},usePointStyle:true}},
+               tooltip:{...TIP,callbacks:{label:function(ctx){return ' '+ctx.dataset.label+': '+ccFmt(ctx.parsed.y);}}}},
+      scales:{x:{ticks:{color:'rgba(255,255,255,.4)',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+              y:{ticks:{color:'rgba(255,255,255,.4)',font:{size:9},callback:function(v){return '₨'+v.toLocaleString('en-IN');}},
+                 grid:{color:'rgba(255,255,255,.04)'}}}}
+  });
+}
+
+/* ═══ TAB RAIL ═══════════════════════════════════════════════ */
+function ccGoSec(id){
+  var el=document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  ccMarkTab(id);
+  if(typeof haptic==='function') haptic('tick');
+}
+function ccMarkTab(id){
+  document.querySelectorAll('#ccTabs .cc-tab').forEach(function(t){
+    t.classList.toggle('active', t.getAttribute('data-sec')===id);
+  });
+}
+function ccBindSpy(){
+  if(_ccSpyBound) return;
+  var root=document.getElementById('cc-root');
+  if(!root) return;
+  _ccSpyBound=true;
+  var ticking=false;
+  root.addEventListener('scroll', function(){
+    if(ticking) return;
+    ticking=true;
+    requestAnimationFrame(function(){
+      ticking=false;
+      var best=CC_SECTIONS[0];
+      CC_SECTIONS.forEach(function(id){
+        var el=document.getElementById(id);
+        if(el && el.getBoundingClientRect().top < 190) best=id;
+      });
+      ccMarkTab(best);
+    });
+  }, {passive:true});
+}
+
+/* ═══════════════════════════════════════════
+   CARD WHEEL  —  radial card picker (Cards tab header)
+   Rebuilt on every open, so the wedges always show live figures.
+═══════════════════════════════════════════ */
+if(typeof toolWheelRegister === 'function'){
+  toolWheelRegister('cards', function(){
+    var data = (typeof ccCurrentData !== 'undefined' && ccCurrentData) ? ccCurrentData : null;
+    if(!data || !data.length) return null;
+
+    return {
+      title: 'Cards',
+      rich : true,
+      // trigger pip is green only when every card is settled
+      live : function(){ return data.every(ccSettled); },
+      items: data.slice(0, 8).map(function(row, i){
+        var b  = ccBrandCfg(row[0]);
+        var st = ccSettled(row);
+        var d  = ccDaysUntilDue(row[5]);
+        var sub2;
+        if(st)              sub2 = 'settled';
+        else if(d === null) sub2 = 'no due date';
+        else if(d < 0)      sub2 = Math.abs(d) + 'd overdue';
+        else if(d === 0)    sub2 = 'due today';
+        else                sub2 = 'due in ' + d + 'd';
+
+        return {
+          ico  : (!st && d !== null && d <= 3) ? '⚠️' : '',
+          name : b.label,
+          desc : row[0],
+          sub  : ccFmt(row[1]),
+          sub2 : sub2,
+          color: b.color,
+          run  : function(){
+            if(typeof cardDeckSetActive === 'function') cardDeckSetActive(i);
+            showCardExpenses(row[0]);
+          }
+        };
+      })
+    };
+  });
+}
+
+function ccShowError(err){
+  document.getElementById('cc-root').innerHTML='<div class="error-box">⚠️ '+(err.message||err)+'</div>';
+}
+
+/* ═══════════════════════════════════════════
+   ⑤ STATEMENT  —  the per-card ledger, inline
+   ───────────────────────────────────────────
+   This is the old floating #cc-exp-panel, unpacked into the page.
+   Everything it could do it still does — month paging, search,
+   clear, totals, pagination, and the CARD_ANALYSIS form — except
+   that the form is now a permanent rail instead of a toggle three
+   levels down, and the card is picked from a row of brand tabs
+   instead of reopening the panel per card. It no longer drags,
+   because it no longer floats.
+═══════════════════════════════════════════ */
+var _ccExpState        = { cardName: '', month: 0, year: 0 };
+var _ccExpMonths       = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var _ccExpEntriesAll   = [];
+var _ccExpEntries      = [];
+var _ccExpPage         = 0;
+var _ccExpSearchTerm   = '';
+var _ccExpTotalExp     = 0;
+var _ccExpTotalPay     = 0;
+var CC_EXP_PAGE_SIZE   = 20;
+
+function ccStmtPanelHTML(data){
+  var tabs = data.map(function(row,i){
+    var b=ccBrandCfg(row[0]);
+    return '<button class="cc-cardtab" type="button" data-card="'+ccAttr(row[0])+'" '+
+      'onclick="showCardExpenses(\''+ccJs(row[0])+'\')">'+
+      '<i style="background:'+b.color+'"></i>'+esc(row[0])+'</button>';
+  }).join('');
+
+  return '<div class="cc-panel">'+
+    '<div class="cc-panel-hdr"><i style="background:var(--cc-purple)"></i>Statement'+
+      '<span class="cc-panel-sub" id="ccStmtSub">pick a card</span></div>'+
+
+    '<div class="cc-stmt">'+
+      '<div style="min-width:0">'+
+        '<div class="cc-stmt-bar" id="ccStmtTabs">'+tabs+
+          '<div class="cc-month-nav">'+
+            '<button class="cc-mn-btn" id="cc-exp-prev" type="button" onclick="ccExpNav(-1)" '+
+              'title="Previous month" aria-label="Previous month">‹</button>'+
+            '<span class="cc-mn-lbl" id="cc-exp-sub">—</span>'+
+            '<button class="cc-mn-btn" id="cc-exp-next" type="button" onclick="ccExpNav(1)" '+
+              'title="Next month" aria-label="Next month">›</button>'+
+          '</div>'+
+        '</div>'+
+
+        '<div class="cc-stmt-tot">'+
+          '<div class="exp"><span>Spent this cycle</span><b id="ccStmtExp">—</b></div>'+
+          '<div class="pay"><span>Paid this cycle</span><b id="ccStmtPay">—</b></div>'+
+        '</div>'+
+
+        '<div class="cc-stmt-search">'+
+          '<label for="cc-exp-search-input" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)">Search transactions</label>'+
+          '<input id="cc-exp-search-input" type="search" placeholder="Search a day or a reference…" oninput="ccExpSearch(this.value)">'+
+          '<button class="cc-pbtn" type="button" onclick="ccExpSearchClear()">Clear</button>'+
+        '</div>'+
+
+        '<div id="cc-exp-table-wrap">'+
+          '<div class="cc-empty">Pick a card above to read its statement lines.</div>'+
+        '</div>'+
+      '</div>'+
+
+      '<div class="cc-an-rail">'+
+        '<div class="cc-panel-hdr" style="margin-bottom:11px;"><i style="background:var(--cc-purple)"></i>Log to analysis</div>'+
+        '<div class="cc-an-fld"><label for="cc-exp-ca-ref">Reference</label>'+
+          '<input id="cc-exp-ca-ref" type="text" placeholder="e.g. cool planet"></div>'+
+        '<div class="cc-an-grid">'+
+          '<div class="cc-an-fld"><label for="cc-exp-ca-total">Total amount</label>'+
+            '<input id="cc-exp-ca-total" type="number" step="0.01" placeholder="0"></div>'+
+          '<div class="cc-an-fld"><label for="cc-exp-ca-paid">Paid amount</label>'+
+            '<input id="cc-exp-ca-paid" type="number" step="0.01" placeholder="0"></div>'+
+        '</div>'+
+        '<div class="cc-an-grid">'+
+          '<div class="cc-an-fld"><label for="cc-exp-ca-offers">Offers/discounts</label>'+
+            '<input id="cc-exp-ca-offers" type="number" step="0.01" placeholder="0"></div>'+
+          '<div class="cc-an-fld"><label for="cc-exp-ca-fees">Fees</label>'+
+            '<input id="cc-exp-ca-fees" type="number" step="0.01" placeholder="0"></div>'+
+        '</div>'+
+        '<div class="cc-an-note" id="ccAnNote">Saved to CARD_ANALYSIS against the card and month shown on the left.</div>'+
+        '<button class="cc-an-save" type="button" onclick="ccExpCaSave()">💾 Save to analysis</button>'+
+        '<span class="cc-an-msg" id="cc-exp-ca-msg"></span>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+/* highlight the card whose ledger is showing */
+function ccStmtSyncTabs(){
+  var host=document.getElementById('ccStmtTabs');
+  if(!host) return;
+  host.querySelectorAll('.cc-cardtab').forEach(function(t){
+    var on = t.getAttribute('data-card') === _ccExpState.cardName;
+    t.classList.toggle('on', on);
+    if(on){
+      var b=ccBrandCfg(_ccExpState.cardName);
+      t.style.background=ccHexA(b.color,.14);
+      t.style.borderColor=ccHexA(b.color,.5);
+    } else {
+      t.style.background=''; t.style.borderColor='';
+    }
+  });
+  var sub=document.getElementById('ccStmtSub');
+  if(sub) sub.textContent=_ccExpState.cardName || 'pick a card';
+  var note=document.getElementById('ccAnNote');
+  if(note) note.textContent = _ccExpState.cardName
+    ? 'Saved to CARD_ANALYSIS as ' + _ccExpState.month + '/' + _ccExpState.year +
+      ' · ' + _ccExpState.cardName + '.'
+    : 'Saved to CARD_ANALYSIS against the card and month shown on the left.';
+}
+
+function showCardExpenses(cardName){
+  var now=new Date();
+  _ccExpState={ cardName:cardName, month:now.getMonth()+1, year:now.getFullYear() };
+  ccStmtSyncTabs();
+  ccGoSec('ccSecStmt');
+  ccExpLoad();
+}
+
+/* the sheet's "Log an analysis entry" — same section, focus the rail */
+function ccLogAnalysis(cardName){
+  if(_ccExpState.cardName !== cardName) showCardExpenses(cardName);
+  else ccGoSec('ccSecStmt');
+  setTimeout(function(){
+    var el=document.getElementById('cc-exp-ca-ref');
+    if(el) el.focus();
+  }, 380);
+}
+
+/* kept so anything that used to close the floating panel still works */
+function ccExpClose(){ ccGoSec('ccSecWallet'); }
+
+/* there is no next month past this one */
+function ccExpSyncNav(){
+  var b=document.getElementById('cc-exp-next');
+  if(!b) return;
+  var now=new Date(), curM=now.getMonth()+1, curY=now.getFullYear();
+  b.disabled=(_ccExpState.year>curY || (_ccExpState.year===curY && _ccExpState.month>=curM));
+}
+
+function ccExpLoad(force){
+  if(!_ccExpState.cardName) return;
+  var name=_ccExpState.cardName, m=_ccExpState.month, y=_ccExpState.year;
+
+  var lbl=document.getElementById('cc-exp-sub');
+  if(lbl) lbl.textContent=_ccExpMonths[m]+' '+y;
+  ccStmtSyncTabs();
+  ccExpSyncNav();
+
+  /* already read this card-month once — no round trip, no spinner */
+  var key=ccStmtKey(name, m, y);
+  if(!force && _ccStmtCache[key]){ ccExpRender(_ccStmtCache[key]); return; }
+
+  document.getElementById('cc-exp-table-wrap').innerHTML='<div class="cc-empty">⏳ Loading…</div>';
+  document.getElementById('ccStmtExp').textContent='—';
+  document.getElementById('ccStmtPay').textContent='—';
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(res && res.success) _ccStmtCache[key]=res;
+      ccExpRender(res);
+    })
+    .withFailureHandler(function(err){
+      document.getElementById('cc-exp-table-wrap').innerHTML =
+        '<div class="cc-empty">⚠️ '+esc(err.message||err)+'</div>';
+    })
+    .getCardExpenses(name, m, y);
+}
+
+function ccExpNav(delta){
+  if(!_ccExpState.cardName) return;
+  var m=_ccExpState.month+delta, y=_ccExpState.year;
+  if(m<1){ m=12; y--; }
+  if(m>12){ m=1; y++; }
+
+  // Don't go beyond current month
+  var now=new Date();
+  if(y>now.getFullYear() || (y===now.getFullYear() && m>now.getMonth()+1)) return;
+
+  _ccExpState.month=m;
+  _ccExpState.year=y;
+  ccExpLoad();
+}
+
+function ccExpRender(res){
+  var wrap=document.getElementById('cc-exp-table-wrap');
+  if(!res || !res.success){
+    wrap.innerHTML='<div class="cc-empty">⚠️ '+esc(res?res.error:'Error loading data')+'</div>';
+    return;
+  }
+  if(res.noColumn){
+    wrap.innerHTML='<div class="cc-empty">📭 No expense column mapped for <strong>'+esc(res.cardName)+
+      '</strong>.<br><span style="opacity:.6">Check the card name contains "amex", "ntb", "selan" or "ndb".</span></div>';
+    return;
+  }
+  _ccExpEntriesAll = res.entries || [];
+  _ccExpEntries    = _ccExpEntriesAll.slice();
+  _ccExpTotalExp   = res.totalExp || 0;
+  _ccExpTotalPay   = res.totalPay || 0;
+  _ccExpPage       = 0;
+  _ccExpSearchTerm = '';
+
+  var si=document.getElementById('cc-exp-search-input');
+  if(si) si.value='';
+  document.getElementById('ccStmtExp').textContent='₨ '+_ccExpTotalExp.toLocaleString('en-IN');
+  document.getElementById('ccStmtPay').textContent='₨ '+_ccExpTotalPay.toLocaleString('en-IN');
+
+  if(!_ccExpEntriesAll.length){
+    wrap.innerHTML='<div class="cc-empty">📭 No transactions recorded this month.</div>';
+    return;
+  }
+  ccExpPage(0);
+}
+
+function ccExpSearch(term){
+  _ccExpSearchTerm=(term||'').toLowerCase().trim();
+  var mName=_ccExpMonths[_ccExpState.month]||'';
+  if(!_ccExpSearchTerm){
+    _ccExpEntries=_ccExpEntriesAll.slice();
+  } else {
+    _ccExpEntries=_ccExpEntriesAll.filter(function(e){
+      var dateStr=mName+' '+e.day;
+      var dateMatch=dateStr.toLowerCase().indexOf(_ccExpSearchTerm)>=0;
+      var refMatch=e.reference && e.reference.toLowerCase().indexOf(_ccExpSearchTerm)>=0;
+      var expMatch=e.expense && String(e.expense).indexOf(_ccExpSearchTerm)>=0;
+      var payMatch=e.payment && String(e.payment).indexOf(_ccExpSearchTerm)>=0;
+      return dateMatch || refMatch || expMatch || payMatch;
+    });
+  }
+  _ccExpPage=0;
+  ccExpPage(0);
+}
+
+function ccExpSearchClear(){
+  var inp=document.getElementById('cc-exp-search-input');
+  if(inp) inp.value='';
+  ccExpSearch('');
+}
+
+function ccExpCaSave(){
+  var cardName=_ccExpState ? _ccExpState.cardName : '';
+  var now=new Date();
+  var m=_ccExpState && _ccExpState.month ? _ccExpState.month : (now.getMonth()+1);
+  var y=_ccExpState && _ccExpState.year  ? _ccExpState.year  : now.getFullYear();
+  var msg=document.getElementById('cc-exp-ca-msg');
+  var btn=document.querySelector('.cc-an-save');
+
+  if(!cardName){
+    msg.textContent='⚠ Pick a card first';
+    msg.style.color='#f87171';
+    return;
+  }
+
+  var entry={
+    date: m+'/'+y,
+    card: cardName,
+    reference: document.getElementById('cc-exp-ca-ref').value.trim(),
+    amountTotal: parseFloat(document.getElementById('cc-exp-ca-total').value) || 0,
+    paidAmount:  parseFloat(document.getElementById('cc-exp-ca-paid').value) || 0,
+    offersDiscounts: parseFloat(document.getElementById('cc-exp-ca-offers').value) || 0,
+    fees:         parseFloat(document.getElementById('cc-exp-ca-fees').value) || 0
+  };
+
+  if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
+  msg.textContent='';
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(btn){ btn.disabled=false; btn.textContent='💾 Save to analysis'; }
+      if(res && res.success){
+        msg.textContent='✓ Saved to CARD_ANALYSIS';
+        msg.style.color='#4ade80';
+        document.getElementById('cc-exp-ca-ref').value='';
+        document.getElementById('cc-exp-ca-total').value='';
+        document.getElementById('cc-exp-ca-paid').value='';
+        document.getElementById('cc-exp-ca-offers').value='';
+        document.getElementById('cc-exp-ca-fees').value='';
+        /* the analysis page holds a stale copy now — make it refetch */
+        if(typeof _spaLoaded !== 'undefined') _spaLoaded.ca=false;
+        setTimeout(function(){ msg.textContent=''; }, 2500);
+      } else {
+        msg.textContent='⚠ '+(res?res.error:'Save failed');
+        msg.style.color='#f87171';
+      }
+    })
+    .withFailureHandler(function(err){
+      if(btn){ btn.disabled=false; btn.textContent='💾 Save to analysis'; }
+      msg.textContent='⚠ '+(err.message||err);
+      msg.style.color='#f87171';
+    })
+    .addCardAnalysisEntry(entry);
+}
+
+function ccExpPage(page){
+  _ccExpPage=page;
+  var wrap=document.getElementById('cc-exp-table-wrap');
+  var count=_ccExpEntries.length;
+  var pages=Math.ceil(count/CC_EXP_PAGE_SIZE)||1;
+  if(_ccExpPage>=pages) _ccExpPage=pages-1;
+  if(_ccExpPage<0) _ccExpPage=0;
+  page=_ccExpPage;
+  var start=page*CC_EXP_PAGE_SIZE;
+  var end=Math.min(start+CC_EXP_PAGE_SIZE,count);
+  var slice=_ccExpEntries.slice(start,end);
+  var mName=_ccExpMonths[_ccExpState.month]||'';
+
+  if(!count){
+    wrap.innerHTML='<div class="cc-empty">🔍 No entries match your search.</div>';
+    return;
+  }
+
+  var html='<div class="cc-led-wrap"><div class="cc-led-scroll"><table class="cc-led">'+
+    '<thead><tr><th style="width:104px">Date</th><th>Reference</th>'+
+    '<th class="r" style="width:132px">Expense</th><th class="r" style="width:132px">Payment</th></tr></thead><tbody>';
+  slice.forEach(function(e){
+    var isPay=e.payment>0;
+    html+='<tr'+(isPay?' class="pay"':'')+'>'+
+      '<td class="dt">'+mName+' '+e.day+'</td>'+
+      '<td class="ref">'+esc(e.reference||'—')+'</td>'+
+      '<td class="r '+(e.expense>0?'ex':'no')+'">'+(e.expense>0?'₨ '+e.expense.toLocaleString('en-IN'):'—')+'</td>'+
+      '<td class="r '+(isPay?'pa':'no')+'">'+(isPay?'₨ '+e.payment.toLocaleString('en-IN'):'—')+'</td>'+
+    '</tr>';
+  });
+  html+='</tbody></table></div>';
+
+  var info=(start+1)+'–'+end+' of '+count;
+  if(_ccExpSearchTerm && count<_ccExpEntriesAll.length) info+=' (filtered from '+_ccExpEntriesAll.length+')';
+
+  html+='<div class="cc-led-pager">'+
+    '<button class="cc-pbtn" type="button" onclick="ccExpPage(0)"'+(page===0?' disabled':'')+'>«</button>'+
+    '<button class="cc-pbtn" type="button" onclick="ccExpPage('+(page-1)+')"'+(page===0?' disabled':'')+'>‹ Prev</button>'+
+    '<span class="cc-pinfo">'+info+'</span>'+
+    '<button class="cc-pbtn" type="button" onclick="ccExpPage('+(page+1)+')"'+(page>=pages-1?' disabled':'')+'>Next ›</button>'+
+    '<button class="cc-pbtn" type="button" onclick="ccExpPage('+(pages-1)+')"'+(page>=pages-1?' disabled':'')+'>»</button>'+
+  '</div></div>';
+
+  wrap.innerHTML=html;
+}
+
+/* ── CC ticker ── */
+function buildCCTicker(data){
+  var fmt = function(v){ return '₨'+Math.abs(parseFloat((v+'').replace(/,/g,''))||0).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}); };
+  var items = data.map(function(row){
+    var name   = (row[0]||'Card').split(' ')[0].toUpperCase();
+    var due    = fmt(row[1]);
+    var avail  = fmt(row[8]);
+    var dueDate= (row[5]||'').toString().trim() || '—';
+    var settled= row[3]===true||row[3]==='TRUE'||row[3]==='true';
+    var stIco  = settled ? '<span class="tick-chg fr">✓</span>' : '<span class="tick-chg fl">DUE</span>';
+    return '<span class="tick-item">'
+      + '<span class="tick-sym">' + name + '</span>'
+      + ' DUE ' + due
+      + ' · AVAIL ' + avail
+      + ' · ' + dueDate
+      + ' ' + stIco
+      + '</span>';
+  });
+  _buildTick('ccTickerWrap', 'ccTickerTrack', items, 40);
+}
+
+/* ═══════════════════════════════════════════
+   CARD ANALYSIS JS  —  #page-ca, CARD_ANALYSIS sheet
 ═══════════════════════════════════════════ */
 var caData = [];
 var caCharts = {};

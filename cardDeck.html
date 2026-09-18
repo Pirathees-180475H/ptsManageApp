@@ -13,10 +13,17 @@
        • hover (desktop) → parallax tilt + a holo sheen that
                            tracks the cursor across the face
 
-     The detail panel holds the ORIGINAL .cc-top markup verbatim,
-     so every existing id and handler — toggleStatus(i),
-     saveStatus(i), saveBalance(i), bal-input-N, alert-N — keeps
-     working untouched.
+     The detail panel beside the deck is the card sheet that
+     cardAnalysis.html renders into each .cd-detail[data-i]. This file
+     owns only the contract, not the contents:
+       #cd-deck      holds one .cd-card[data-i][data-brand][data-soft],
+                     each wrapping a .cd-face with .cd-sheen and .cd-pip
+       #cd-dots      one .cd-dot per card
+       #cd-fan-btn   the Fan / Stack toggle
+       #cd-details   one .cd-detail[data-i] per card; the active one
+                     gets .on and the brand's --bk-soft border
+     Anything may live inside a .cd-detail — the deck only switches
+     which one is shown.
 
      Included from render.html via:  <?!= include('cardDeck'); ?>
      Driven by cardDeckInit() at the end of ccDisplayData().
