@@ -1704,11 +1704,6 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .trk-mini-stat{display:inline-flex;align-items:center;gap:5px;font-size:.6em;padding:3px 8px;background:rgba(255,255,255,.05);border-radius:6px;color:rgba(255,255,255,.6);}
 .trk-mini-stat .val{font-weight:800;color:#fff;}
 
-
-
-
-
-
 #calc-panel{
   position:fixed;bottom:calc(var(--nav-h) + 10px);left:12px;
   width:234px;z-index:8000;
@@ -2450,20 +2445,6 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   #page-exp .r3,#page-exp .r2,#page-exp .r21{grid-template-columns:1fr;}
   #page-exp .ig{grid-template-columns:repeat(2,1fr);}
 }
-
-/* ── Expense Detail Popup (render.html) ── */
-#exp-detail-overlay{
-  display:none;position:fixed;inset:0;z-index:9000;
-  background:rgba(0,0,0,.72);backdrop-filter:blur(12px);
-  align-items:center;justify-content:center;padding:16px;
-}
-#exp-detail-overlay.open{display:flex;}
-#exp-detail-modal{
-  background:#0d1220;border:1px solid rgba(255,255,255,.1);
-  border-radius:20px;width:100%;max-width:720px;
-  height:min(90vh,820px);display:flex;flex-direction:column;
-  box-shadow:0 24px 80px rgba(0,0,0,.7);animation:edmIn .25s ease;
-}
 @keyframes edmIn{from{opacity:0;transform:scale(.94) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .edm-hdr{display:flex;align-items:center;justify-content:space-between;
   padding:16px 18px 13px;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;}
@@ -2473,23 +2454,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
   color:rgba(255,255,255,.45);border-radius:50%;width:28px;height:28px;
   cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .edm-close:hover{color:#fff;background:rgba(255,255,255,.12);}
-.edm-nav-row{display:flex;align-items:center;gap:6px;}
-.edm-nav-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-  color:rgba(255,255,255,.55);border-radius:8px;width:28px;height:28px;
-  cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
-  transition:background .12s,color .12s;}
-.edm-nav-btn:hover{color:#fff;background:rgba(255,255,255,.12);}
-.edm-nav-btn:disabled{opacity:.25;cursor:not-allowed;pointer-events:none;}
 .edm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:12px 18px 20px;}
-.edm-loading{display:flex;align-items:center;justify-content:center;gap:10px;
-  padding:40px;color:var(--muted);font-size:12px;}
-.edm-spin{width:24px;height:24px;border:2px solid rgba(99,102,241,.2);
-  border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;}
-.edm-table{width:100%;border-collapse:collapse;}
-.edm-table th{font-size:.6em;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--dim);padding:5px 9px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left;}
-.edm-table th:last-child{text-align:right;}
-.edm-table td{padding:7px 9px;font-size:.78em;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;}
 
 /* ── Expense Heatmap Modal ── */
 #hm-exp-overlay{
@@ -2591,123 +2556,6 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 /* Major EXP Analyzer content area inside analyze modal */
 #analyze-me-body{display:none;flex-direction:column;overflow-y:auto;flex:1;padding:0;}
 #analyze-me-body.open{display:flex;}
-
-.edm-table td:last-child{text-align:right;font-weight:700;color:#a855f7;}
-.edm-table tr:hover td{background:rgba(255,255,255,.025);}
-.edm-cat-row td{padding:9px 9px 5px;background:rgba(255,255,255,.03);
-  border-top:1px solid rgba(255,255,255,.07);border-bottom:none;}
-.edm-cat-row:first-child td{border-top:none;}
-.edm-cat-name{font-weight:700;font-size:.8em;color:#fff;}
-.edm-cat-sum{text-align:right!important;font-weight:700;color:#a855f7;font-size:.78em;}
-.edm-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle;}
-.edm-day{font-size:.65em;color:var(--dim);font-weight:500;}
-.edm-dayname{display:block;font-size:.58em;color:rgba(255,255,255,.28);font-weight:500;letter-spacing:.5px;margin-top:1px;}
-.edm-ref{color:var(--muted);font-size:.75em;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.edm-claim-row td{background:rgba(255,215,0,.07)!important;}
-.edm-claim-row td:first-child{border-left:3px solid var(--gold);}
-.edm-ref-claim{color:var(--gold)!important;font-weight:600;}
-.edm-total-row{display:flex;justify-content:space-between;align-items:center;
-  padding:11px 9px 0;border-top:1px solid rgba(255,255,255,.07);margin-top:4px;
-  font-size:.78em;font-weight:700;color:var(--muted);}
-.edm-total-val{font-size:1.05em;color:#8b5cf6;}
-.edm-empty{text-align:center;padding:36px;color:var(--dim);}
-.edm-err-msg{text-align:center;padding:28px;color:var(--red);font-size:.82em;}
-/* budget insights strip */
-.edm-insights{display:flex;gap:5px;flex-wrap:wrap;padding:0 0 12px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:8px;}
-.edm-ins-chip{flex:1;min-width:70px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:9px;padding:7px 9px;display:flex;flex-direction:column;gap:2px;}
-.edm-ins-lbl{font-size:.52em;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.28);}
-.edm-ins-val{font-size:.82em;font-weight:800;color:#fff;}
-.edm-ins-val.ok{color:var(--green);}
-.edm-ins-val.warn{color:var(--red);}
-.edm-ins-val.amber{color:var(--amber);}
-/* budget bar inside category row */
-.edm-cat-row.edm-over td{background:rgba(255,77,109,.05)!important;border-left:2px solid rgba(255,77,109,.35);}
-.edm-cat-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
-.edm-cat-budget{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0;}
-.edm-cat-budget-nums{font-size:.65em;color:rgba(255,255,255,.38);white-space:nowrap;}
-.edm-cat-budget-nums b{color:rgba(255,255,255,.7);}
-.edm-status-ok{display:inline-block;font-size:.58em;padding:2px 6px;border-radius:6px;background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.2);font-weight:700;white-space:nowrap;}
-.edm-status-warn{display:inline-block;font-size:.58em;padding:2px 6px;border-radius:6px;background:rgba(255,77,109,.12);color:var(--red);border:1px solid rgba(255,77,109,.2);font-weight:700;white-space:nowrap;}
-.edm-bar-wrap{height:3px;background:rgba(255,255,255,.07);border-radius:3px;overflow:hidden;margin-top:5px;position:relative;}
-.edm-bar-fill{height:100%;border-radius:3px;}
-/* Budget editor collapsible */
-.edm-budget-editor{background:rgba(168,85,247,.06);border:1px solid rgba(168,85,247,.18);border-radius:12px;margin-bottom:12px;overflow:hidden;}
-.edm-be-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;cursor:pointer;user-select:none;}
-.edm-be-title{font-size:.72em;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#c084fc;}
-.edm-be-arrow{font-size:.82em;color:#c084fc;transition:transform .22s;}
-.edm-be-arrow.open{transform:rotate(180deg);}
-.edm-be-body{display:none;padding:10px 13px 13px;}
-.edm-be-body.open{display:block;}
-.edm-be-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 10px;margin-bottom:11px;}
-.edm-be-row{display:flex;flex-direction:column;gap:3px;}
-.edm-be-lbl{font-size:.58em;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:rgba(255,255,255,.35);}
-.edm-be-input{background:rgba(255,255,255,.06);border:1px solid rgba(168,85,247,.22);border-radius:7px;padding:5px 8px;font-size:.78em;font-weight:700;color:#fff;font-family:inherit;width:100%;box-sizing:border-box;outline:none;}
-.edm-be-input:focus{border-color:rgba(168,85,247,.55);background:rgba(168,85,247,.1);}
-.edm-be-save{width:100%;background:rgba(168,85,247,.22);border:1px solid rgba(168,85,247,.45);border-radius:9px;color:#c084fc;font-size:.78em;font-weight:800;font-family:inherit;padding:7px 0;cursor:pointer;transition:background .18s;}
-.edm-be-save:hover{background:rgba(168,85,247,.36);}
-.edm-be-save:disabled{opacity:.5;cursor:not-allowed;}
-.edm-be-msg{font-size:.65em;text-align:center;margin-top:6px;min-height:14px;}
-/* MoM delta badge */
-.edm-mom{display:inline-flex;align-items:center;gap:2px;font-size:.54em;font-weight:800;padding:2px 5px;border-radius:5px;margin-left:5px;vertical-align:middle;white-space:nowrap;}
-.edm-mom-up  {background:rgba(255,77,109,.14);color:var(--red);}
-.edm-mom-down{background:rgba(0,230,118,.12); color:var(--green);}
-.edm-mom-flat{background:rgba(255,255,255,.06);color:rgba(255,255,255,.38);}
-/* spending pace alert */
-.edm-pace{display:flex;align-items:center;gap:7px;padding:8px 12px;margin-bottom:10px;border-radius:10px;font-size:.72em;font-weight:700;border:1px solid;}
-.edm-pace-warn{background:rgba(255,77,109,.08);border-color:rgba(255,77,109,.28);color:var(--red);}
-.edm-pace-ok  {background:rgba(0,230,118,.07); border-color:rgba(0,230,118,.22); color:var(--green);}
-/* month progress bar */
-.edm-month-prog{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.14);border-radius:12px;padding:12px 14px;margin-bottom:12px;}
-.edm-mp-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;}
-.edm-mp-lbl{font-size:.62em;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:rgba(0,212,255,.55);}
-.edm-mp-val{font-size:.68em;font-weight:600;color:rgba(255,255,255,.45);}
-.edm-mp-val strong{color:rgba(255,255,255,.8);}
-.edm-mp-bar-wrap{height:6px;background:rgba(255,255,255,.07);border-radius:6px;overflow:visible;position:relative;margin-bottom:3px;}
-.edm-mp-bar-fill{height:100%;border-radius:6px;position:absolute;top:0;left:0;}
-.edm-mp-days{background:linear-gradient(90deg,rgba(0,212,255,.5),rgba(0,212,255,.85));}
-.edm-mp-proj{position:absolute;top:0;height:100%;background:rgba(255,77,109,.22);border-radius:0 6px 6px 0;}
-.edm-mp-day-marker{position:absolute;top:-3px;bottom:-3px;width:2px;background:rgba(255,255,255,.7);border-radius:2px;transform:translateX(-50%);}
-.edm-mp-meta{display:flex;justify-content:space-between;font-size:.62em;color:rgba(255,255,255,.3);margin-top:6px;}
-.edm-mp-meta strong{font-weight:800;}
-/* claim toggle */
-.edm-claim-toggle{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:5px;font-size:.58em;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s;vertical-align:middle;line-height:1.6;}
-.edm-claim-row .edm-claim-toggle{background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);color:var(--gold);}
-.edm-claim-row .edm-claim-toggle:hover{background:rgba(255,215,0,.22);}
-.edm-claimed-row td{background:rgba(0,230,118,.05)!important;}
-.edm-claimed-row td:first-child{border-left:3px solid var(--green);}
-.edm-ref-claimed{color:var(--green)!important;font-weight:600;}
-.edm-claimed-row .edm-claim-toggle{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:var(--green);}
-.edm-claimed-row .edm-claim-toggle:hover{background:rgba(0,230,118,.22);}
-.edm-claim-toggle:disabled{opacity:.45;cursor:not-allowed;}
-/* junk toggle */
-.edm-junk-row td{background:rgba(255,170,0,.06)!important;}
-.edm-junk-row td:first-child{border-left:3px solid #f59e0b;}
-.edm-ref-junk{color:#f59e0b!important;font-weight:600;}
-.edm-junk-toggle{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:5px;font-size:.58em;font-weight:800;cursor:pointer;font-family:inherit;transition:all .15s;vertical-align:middle;line-height:1.6;background:rgba(255,170,0,.1);border:1px solid rgba(255,170,0,.3);color:#f59e0b;}
-.edm-junk-toggle:hover{background:rgba(255,170,0,.22);}
-.edm-junk-toggle.on{background:rgba(0,230,118,.1);border:1px solid rgba(0,230,118,.25);color:var(--green);}
-.edm-junk-toggle.on:hover{background:rgba(0,230,118,.22);}
-.edm-junk-toggle:disabled{opacity:.45;cursor:not-allowed;}
-/* expense popup donut charts */
-.edm-charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
-.edm-chart-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:11px;padding:10px 10px 8px;}
-.edm-chart-title{font-size:.55em;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.28);margin-bottom:6px;text-align:center;}
-.edm-chart-wrap{position:relative;height:130px;}
-.edm-chart-wrap canvas{position:absolute;inset:0;}
-.edm-chart-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;width:68px;}
-.edm-chart-center-val{font-size:.72em;font-weight:800;color:#fff;line-height:1.1;white-space:nowrap;}
-.edm-chart-center-lbl{font-size:.44em;color:rgba(255,255,255,.28);text-transform:uppercase;letter-spacing:.6px;margin-top:1px;}
-.edm-cat-legend{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-bottom:12px;padding:8px 10px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:9px;}
-.edm-leg-item{display:flex;align-items:center;gap:5px;}
-.edm-leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.edm-leg-lbl{font-size:.58em;color:rgba(255,255,255,.42);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-/* daily expense trend chart */
-.edm-daily-chart{background:linear-gradient(180deg,rgba(168,85,247,.04) 0%,rgba(0,212,255,.02) 100%);border:1px solid rgba(168,85,247,.12);border-radius:14px;padding:14px 16px 12px;margin-bottom:14px;}
-.edm-daily-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.edm-daily-title{font-size:.65em;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.35);}
-.edm-daily-avg{font-size:.6em;color:rgba(255,255,255,.4);}
-.edm-daily-avg strong{color:#a78bfa;font-weight:700;}
-.edm-daily-wrap{height:140px;position:relative;}
 
 /* ── CSE Performance Tab (p5) ── */
 #page-cse #p5 .pf-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
@@ -3691,6 +3539,21 @@ input[type=date].swae-input{color-scheme:dark;}
 .fd-modal-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ═══ ADD EXP FAB + OVERLAY ═══ */
+/* second FAB — this month's ledger. Same face as Add Expense, beside it. */
+#md-fab{
+  position:fixed;bottom:80px;right:86px;
+  width:54px;height:54px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  border:none;color:#fff;line-height:1;
+  cursor:pointer;z-index:200;
+  box-shadow:0 8px 28px rgba(0,212,255,.35);
+  display:none;align-items:center;justify-content:center;
+  transition:transform .18s,box-shadow .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+#md-fab:hover{transform:scale(1.1);box-shadow:0 12px 36px rgba(0,212,255,.5);}
+#md-fab:active{transform:scale(.95);}
+
 #ae-fab{
   position:fixed;bottom:80px;right:20px;
   width:54px;height:54px;border-radius:50%;
@@ -3823,9 +3686,6 @@ input[type=date].swae-input{color-scheme:dark;}
     padding: 14px 14px 12px !important;
     flex-wrap: wrap;
     gap: 8px;
-  }
-  #hm-exp-modal .edm-nav-row {
-    margin-left: auto;
   }
   /* Analyze modal toggle buttons: smaller */
   .analyze-toggle-btn {

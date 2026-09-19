@@ -1,0 +1,973 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     MONTH DETAIL  —  one month's entries, budgets and pace
+     ───────────────────────────────────────────────────────────
+     Lifted out of render.html (the old #exp-detail-overlay and its
+     ~740 lines of expDetail*/edm* code) and rebuilt:
+
+       · two columns — left answers "am I on track and where is it
+         going", right is the ledger itself
+       · the three donuts are gone; the category bars carried the
+         same numbers and can be read to the rupee
+       · colour does one job per place: a single blue for magnitude
+         in the daily chart, validated status steps for budget state,
+         each paired with a label so hue is never the only cue
+       · filters (over budget / to claim / claimed / junk) + search
+       · budget editing moved into a side drawer
+       · overspend redistribution is a visible switch, not a silent
+         rewrite of the numbers you are reading
+
+     Backend, all already in Code.gs — nothing new was added:
+       getCurrentMonthExpensesList(month, year)   read
+       saveControlPlan(updates)                   budgets
+       updateClaimStatus(m, y, day, cat, ref)     claim toggle
+       updateFoodJunkStatus(m, y, day, ref)       junk toggle
+
+     Talks to render.html through three hooks only:
+       out — mdOpen()   opened by #md-fab
+             mdReset()  called from reloadPage('exp')
+       in  — haptic() when present
+
+     Included from render.html via:  <?!= include('monthDetail'); ?>
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* Every rule is scoped to #md-overlay so nothing here can reach the
+   rest of the app — and nothing in render-style.html reaches in. */
+#md-overlay{
+  position:fixed;inset:0;z-index:9400;display:none;
+  background:rgba(4,6,10,.72);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;padding:18px;
+}
+#md-overlay.open{display:flex;}
+#md-overlay *{box-sizing:border-box;}
+
+#md-panel{
+  --md-bg:#0E1014; --md-pane:#12151B; --md-card:#181C23; --md-field:#0F1218;
+  --md-line:rgba(255,255,255,.075); --md-line2:rgba(255,255,255,.13);
+  --md-ink:#E9EEF4; --md-ink2:#98A2B1; --md-ink3:#6C7788;
+  --md-acc:#2E6BE6;
+  /* magnitude — one hue */
+  --md-mag:#3987e5; --md-mag-hi:#5598e7;
+  /* status — steps validated for CVD separation on this surface;
+     always shipped with a label, never colour alone */
+  --md-good:#0ca30c; --md-warn:#fab219; --md-crit:#d03b3b;
+  --md-tag:#B79BFF;
+  --md-num:'Sora','Inter',ui-monospace,monospace;
+
+  position:relative;               /* the budget drawer anchors to this */
+  width:min(1320px,100%);height:min(900px,94vh);
+  display:flex;flex-direction:column;min-height:0;
+  background:var(--md-bg);color:var(--md-ink);
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:14px;border-radius:18px;overflow:hidden;
+  border:1px solid var(--md-line2);box-shadow:0 32px 80px rgba(0,0,0,.75);
+}
+#md-panel .n{font-family:var(--md-num);font-variant-numeric:tabular-nums;}
+#md-panel button,#md-panel input{font-family:inherit;}
+#md-panel :focus-visible{outline:2px solid var(--md-acc);outline-offset:2px;border-radius:6px;}
+
+/* ── command bar ── */
+#md-panel .md-cmd{
+  flex-shrink:0;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:12px 18px;background:var(--md-pane);border-bottom:1px solid var(--md-line);
+}
+#md-panel .md-cmd h2{font-size:15px;font-weight:800;letter-spacing:-.2px;margin:0;}
+#md-panel .md-sq{
+  width:34px;height:34px;border-radius:10px;border:1px solid var(--md-line2);
+  background:var(--md-card);color:var(--md-ink2);font-size:15px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+#md-panel .md-sq:hover:not(:disabled){border-color:var(--md-acc);color:var(--md-ink);}
+#md-panel .md-sq:disabled{opacity:.3;cursor:not-allowed;}
+#md-panel .md-month{display:flex;align-items:center;gap:8px;}
+#md-panel .md-month b{font-size:14px;font-weight:700;min-width:118px;text-align:center;}
+#md-panel .md-spacer{flex:1;}
+#md-panel .md-hero{display:flex;align-items:baseline;gap:9px;}
+#md-panel .md-hero .v{font-family:var(--md-num);font-size:21px;font-weight:700;
+  letter-spacing:-.7px;font-variant-numeric:tabular-nums;}
+#md-panel .md-hero .of{font-size:12px;color:var(--md-ink2);}
+#md-panel .md-btn{
+  height:34px;padding:0 13px;border-radius:10px;border:1px solid var(--md-line2);
+  background:var(--md-card);color:var(--md-ink2);font-size:12.5px;font-weight:700;
+  cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+}
+#md-panel .md-btn:hover{color:var(--md-ink);border-color:rgba(255,255,255,.24);}
+#md-panel .md-btn.on{background:rgba(46,107,230,.16);border-color:var(--md-acc);color:var(--md-ink);}
+
+/* ── columns ── */
+#md-panel .md-body{flex:1;display:grid;grid-template-columns:440px minmax(0,1fr);min-height:0;}
+#md-panel .md-col{overflow-y:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0;}
+#md-panel .md-col-l{background:var(--md-pane);border-right:1px solid var(--md-line);}
+#md-panel .md-col::-webkit-scrollbar{width:6px;}
+#md-panel .md-col::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px;}
+
+#md-panel .md-card{border-radius:16px;background:var(--md-card);border:1px solid var(--md-line);
+  padding:16px;display:flex;flex-direction:column;gap:12px;flex-shrink:0;}
+#md-panel .md-eye{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;
+  letter-spacing:1.1px;color:var(--md-ink2);}
+#md-panel .md-rule{flex:1;height:1px;background:var(--md-line);}
+
+/* ── month meter ── */
+#md-panel .md-meter-top{display:flex;align-items:flex-end;gap:12px;}
+#md-panel .md-meter-top .big{font-family:var(--md-num);font-size:32px;font-weight:700;
+  letter-spacing:-1.2px;line-height:1;font-variant-numeric:tabular-nums;}
+#md-panel .md-meter-top .sub{font-size:12px;color:var(--md-ink2);padding-bottom:3px;}
+#md-panel .md-track{position:relative;height:12px;border-radius:7px;background:#232833;
+  overflow:hidden;margin-top:14px;}
+#md-panel .md-track .fill{position:absolute;inset:0 auto 0 0;border-radius:7px 4px 4px 7px;}
+#md-panel .md-track .proj{position:absolute;top:0;bottom:0;
+  background:repeating-linear-gradient(135deg,rgba(255,255,255,.14) 0 4px,transparent 4px 8px);}
+#md-panel .md-daymark{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--md-ink);border-radius:2px;}
+#md-panel .md-daymark span{position:absolute;top:-17px;left:50%;transform:translateX(-50%);
+  font-size:9.5px;font-weight:800;letter-spacing:.6px;color:var(--md-ink2);white-space:nowrap;}
+#md-panel .md-meter-foot{display:flex;justify-content:space-between;font-size:12px;color:var(--md-ink2);}
+#md-panel .md-meter-foot b{color:var(--md-ink);font-family:var(--md-num);font-weight:600;}
+#md-panel .md-pace{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;
+  border-radius:12px;font-size:12.5px;line-height:1.5;}
+#md-panel .md-pace.ok{background:rgba(12,163,12,.10);border:1px solid rgba(12,163,12,.28);color:#7FD48A;}
+#md-panel .md-pace.bad{background:rgba(208,59,59,.10);border:1px solid rgba(208,59,59,.30);color:#F09B9B;}
+#md-panel .md-pace svg{flex-shrink:0;margin-top:1px;}
+#md-panel .md-pace b{font-family:var(--md-num);}
+
+/* ── chart ── */
+#md-panel .md-chart-wrap{position:relative;}
+#md-panel svg.md-chart{display:block;width:100%;height:auto;overflow:hidden;}
+#md-panel .md-grid{stroke:rgba(255,255,255,.05);stroke-width:1;}
+#md-panel .md-ax{font-family:'Sora',monospace;font-size:9px;fill:#6C7788;}
+#md-panel .md-bar{fill:var(--md-mag);transition:fill .12s;}
+#md-panel .md-bar.hot{fill:var(--md-mag-hi);}
+#md-panel .md-bar.today{fill:#7FB3FF;}
+#md-panel .md-avg{stroke:rgba(233,238,244,.42);stroke-width:2;stroke-dasharray:5 4;}
+#md-panel .md-avg-lbl{font-family:'Sora',monospace;font-size:9.5px;font-weight:600;fill:#98A2B1;}
+#md-panel .md-hit{fill:transparent;cursor:pointer;}
+#md-panel .md-tip{position:absolute;pointer-events:none;z-index:8;min-width:150px;
+  padding:10px 12px;border-radius:12px;background:#10141B;border:1px solid var(--md-line2);
+  box-shadow:0 12px 32px rgba(0,0,0,.6);opacity:0;transform:translateY(4px);
+  transition:opacity .13s,transform .13s;}
+#md-panel .md-tip.on{opacity:1;transform:translateY(0);}
+#md-panel .md-tip .d{font-size:11px;font-weight:800;letter-spacing:.8px;color:var(--md-mag-hi);margin-bottom:6px;}
+#md-panel .md-tip .t{font-family:var(--md-num);font-size:17px;font-weight:700;margin-bottom:6px;}
+#md-panel .md-tip .r{display:flex;justify-content:space-between;gap:14px;font-size:11.5px;
+  line-height:1.7;color:var(--md-ink2);}
+#md-panel .md-tip .r b{color:var(--md-ink);font-family:var(--md-num);font-weight:600;}
+
+/* ── category bars — share of spend, no budget scoring ── */
+#md-panel .md-cat{display:flex;flex-direction:column;gap:6px;padding:9px 0;width:100%;
+  border:none;border-bottom:1px solid var(--md-line);background:none;color:inherit;
+  text-align:left;cursor:pointer;}
+#md-panel .md-cat:last-child{border-bottom:none;}
+#md-panel .md-cat:hover .md-cname{color:#fff;}
+#md-panel .md-cat-top{display:flex;align-items:baseline;gap:8px;}
+#md-panel .md-cname{font-size:13px;font-weight:700;color:#CFD7E1;flex:1;}
+#md-panel .md-camt{font-family:var(--md-num);font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;}
+#md-panel .md-cshare{font-size:11.5px;color:var(--md-ink3);font-family:var(--md-num);min-width:34px;text-align:right;}
+#md-panel .md-cbar{position:relative;height:6px;border-radius:5px;background:#232833;overflow:hidden;}
+#md-panel .md-cbar i{position:absolute;inset:0 auto 0 0;border-radius:5px 3px 3px 5px;
+  background:var(--md-mag);}
+#md-panel .md-cmeta{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--md-ink3);}
+#md-panel .md-mom{margin-left:auto;font-family:var(--md-num);font-size:11px;font-weight:700;}
+#md-panel .md-mom.up{color:#E86A6A;} #md-panel .md-mom.dn{color:#4FBF52;}
+#md-panel .md-mom.flat{color:var(--md-ink3);}
+
+/* ── ledger ── */
+#md-panel .md-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+#md-panel .md-chip{height:32px;padding:0 13px;border-radius:999px;border:1px solid var(--md-line2);
+  background:var(--md-card);color:var(--md-ink2);font-size:12px;font-weight:700;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;}
+#md-panel .md-chip:hover{color:var(--md-ink);}
+#md-panel .md-chip.on{background:rgba(46,107,230,.16);border-color:var(--md-acc);color:var(--md-ink);}
+#md-panel .md-chip .cnt{font-family:var(--md-num);font-size:11px;color:var(--md-ink3);}
+#md-panel .md-chip.on .cnt{color:#A9CCFF;}
+#md-panel .md-search{flex:1;min-width:150px;height:32px;border-radius:10px;
+  border:1px solid var(--md-line2);background:var(--md-field);color:var(--md-ink);
+  padding:0 12px;font-size:12.5px;}
+#md-panel .md-search:focus{border-color:var(--md-acc);outline:none;}
+
+#md-panel .md-grp{border-radius:14px;background:var(--md-card);border:1px solid var(--md-line);
+  overflow:hidden;margin-bottom:10px;}
+#md-panel .md-grp-hd{display:flex;align-items:center;gap:10px;padding:11px 14px;width:100%;
+  background:none;border:none;color:inherit;text-align:left;cursor:pointer;}
+#md-panel .md-grp-hd:hover{background:rgba(255,255,255,.025);}
+#md-panel .md-chev{color:var(--md-ink3);font-size:10px;transition:transform .16s;}
+#md-panel .md-grp.closed .md-chev{transform:rotate(-90deg);}
+#md-panel .md-grp.closed .md-grp-bd{display:none;}
+#md-panel .md-grp-hd .nm{font-size:13px;font-weight:700;flex:1;}
+#md-panel .md-grp-hd .cn{font-size:11px;color:var(--md-ink3);}
+#md-panel .md-grp-bud{display:flex;flex-direction:column;gap:5px;padding:0 14px 11px;}
+#md-panel .md-gbar{position:relative;height:5px;border-radius:4px;background:#232833;overflow:hidden;}
+#md-panel .md-gbar i{position:absolute;inset:0 auto 0 0;border-radius:4px 3px 3px 4px;}
+#md-panel .md-gmeta{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--md-ink3);}
+#md-panel .md-gmeta b{font-family:var(--md-num);font-weight:700;}
+#md-panel .md-gmeta .plan{margin-left:auto;font-family:var(--md-num);}
+#md-panel .md-gmeta.good b{color:#4FBF52;}
+#md-panel .md-gmeta.warn b{color:var(--md-warn);}
+#md-panel .md-gmeta.crit b{color:#E86A6A;}
+#md-panel .md-gmeta svg{flex-shrink:0;}
+#md-panel .md-grp-bd{border-top:1px solid var(--md-line);}
+#md-panel .md-ent{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:12px;
+  align-items:center;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.04);}
+#md-panel .md-ent:last-child{border-bottom:none;}
+#md-panel .md-ent:hover{background:rgba(255,255,255,.02);}
+#md-panel .md-day{display:flex;align-items:baseline;gap:5px;}
+#md-panel .md-day b{font-family:var(--md-num);font-size:13px;font-weight:600;}
+#md-panel .md-day span{font-size:10.5px;color:var(--md-ink3);}
+#md-panel .md-ref{font-size:12.5px;color:#C4CCD8;display:flex;align-items:center;gap:7px;
+  min-width:0;flex-wrap:wrap;}
+#md-panel .md-ref .txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#md-panel .md-amt{font-family:var(--md-num);font-size:13px;font-weight:600;text-align:right;}
+#md-panel .md-tagbtn{height:23px;padding:0 9px;border-radius:999px;border:1px solid var(--md-line2);
+  background:transparent;color:var(--md-ink3);font-size:10.5px;font-weight:700;cursor:pointer;
+  display:inline-flex;align-items:center;gap:4px;white-space:nowrap;}
+#md-panel .md-tagbtn:hover{color:var(--md-ink);}
+#md-panel .md-tagbtn:disabled{opacity:.5;cursor:wait;}
+#md-panel .md-tagbtn.claim{border-color:rgba(183,155,255,.4);color:var(--md-tag);}
+#md-panel .md-tagbtn.claimed{background:rgba(183,155,255,.16);border-color:rgba(183,155,255,.5);color:#D6C6FF;}
+#md-panel .md-tagbtn.junk{border-color:rgba(250,178,25,.4);color:var(--md-warn);}
+#md-panel .md-empty{padding:34px 16px;text-align:center;color:var(--md-ink3);font-size:13px;}
+#md-panel .md-err{padding:14px 16px;border-radius:12px;background:rgba(208,59,59,.10);
+  border:1px solid rgba(208,59,59,.3);color:#F09B9B;font-size:13px;}
+
+/* ── loading ── */
+#md-panel .md-load{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:14px;color:var(--md-ink3);font-size:13px;}
+#md-panel .md-spin{width:38px;height:38px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.1);border-top-color:var(--md-mag);
+  animation:mdSpin .8s linear infinite;}
+@keyframes mdSpin{to{transform:rotate(360deg);}}
+
+/* ── budget drawer ── */
+#md-panel .md-drawer-bg{position:absolute;inset:0;background:rgba(6,8,11,.66);display:none;z-index:30;}
+#md-panel .md-drawer-bg.open{display:block;}
+#md-panel .md-drawer{position:absolute;top:0;right:0;bottom:0;width:min(400px,92%);
+  background:var(--md-pane);border-left:1px solid var(--md-line2);padding:18px;
+  display:flex;flex-direction:column;gap:12px;overflow-y:auto;}
+#md-panel .md-drawer h3{font-size:15px;font-weight:800;margin:0;flex:1;}
+#md-panel .md-brow{display:grid;grid-template-columns:minmax(0,1fr) 116px;gap:10px;align-items:center;}
+#md-panel .md-brow label{font-size:13px;color:#CFD7E1;font-weight:600;}
+#md-panel .md-binp{height:38px;border-radius:10px;border:1px solid var(--md-line2);
+  background:var(--md-field);color:var(--md-ink);padding:0 11px;font-family:var(--md-num);
+  font-size:13px;text-align:right;width:100%;}
+#md-panel .md-binp:focus{border-color:var(--md-acc);outline:none;}
+#md-panel .md-save{height:42px;border-radius:12px;border:none;background:var(--md-acc);
+  color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;}
+#md-panel .md-save:hover{background:#3B79F0;}
+#md-panel .md-save:disabled{opacity:.45;cursor:not-allowed;}
+#md-panel .md-msg{font-size:12.5px;min-height:18px;}
+
+#md-panel .md-seg{display:none;gap:8px;}
+@media(max-width:900px){
+  #md-overlay{padding:0;}
+  #md-panel{width:100%;height:100%;border-radius:0;border:none;}
+  #md-panel .md-body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr;}
+  #md-panel .md-col-l{border-right:none;border-bottom:1px solid var(--md-line);}
+  #md-panel .md-seg{display:flex;}
+  #md-panel .md-col[hidden]{display:none;}
+  #md-panel .md-hero{order:5;width:100%;}
+}
+@media(max-width:560px){
+  #md-panel .md-col{padding:14px 16px;}
+  #md-panel .md-ent{grid-template-columns:54px minmax(0,1fr);row-gap:4px;}
+  #md-panel .md-amt{grid-column:2;text-align:left;color:var(--md-mag-hi);}
+}
+@media(prefers-reduced-motion:reduce){
+  #md-panel *{transition:none!important;animation:none!important;}
+}
+</style>
+
+<!-- ═══ MONTH DETAIL OVERLAY ═══ -->
+<div id="md-overlay">
+  <div id="md-panel" role="dialog" aria-modal="true" aria-label="Monthly expense detail">
+
+    <header class="md-cmd">
+      <h2>Expenses</h2>
+      <div class="md-month">
+        <button class="md-sq" id="md-prev" aria-label="Previous month">&#8249;</button>
+        <b id="md-label">&mdash;</b>
+        <button class="md-sq" id="md-next" aria-label="Next month">&#8250;</button>
+      </div>
+
+      <div class="md-hero">
+        <span class="v" id="md-heroSpent">&mdash;</span>
+        <span class="of">of <span class="n" id="md-heroPlan">0</span> planned</span>
+      </div>
+
+      <div class="md-spacer"></div>
+      <div class="md-seg">
+        <button class="md-btn on" data-pane="l">Budget</button>
+        <button class="md-btn" data-pane="r">Ledger</button>
+      </div>
+      <button class="md-btn" id="md-openDrawer">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg>
+        Budgets
+      </button>
+      <button class="md-sq" id="md-close" aria-label="Close">&#10005;</button>
+    </header>
+
+    <div id="md-content" style="flex:1;display:flex;flex-direction:column;min-height:0;"></div>
+
+    <div class="md-drawer-bg" id="md-drawerBg">
+      <aside class="md-drawer" role="dialog" aria-modal="true" aria-label="Adjust budgets">
+        <div style="display:flex;align-items:center;gap:10px">
+          <h3>Adjust budgets</h3>
+          <button class="md-sq" id="md-closeDrawer" aria-label="Close">&#10005;</button>
+        </div>
+        <p style="font-size:12.5px;color:var(--md-ink2);line-height:1.55;margin:0">
+          Saved to the Control Plan column. The left column recalculates as you type.</p>
+        <div id="md-brows" style="display:flex;flex-direction:column;gap:10px"></div>
+        <button class="md-save" id="md-saveBudgets">Save budgets</button>
+        <div class="md-msg" id="md-budgetMsg"></div>
+      </aside>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════
+   MONTH DETAIL — constants
+   Category order and names match getCurrentMonthExpensesList()'s
+   CATS in Code.gs; keep the two in step.
+═══════════════════════════════════════════════ */
+var MD_CATS = ['Food','Supermarket','Uber','Uber Work','Movies & Outing',
+               'Other','Bus Fair','Dress & Appearance','Party','Rent'];
+var MD_MONTHS = ['','January','February','March','April','May','June',
+                 'July','August','September','October','November','December'];
+var MD_DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+/* ═══ state ═══ */
+var _mdMonth = 0, _mdYear = 0;
+var _mdCache = {};            /* "y-m" -> server payload */
+var _mdData  = null;          /* the month on screen */
+var _mdBudget = {};           /* live, editable copy of the control plan */
+var _mdFilter = 'all', _mdQuery = '', _mdClosed = {};
+var _mdBusy = false;
+
+function _mdBuzz(k){ if(typeof window.haptic === 'function') window.haptic(k); }
+
+/* ═══ helpers ═══ */
+function mdFmt(n){ return Math.round(n).toLocaleString('en-IN'); }
+function mdMoney(n){ return '₨ '+mdFmt(n); }
+function mdEsc(s){ return String(s==null?'':s)
+  .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function mdIsClaimed(r){ return /\bclaimed\b/i.test(r||''); }
+function mdIsClaim(r){ return !mdIsClaimed(r) && /\bclaim\b|pick\s*me/i.test(r||''); }
+function mdIsJunk(r){ return /\bjunk\b/i.test(r||''); }
+function mdDow(y,m,d){ return MD_DOW[new Date(y, m-1, d).getDay()]; }
+function mdIcon(kind){
+  if(kind==='alert') return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>';
+  return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
+}
+
+function mdEntries(){ return (_mdData && _mdData.entries) || []; }
+function mdSpentBy(){
+  var m={};
+  MD_CATS.forEach(function(c){ m[c]=0; });
+  mdEntries().forEach(function(e){ m[e.category]=(m[e.category]||0)+e.amount; });
+  return m;
+}
+function mdTotals(){
+  var spent=mdEntries().reduce(function(s,e){ return s+e.amount; },0);
+  var plan=MD_CATS.reduce(function(s,c){ return s+(_mdBudget[c]||0); },0);
+  return {spent:spent, plan:plan};
+}
+function mdIsThisMonth(){
+  var n=new Date();
+  return _mdMonth===(n.getMonth()+1) && _mdYear===n.getFullYear();
+}
+function mdDaysInMonth(){ return new Date(_mdYear, _mdMonth, 0).getDate(); }
+function mdElapsed(){
+  var dim=mdDaysInMonth();
+  return mdIsThisMonth() ? Math.max(1, Math.min(new Date().getDate(), dim)) : dim;
+}
+
+/* ═══════════════════════════════════════════════
+   OPEN / LOAD
+═══════════════════════════════════════════════ */
+function mdOpen(){
+  document.getElementById('md-overlay').classList.add('open');
+  if(!_mdMonth){
+    var n=new Date();
+    _mdMonth=n.getMonth()+1; _mdYear=n.getFullYear();
+  }
+  mdLoad();
+}
+function mdClose(){
+  document.getElementById('md-overlay').classList.remove('open');
+  document.getElementById('md-drawerBg').classList.remove('open');
+}
+/* render.html calls this from reloadPage('exp') */
+function mdReset(){ _mdCache={}; _mdData=null; _mdMonth=0; _mdYear=0; }
+
+function mdStep(dir){
+  _mdMonth+=dir;
+  if(_mdMonth>12){ _mdMonth=1;  _mdYear++; }
+  if(_mdMonth<1) { _mdMonth=12; _mdYear--; }
+  _mdBuzz('step');
+  mdLoad();
+}
+
+function mdLoad(){
+  var key=_mdYear+'-'+_mdMonth;
+  document.getElementById('md-label').textContent=MD_MONTHS[_mdMonth]+' '+_mdYear;
+
+  var n=new Date();
+  document.getElementById('md-next').disabled =
+    (_mdYear>n.getFullYear()) || (_mdYear===n.getFullYear() && _mdMonth>=n.getMonth()+1);
+
+  if(_mdCache[key]){ mdApply(_mdCache[key]); return; }
+
+  document.getElementById('md-content').innerHTML=
+    '<div class="md-load"><div class="md-spin"></div>Reading '+MD_MONTHS[_mdMonth]+'…</div>';
+  document.getElementById('md-heroSpent').textContent='—';
+
+  var reqM=_mdMonth, reqY=_mdYear;
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(res && res.success) _mdCache[reqY+'-'+reqM]=res;
+      /* ignore a late response for a month we have navigated away from */
+      if(reqM!==_mdMonth || reqY!==_mdYear) return;
+      if(!res || !res.success){
+        document.getElementById('md-content').innerHTML=
+          '<div style="padding:20px"><div class="md-err">⚠ '+
+          mdEsc((res&&res.error)||'Could not read the month')+'</div></div>';
+        return;
+      }
+      mdApply(res);
+    })
+    .withFailureHandler(function(err){
+      document.getElementById('md-content').innerHTML=
+        '<div style="padding:20px"><div class="md-err">⚠ '+
+        mdEsc(err&&err.message||err)+'</div></div>';
+    })
+    .getCurrentMonthExpensesList(reqM, reqY);
+}
+
+function mdApply(res){
+  _mdData=res;
+  _mdBudget={};
+  MD_CATS.forEach(function(c){ _mdBudget[c]=(res.controlPlan&&res.controlPlan[c])||0; });
+  _mdFilter='all'; _mdQuery=''; _mdClosed={};
+  mdShell();
+  mdRenderAll();
+}
+
+/* last month's per-category totals, for the ▲/▼ badge */
+function mdLastMonth(cat){
+  var lmt=(_mdData && _mdData.lastMonthTotals) || {};
+  if(lmt[cat]!==undefined) return lmt[cat];
+  var low=cat.toLowerCase();
+  var hit=0;
+  Object.keys(lmt).forEach(function(k){ if(k.toLowerCase()===low) hit=lmt[k]; });
+  return hit;
+}
+
+/* ═══════════════════════════════════════════════
+   SHELL — built once per month load
+═══════════════════════════════════════════════ */
+function mdShell(){
+  document.getElementById('md-content').innerHTML=
+    '<div class="md-body">'+
+      '<section class="md-col md-col-l" id="md-paneL">'+
+
+        '<div class="md-card">'+
+          '<div class="md-eye">MONTH TO DATE<span class="md-rule"></span>'+
+            '<span class="n" id="md-dayCount"></span></div>'+
+          '<div class="md-meter-top">'+
+            '<span class="big" id="md-spent">—</span>'+
+            '<span class="sub" id="md-pct"></span></div>'+
+          '<div class="md-track">'+
+            '<div class="fill" id="md-fill" style="width:0"></div>'+
+            '<div class="proj" id="md-proj" style="left:0;width:0"></div>'+
+            '<div class="md-daymark" id="md-daymark" style="left:0"><span>TODAY</span></div>'+
+          '</div>'+
+          '<div class="md-meter-foot">'+
+            '<span>Spent <b id="md-fSpent">0</b></span>'+
+            '<span>Projected <b id="md-fProj">0</b></span>'+
+            '<span>Plan <b id="md-fPlan">0</b></span></div>'+
+          '<div class="md-pace" id="md-pace"></div>'+
+        '</div>'+
+
+        '<div class="md-card">'+
+          '<div class="md-eye">DAILY SPEND<span class="md-rule"></span>'+
+            '<span class="n" id="md-avgLbl"></span></div>'+
+          '<div class="md-chart-wrap">'+
+            '<svg class="md-chart" id="md-chart" viewBox="0 0 360 210" role="img"'+
+            ' aria-label="Daily spending this month, with the daily average marked"></svg>'+
+            '<div class="md-tip" id="md-tip"></div>'+
+          '</div>'+
+        '</div>'+
+
+        '<div class="md-card">'+
+          '<div class="md-eye">BY CATEGORY<span class="md-rule"></span>'+
+            '<span class="n" id="md-catCount"></span></div>'+
+          '<div id="md-cats"></div>'+
+        '</div>'+
+
+      '</section>'+
+
+      '<section class="md-col md-col-r" id="md-paneR">'+
+        '<div class="md-filters">'+
+          '<button class="md-chip on" data-f="all">All <span class="cnt" id="md-cAll">0</span></button>'+
+          '<button class="md-chip" data-f="over">Over budget <span class="cnt" id="md-cOver">0</span></button>'+
+          '<button class="md-chip" data-f="claim">To claim <span class="cnt" id="md-cClaim">0</span></button>'+
+          '<button class="md-chip" data-f="claimed">Claimed <span class="cnt" id="md-cClaimed">0</span></button>'+
+          '<button class="md-chip" data-f="junk">Junk <span class="cnt" id="md-cJunk">0</span></button>'+
+          '<input class="md-search" id="md-q" type="search" placeholder="Search a reference…" aria-label="Search references">'+
+        '</div>'+
+        '<div id="md-ledger"></div>'+
+      '</section>'+
+    '</div>';
+
+  document.getElementById('md-q').addEventListener('input',function(){
+    _mdQuery=this.value.toLowerCase().trim();
+    mdRenderLedger();
+  });
+
+  /* budget drawer inputs */
+  document.getElementById('md-brows').innerHTML=MD_CATS.map(function(c){
+    var id='md-b-'+c.replace(/\W/g,'_');
+    return '<div class="md-brow"><label for="'+id+'">'+c+'</label>'+
+      '<input class="md-binp" id="'+id+'" type="number" step="500" min="0" value="'+
+      (_mdBudget[c]||0)+'" data-bcat="'+mdEsc(c)+'"></div>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   LEFT — meter, chart, categories
+═══════════════════════════════════════════════ */
+function mdRenderAll(){ mdRenderMeter(); mdRenderChart(); mdRenderCats(); mdRenderLedger(); }
+
+function mdRenderMeter(){
+  var t=mdTotals(), spent=t.spent, plan=t.plan;
+  var dim=mdDaysInMonth(), elapsed=mdElapsed(), left=Math.max(0,dim-elapsed);
+  var perDay=spent/elapsed, projected=perDay*dim;
+  var pct=plan>0?spent/plan*100:0;
+
+  document.getElementById('md-heroSpent').textContent=mdMoney(spent);
+  document.getElementById('md-heroPlan').textContent=mdFmt(plan);
+  document.getElementById('md-spent').textContent=mdMoney(spent);
+  document.getElementById('md-pct').textContent=plan>0?pct.toFixed(0)+'% of plan':'no plan set';
+  document.getElementById('md-dayCount').textContent='day '+elapsed+' of '+dim;
+  document.getElementById('md-fSpent').textContent=mdFmt(spent);
+  document.getElementById('md-fProj').textContent=mdFmt(projected);
+  document.getElementById('md-fPlan').textContent=mdFmt(plan);
+
+  var fillPct=plan>0?Math.min(pct,100):0;
+  var projPct=plan>0?Math.min(projected/plan*100,100):0;
+  var f=document.getElementById('md-fill');
+  f.style.width=fillPct.toFixed(1)+'%';
+  f.style.background = pct>=100 ? 'var(--md-crit)' : pct>=80 ? 'var(--md-warn)' : 'var(--md-good)';
+  var pr=document.getElementById('md-proj');
+  pr.style.left=fillPct.toFixed(1)+'%';
+  pr.style.width=Math.max(0,projPct-fillPct).toFixed(1)+'%';
+
+  var dm=document.getElementById('md-daymark');
+  dm.style.left=(elapsed/dim*100).toFixed(1)+'%';
+  dm.style.display=mdIsThisMonth()?'block':'none';
+
+  var p=document.getElementById('md-pace');
+  if(plan<=0){
+    p.className='md-pace ok';
+    p.innerHTML=mdIcon('check')+'<span>No budget set for this month — set one from Budgets to track pace.</span>';
+    return;
+  }
+  var over=projected-plan;
+  if(over>0){
+    p.className='md-pace bad';
+    p.innerHTML=mdIcon('alert')+'<span>'+(mdIsThisMonth()
+      ? 'At this pace you finish <b>'+mdFmt(over)+'</b> over plan. Holding the rest of the month to <b>'+
+        mdFmt(Math.max(0,(plan-spent)/Math.max(left,1)))+'/day</b> lands on budget.'
+      : 'Finished <b>'+mdFmt(spent-plan)+'</b> over plan.')+'</span>';
+  } else {
+    p.className='md-pace ok';
+    p.innerHTML=mdIcon('check')+'<span>'+(mdIsThisMonth()
+      ? 'On track — projected to finish <b>'+mdFmt(-over)+'</b> under plan with '+left+' days left.'
+      : 'Finished <b>'+mdFmt(plan-spent)+'</b> under plan.')+'</span>';
+  }
+}
+
+/* daily spend — one series, one axis */
+function mdRenderChart(){
+  var daily={}, byCat={};
+  mdEntries().forEach(function(e){
+    daily[e.day]=(daily[e.day]||0)+e.amount;
+    if(!byCat[e.day]) byCat[e.day]={};
+    byCat[e.day][e.category]=(byCat[e.day][e.category]||0)+e.amount;
+  });
+
+  var last=mdElapsed();
+  var W=360,H=210,padL=36,padR=6,padT=18,padB=22;
+  var pw=W-padL-padR, ph=H-padT-padB;
+  var max=0; for(var d=1; d<=last; d++) max=Math.max(max, daily[d]||0);
+  if(max<=0) max=1;
+  var nice=Math.ceil(max/5000)*5000 || 5000;
+  var total=mdEntries().reduce(function(s,e){ return s+e.amount; },0);
+  var avg=total/last;
+
+  var step=pw/last, bw=Math.max(3, Math.min(step-2, 16));   /* 2px surface gap */
+  function X(d){ return padL+(d-1)*step+(step-bw)/2; }
+  function Y(v){ return padT+ph-(v/nice)*ph; }
+
+  var s='';
+  [0,0.25,0.5,0.75,1].forEach(function(fr){
+    var y=padT+ph-fr*ph;
+    s+='<line class="md-grid" x1="'+padL+'" y1="'+y.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+y.toFixed(1)+'"/>';
+    s+='<text class="md-ax" x="'+(padL-6)+'" y="'+(y+3).toFixed(1)+'" text-anchor="end">'+
+       (fr===0?'0':Math.round(nice*fr/1000)+'k')+'</text>';
+  });
+
+  var today=mdIsThisMonth()?new Date().getDate():-1;
+  for(var dd=1; dd<=last; dd++){
+    var v=daily[dd]||0;
+    if(v<=0) continue;
+    var h=Math.max(2, ph-(Y(v)-padT));
+    s+='<rect class="md-bar'+(dd===today?' today':'')+'" id="md-bar'+dd+'" x="'+X(dd).toFixed(1)+
+       '" y="'+Y(v).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+h.toFixed(1)+'" rx="3.5"/>';
+  }
+
+  var ay=Y(avg);
+  s+='<line class="md-avg" x1="'+padL+'" y1="'+ay.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+ay.toFixed(1)+'"/>';
+  s+='<text class="md-avg-lbl" x="'+(W-padR)+'" y="'+(ay-6).toFixed(1)+'" text-anchor="end">avg '+mdFmt(avg)+'</text>';
+
+  [1,8,15,22,29].filter(function(d){ return d<=last; }).forEach(function(d){
+    s+='<text class="md-ax" x="'+(X(d)+bw/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+d+'</text>';
+  });
+
+  for(var hd=1; hd<=last; hd++){
+    s+='<rect class="md-hit" data-day="'+hd+'" x="'+(padL+(hd-1)*step).toFixed(1)+'" y="'+padT+
+       '" width="'+step.toFixed(1)+'" height="'+ph+'"/>';
+  }
+
+  var svg=document.getElementById('md-chart');
+  svg.innerHTML=s;
+  document.getElementById('md-avgLbl').textContent='avg '+mdFmt(avg)+'/day';
+
+  var tip=document.getElementById('md-tip');
+  svg.querySelectorAll('.md-hit').forEach(function(r){
+    var d=+r.getAttribute('data-day');
+    r.addEventListener('mouseenter',function(){
+      svg.querySelectorAll('.md-bar').forEach(function(b){ b.classList.remove('hot'); });
+      var bar=document.getElementById('md-bar'+d);
+      if(bar) bar.classList.add('hot');
+      var cats=byCat[d]||{};
+      var rows=Object.keys(cats).sort(function(a,b){ return cats[b]-cats[a]; })
+        .map(function(c){ return '<div class="r"><span>'+c+'</span><b>'+mdFmt(cats[c])+'</b></div>'; }).join('');
+      tip.innerHTML='<div class="d">'+mdDow(_mdYear,_mdMonth,d).toUpperCase()+' '+d+' '+
+        MD_MONTHS[_mdMonth].slice(0,3).toUpperCase()+'</div>'+
+        '<div class="t">'+(daily[d]?mdMoney(daily[d]):'Nothing logged')+'</div>'+rows;
+      tip.classList.add('on');
+      var wrap=svg.parentElement.getBoundingClientRect();
+      var x=(padL+(d-1)*step+step/2)/W*wrap.width;
+      tip.style.left=Math.max(0, Math.min(x-tip.offsetWidth/2, wrap.width-tip.offsetWidth))+'px';
+      tip.style.top='0px';
+    });
+  });
+  svg.addEventListener('mouseleave',function(){
+    tip.classList.remove('on');
+    svg.querySelectorAll('.md-bar').forEach(function(b){ b.classList.remove('hot'); });
+  });
+}
+
+function mdRenderCats(){
+  var spent=mdSpentBy();
+  var total=MD_CATS.reduce(function(t,c){ return t+(spent[c]||0); },0);
+  var peak=MD_CATS.reduce(function(m,c){ return Math.max(m, spent[c]||0); },0) || 1;
+
+  var list=MD_CATS.filter(function(c){ return (spent[c]||0)>0; })
+                  .sort(function(a,b){ return (spent[b]||0)-(spent[a]||0); });
+
+  document.getElementById('md-catCount').textContent=
+    list.length+(list.length===1?' category':' categories');
+
+  if(!list.length){
+    document.getElementById('md-cats').innerHTML=
+      '<div style="font-size:12.5px;color:var(--md-ink3)">Nothing recorded this month.</div>';
+    return;
+  }
+
+  /* Where the money went — share of the month, read to the rupee.
+     Budget lives in the meter above and the drawer; it is not scored here. */
+  document.getElementById('md-cats').innerHTML=list.map(function(c){
+    var sp=spent[c]||0;
+    var share=total>0 ? sp/total*100 : 0;
+
+    var prev=mdLastMonth(c), mom;
+    if(prev<=0)      mom={t:'new', k:'flat'};
+    else {
+      var pc=Math.round((sp-prev)/prev*100);
+      mom = Math.abs(pc)<3 ? {t:'\u2248 same', k:'flat'}
+          : {t:(pc>0?'\u2191':'\u2193')+Math.abs(pc)+'%', k:pc>0?'up':'dn'};
+    }
+
+    return '<button class="md-cat" data-cat="'+mdEsc(c)+'">'+
+      '<span class="md-cat-top">'+
+        '<span class="md-cname">'+c+'</span>'+
+        '<span class="md-camt">'+mdFmt(sp)+'</span>'+
+        '<span class="md-cshare">'+share.toFixed(0)+'%</span></span>'+
+      '<span class="md-cbar"><i style="width:'+(sp/peak*100).toFixed(1)+'%"></i></span>'+
+      '<span class="md-cmeta">'+
+        '<span>'+(prev>0?'was '+mdFmt(prev)+' last month':'not spent last month')+'</span>'+
+        '<span class="md-mom '+mom.k+'">'+mom.t+'</span>'+
+      '</span></button>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   RIGHT — the ledger
+═══════════════════════════════════════════════ */
+function mdMatches(e, spent){
+  if(_mdQuery && ((e.reference||'')+' '+e.category).toLowerCase().indexOf(_mdQuery)<0) return false;
+  if(_mdFilter==='claim')   return mdIsClaim(e.reference);
+  if(_mdFilter==='claimed') return mdIsClaimed(e.reference);
+  if(_mdFilter==='junk')    return mdIsJunk(e.reference);
+  if(_mdFilter==='over')    return (_mdBudget[e.category]||0)>0 && (spent[e.category]||0)>_mdBudget[e.category];
+  return true;
+}
+
+function mdRenderLedger(){
+  var spent=mdSpentBy(), all=mdEntries();
+
+  document.getElementById('md-cAll').textContent=all.length;
+  document.getElementById('md-cOver').textContent=
+    all.filter(function(e){ return (_mdBudget[e.category]||0)>0 && (spent[e.category]||0)>_mdBudget[e.category]; }).length;
+  document.getElementById('md-cClaim').textContent=all.filter(function(e){ return mdIsClaim(e.reference); }).length;
+  document.getElementById('md-cClaimed').textContent=all.filter(function(e){ return mdIsClaimed(e.reference); }).length;
+  document.getElementById('md-cJunk').textContent=all.filter(function(e){ return mdIsJunk(e.reference); }).length;
+
+  var shown=all.filter(function(e){ return mdMatches(e, spent); });
+  var host=document.getElementById('md-ledger');
+  if(!shown.length){
+    host.innerHTML='<div class="md-empty">'+
+      (all.length?'Nothing matches that filter.':'No entries recorded for this month.')+'</div>';
+    return;
+  }
+
+  var grouped={};
+  shown.forEach(function(e){ (grouped[e.category]=grouped[e.category]||[]).push(e); });
+
+  host.innerHTML=MD_CATS.filter(function(c){ return grouped[c]; }).map(function(c){
+    var rows=grouped[c].slice().sort(function(a,b){ return a.day-b.day; });
+    var sum=rows.reduce(function(s,e){ return s+e.amount; },0);
+    /* the category's own budget lives here, in its header */
+    var plan=_mdBudget[c]||0, catSpent=spent[c]||0;
+    var over=plan>0 && catSpent>plan;
+    var pct=plan>0 ? Math.min(catSpent/plan*100,100) : 0;
+    var kind=over?'crit':pct>=80?'warn':'good';
+    var colr=over?'var(--md-crit)':pct>=80?'var(--md-warn)':'var(--md-good)';
+    var bud = plan<=0 ? '' :
+      '<div class="md-grp-bud">'+
+        '<div class="md-gbar"><i style="width:'+pct.toFixed(1)+'%;background:'+colr+'"></i></div>'+
+        '<div class="md-gmeta '+kind+'">'+
+          (over ? mdIcon('alert')+'<span>over by <b>'+mdFmt(catSpent-plan)+'</b></span>'
+                : '<span><b>'+mdFmt(plan-catSpent)+'</b> left</span>')+
+          '<span class="plan">'+mdFmt(catSpent)+' / '+mdFmt(plan)+
+            ' \u00b7 '+Math.round(catSpent/plan*100)+'%</span>'+
+        '</div>'+
+      '</div>';
+    return '<div class="md-grp'+(_mdClosed[c]?' closed':'')+'" data-grp="'+mdEsc(c)+'">'+
+      '<button class="md-grp-hd" data-toggle="'+mdEsc(c)+'">'+
+        '<span class="md-chev">▾</span>'+
+        '<span class="nm">'+c+'</span>'+
+        '<span class="cn">'+rows.length+' entr'+(rows.length===1?'y':'ies')+'</span>'+
+        '<span class="n" style="font-size:13px;font-weight:600;color:'+
+          (over?'#E86A6A':'var(--md-ink)')+'">'+mdFmt(sum)+'</span>'+
+      '</button>'+
+      bud+
+      '<div class="md-grp-bd">'+rows.map(function(e){
+        var i=all.indexOf(e);
+        var claimed=mdIsClaimed(e.reference), claim=mdIsClaim(e.reference), junk=mdIsJunk(e.reference);
+        var tags='';
+        if(claimed||claim)
+          tags+='<button class="md-tagbtn '+(claimed?'claimed':'claim')+'" data-claim="'+i+'">'+
+                (claimed?'✓ Claimed':'→ Claim')+'</button>';
+        if(e.category==='Food')
+          tags+='<button class="md-tagbtn'+(junk?' junk':'')+'" data-junk="'+i+'">'+
+                (junk?'● Junk':'Mark junk')+'</button>';
+        return '<div class="md-ent">'+
+          '<span class="md-day"><b>'+e.day+'</b><span>'+mdDow(_mdYear,_mdMonth,e.day)+'</span></span>'+
+          '<span class="md-ref">'+(e.reference
+            ? '<span class="txt" title="'+mdEsc(e.reference)+'">'+mdEsc(e.reference)+'</span>'
+            : '<span class="txt" style="color:#59626F">no reference</span>')+tags+'</span>'+
+          '<span class="md-amt">'+mdFmt(e.amount)+'</span>'+
+        '</div>';
+      }).join('')+'</div></div>';
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   WRITES — claim, junk, budgets
+═══════════════════════════════════════════════ */
+function mdToggleClaim(idx, btn){
+  if(_mdBusy) return;
+  var e=mdEntries()[idx];
+  if(!e) return;
+  _mdBusy=true; btn.disabled=true; btn.textContent='…';
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      _mdBusy=false;
+      if(res && res.success){
+        e.reference=res.newRef;
+        _mdBuzz('tick');
+        mdRenderLedger();
+      } else {
+        btn.disabled=false;
+        btn.textContent='⚠ Failed';
+      }
+    })
+    .withFailureHandler(function(){ _mdBusy=false; btn.disabled=false; btn.textContent='⚠ Error'; })
+    .updateClaimStatus(_mdMonth, _mdYear, e.day, e.category, e.reference);
+}
+
+function mdToggleJunk(idx, btn){
+  if(_mdBusy) return;
+  var e=mdEntries()[idx];
+  if(!e) return;
+  _mdBusy=true; btn.disabled=true; btn.textContent='…';
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      _mdBusy=false;
+      if(res && res.success){
+        e.reference=res.newRef;
+        _mdBuzz('tick');
+        mdRenderLedger();
+      } else {
+        btn.disabled=false;
+        btn.textContent='⚠ Failed';
+      }
+    })
+    .withFailureHandler(function(){ _mdBusy=false; btn.disabled=false; btn.textContent='⚠ Error'; })
+    .updateFoodJunkStatus(_mdMonth, _mdYear, e.day, e.reference);
+}
+
+function mdSaveBudgets(){
+  var btn=document.getElementById('md-saveBudgets');
+  var msg=document.getElementById('md-budgetMsg');
+  var updates={};
+  MD_CATS.forEach(function(c){ updates[c]=_mdBudget[c]||0; });
+
+  btn.disabled=true; btn.textContent='Saving…';
+  msg.textContent=''; msg.style.color='';
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      btn.disabled=false; btn.textContent='Save budgets';
+      if(res && res.success){
+        msg.style.color='#4FBF52'; msg.textContent='✓ Saved to the Control Plan column';
+        _mdBuzz('success');
+        /* the cached month still holds the old plan — keep them in step */
+        var k=_mdYear+'-'+_mdMonth;
+        if(_mdCache[k]) _mdCache[k].controlPlan=JSON.parse(JSON.stringify(updates));
+        setTimeout(function(){ msg.textContent=''; },2600);
+      } else {
+        msg.style.color='#F09B9B';
+        msg.textContent='⚠ '+((res&&res.error)||'Save failed');
+      }
+    })
+    .withFailureHandler(function(err){
+      btn.disabled=false; btn.textContent='Save budgets';
+      msg.style.color='#F09B9B';
+      msg.textContent='⚠ '+(err&&err.message||err);
+    })
+    .saveControlPlan(updates);
+}
+
+/* ═══════════════════════════════════════════════
+   WIRING — one delegated listener for the whole overlay
+═══════════════════════════════════════════════ */
+document.getElementById('md-overlay').addEventListener('click',function(ev){
+  var t=ev.target;
+
+  if(t===this){ mdClose(); return; }
+  if(t.closest('#md-close')){ mdClose(); return; }
+  if(t.closest('#md-prev')){ mdStep(-1); return; }
+  if(t.closest('#md-next')){ if(!document.getElementById('md-next').disabled) mdStep(1); return; }
+  if(t.closest('#md-openDrawer')){ document.getElementById('md-drawerBg').classList.add('open'); return; }
+  if(t.closest('#md-closeDrawer') || t.id==='md-drawerBg'){
+    document.getElementById('md-drawerBg').classList.remove('open'); return;
+  }
+  if(t.closest('#md-saveBudgets')){ mdSaveBudgets(); return; }
+
+  var chip=t.closest('.md-chip[data-f]');
+  if(chip){
+    _mdFilter=chip.getAttribute('data-f');
+    document.querySelectorAll('#md-panel .md-chip[data-f]').forEach(function(c){
+      c.classList.toggle('on', c===chip);
+    });
+    mdRenderLedger(); return;
+  }
+
+  var tog=t.closest('[data-toggle]');
+  if(tog){
+    var c=tog.getAttribute('data-toggle');
+    _mdClosed[c]=!_mdClosed[c];
+    mdRenderLedger(); return;
+  }
+
+  var cl=t.closest('[data-claim]');
+  if(cl){ mdToggleClaim(+cl.getAttribute('data-claim'), cl); return; }
+
+  var jk=t.closest('[data-junk]');
+  if(jk){ mdToggleJunk(+jk.getAttribute('data-junk'), jk); return; }
+
+  var cat=t.closest('.md-cat[data-cat]');
+  if(cat){
+    var name=cat.getAttribute('data-cat');
+    _mdFilter='all'; _mdQuery='';
+    var q=document.getElementById('md-q'); if(q) q.value='';
+    document.querySelectorAll('#md-panel .md-chip[data-f]').forEach(function(x){
+      x.classList.toggle('on', x.getAttribute('data-f')==='all');
+    });
+    MD_CATS.forEach(function(x){ _mdClosed[x] = x!==name; });
+    mdRenderLedger();
+    if(window.matchMedia('(max-width:900px)').matches) mdShowPane('r');
+    var g=document.querySelector('#md-panel [data-grp="'+name+'"]');
+    if(g) g.scrollIntoView({block:'start', behavior:'smooth'});
+    return;
+  }
+
+  var seg=t.closest('.md-seg .md-btn');
+  if(seg){ mdShowPane(seg.getAttribute('data-pane')); return; }
+});
+
+/* budget inputs — live recalculation, saved on the button */
+document.getElementById('md-brows').addEventListener('input',function(ev){
+  var el=ev.target;
+  var cat=el.getAttribute('data-bcat');
+  if(!cat) return;
+  _mdBudget[cat]=parseFloat(el.value)||0;
+  mdRenderMeter(); mdRenderCats(); mdRenderLedger();
+});
+
+function mdShowPane(which){
+  var l=document.getElementById('md-paneL'), r=document.getElementById('md-paneR');
+  if(!l||!r) return;
+  l.hidden = which!=='l';
+  r.hidden = which!=='r';
+  document.querySelectorAll('#md-panel .md-seg .md-btn').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-pane')===which);
+  });
+}
+
+document.addEventListener('keydown',function(e){
+  var ov=document.getElementById('md-overlay');
+  if(!ov || !ov.classList.contains('open')) return;
+  if(e.key==='Escape'){
+    var dr=document.getElementById('md-drawerBg');
+    if(dr.classList.contains('open')){ dr.classList.remove('open'); return; }
+    mdClose();
+  }
+  if(e.key==='ArrowLeft'  && !e.metaKey && !e.ctrlKey) mdStep(-1);
+  if(e.key==='ArrowRight' && !e.metaKey && !e.ctrlKey){
+    if(!document.getElementById('md-next').disabled) mdStep(1);
+  }
+});
+
+window.addEventListener('resize',function(){
+  if(!window.matchMedia('(max-width:900px)').matches){
+    var l=document.getElementById('md-paneL'), r=document.getElementById('md-paneR');
+    if(l) l.hidden=false;
+    if(r) r.hidden=false;
+  }
+});
+</script>
