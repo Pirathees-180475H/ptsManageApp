@@ -27,73 +27,6 @@ document.title = 'EXP TRACK';
 <?!= include('toolWheel'); ?>
 <?!= include('splitwise'); ?>
 
-<!-- ── Quick Add Modal ── -->
-<div id="qa-bg" onclick="if(event.target===this)closeQuickAdd()">
-  <div id="qa-modal">
-    <div class="qa-modal-hdr">
-      <div class="qa-modal-title">🛒 Quick Add Expense</div>
-      <button class="qa-modal-close" onclick="closeQuickAdd()">✕</button>
-    </div>
-    <div class="qa-modal-body">
-      <div class="qa-fields-row">
-        <div class="qa-field">
-          <label class="qa-field-lbl">Date</label>
-          <input type="date" id="qa-date" class="qa-field-inp">
-        </div>
-        <div class="qa-field">
-          <label class="qa-field-lbl">Category</label>
-          <select id="qa-cat" class="qa-field-sel" onchange="qaFetchExisting()">
-            <option value="food">Food</option>
-            <option value="super">Supermarket</option>
-          </select>
-        </div>
-      </div>
-      
-      <div id="qa-existing-box" class="qa-existing">
-        <div class="qa-existing-title">Existing Data</div>
-        <div id="qa-existing-info" class="qa-existing-val"></div>
-      </div>
-
-      <div class="qa-field">
-        <label class="qa-field-lbl">Expense Amount / Formula</label>
-        <input type="text" id="qa-amt" class="qa-field-inp" placeholder="e.g. 1500 or =800+700">
-      </div>
-
-      <div class="qa-field">
-        <label class="qa-field-lbl">Reference</label>
-        <input type="text" id="qa-ref" class="qa-field-inp" placeholder="Optional description">
-      </div>
-
-      <div class="qa-field">
-        <label class="qa-field-lbl">Payment Card</label>
-        <select id="qa-card" class="qa-field-sel">
-          <option value="">None / Cash</option>
-          <option value="AF">AMEX (Expense AF)</option>
-          <option value="AH">NTB (Expense AH)</option>
-          <option value="AJ">Selan (Expense AJ)</option>
-          <option value="AL">NDB (Expense AL)</option>
-        </select>
-      </div>
-
-      <div class="qa-field">
-        <label class="qa-field-lbl">Splitwise</label>
-        <div class="qa-split">
-          <div class="qa-split-btn active" data-val="none" onclick="setQaSplit('none')">None</div>
-          <div class="qa-split-btn" data-val="T" onclick="setQaSplit('T')">I Paid (T)</div>
-          <div class="qa-split-btn" data-val="U" onclick="setQaSplit('U')">Others (U)</div>
-        </div>
-        <div id="qa-split-amt-row" class="qa-split-amt-row">
-          <label class="qa-field-lbl" style="margin-top:8px">Splitwise Amount (if different)</label>
-          <input type="text" id="qa-split-amt" class="qa-field-inp" placeholder="Leave empty to use expense amount">
-        </div>
-      </div>
-    </div>
-    <div class="qa-modal-footer">
-      <button class="qa-modal-cancel" onclick="closeQuickAdd()">Cancel</button>
-      <button class="qa-modal-submit" id="qa-save-btn" onclick="saveQuickAdd()">Save Expense</button>
-    </div>
-  </div>
-</div>
 
 <!-- ── CMD Palette Modal ── -->
 <div id="cmd-palette-bg" onclick="if(event.target===this)closeCmdPalette()">
@@ -900,198 +833,12 @@ window.onload = function(){
   if (typeof swPrefetch === 'function') setTimeout(swPrefetch, 0);
   /* same for the cards and the first card's statement */
   if (typeof ccPrefetch === 'function') setTimeout(ccPrefetch, 0);
-  initQuickAdd();
+  /* modal HTML + the whole month warm up in the background */
+  if (typeof aePrefetch === 'function') setTimeout(aePrefetch, 0);
   if (typeof checkNotifications === 'function') {
     checkNotifications();
   }
 };
-
-/* ═══════════════════════════════════════════
-   QUICK ADD LOGIC
-═══════════════════════════════════════════ */
-var _qaSplit = 'none';
-var _qaExisting = null;
-
-function initQuickAdd() {
-  window.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
-      e.preventDefault();
-      openQuickAdd();
-    }
-    if (e.key === 'Escape' && document.getElementById('qa-bg').classList.contains('open')) {
-      closeQuickAdd();
-    }
-  });
-
-  // Set default date to today
-  var today = new Date();
-  var dateStr = today.getFullYear() + '-' + 
-                String(today.getMonth() + 1).padStart(2, '0') + '-' + 
-                String(today.getDate()).padStart(2, '0');
-  document.getElementById('qa-date').value = dateStr;
-  
-  // Add change listener for category fetch
-  document.getElementById('qa-date').addEventListener('change', function() {
-    qaFetchExisting();
-  });
-}
-
-function openQuickAdd() {
-  var bg = document.getElementById('qa-bg');
-  bg.classList.add('open');
-  document.getElementById('qa-amt').value = '';
-  document.getElementById('qa-split-amt').value = '';
-  document.getElementById('qa-ref').value = '';
-  document.getElementById('qa-amt').focus();
-  qaFetchExisting();
-}
-
-function closeQuickAdd() {
-  document.getElementById('qa-bg').classList.remove('open');
-}
-
-function setQaSplit(val) {
-  _qaSplit = val;
-  document.querySelectorAll('.qa-split-btn').forEach(function(b) {
-    b.classList.toggle('active', b.dataset.val === val);
-  });
-  document.getElementById('qa-split-amt-row').classList.toggle('open', val !== 'none');
-}
-
-function qaFetchExisting() {
-  var date = document.getElementById('qa-date').value;
-  if (!date) return;
-  
-  var parts = date.split('-');
-  var dateKey = parseInt(parts[1]) + '-' + parseInt(parts[2]);
-  
-  // Show minimal loading in the existing box
-  var box = document.getElementById('qa-existing-box');
-  var info = document.getElementById('qa-existing-info');
-  box.classList.add('open');
-  info.innerHTML = '<span style="opacity:.5">Checking existing data...</span>';
-  
-  google.script.run
-    .withSuccessHandler(function(r) {
-      if (r && !r.error) {
-        _qaExisting = r;
-        qaUpdateExistingUI();
-      } else {
-        box.classList.remove('open');
-        _qaExisting = null;
-      }
-    })
-    .getExpenseRow(dateKey);
-}
-
-function qaUpdateExistingUI() {
-  var cat = document.getElementById('qa-cat').value;
-  var amtCol = (cat === 'food') ? 'C' : 'E';
-  var refCol = (cat === 'food') ? 'D' : 'F';
-  
-  var amt = _qaExisting[amtCol];
-  var ref = _qaExisting[refCol];
-  var box = document.getElementById('qa-existing-box');
-  var info = document.getElementById('qa-existing-info');
-  
-  if (amt || ref) {
-    box.classList.add('open');
-    info.innerHTML = '<b>' + (amt || '0') + '</b>' + (ref ? ' (' + ref + ')' : '') + '<br><span style="font-size:.8em;opacity:.6">New values will be added to these (e.g. =800+500)</span>';
-  } else {
-    box.classList.remove('open');
-  }
-}
-
-function saveQuickAdd() {
-  var date = document.getElementById('qa-date').value;
-  var cat  = document.getElementById('qa-cat').value;
-  var amt  = document.getElementById('qa-amt').value.trim();
-  var swAmt = document.getElementById('qa-split-amt').value.trim();
-  var ref  = document.getElementById('qa-ref').value.trim();
-  var card = document.getElementById('qa-card').value;
-  
-  if (!amt) { alert('Enter an amount'); return; }
-
-  var btn = document.getElementById('qa-save-btn');
-  btn.disabled = true;
-  btn.innerText = 'Saving...';
-
-  // Determine Columns
-  var amtCol = (cat === 'food') ? 'C' : 'E';
-  var refCol = (cat === 'food') ? 'D' : 'F';
-  
-  var cells = {};
-  
-  // Helper to merge amounts (if formula exists, append)
-  function mergeAmt(existing, newAmt) {
-    if (!newAmt) return existing;
-    if (!existing || existing == '0') return newAmt;
-    var e = String(existing).trim();
-    var n = String(newAmt).trim();
-    if (n.startsWith('=')) n = n.substring(1);
-    if (e.startsWith('=')) return e + '+' + n;
-    return '=' + e + '+' + n;
-  }
-  
-  function mergeRef(existing, newRef) {
-    if (!newRef) return existing;
-    if (!existing) return newRef;
-    return existing + ', ' + newRef;
-  }
-
-  var existingAmt = _qaExisting ? _qaExisting[amtCol] : '';
-  var existingRef = _qaExisting ? _qaExisting[refCol] : '';
-
-  cells[amtCol] = mergeAmt(existingAmt, amt);
-  if (ref) cells[refCol] = mergeRef(existingRef, ref);
-  
-  // Card - we don't necessarily want to merge card amounts if they are separate transactions,
-  // but for "Maintenance & Stabilization", merging is safer to avoid overriding.
-  if (card) {
-    var exCardAmt = _qaExisting ? _qaExisting[card] : '';
-    cells[card] = mergeAmt(exCardAmt, amt);
-    if (ref) {
-      var exCardRef = _qaExisting ? _qaExisting['AE'] : '';
-      cells['AE'] = mergeRef(exCardRef, ref);
-    }
-  }
-  
-  // Splitwise
-  if (_qaSplit !== 'none') {
-    var actualSwAmt = swAmt || amt;
-    var exSwAmt = _qaExisting ? _qaExisting[_qaSplit] : '';
-    cells[_qaSplit] = mergeAmt(exSwAmt, actualSwAmt);
-    if (ref) {
-      var exSwRef = _qaExisting ? _qaExisting['W'] : '';
-      cells['W'] = mergeRef(exSwRef, ref);
-    }
-  }
-
-  var parts = date.split('-');
-  var dateKey = parseInt(parts[1]) + '-' + parseInt(parts[2]);
-
-  google.script.run
-    .withSuccessHandler(function(r) {
-      btn.disabled = false;
-      btn.innerText = 'Save Expense';
-      if (r && r.error) {
-        if(typeof haptic==='function')haptic('error');
-        alert('Error: ' + r.error);
-      } else {
-        if(typeof haptic==='function')haptic('success');
-        PTS.toast('Expense Added!', 'ok');
-        closeQuickAdd();
-        if (_activePage === 'exp') reloadPage('exp');
-      }
-    })
-    .withFailureHandler(function(e) {
-      btn.disabled = false;
-      btn.innerText = 'Save Expense';
-      if(typeof haptic==='function')haptic('error');
-      alert('Fail: ' + e);
-    })
-    .updateExpenseCells({ dateKey: dateKey, cells: cells });
-}
 
 /* ═══════════════════════════════════════════
    CMD PALETTE LOGIC
@@ -4628,12 +4375,27 @@ function csePerfRender(rows){
 })();
 
 /* ═══════════════════════════════════════════════════
-   ADD EXPENSE OVERLAY — open / close / bridge
+   ADD EXPENSE OVERLAY — prefetch / open / close / bridge
+
+   Two things are warmed on boot by aePrefetch(), neither of
+   which anything waits for:
+     • the modal's own HTML  (getAddExpHtmlContent)
+     • the whole month's rows (getExpenseMonth)
+   The overlay then opens on an iframe that is already built,
+   and the month goes in through postMessage — so opening it
+   and stepping between days costs no round trip.
 ═══════════════════════════════════════════════════ */
 (function(){
-  var _loaded = false;
+  var _html    = null;    /* the patched srcdoc, once fetched   */
+  var _injected= false;   /* srcdoc has been handed to the iframe */
+  var _ready   = false;   /* the iframe has loaded and can listen */
+  var _month   = null;    /* getExpenseMonth() payload           */
+  var _monthAt = 0;       /* when we fetched it                  */
+  var _pending = false;
+  var MONTH_TTL = 5 * 60 * 1000;   /* revalidate quietly after 5 min */
 
   /* ── The google.script.run shim injected into the iframe ── */
+  var FNS = ['getExpenseRow','getExpenseMonth','updateExpenseCells'];
   var BRIDGE_SCRIPT = [
     '(function(){',
     '  var _cbs={};',
@@ -4645,12 +4407,12 @@ function csePerfRender(rows){
     '    else c._s&&c._s(e.data.payload);',
     '    delete _cbs[e.data.cbId];',
     '  });',
+    '  var FNS=' + JSON.stringify(FNS) + ';',
     '  function mk(){',
     '    var o={_s:null,_f:null};',
     '    o.withSuccessHandler=function(c){o._s=c;return o;};',
     '    o.withFailureHandler=function(c){o._f=c;return o;};',
-    '    var fns=["getExpenseRow","updateExpenseCells"];',
-    '    fns.forEach(function(fn){',
+    '    FNS.forEach(function(fn){',
     '      o[fn]=function(){',
     '        var id=Math.random().toString(36).slice(2);',
     '        _cbs[id]={_s:o._s,_f:o._f};',
@@ -4661,53 +4423,129 @@ function csePerfRender(rows){
     '    return o;',
     '  }',
     '  var _runner=mk();',
-    '  window.google={script:{run:{',
+    '  var run={',
     '    withSuccessHandler:function(c){_runner=mk();_runner._s=c;return _runner;},',
-    '    withFailureHandler:function(c){_runner._f=c;return _runner;},',
-    '    getExpenseRow:function(){_runner.getExpenseRow.apply(_runner,arguments);_runner=mk();},',
-    '    updateExpenseCells:function(){_runner.updateExpenseCells.apply(_runner,arguments);_runner=mk();}',
-    '  }}};',
-    '})();'
+    '    withFailureHandler:function(c){_runner._f=c;return _runner;}',
+    '  };',
+    '  FNS.forEach(function(fn){',
+    '    run[fn]=function(){_runner[fn].apply(_runner,arguments);_runner=mk();};',
+    '  });',
+    '  window.google={script:{run:run}};',
+    '})();' 
   ].join('\n');
 
-  /* ── Relay: parent listens for iframe's gsrun messages ── */
+  /* ── Relay: parent listens for the iframe's gsrun messages ── */
   window.addEventListener('message', function(e) {
-    if (!e.data || e.data.type !== 'gsrun') return;
-    var cbId = e.data.cbId;
+    if (!e.data) return;
     var iframe = document.getElementById('ae-iframe');
+
+    /* the modal says it is up and wants the cached month */
+    if (e.data.type === 'aeready') {
+      _ready = true;
+      _post({type:'aemonth', payload:_month, stale:_stale()});
+      return;
+    }
+    /* the modal saved cells — keep the parent's copy in step */
+    if (e.data.type === 'aesaved') {
+      if (_month && _month.days && e.data.dateKey) {
+        var day = _month.days[e.data.dateKey] || (_month.days[e.data.dateKey] = {});
+        var cells = e.data.cells || {};
+        Object.keys(cells).forEach(function(col) {
+          if (col === 'B')  { _month.B  = cells[col]; return; }
+          if (col === 'D2') { _month.D2 = cells[col]; return; }
+          if (cells[col] === '' || cells[col] === null) delete day[col];
+          else day[col] = cells[col];
+        });
+      }
+      if (_activePage === 'exp' && typeof reloadPage === 'function') reloadPage('exp');
+      return;
+    }
+    /* Esc inside the iframe closes the overlay */
+    if (e.data.type === 'aeclose') { closeAddExp(); return; }
+    if (e.data.type !== 'gsrun') return;
+
     if (!iframe || !iframe.contentWindow) return;
     google.script.run
       .withSuccessHandler(function(r) {
-        iframe.contentWindow.postMessage({type:'gsres', cbId:cbId, isErr:false, payload:r}, '*');
+        iframe.contentWindow.postMessage({type:'gsres', cbId:e.data.cbId, isErr:false, payload:r}, '*');
       })
       .withFailureHandler(function(err) {
-        iframe.contentWindow.postMessage({type:'gsres', cbId:cbId, isErr:true, payload:err}, '*');
+        iframe.contentWindow.postMessage({type:'gsres', cbId:e.data.cbId, isErr:true, payload:err}, '*');
       })
       [e.data.fn].apply(null, e.data.args);
   });
 
+  function _post(msg) {
+    var iframe = document.getElementById('ae-iframe');
+    if (_ready && iframe && iframe.contentWindow) iframe.contentWindow.postMessage(msg, '*');
+  }
+  function _stale() {
+    return !_monthAt || (new Date().getTime() - _monthAt) > MONTH_TTL;
+  }
+
+  /* ── Warm both halves on boot; nothing blocks on either ── */
+  function fetchMonth(then) {
+    if (_pending) return;
+    _pending = true;
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _pending = false;
+        if (res && !res.error) { _month = res; _monthAt = new Date().getTime(); }
+        if (then) then();
+      })
+      .withFailureHandler(function() { _pending = false; if (then) then(); })
+      .getExpenseMonth();
+  }
+
+  window.aePrefetch = function() {
+    if (!_html) {
+      google.script.run
+        .withSuccessHandler(function(html) {
+          _html = html.replace('</head>', '<script>' + BRIDGE_SCRIPT + '<\/script></head>');
+          inject();
+        })
+        .withFailureHandler(function(){ /* the FAB falls back to fetching on open */ })
+        .getAddExpHtmlContent();
+    }
+    fetchMonth();
+  };
+
+  function inject() {
+    if (_injected || !_html) return;
+    _injected = true;
+    var iframe = document.getElementById('ae-iframe');
+    if (!iframe) return;
+    iframe.onload = function() {
+      var l = document.getElementById('ae-loading');
+      if (l) l.style.display = 'none';
+      iframe.style.display = 'block';
+    };
+    iframe.srcdoc = _html;
+  }
+
   /* ── Open overlay ── */
-  window.openAddExp = function() {
+  window.openAddExp = function(focusCol) {
     var overlay = document.getElementById('ae-overlay');
     overlay.classList.add('open');
-    if (_loaded) return;
-    _loaded = true;
-    google.script.run
-      .withSuccessHandler(function(html) {
-        // Inject the bridge shim into the HTML
-        var patched = html.replace('</head>', '<script>' + BRIDGE_SCRIPT + '<\/script></head>');
-        var iframe = document.getElementById('ae-iframe');
-        iframe.srcdoc = patched;
-        iframe.onload = function() {
-          document.getElementById('ae-loading').style.display = 'none';
-          iframe.style.display = 'block';
-        };
-      })
-      .withFailureHandler(function(err) {
-        document.getElementById('ae-loading').innerHTML =
-          '<span style="color:#ff4d6d">Failed to load: ' + (err && err.message || err) + '</span>';
-      })
-      .getAddExpHtmlContent();
+
+    if (_html) {
+      inject();
+    } else {
+      google.script.run
+        .withSuccessHandler(function(html) {
+          _html = html.replace('</head>', '<script>' + BRIDGE_SCRIPT + '<\/script></head>');
+          inject();
+        })
+        .withFailureHandler(function(err) {
+          var l = document.getElementById('ae-loading');
+          if (l) l.innerHTML = '<span style="color:#ff4d6d">Failed to load: ' + (err && err.message || err) + '</span>';
+        })
+        .getAddExpHtmlContent();
+    }
+
+    /* show what we have, then quietly refresh if it has aged */
+    _post({type:'aemonth', payload:_month, stale:_stale(), focus:focusCol || null});
+    if (_stale()) fetchMonth(function(){ _post({type:'aemonth', payload:_month, stale:false}); });
   };
 
   /* ── Close overlay ── */
@@ -4720,9 +4558,14 @@ function csePerfRender(rows){
     if (e.target === this) closeAddExp();
   });
 
-  /* Close on Escape key */
+  /* Escape closes it; Ctrl/⌘L opens it on today's food row
+     (the shortcut the old Quick Add used) */
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeAddExp();
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'l') {
+      e.preventDefault();
+      openAddExp('C');
+    }
   });
 })();
 

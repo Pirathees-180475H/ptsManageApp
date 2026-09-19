@@ -3964,6 +3964,71 @@ function getExpenseRow(dateKey, prevKey) {
   }
 }
 
+/* ── getExpenseMonth ────────────────────────────────────────────
+   One bulk read of the whole sheet, returned as { "M-D": {A..AM} }.
+   This is what the client prefetches on boot so that opening the
+   Add Expense modal and stepping between days costs no round trip.
+   month/year are optional: omitted, every dated row is returned.
+─────────────────────────────────────────────────────────────── */
+function getExpenseMonth(month, year) {
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { error: 'Sheet "Monthly Expences" not found' };
+
+    var tz      = ss.getSpreadsheetTimeZone();
+    var lastRow = sheet.getLastRow();
+    var numCols = 39; // A through AM
+
+    var range = sheet.getRange(1, 1, lastRow, numCols);
+    var vals  = range.getValues();
+    var fmls  = range.getFormulas();
+
+    var COLS = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S',
+                'T','U','V','W','X','Y','Z','AA','AB','AC','AD','AE','AF','AG','AH','AI','AJ','AK','AL','AM'];
+
+    var wantMonth = (month >= 1 && month <= 12) ? parseInt(month, 10) : 0;
+    var wantYear  = (year >= 2000) ? parseInt(year, 10) : 0;
+
+    var days = {};
+    for (var r = 0; r < vals.length; r++) {
+      var key = _cellStr(vals[r][0], true).trim();
+      var m   = key.match(/^(\d{1,2})-(\d{1,2})$/);
+      if (!m) continue;
+      if (wantMonth && parseInt(m[1], 10) !== wantMonth) continue;
+      if (wantYear && vals[r][0] instanceof Date && !isNaN(vals[r][0])) {
+        if (parseInt(Utilities.formatDate(vals[r][0], tz, 'yyyy'), 10) !== wantYear) continue;
+      }
+      if (days[key]) continue;  // first row wins, same as getExpenseRow
+
+      var o = { _row: r + 1 };
+      for (var c = 0; c < COLS.length && c < vals[r].length; c++) {
+        var fml = fmls[r][c];
+        if (fml && fml.trim() !== '') {
+          o[COLS[c]] = fml;                       // keep "=800+450" visible
+        } else {
+          var s = _cellStr(vals[r][c], COLS[c] === 'A');
+          if (s !== '') o[COLS[c]] = s;           // drop empties: the payload is ~30x smaller
+        }
+      }
+      days[key] = o;
+    }
+
+    var row2 = sheet.getRange(2, 2, 1, 3).getValues()[0];  // B2:D2
+
+    return {
+      days:    days,
+      B:       row2[0] || 0,   // salary
+      D2:      row2[2] || 0,   // tax refund
+      _sheet:  'Monthly Expences',
+      _fetched: new Date().getTime()
+    };
+
+  } catch (err) {
+    return { error: err.message || String(err) };
+  }
+}
+
 /* ── updateExpenseCells ─────────────────────────────────────────
    payload: { dateKey, prevKey, cells: { 'C': '=800+350', 'D': 'Kottu', ... } }
    Finds the matching row then updates each specified cell individually.
