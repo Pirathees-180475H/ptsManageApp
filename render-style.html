@@ -3539,34 +3539,99 @@ input[type=date].swae-input{color-scheme:dark;}
 .fd-modal-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ═══ ADD EXP FAB + OVERLAY ═══ */
-/* second FAB — this month's ledger. Same face as Add Expense, beside it. */
-#md-fab{
-  position:fixed;bottom:80px;right:86px;
-  width:54px;height:54px;border-radius:50%;
-  background:linear-gradient(135deg,var(--blue),var(--purple));
-  border:none;color:#fff;line-height:1;
-  cursor:pointer;z-index:200;
-  box-shadow:0 8px 28px rgba(0,212,255,.35);
-  display:none;align-items:center;justify-content:center;
-  transition:transform .18s,box-shadow .18s;
-  -webkit-tap-highlight-color:transparent;
-}
-#md-fab:hover{transform:scale(1.1);box-shadow:0 12px 36px rgba(0,212,255,.5);}
-#md-fab:active{transform:scale(.95);}
-
-#ae-fab{
+/* ── The expense FAB wheel ──────────────────────────────────────
+   A quarter wheel: one hub in the corner, and the two actions (Add,
+   View month) bloom out along the arc between straight-up and
+   straight-left. Collapsed, both arms sit under the hub, so the
+   corner reads as a single button. Positions come from one radius
+   and a per-arm angle, so a third action is just another --a. */
+#xfab{
+  --xfab-r:80px;
   position:fixed;bottom:80px;right:20px;
-  width:54px;height:54px;border-radius:50%;
-  background:linear-gradient(135deg,var(--blue),var(--purple));
-  border:none;color:#fff;font-size:30px;font-weight:300;line-height:1;
-  cursor:pointer;z-index:200;
-  box-shadow:0 8px 28px rgba(0,212,255,.35);
-  display:none;align-items:center;justify-content:center;
-  transition:transform .18s,box-shadow .18s;
+  width:56px;height:56px;z-index:200;display:none;
   -webkit-tap-highlight-color:transparent;
 }
-#ae-fab:hover{transform:scale(1.1);box-shadow:0 12px 36px rgba(0,212,255,.5);}
-#ae-fab:active{transform:scale(.95);}
+#xfab.shown{display:block;}
+
+/* catches the tap that closes the wheel — invisible, never blocks the
+   corner itself because #xfab sits above it */
+#xfab-scrim{position:fixed;inset:0;z-index:199;display:none;background:transparent;}
+#xfab-scrim.on{display:block;}
+
+/* the faint track the arms travel on */
+#xfab .xfab-arc{
+  position:absolute;left:50%;top:50%;
+  width:calc(var(--xfab-r) * 2);height:calc(var(--xfab-r) * 2);
+  margin:calc(var(--xfab-r) * -1) 0 0 calc(var(--xfab-r) * -1);
+  border-radius:50%;pointer-events:none;
+  border:1px solid transparent;
+  border-top-color:rgba(0,212,255,.16);
+  border-left-color:rgba(0,212,255,.16);
+  opacity:0;transform:scale(.45);
+  transition:opacity .2s,transform .3s cubic-bezier(.34,1.4,.64,1);
+}
+#xfab.open .xfab-arc{opacity:1;transform:scale(1);}
+
+#xfab-hub{
+  position:absolute;inset:0;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  border:none;color:#fff;line-height:1;cursor:pointer;
+  box-shadow:0 8px 28px rgba(0,212,255,.35);
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .18s,box-shadow .18s;
+}
+#xfab-hub svg{transition:transform .3s cubic-bezier(.34,1.4,.64,1);}
+#xfab-hub:hover{transform:scale(1.06);box-shadow:0 12px 36px rgba(0,212,255,.5);}
+#xfab-hub:active{transform:scale(.93);}
+#xfab.open #xfab-hub{box-shadow:0 12px 36px rgba(0,212,255,.5);}
+#xfab.open #xfab-hub svg{transform:rotate(135deg);}   /* the + becomes an × */
+
+.xfab-arm{
+  position:absolute;left:50%;top:50%;
+  width:48px;height:48px;margin:-24px 0 0 -24px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--purple));
+  border:none;color:#fff;font-size:26px;font-weight:300;line-height:1;
+  cursor:pointer;
+  box-shadow:0 8px 24px rgba(0,212,255,.3);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transform:scale(.35);
+  transition:transform .3s cubic-bezier(.34,1.5,.64,1),opacity .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+#xfab.open .xfab-arm{
+  opacity:1;pointer-events:auto;
+  /* out along --a, then un-rotated so the glyph stays upright */
+  transform:rotate(var(--a)) translate(var(--xfab-r)) rotate(calc(-1 * var(--a)));
+}
+.xfab-arm:hover{box-shadow:0 10px 30px rgba(0,212,255,.45);}
+.xfab-arm:active{filter:brightness(1.18);}
+
+/* each arm names itself, so the two are never told apart by icon alone */
+.xfab-arm .xfab-tip{
+  position:absolute;right:calc(100% + 9px);top:50%;transform:translateY(-50%);
+  font-size:11px;font-weight:700;letter-spacing:.4px;white-space:nowrap;
+  color:rgba(255,255,255,.8);background:rgba(10,14,22,.92);
+  border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:4px 9px;
+  opacity:0;pointer-events:none;transition:opacity .16s .12s;
+}
+#xfab.open .xfab-arm .xfab-tip{opacity:1;}
+
+/* Hover bridge — the arms land 80px out, well outside the hub's own 56px
+   box, and their labels reach further still. This pad covers the whole
+   quarter they live in, so the pointer never crosses dead space on its way
+   to one. Inert until the wheel is open, so it swallows nothing otherwise.
+   Opening on hover is driven from JS (xfabHoverIn/Out) rather than :hover,
+   because a CSS hover that lapses for one frame snaps the wheel shut. */
+.xfab-pad{
+  position:absolute;right:-10px;bottom:-10px;
+  width:calc(var(--xfab-r) + 110px);height:calc(var(--xfab-r) + 110px);
+  pointer-events:none;
+}
+#xfab.open .xfab-pad{pointer-events:auto;}
+
+@media (prefers-reduced-motion:reduce){
+  #xfab .xfab-arc,#xfab-hub svg,.xfab-arm{transition-duration:.01ms;}
+}
 
 #ae-overlay{
   position:fixed;inset:0;z-index:9500;

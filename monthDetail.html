@@ -23,8 +23,9 @@
        updateFoodJunkStatus(m, y, day, ref)       junk toggle
 
      Talks to render.html through three hooks only:
-       out — mdOpen()   opened by #md-fab
-             mdReset()  called from reloadPage('exp')
+       out — mdOpen()     opened by the expense FAB wheel
+             mdReset()    called from reloadPage('exp')
+             mdPrefetch() called on boot — warms the current month
        in  — haptic() when present
 
      Included from render.html via:  <?!= include('monthDetail'); ?>
@@ -338,6 +339,8 @@ var _mdMonth = 0, _mdYear = 0;
 var _mdCache = {};            /* "y-m" -> server payload */
 var _mdData  = null;          /* the month on screen */
 var _mdBudget = {};           /* live, editable copy of the control plan */
+var _mdInflight = {};         /* "y-m" -> true while its request is out */
+var _mdGen = 0;               /* bumped by mdReset() — answers older than it are dropped */
 var _mdFilter = 'all', _mdQuery = '', _mdClosed = {};
 var _mdBusy = false;
 
@@ -395,7 +398,7 @@ function mdClose(){
   document.getElementById('md-drawerBg').classList.remove('open');
 }
 /* render.html calls this from reloadPage('exp') */
-function mdReset(){ _mdCache={}; _mdData=null; _mdMonth=0; _mdYear=0; }
+function mdReset(){ _mdGen++; _mdCache={}; _mdInflight={}; _mdData=null; _mdMonth=0; _mdYear=0; }
 
 function mdStep(dir){
   _mdMonth+=dir;
@@ -403,6 +406,51 @@ function mdStep(dir){
   if(_mdMonth<1) { _mdMonth=12; _mdYear--; }
   _mdBuzz('step');
   mdLoad();
+}
+
+function mdErr(msg){
+  document.getElementById('md-content').innerHTML=
+    '<div style="padding:20px"><div class="md-err">\u26a0 '+mdEsc(msg)+'</div></div>';
+}
+
+/* One request per month, shared by mdLoad() and mdPrefetch(): whoever asks
+   second rides the first one's answer instead of firing a second read. */
+function mdFetch(m, y){
+  var key=y+'-'+m;
+  if(_mdCache[key] || _mdInflight[key]) return;
+  _mdInflight[key]=true;
+  var gen=_mdGen;
+
+  /* paint only if this month is still the one on screen, and the overlay
+     is actually open — a boot-time prefetch lands with it closed */
+  function showing(){
+    return gen===_mdGen && m===_mdMonth && y===_mdYear &&
+           document.getElementById('md-overlay').classList.contains('open');
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res){
+      if(gen!==_mdGen) return;               /* a reload has since wiped the cache */
+      delete _mdInflight[key];
+      if(res && res.success) _mdCache[key]=res;
+      if(!showing()) return;
+      if(!res || !res.success){ mdErr((res&&res.error)||'Could not read the month'); return; }
+      mdApply(res);
+    })
+    .withFailureHandler(function(err){
+      if(gen!==_mdGen) return;
+      delete _mdInflight[key];
+      if(showing()) mdErr(err&&err.message||err);
+    })
+    .getCurrentMonthExpensesList(m, y);
+}
+
+/* Warmed on boot from render.html — nothing waits on it. By the time the
+   FAB is tapped the current month is usually already in _mdCache, and if
+   it is still in flight mdLoad() just waits on that same request. */
+function mdPrefetch(){
+  var n=new Date();
+  mdFetch(n.getMonth()+1, n.getFullYear());
 }
 
 function mdLoad(){
@@ -416,29 +464,10 @@ function mdLoad(){
   if(_mdCache[key]){ mdApply(_mdCache[key]); return; }
 
   document.getElementById('md-content').innerHTML=
-    '<div class="md-load"><div class="md-spin"></div>Reading '+MD_MONTHS[_mdMonth]+'…</div>';
-  document.getElementById('md-heroSpent').textContent='—';
+    '<div class="md-load"><div class="md-spin"></div>Reading '+MD_MONTHS[_mdMonth]+'\u2026</div>';
+  document.getElementById('md-heroSpent').textContent='\u2014';
 
-  var reqM=_mdMonth, reqY=_mdYear;
-  google.script.run
-    .withSuccessHandler(function(res){
-      if(res && res.success) _mdCache[reqY+'-'+reqM]=res;
-      /* ignore a late response for a month we have navigated away from */
-      if(reqM!==_mdMonth || reqY!==_mdYear) return;
-      if(!res || !res.success){
-        document.getElementById('md-content').innerHTML=
-          '<div style="padding:20px"><div class="md-err">⚠ '+
-          mdEsc((res&&res.error)||'Could not read the month')+'</div></div>';
-        return;
-      }
-      mdApply(res);
-    })
-    .withFailureHandler(function(err){
-      document.getElementById('md-content').innerHTML=
-        '<div style="padding:20px"><div class="md-err">⚠ '+
-        mdEsc(err&&err.message||err)+'</div></div>';
-    })
-    .getCurrentMonthExpensesList(reqM, reqY);
+  mdFetch(_mdMonth, _mdYear);
 }
 
 function mdApply(res){

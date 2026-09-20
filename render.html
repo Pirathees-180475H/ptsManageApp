@@ -186,9 +186,68 @@ document.title = 'EXP TRACK';
   </div>
 </section>
 
-<!-- ═══ EXPENSE FABs (fixed, shown only on Expenses tab) ═══ -->
-<button id="md-fab" onclick="mdOpen()" title="This month's expenses" aria-label="This month's expenses"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg></button>
-<button id="ae-fab" onclick="openAddExp()" title="Add Expense">+</button>
+<!-- ═══ EXPENSE FAB WHEEL (fixed, shown only on Expenses tab) ═══
+     One hub in the corner. Tapping it blooms Add and View out along a
+     quarter arc — up and left — so at rest the corner holds one button
+     instead of two. Both keep their old ids, so every other hook and
+     style that names them still finds them. -->
+<div id="xfab-scrim" onclick="xfabClose()"></div>
+<div id="xfab">
+  <span class="xfab-pad" aria-hidden="true"></span>
+  <span class="xfab-arc" aria-hidden="true"></span>
+  <button id="ae-fab" class="xfab-arm" style="--a:-90deg" onclick="xfabRun(openAddExp)" title="Add Expense" aria-label="Add Expense"><span class="xfab-tip">Add</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+  <button id="md-fab" class="xfab-arm" style="--a:180deg;transition-delay:.05s" onclick="xfabRun(mdOpen)" title="This month's expenses" aria-label="This month's expenses"><span class="xfab-tip">View</span><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg></button>
+  <button id="xfab-hub" onclick="xfabToggle()" aria-expanded="false" aria-controls="xfab" title="Expense actions" aria-label="Expense actions"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+</div>
+<script>
+/* ── quarter wheel: open / close / fire ─────────────────────── */
+function xfabSet(open){
+  var w=document.getElementById('xfab');
+  if(!w) return;
+  w.classList.toggle('open', open);
+  /* the scrim covers the whole page, so it only goes up once the wheel is
+     pinned by a click — a passing hover must not blank out the app */
+  document.getElementById('xfab-scrim').classList.toggle('on', open && _xfabPinned);
+  document.getElementById('xfab-hub').setAttribute('aria-expanded', open?'true':'false');
+}
+function xfabClose(){ _xfabPinned=false; xfabSet(false); }
+function xfabToggle(){
+  var w=document.getElementById('xfab');
+  if(!w) return;
+  /* hover may have opened it already — the first click then pins it */
+  var open = w.classList.contains('open');
+  if(open && !_xfabPinned){ _xfabPinned=true; xfabSet(true); }
+  else { _xfabPinned=!open; xfabSet(!open); }
+  if(typeof haptic==='function') haptic('step');
+}
+/* close first, then act — the overlay should not open behind a live wheel */
+function xfabRun(fn){ _xfabPinned=false; xfabClose(); if(typeof fn==='function') fn(); }
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape'){ _xfabPinned=false; xfabClose(); }
+});
+
+/* ── hover: open on pointer, close on a grace delay ──────────
+   Driven from JS, not :hover — the arms sit 80px from the hub, and a CSS
+   hover that lapses for a single frame on the way out there would snap the
+   wheel shut just as you reach for a button. The delay also forgives the
+   pointer clipping a corner of the pad. A click pins it open so it stays
+   put regardless of where the pointer goes. */
+var _xfabHoverT=null, _xfabPinned=false;
+(function(){
+  var w=document.getElementById('xfab');
+  if(!w || !window.matchMedia || !window.matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+
+  w.addEventListener('pointerenter', function(){
+    if(_xfabHoverT){ clearTimeout(_xfabHoverT); _xfabHoverT=null; }
+    xfabSet(true);
+  });
+  w.addEventListener('pointerleave', function(){
+    if(_xfabPinned) return;
+    if(_xfabHoverT) clearTimeout(_xfabHoverT);
+    _xfabHoverT=setTimeout(function(){ _xfabHoverT=null; xfabClose(); }, 260);
+  });
+})();
+</script>
 
 <!-- ═══ ADD EXPENSE OVERLAY ═══ -->
 <div id="ae-overlay">
@@ -734,11 +793,12 @@ function _doShowPage(name){
   if(name !== _activePage) if(typeof haptic==='function')haptic('step');
   _activePage = name;
 
-  // Show/hide Add Expense FAB — only on Expenses tab
-  var aeFab=document.getElementById('ae-fab');
-  if(aeFab) aeFab.style.display = name==='exp' ? 'flex' : 'none';
-  var mdFab=document.getElementById('md-fab');
-  if(mdFab) mdFab.style.display = name==='exp' ? 'flex' : 'none';
+  // Show/hide the expense FAB wheel (Add + View) — only on Expenses tab
+  var xfab=document.getElementById('xfab');
+  if(xfab){
+    xfab.classList.toggle('shown', name==='exp');
+    if(name!=='exp') xfabClose();
+  }
 
   // Show/hide MF Add Plan FAB — only on Money Flow tab
   var mfFab=document.getElementById('mf-fab');
@@ -804,7 +864,7 @@ function reloadPage(name){
   if(name==='cse')  cseStartLoad();
   else if(name==='cc')   { document.getElementById('cc-root').innerHTML='<div class="loading"><div class="cc-spinner"></div><div class="loading-txt">Loading credit card data…</div></div>'; ccLoad(); _spaLoaded.cc=true; }
   else if(name==='ca')   { document.getElementById('ca-body').innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-txt">Loading Card Analysis…</div></div>'; caLoad(); _spaLoaded.ca=true; }
-  else if(name==='exp')  { document.getElementById('exp-root').innerHTML='<div class="exp-loader"><div class="exp-spinner"></div><p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p></div>'; mdReset(); expLoad(); _spaLoaded.exp=true; }
+  else if(name==='exp')  { document.getElementById('exp-root').innerHTML='<div class="exp-loader"><div class="exp-spinner"></div><p style="color:rgba(255,255,255,.3);font-size:13px">Fetching expense data…</p></div>'; mdReset(); mdPrefetch(); expLoad(); _spaLoaded.exp=true; }
   else if(name==='port') { portLoad(); _spaLoaded.port=true; }
   else if(name==='bank') { bankLoad(); _spaLoaded.bank=true; }
   else if(name==='mf')   { document.getElementById('mf-root').innerHTML='<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:14px"><div style="width:44px;height:44px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:spin .8s linear infinite"></div><div style="color:rgba(255,255,255,.3);font-size:.82em;letter-spacing:2px;text-transform:uppercase">Loading Investment Flow…</div></div>'; mfLoad(); _spaLoaded.mf=true; }
@@ -819,6 +879,8 @@ window.onload = function(){
   if (typeof ccPrefetch === 'function') setTimeout(ccPrefetch, 0);
   /* modal HTML + the whole month warm up in the background */
   if (typeof aePrefetch === 'function') setTimeout(aePrefetch, 0);
+  /* and the month-detail overlay's current month, so it opens already read */
+  if (typeof mdPrefetch === 'function') setTimeout(mdPrefetch, 0);
   if (typeof checkNotifications === 'function') {
     checkNotifications();
   }
