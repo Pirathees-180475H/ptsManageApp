@@ -178,6 +178,27 @@
 #md-panel .md-chip.on{background:rgba(46,107,230,.16);border-color:var(--md-acc);color:var(--md-ink);}
 #md-panel .md-chip .cnt{font-family:var(--md-num);font-size:11px;color:var(--md-ink3);}
 #md-panel .md-chip.on .cnt{color:#A9CCFF;}
+/* group-by switch — category rows or the day-by-day ledger */
+#md-panel .md-gtog{display:inline-flex;border:1px solid var(--md-line2);border-radius:999px;
+  background:var(--md-card);overflow:hidden;flex-shrink:0;}
+#md-panel .md-gtg{height:32px;padding:0 13px;border:none;background:none;color:var(--md-ink3);
+  font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+#md-panel .md-gtg:hover{color:var(--md-ink);}
+#md-panel .md-gtg.on{background:rgba(46,107,230,.16);color:var(--md-ink);}
+#md-panel .md-gtg svg{flex-shrink:0;}
+
+/* day group header — the date reads as the subject, so it gets the room */
+#md-panel .md-grp-hd .dnum{font-family:var(--md-num);font-size:16px;font-weight:700;
+  letter-spacing:-.4px;min-width:22px;}
+#md-panel .md-grp-hd .ddow{font-size:11px;font-weight:700;letter-spacing:.7px;
+  color:var(--md-ink3);text-transform:uppercase;}
+#md-panel .md-grp.today{border-color:rgba(46,107,230,.45);}
+#md-panel .md-grp-hd .tdy{font-size:9.5px;font-weight:800;letter-spacing:.7px;
+  padding:2px 7px;border-radius:999px;background:rgba(46,107,230,.18);color:#A9CCFF;}
+#md-panel .md-ent.by-day{grid-template-columns:132px minmax(0,1fr) auto;}
+#md-panel .md-clbl{font-size:11.5px;font-weight:700;color:var(--md-ink2);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
 #md-panel .md-search{flex:1;min-width:150px;height:32px;border-radius:10px;
   border:1px solid var(--md-line2);background:var(--md-field);color:var(--md-ink);
   padding:0 12px;font-size:12.5px;}
@@ -267,6 +288,7 @@
 @media(max-width:560px){
   #md-panel .md-col{padding:14px 16px;}
   #md-panel .md-ent{grid-template-columns:54px minmax(0,1fr);row-gap:4px;}
+  #md-panel .md-ent.by-day{grid-template-columns:96px minmax(0,1fr);}
   #md-panel .md-amt{grid-column:2;text-align:left;color:var(--md-mag-hi);}
 }
 @media(prefers-reduced-motion:reduce){
@@ -342,6 +364,8 @@ var _mdBudget = {};           /* live, editable copy of the control plan */
 var _mdInflight = {};         /* "y-m" -> true while its request is out */
 var _mdGen = 0;               /* bumped by mdReset() — answers older than it are dropped */
 var _mdFilter = 'all', _mdQuery = '', _mdClosed = {};
+var _mdGroupBy = 'cat';      /* 'cat' — category rows | 'day' — the ledger date by date */
+var _mdClosedDay = {};       /* collapsed day groups, kept apart from _mdClosed */
 var _mdBusy = false;
 
 function _mdBuzz(k){ if(typeof window.haptic === 'function') window.haptic(k); }
@@ -356,6 +380,8 @@ function mdIsClaim(r){ return !mdIsClaimed(r) && /\bclaim\b|pick\s*me/i.test(r||
 function mdIsJunk(r){ return /\bjunk\b/i.test(r||''); }
 function mdDow(y,m,d){ return MD_DOW[new Date(y, m-1, d).getDay()]; }
 function mdIcon(kind){
+  if(kind==='cat') return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h10"/></svg>';
+  if(kind==='cal') return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M3 10h18"/></svg>';
   if(kind==='alert') return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>';
   return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
 }
@@ -474,7 +500,7 @@ function mdApply(res){
   _mdData=res;
   _mdBudget={};
   MD_CATS.forEach(function(c){ _mdBudget[c]=(res.controlPlan&&res.controlPlan[c])||0; });
-  _mdFilter='all'; _mdQuery=''; _mdClosed={};
+  _mdFilter='all'; _mdQuery=''; _mdClosed={}; _mdClosedDay={};
   mdShell();
   mdRenderAll();
 }
@@ -540,6 +566,10 @@ function mdShell(){
           '<button class="md-chip" data-f="claim">To claim <span class="cnt" id="md-cClaim">0</span></button>'+
           '<button class="md-chip" data-f="claimed">Claimed <span class="cnt" id="md-cClaimed">0</span></button>'+
           '<button class="md-chip" data-f="junk">Junk <span class="cnt" id="md-cJunk">0</span></button>'+
+          '<div class="md-gtog" role="group" aria-label="Group the ledger by">'+
+            '<button class="md-gtg on" data-grpby="cat" aria-pressed="true">'+mdIcon('cat')+'Category</button>'+
+            '<button class="md-gtg" data-grpby="day" aria-pressed="false">'+mdIcon('cal')+'Date</button>'+
+          '</div>'+
           '<input class="md-search" id="md-q" type="search" placeholder="Search a reference…" aria-label="Search references">'+
         '</div>'+
         '<div id="md-ledger"></div>'+
@@ -770,6 +800,8 @@ function mdRenderLedger(){
     return;
   }
 
+  if(_mdGroupBy==='day'){ mdLedgerByDay(shown, all, host); return; }
+
   var grouped={};
   shown.forEach(function(e){ (grouped[e.category]=grouped[e.category]||[]).push(e); });
 
@@ -801,24 +833,73 @@ function mdRenderLedger(){
           (over?'#E86A6A':'var(--md-ink)')+'">'+mdFmt(sum)+'</span>'+
       '</button>'+
       bud+
-      '<div class="md-grp-bd">'+rows.map(function(e){
-        var i=all.indexOf(e);
-        var claimed=mdIsClaimed(e.reference), claim=mdIsClaim(e.reference), junk=mdIsJunk(e.reference);
-        var tags='';
-        if(claimed||claim)
-          tags+='<button class="md-tagbtn '+(claimed?'claimed':'claim')+'" data-claim="'+i+'">'+
-                (claimed?'✓ Claimed':'→ Claim')+'</button>';
-        if(e.category==='Food')
-          tags+='<button class="md-tagbtn'+(junk?' junk':'')+'" data-junk="'+i+'">'+
-                (junk?'● Junk':'Mark junk')+'</button>';
-        return '<div class="md-ent">'+
-          '<span class="md-day"><b>'+e.day+'</b><span>'+mdDow(_mdYear,_mdMonth,e.day)+'</span></span>'+
-          '<span class="md-ref">'+(e.reference
-            ? '<span class="txt" title="'+mdEsc(e.reference)+'">'+mdEsc(e.reference)+'</span>'
-            : '<span class="txt" style="color:#59626F">no reference</span>')+tags+'</span>'+
-          '<span class="md-amt">'+mdFmt(e.amount)+'</span>'+
-        '</div>';
-      }).join('')+'</div></div>';
+      '<div class="md-grp-bd">'+rows.map(function(e){ return mdEntRow(e, all, false); }).join('')+
+      '</div></div>';
+  }).join('');
+}
+
+/* One entry line. In category groups the lead column carries the date;
+   in date groups it carries the category, since the date is the header. */
+function mdEntRow(e, all, byDay){
+  var i=all.indexOf(e);
+  var claimed=mdIsClaimed(e.reference), claim=mdIsClaim(e.reference), junk=mdIsJunk(e.reference);
+  var tags='';
+  if(claimed||claim)
+    tags+='<button class="md-tagbtn '+(claimed?'claimed':'claim')+'" data-claim="'+i+'">'+
+          (claimed?'✓ Claimed':'→ Claim')+'</button>';
+  if(e.category==='Food')
+    tags+='<button class="md-tagbtn'+(junk?' junk':'')+'" data-junk="'+i+'">'+
+          (junk?'● Junk':'Mark junk')+'</button>';
+
+  var lead = byDay
+    ? '<span class="md-clbl" title="'+mdEsc(e.category)+'">'+mdEsc(e.category)+'</span>'
+    : '<span class="md-day"><b>'+e.day+'</b><span>'+mdDow(_mdYear,_mdMonth,e.day)+'</span></span>';
+
+  return '<div class="md-ent'+(byDay?' by-day':'')+'">'+lead+
+    '<span class="md-ref">'+(e.reference
+      ? '<span class="txt" title="'+mdEsc(e.reference)+'">'+mdEsc(e.reference)+'</span>'
+      : '<span class="txt" style="color:#59626F">no reference</span>')+tags+'</span>'+
+    '<span class="md-amt">'+mdFmt(e.amount)+'</span>'+
+  '</div>';
+}
+
+/* Date view — the same entries, clustered by the day they were spent,
+   newest first, so the ledger reads the way the month was lived. */
+function mdLedgerByDay(shown, all, host){
+  var byDay={};
+  shown.forEach(function(e){ (byDay[e.day]=byDay[e.day]||[]).push(e); });
+
+  var days=Object.keys(byDay).map(Number).sort(function(a,b){ return b-a; });
+  var today=mdIsThisMonth()?new Date().getDate():-1;
+  var peak=days.reduce(function(m,d){
+    return Math.max(m, byDay[d].reduce(function(s,e){ return s+e.amount; },0));
+  },0) || 1;
+
+  host.innerHTML=days.map(function(d){
+    var rows=byDay[d].slice().sort(function(a,b){ return b.amount-a.amount; });
+    var sum=rows.reduce(function(s,e){ return s+e.amount; },0);
+    var cats={};
+    rows.forEach(function(e){ cats[e.category]=(cats[e.category]||0)+e.amount; });
+    var nCats=Object.keys(cats).length;
+
+    return '<div class="md-grp'+(_mdClosedDay[d]?' closed':'')+(d===today?' today':'')+
+             '" data-grpday="'+d+'">'+
+      '<button class="md-grp-hd" data-toggleday="'+d+'">'+
+        '<span class="md-chev">▾</span>'+
+        '<span class="dnum n">'+d+'</span>'+
+        '<span class="ddow">'+mdDow(_mdYear,_mdMonth,d)+'</span>'+
+        (d===today?'<span class="tdy">TODAY</span>':'')+
+        '<span class="nm"></span>'+
+        '<span class="cn">'+rows.length+' entr'+(rows.length===1?'y':'ies')+
+          ' · '+nCats+' categor'+(nCats===1?'y':'ies')+'</span>'+
+        '<span class="n" style="font-size:13px;font-weight:600">'+mdFmt(sum)+'</span>'+
+      '</button>'+
+      '<div class="md-grp-bud">'+
+        '<div class="md-gbar"><i style="width:'+(sum/peak*100).toFixed(1)+
+          '%;background:var(--md-mag)"></i></div>'+
+      '</div>'+
+      '<div class="md-grp-bd">'+rows.map(function(e){ return mdEntRow(e, all, true); }).join('')+
+      '</div></div>';
   }).join('');
 }
 
@@ -926,6 +1007,29 @@ document.getElementById('md-overlay').addEventListener('click',function(ev){
     mdRenderLedger(); return;
   }
 
+  var gb=t.closest('[data-grpby]');
+  if(gb){
+    var mode=gb.getAttribute('data-grpby');
+    if(mode!==_mdGroupBy){
+      _mdGroupBy=mode;
+      document.querySelectorAll('#md-panel .md-gtg').forEach(function(b){
+        var on=b.getAttribute('data-grpby')===mode;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', on?'true':'false');
+      });
+      _mdBuzz('tick');
+      mdRenderLedger();
+    }
+    return;
+  }
+
+  var tday=t.closest('[data-toggleday]');
+  if(tday){
+    var d=tday.getAttribute('data-toggleday');
+    _mdClosedDay[d]=!_mdClosedDay[d];
+    mdRenderLedger(); return;
+  }
+
   var tog=t.closest('[data-toggle]');
   if(tog){
     var c=tog.getAttribute('data-toggle');
@@ -942,7 +1046,12 @@ document.getElementById('md-overlay').addEventListener('click',function(ev){
   var cat=t.closest('.md-cat[data-cat]');
   if(cat){
     var name=cat.getAttribute('data-cat');
-    _mdFilter='all'; _mdQuery='';
+    _mdFilter='all'; _mdQuery=''; _mdGroupBy='cat';
+    document.querySelectorAll('#md-panel .md-gtg').forEach(function(b){
+      var on=b.getAttribute('data-grpby')==='cat';
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on?'true':'false');
+    });
     var q=document.getElementById('md-q'); if(q) q.value='';
     document.querySelectorAll('#md-panel .md-chip[data-f]').forEach(function(x){
       x.classList.toggle('on', x.getAttribute('data-f')==='all');
