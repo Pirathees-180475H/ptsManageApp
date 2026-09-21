@@ -21,148 +21,149 @@
      plan line, when a month has been read.
 ═══════════════════════════════════════════════════════════════════ -->
 <style>
-.hm-wrap{
-  --hm-pane:#12151B; --hm-field:#0F1218;
-  --hm-line:rgba(255,255,255,.08); --hm-line2:rgba(255,255,255,.13);
-  --hm-ink:#E9EEF4; --hm-ink2:#98A2B1; --hm-ink3:#6C7788;
-  --hm-acc:#2E6BE6;
-  --hm-good:#14B88A; --hm-warn:#F0A92A; --hm-crit:#DC4B4B; --hm-tag:#B79BFF;
-  --hm-num:'Sora','Inter',ui-monospace,monospace;
+.yrs-wrap{
+  --yrs-pane:#12151B; --yrs-field:#0F1218;
+  --yrs-line:rgba(255,255,255,.08); --yrs-line2:rgba(255,255,255,.13);
+  --yrs-ink:#E9EEF4; --yrs-ink2:#98A2B1; --yrs-ink3:#6C7788;
+  --yrs-acc:#2E6BE6;
+  --yrs-good:#14B88A; --yrs-warn:#F0A92A; --yrs-crit:#DC4B4B; --yrs-tag:#B79BFF;
+  --yrs-num:'Sora','Inter',ui-monospace,monospace;
   font-family:'Inter',system-ui,-apple-system,sans-serif;
-  color:var(--hm-ink);width:100%;height:100%;
+  color:var(--yrs-ink);width:100%;height:100%;
   display:flex;flex-direction:column;overflow:hidden;background:transparent;
 }
-.hm-wrap *{box-sizing:border-box;}
-.hm-wrap button{font-family:inherit;}
+.yrs-wrap *{box-sizing:border-box;}
+.yrs-wrap button{font-family:inherit;}
 
 /* ── KPI strip ── */
-.hm-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;
+.yrs-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;
   padding:16px 18px 0;flex-shrink:0;}
-.hm-kpi{padding:12px 13px;border-radius:12px;background:var(--hm-pane);
-  border:1px solid var(--hm-line);}
-.hm-kpi-lbl{font-size:9.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
-  color:var(--hm-ink3);margin-bottom:7px;}
-.hm-kpi-val{font-family:var(--hm-num);font-size:19px;font-weight:700;letter-spacing:-.6px;
+.yrs-kpi{padding:12px 13px;border-radius:12px;background:var(--yrs-pane);
+  border:1px solid var(--yrs-line);}
+.yrs-kpi-lbl{font-size:9.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
+  color:var(--yrs-ink3);margin-bottom:7px;}
+.yrs-kpi-val{font-family:var(--yrs-num);font-size:19px;font-weight:700;letter-spacing:-.6px;
   line-height:1;font-variant-numeric:tabular-nums;}
-.hm-kpi-foot{display:flex;align-items:center;gap:5px;margin-top:6px;}
-.hm-kpi-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.hm-kpi-sub{font-size:11px;color:var(--hm-ink2);}
+.yrs-kpi-foot{display:flex;align-items:center;gap:5px;margin-top:6px;}
+.yrs-kpi-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.yrs-kpi-sub{font-size:11px;color:var(--yrs-ink2);}
 
 /* ── body: main + rail ── */
-.hm-scroll{flex:1;min-height:0;overflow-y:auto;padding:14px 18px 18px;
+.yrs-scroll{flex:1;min-height:0;overflow-y:auto;padding:14px 18px 18px;
   display:flex;gap:16px;align-items:flex-start;}
-.hm-scroll::-webkit-scrollbar{width:6px;}
-.hm-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px;}
-.hm-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;}
-.hm-rail{width:322px;flex-shrink:0;display:flex;flex-direction:column;gap:12px;}
+.yrs-scroll::-webkit-scrollbar{width:6px;}
+.yrs-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px;}
+.yrs-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;}
+.yrs-rail{width:322px;flex-shrink:0;display:flex;flex-direction:column;gap:12px;}
 
-.hm-card{padding:14px 15px;border-radius:12px;background:var(--hm-pane);
-  border:1px solid var(--hm-line);}
-.hm-eye{display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap;}
-.hm-eye h2{margin:0;font-size:10px;font-weight:700;letter-spacing:1.6px;
-  text-transform:uppercase;color:var(--hm-ink3);}
-.hm-rule{flex:1;height:1px;background:var(--hm-line);min-width:12px;}
+.yrs-card{padding:14px 15px;border-radius:12px;background:var(--yrs-pane);
+  border:1px solid var(--yrs-line);}
+.yrs-eye{display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap;}
+.yrs-eye h2{margin:0;font-size:10px;font-weight:700;letter-spacing:1.6px;
+  text-transform:uppercase;color:var(--yrs-ink3);}
+.yrs-rule{flex:1;height:1px;background:var(--yrs-line);min-width:12px;}
 
 /* ── category chips ── */
-.hm-chips{display:flex;flex-wrap:wrap;gap:6px;}
-.hm-chip{padding:5px 11px;border-radius:999px;border:1px solid var(--hm-line2);
-  background:var(--hm-pane);color:var(--hm-ink2);font-size:11.5px;font-weight:600;
+.yrs-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.yrs-chip{padding:5px 11px;border-radius:999px;border:1px solid var(--yrs-line2);
+  background:var(--yrs-pane);color:var(--yrs-ink2);font-size:11.5px;font-weight:600;
   cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
-.hm-chip:hover{color:var(--hm-ink);border-color:rgba(255,255,255,.24);}
-.hm-chip.active{background:var(--hm-acc);border-color:var(--hm-acc);color:#fff;}
-.hm-chip i{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+.yrs-chip:hover{color:var(--yrs-ink);border-color:rgba(255,255,255,.24);}
+.yrs-chip.active{background:var(--yrs-acc);border-color:var(--yrs-acc);color:#fff;}
+.yrs-chip i{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
 
 /* ── the ramp: one hue, five steps ── */
-.hm-cell{width:18px;height:18px;border-radius:4px;background:#12161C;
-  border:0;padding:0;display:block;}
-.hm-cell.l1{background:#16222F;}
-.hm-cell.l2{background:#1D3B5C;}
-.hm-cell.l3{background:#24568C;}
-.hm-cell.l4{background:#2E70BD;}
-.hm-cell.l5{background:#4A96EA;}
-button.hm-cell{cursor:pointer;}
-button.hm-cell:hover{outline:2px solid var(--hm-ink2);outline-offset:1px;}
-.hm-cell.today{box-shadow:0 0 0 2px var(--hm-pane),0 0 0 3.5px var(--hm-ink);}
+.yrs-cell{width:18px;height:18px;border-radius:4px;background:#232A36;
+  border:0;padding:0;display:block;position:static;flex:none;}
+.yrs-cell.l1{background:#1E3A5C;}
+.yrs-cell.l2{background:#26558E;}
+.yrs-cell.l3{background:#2E70BD;}
+.yrs-cell.l4{background:#3E8AD9;}
+.yrs-cell.l5{background:#5BA3F0;}
+button.yrs-cell{cursor:pointer;}
+button.yrs-cell:hover{outline:2px solid var(--yrs-ink2);outline-offset:1px;}
+.yrs-cell.today{box-shadow:0 0 0 2px var(--yrs-pane),0 0 0 3.5px var(--yrs-ink);}
 
-.hm-legend{display:flex;align-items:center;gap:5px;}
-.hm-legend span.t{font-size:10.5px;color:var(--hm-ink3);}
-.hm-legend .hm-cell{width:13px;height:13px;}
+.yrs-legend{display:flex;align-items:center;gap:5px;}
+.yrs-legend span.t{font-size:10.5px;color:var(--yrs-ink3);}
+.yrs-legend .yrs-cell{width:13px;height:13px;}
 
 /* ── month cards ── */
-.hm-months{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:12px;}
-.hm-mcard{padding:12px;border-radius:12px;background:var(--hm-pane);
-  border:1px solid var(--hm-line);color:inherit;cursor:pointer;}
-.hm-mcard:hover{background:#161A21;border-color:rgba(255,255,255,.22);}
-.hm-mcard.now{border-color:var(--hm-acc);}
-.hm-mcard-hd{display:flex;align-items:baseline;gap:6px;margin-bottom:9px;}
-.hm-mcard-nm{font-size:12.5px;font-weight:600;}
-.hm-mcard-tot{margin-left:auto;font-family:var(--hm-num);font-size:11px;color:var(--hm-ink2);}
-.hm-grid{display:grid;grid-template-columns:repeat(7,18px);gap:3px;justify-content:center;}
-.hm-dow{font-size:8.5px;text-align:center;color:var(--hm-ink3);line-height:1;}
+.yrs-months{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:12px;}
+.yrs-mcard{padding:12px;border-radius:12px;background:var(--yrs-pane);
+  border:1px solid var(--yrs-line);color:inherit;cursor:pointer;}
+.yrs-mcard:hover{background:#161A21;border-color:rgba(255,255,255,.22);}
+.yrs-mcard.now{border-color:var(--yrs-acc);}
+.yrs-mcard-hd{display:flex;align-items:baseline;gap:6px;margin-bottom:9px;}
+.yrs-mcard-nm{font-size:12.5px;font-weight:600;}
+.yrs-mcard-tot{margin-left:auto;font-family:var(--yrs-num);font-size:11px;color:var(--yrs-ink2);}
+.yrs-grid{display:grid;grid-template-columns:repeat(7,18px);
+  grid-auto-rows:18px;gap:3px;justify-content:center;}
+.yrs-dow{font-size:8.5px;text-align:center;color:var(--yrs-ink3);line-height:1;}
 
 /* ── month totals against plan ── */
-.hm-trend{display:flex;align-items:flex-end;gap:10px;height:104px;}
-.hm-tcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
+.yrs-trend{display:flex;align-items:flex-end;gap:10px;height:104px;}
+.yrs-tcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
   cursor:pointer;border:0;background:transparent;padding:0;}
-.hm-tcol:hover .hm-tbar{filter:brightness(1.3);}
-.hm-tbox{position:relative;width:100%;height:78px;display:flex;align-items:flex-end;}
-.hm-tbar{width:100%;border-radius:4px 4px 0 0;background:#2E70BD;min-height:2px;}
-.hm-tbar.over{background:var(--hm-crit);}
-.hm-tplan{position:absolute;left:0;right:0;height:2px;background:var(--hm-ink2);border-radius:1px;}
-.hm-tlbl{font-size:9.5px;color:var(--hm-ink3);}
-.hm-key{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--hm-ink2);}
-.hm-key i{width:9px;height:9px;border-radius:2px;}
-.hm-key i.line{width:14px;height:2px;border-radius:1px;background:var(--hm-ink2);}
+.yrs-tcol:hover .yrs-tbar{filter:brightness(1.3);}
+.yrs-tbox{position:relative;width:100%;height:78px;display:flex;align-items:flex-end;}
+.yrs-tbar{width:100%;border-radius:4px 4px 0 0;background:#2E70BD;min-height:2px;}
+.yrs-tbar.over{background:var(--yrs-crit);}
+.yrs-tplan{position:absolute;left:0;right:0;height:2px;background:var(--yrs-ink2);border-radius:1px;}
+.yrs-tlbl{font-size:9.5px;color:var(--yrs-ink3);}
+.yrs-key{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--yrs-ink2);}
+.yrs-key i{width:9px;height:9px;border-radius:2px;}
+.yrs-key i.line{width:14px;height:2px;border-radius:1px;background:var(--yrs-ink2);}
 
 /* ── year strip ── */
-.hm-years{display:flex;gap:8px;}
-.hm-ycol{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;
-  padding:8px 4px;border-radius:10px;border:1px solid var(--hm-line);
-  background:var(--hm-field);cursor:pointer;color:inherit;}
-.hm-ycol:hover{border-color:rgba(255,255,255,.22);}
-.hm-ycol.on{border-color:var(--hm-acc);background:rgba(46,107,230,.10);}
-.hm-ycol b{font-family:var(--hm-num);font-size:12px;font-weight:600;}
-.hm-ycol span{font-family:var(--hm-num);font-size:10.5px;color:var(--hm-ink2);}
+.yrs-years{display:flex;gap:8px;}
+.yrs-ycol{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;
+  padding:8px 4px;border-radius:10px;border:1px solid var(--yrs-line);
+  background:var(--yrs-field);cursor:pointer;color:inherit;}
+.yrs-ycol:hover{border-color:rgba(255,255,255,.22);}
+.yrs-ycol.on{border-color:var(--yrs-acc);background:rgba(46,107,230,.10);}
+.yrs-ycol b{font-family:var(--yrs-num);font-size:12px;font-weight:600;}
+.yrs-ycol span{font-family:var(--yrs-num);font-size:10.5px;color:var(--yrs-ink2);}
 
 /* ── rail rows ── */
-.hm-row{display:flex;align-items:center;gap:9px;padding:7px 8px;margin:0 -8px;
+.yrs-row{display:flex;align-items:center;gap:9px;padding:7px 8px;margin:0 -8px;
   border-radius:8px;border:0;background:transparent;color:inherit;
   width:calc(100% + 16px);text-align:left;cursor:pointer;}
-.hm-row:hover{background:rgba(255,255,255,.04);}
-.hm-row .amt{margin-left:auto;font-family:var(--hm-num);font-size:12px;
+.yrs-row:hover{background:rgba(255,255,255,.04);}
+.yrs-row .amt{margin-left:auto;font-family:var(--yrs-num);font-size:12px;
   font-weight:600;flex-shrink:0;}
-.hm-row .note{font-size:11px;color:var(--hm-ink3);overflow:hidden;
+.yrs-row .note{font-size:11px;color:var(--yrs-ink3);overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;}
-.hm-bar{height:6px;border-radius:3px;background:var(--hm-field);overflow:hidden;}
-.hm-bar i{display:block;height:100%;border-radius:3px;background:#2E70BD;}
-.hm-catrow{margin-bottom:10px;}
-.hm-cattop{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;}
-.hm-cattop .nm{font-size:12px;font-weight:500;}
-.hm-cattop .amt{margin-left:auto;font-family:var(--hm-num);font-size:12px;font-weight:600;}
-.hm-cattop .pct{font-family:var(--hm-num);font-size:10.5px;color:var(--hm-ink3);
+.yrs-bar{height:6px;border-radius:3px;background:var(--yrs-field);overflow:hidden;}
+.yrs-bar i{display:block;height:100%;border-radius:3px;background:#2E70BD;}
+.yrs-catrow{margin-bottom:10px;}
+.yrs-cattop{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;}
+.yrs-cattop .nm{font-size:12px;font-weight:500;}
+.yrs-cattop .amt{margin-left:auto;font-family:var(--yrs-num);font-size:12px;font-weight:600;}
+.yrs-cattop .pct{font-family:var(--yrs-num);font-size:10.5px;color:var(--yrs-ink3);
   min-width:28px;text-align:right;}
-.hm-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--hm-tag);}
+.yrs-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;background:var(--yrs-tag);}
 
-.hm-empty,.hm-loading,.hm-error{padding:44px 16px;text-align:center;
-  font-size:12.5px;color:var(--hm-ink2);width:100%;}
-.hm-error{color:#F09B9B;}
+.yrs-empty,.yrs-loading,.yrs-error{padding:44px 16px;text-align:center;
+  font-size:12.5px;color:var(--yrs-ink2);width:100%;}
+.yrs-error{color:#F09B9B;}
 
 @media(max-width:1080px){
-  .hm-scroll{flex-direction:column;}
-  .hm-rail{width:100%;}
-  .hm-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .yrs-scroll{flex-direction:column;}
+  .yrs-rail{width:100%;}
+  .yrs-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}
 }
 @media(max-width:620px){
-  .hm-kpis{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 12px 0;}
-  .hm-scroll{padding:12px;}
-  .hm-months{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+  .yrs-kpis{grid-template-columns:repeat(2,minmax(0,1fr));padding:12px 12px 0;}
+  .yrs-scroll{padding:12px;}
+  .yrs-months{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
 }
 </style>
 
-<div class="hm-wrap">
-  <div class="hm-kpis" id="hmKpis"></div>
-  <div class="hm-scroll" id="hmScroll">
-    <div class="hm-loading">Reading the year…</div>
+<div class="yrs-wrap">
+  <div class="yrs-kpis" id="hmKpis"></div>
+  <div class="yrs-scroll" id="hmScroll">
+    <div class="yrs-loading">Reading the year…</div>
   </div>
 </div>
 
@@ -229,7 +230,7 @@ function hmNav(dir){
 function hmLoad(){
   if(typeof mdSyncBar === 'function') mdSyncBar();
   document.getElementById('hmScroll').innerHTML =
-    '<div class="hm-loading">Reading ' + _hmYear + '…</div>';
+    '<div class="yrs-loading">Reading ' + _hmYear + '…</div>';
   document.getElementById('hmKpis').innerHTML = '';
 
   google.script.run
@@ -247,12 +248,12 @@ function hmLoad(){
           .getExpenseYearTotals(yrs);
       } else {
         document.getElementById('hmScroll').innerHTML =
-          '<div class="hm-error">⚠ ' + hmEsc(res ? res.error : 'Failed to read the year') + '</div>';
+          '<div class="yrs-error">⚠ ' + hmEsc(res ? res.error : 'Failed to read the year') + '</div>';
       }
     })
     .withFailureHandler(function(){
       document.getElementById('hmScroll').innerHTML =
-        '<div class="hm-error">⚠ Could not reach the sheet.</div>';
+        '<div class="yrs-error">⚠ Could not reach the sheet.</div>';
     })
     .getExpenseHeatmapData(_hmYear);
 }
@@ -317,27 +318,27 @@ function hmRender(d){
       : { lbl:'Heaviest month', val:worst >= 0 ? _hmMonthFull[worst] : '—',
           sub:worst >= 0 ? hmFmt(monthTotals[worst]) : 'no data', dot:worst >= 0 ? 'crit' : '' }
   ];
-  var dotCol = { good:'var(--hm-good)', crit:'var(--hm-crit)',
-                 warn:'var(--hm-warn)', tag:'var(--hm-tag)' };
+  var dotCol = { good:'var(--yrs-good)', crit:'var(--yrs-crit)',
+                 warn:'var(--yrs-warn)', tag:'var(--yrs-tag)' };
   document.getElementById('hmKpis').innerHTML = kpis.map(function(k){
-    return '<div class="hm-kpi">' +
-      '<div class="hm-kpi-lbl">' + k.lbl + '</div>' +
-      '<div class="hm-kpi-val">' + k.val + '</div>' +
-      '<div class="hm-kpi-foot">' +
-        (k.dot ? '<span class="hm-kpi-dot" style="background:' + dotCol[k.dot] + '"></span>' : '') +
-        '<span class="hm-kpi-sub">' + hmEsc(k.sub) + '</span>' +
+    return '<div class="yrs-kpi">' +
+      '<div class="yrs-kpi-lbl">' + k.lbl + '</div>' +
+      '<div class="yrs-kpi-val">' + k.val + '</div>' +
+      '<div class="yrs-kpi-foot">' +
+        (k.dot ? '<span class="yrs-kpi-dot" style="background:' + dotCol[k.dot] + '"></span>' : '') +
+        '<span class="yrs-kpi-sub">' + hmEsc(k.sub) + '</span>' +
       '</div></div>';
   }).join('');
 
   /* ══ main column ══ */
-  var h = '<div class="hm-main">';
+  var h = '<div class="yrs-main">';
 
   /* category filter */
-  h += '<div class="hm-chips">';
-  h += '<button type="button" class="hm-chip' + (_hmActiveCat === 'all' ? ' active' : '') +
+  h += '<div class="yrs-chips">';
+  h += '<button type="button" class="yrs-chip' + (_hmActiveCat === 'all' ? ' active' : '') +
        '" onclick="hmSetCat(\'all\')">All spending</button>';
   cats.forEach(function(c){
-    h += '<button type="button" class="hm-chip' + (_hmActiveCat === c.name ? ' active' : '') +
+    h += '<button type="button" class="yrs-chip' + (_hmActiveCat === c.name ? ' active' : '') +
       '" onclick="hmSetCat(' + hmEsc(hmQ(c.name)) + ')">' +
       '<i style="background:' + (c.color || '#2E70BD') + '"></i>' + hmEsc(c.name) + '</button>';
   });
@@ -345,38 +346,38 @@ function hmRender(d){
 
   /* legend + month cards */
   h += '<section>';
-  h += '<div class="hm-eye"><h2>Daily spend' +
+  h += '<div class="yrs-eye"><h2>Daily spend' +
        (_hmActiveCat !== 'all' ? ' · ' + hmEsc(_hmActiveCat) : '') + '</h2>' +
-       '<span class="hm-rule"></span>' +
-       '<span class="hm-legend"><span class="t">No spend</span>' +
-       '<span class="hm-cell"></span><span class="t" style="margin-left:4px">Low</span>' +
-       '<span class="hm-cell l1"></span><span class="hm-cell l2"></span>' +
-       '<span class="hm-cell l3"></span><span class="hm-cell l4"></span>' +
-       '<span class="hm-cell l5"></span><span class="t">High</span></span></div>';
+       '<span class="yrs-rule"></span>' +
+       '<span class="yrs-legend"><span class="t">No spend</span>' +
+       '<span class="yrs-cell"></span><span class="t" style="margin-left:4px">Low</span>' +
+       '<span class="yrs-cell l1"></span><span class="yrs-cell l2"></span>' +
+       '<span class="yrs-cell l3"></span><span class="yrs-cell l4"></span>' +
+       '<span class="yrs-cell l5"></span><span class="t">High</span></span></div>';
 
-  h += '<div class="hm-months">';
+  h += '<div class="yrs-months">';
   for(var m = 0; m < 12; m++){
     var dim = daysInMonths[m] || new Date(_hmYear, m + 1, 0).getDate();
     var lead = new Date(_hmYear, m, 1).getDay();
     var isNow = isThisYear && m === curMonth;
 
-    h += '<div class="hm-mcard' + (isNow ? ' now' : '') + '" role="button" tabindex="0"' +
+    h += '<div class="yrs-mcard' + (isNow ? ' now' : '') + '" role="button" tabindex="0"' +
          ' onclick="mdOpenMonth(' + _hmYear + ',' + (m + 1) + ')"' +
          ' title="Open ' + _hmMonthFull[m] + ' ' + _hmYear + '">';
-    h += '<div class="hm-mcard-hd"><span class="hm-mcard-nm">' + _hmMonthNames[m] + '</span>' +
-         '<span class="hm-mcard-tot">' + hmFmt(monthTotals[m] || 0) + '</span></div>';
+    h += '<div class="yrs-mcard-hd"><span class="yrs-mcard-nm">' + _hmMonthNames[m] + '</span>' +
+         '<span class="yrs-mcard-tot">' + hmFmt(monthTotals[m] || 0) + '</span></div>';
 
-    h += '<div class="hm-grid" style="margin-bottom:4px">';
-    for(var wd = 0; wd < 7; wd++) h += '<span class="hm-dow">' + _hmDow[wd] + '</span>';
+    h += '<div class="yrs-grid" style="margin-bottom:4px">';
+    for(var wd = 0; wd < 7; wd++) h += '<span class="yrs-dow">' + _hmDow[wd] + '</span>';
     h += '</div>';
 
-    h += '<div class="hm-grid">';
-    for(var p = 0; p < lead; p++) h += '<span class="hm-cell"></span>';
+    h += '<div class="yrs-grid">';
+    for(var p = 0; p < lead; p++) h += '<span class="yrs-cell"></span>';
     for(var day = 1; day <= dim; day++){
       var key = _hmYear + '-' + String(m + 1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
       var val = hmDayVal(data[key]);
       var isToday = isThisYear && m === curMonth && day === curDate;
-      var cls = 'hm-cell l' + hmLevel(val, globalMax) + (isToday ? ' today' : '');
+      var cls = 'yrs-cell l' + hmLevel(val, globalMax) + (isToday ? ' today' : '');
       var when = day + ' ' + _hmMonthNames[m];
       if(val > 0){
         h += '<button type="button" class="' + cls + '"' +
@@ -393,40 +394,40 @@ function hmRender(d){
 
   /* month totals against plan */
   var peakMonth = Math.max.apply(null, monthTotals.concat([plan, 1]));
-  h += '<section class="hm-card">';
-  h += '<div class="hm-eye"><h2>Month totals' + (plan > 0 ? ' against plan' : '') + '</h2>' +
-       '<span class="hm-rule"></span>' +
-       '<span class="hm-key"><i style="background:#2E70BD"></i>' +
+  h += '<section class="yrs-card">';
+  h += '<div class="yrs-eye"><h2>Month totals' + (plan > 0 ? ' against plan' : '') + '</h2>' +
+       '<span class="yrs-rule"></span>' +
+       '<span class="yrs-key"><i style="background:#2E70BD"></i>' +
          (plan > 0 ? 'Within plan' : 'Spend') + '</span>' +
        (plan > 0
-         ? '<span class="hm-key"><i style="background:var(--hm-crit)"></i>Over plan</span>' +
-           '<span class="hm-key"><i class="line"></i>Plan</span>'
+         ? '<span class="yrs-key"><i style="background:var(--yrs-crit)"></i>Over plan</span>' +
+           '<span class="yrs-key"><i class="line"></i>Plan</span>'
          : '') +
        '</div>';
-  h += '<div class="hm-trend">';
+  h += '<div class="yrs-trend">';
   for(var t = 0; t < 12; t++){
     var mt = monthTotals[t] || 0;
     var over = plan > 0 && mt > plan;
-    h += '<button type="button" class="hm-tcol"' +
+    h += '<button type="button" class="yrs-tcol"' +
          ' onclick="mdOpenMonth(' + _hmYear + ',' + (t + 1) + ')"' +
          ' title="' + _hmMonthFull[t] + ' — ' + hmFmtFull(mt) + '">' +
-         '<span class="hm-tbox">' +
-           '<span class="hm-tbar' + (over ? ' over' : '') + '" style="height:' +
+         '<span class="yrs-tbox">' +
+           '<span class="yrs-tbar' + (over ? ' over' : '') + '" style="height:' +
              Math.round(mt / peakMonth * 78) + 'px"></span>' +
-           (plan > 0 ? '<span class="hm-tplan" style="bottom:' +
+           (plan > 0 ? '<span class="yrs-tplan" style="bottom:' +
              Math.round(plan / peakMonth * 78) + 'px"></span>' : '') +
          '</span>' +
-         '<span class="hm-tlbl">' + _hmMonthNames[t] + '</span></button>';
+         '<span class="yrs-tlbl">' + _hmMonthNames[t] + '</span></button>';
   }
   h += '</div></section>';
 
   /* year strip */
   if(_hmYearTotals && _hmYearTotals.length){
-    h += '<section class="hm-card">';
-    h += '<div class="hm-eye"><h2>Across the years</h2><span class="hm-rule"></span></div>';
-    h += '<div class="hm-years">';
+    h += '<section class="yrs-card">';
+    h += '<div class="yrs-eye"><h2>Across the years</h2><span class="yrs-rule"></span></div>';
+    h += '<div class="yrs-years">';
     _hmYearTotals.forEach(function(yt){
-      h += '<button type="button" class="hm-ycol' + (yt.year === _hmYear ? ' on' : '') +
+      h += '<button type="button" class="yrs-ycol' + (yt.year === _hmYear ? ' on' : '') +
         '" onclick="mdGoYear(' + yt.year + ')" title="Show ' + yt.year + '">' +
         '<b>' + yt.year + '</b><span>' + hmFmt(yt.total) + '</span></button>';
     });
@@ -435,24 +436,24 @@ function hmRender(d){
   h += '</div>';
 
   /* ══ right rail ══ */
-  h += '<aside class="hm-rail">';
+  h += '<aside class="yrs-rail">';
 
   /* where it went */
   var catRows = Object.keys(catTotals).map(function(c){ return {name:c, val:catTotals[c]}; })
     .sort(function(a,b){ return b.val - a.val; }).slice(0, 7);
   var catPeak = catRows.length ? catRows[0].val : 1;
-  h += '<div class="hm-card"><div class="hm-eye"><h2>Where it went</h2>' +
-       '<span class="hm-rule"></span></div>';
+  h += '<div class="yrs-card"><div class="yrs-eye"><h2>Where it went</h2>' +
+       '<span class="yrs-rule"></span></div>';
   if(!catRows.length){
-    h += '<div class="hm-empty" style="padding:16px 0">Nothing recorded this year.</div>';
+    h += '<div class="yrs-empty" style="padding:16px 0">Nothing recorded this year.</div>';
   } else {
     catRows.forEach(function(c){
       var pct = totalSpend > 0 ? (c.val / totalSpend * 100) : 0;
-      h += '<div class="hm-catrow"><div class="hm-cattop">' +
+      h += '<div class="yrs-catrow"><div class="yrs-cattop">' +
         '<span class="nm">' + hmEsc(c.name) + '</span>' +
         '<span class="amt">' + hmFmt(c.val) + '</span>' +
         '<span class="pct">' + pct.toFixed(0) + '%</span></div>' +
-        '<div class="hm-bar"><i style="width:' + (c.val / catPeak * 100).toFixed(1) + '%"></i></div></div>';
+        '<div class="yrs-bar"><i style="width:' + (c.val / catPeak * 100).toFixed(1) + '%"></i></div></div>';
     });
   }
   h += '</div>';
@@ -460,17 +461,17 @@ function hmRender(d){
   /* heaviest days */
   dayList.sort(function(a,b){ return b.val - a.val; });
   var topDays = dayList.slice(0, 5);
-  h += '<div class="hm-card"><div class="hm-eye"><h2>Heaviest days</h2>' +
-       '<span class="hm-rule"></span></div>';
+  h += '<div class="yrs-card"><div class="yrs-eye"><h2>Heaviest days</h2>' +
+       '<span class="yrs-rule"></span></div>';
   if(!topDays.length){
-    h += '<div class="hm-empty" style="padding:16px 0">No days recorded yet.</div>';
+    h += '<div class="yrs-empty" style="padding:16px 0">No days recorded yet.</div>';
   } else {
     topDays.forEach(function(x){
       var pp = x.key.split('-');
       var mm = parseInt(pp[1],10), dd = parseInt(pp[2],10);
-      h += '<button type="button" class="hm-row"' +
+      h += '<button type="button" class="yrs-row"' +
         ' onclick="mdOpenDay(' + _hmYear + ',' + mm + ',' + dd + ')">' +
-        '<span class="hm-cell l' + hmLevel(x.val, globalMax) + '"></span>' +
+        '<span class="yrs-cell l' + hmLevel(x.val, globalMax) + '"></span>' +
         '<span style="font-size:12px;flex-shrink:0">' + dd + ' ' + _hmMonthNames[mm - 1] + '</span>' +
         '<span class="note">' + hmTopCat(x.key) + '</span>' +
         '<span class="amt">' + hmFmt(x.val) + '</span></button>';
@@ -479,8 +480,8 @@ function hmRender(d){
   h += '</div>';
 
   /* major purchases this year */
-  h += '<div class="hm-card"><div class="hm-eye"><h2>Major purchases ' + _hmYear + '</h2>' +
-       '<span class="hm-rule"></span></div>' + hmMajorRows() + '</div>';
+  h += '<div class="yrs-card"><div class="yrs-eye"><h2>Major purchases ' + _hmYear + '</h2>' +
+       '<span class="yrs-rule"></span></div>' + hmMajorRows() + '</div>';
 
   h += '</aside>';
 
@@ -499,7 +500,7 @@ function hmTopCat(key){
 function hmMajorRows(){
   var pre = (typeof _analyzePreloadData !== 'undefined') && _analyzePreloadData.majorexp;
   if(!pre || !pre.success || !pre.data || !pre.data.length){
-    return '<div class="hm-empty" style="padding:16px 0">Nothing tracked yet.</div>';
+    return '<div class="yrs-empty" style="padding:16px 0">Nothing tracked yet.</div>';
   }
   var rows = pre.data.filter(function(r){
     if(r.bought !== true || !r.boughtDate) return false;
@@ -508,13 +509,13 @@ function hmMajorRows(){
   }).sort(function(a,b){ return (b.price||0) - (a.price||0); }).slice(0, 5);
 
   if(!rows.length){
-    return '<div class="hm-empty" style="padding:16px 0">None bought in ' + _hmYear + '.</div>';
+    return '<div class="yrs-empty" style="padding:16px 0">None bought in ' + _hmYear + '.</div>';
   }
   return rows.map(function(r){
     var dt = new Date(r.boughtDate);
-    return '<button type="button" class="hm-row"' +
+    return '<button type="button" class="yrs-row"' +
       ' onclick="mdSwitchScope(\'major\')" title="Open the Major scope">' +
-      '<span class="hm-dot"></span>' +
+      '<span class="yrs-dot"></span>' +
       '<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
         hmEsc(r.reference || 'Item') + '</span>' +
       '<span class="note" style="flex-shrink:0">' + _hmMonthNames[dt.getMonth()] + '</span>' +
