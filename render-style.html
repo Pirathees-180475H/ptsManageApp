@@ -2456,39 +2456,6 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 .edm-close:hover{color:#fff;background:rgba(255,255,255,.12);}
 .edm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:12px 18px 20px;}
 
-/* ── Expense Heatmap Modal ── */
-#hm-exp-overlay{
-  display:none;position:fixed;inset:0;z-index:9000;
-  background:rgba(0,0,0,.85);backdrop-filter:blur(18px);
-  align-items:center;justify-content:center;padding:16px;
-}
-#hm-exp-overlay.open{display:flex;}
-#hm-exp-modal{
-  background:#0a0e1c;
-  border:1px solid rgba(255,255,255,.1);
-  border-radius:22px;width:100%;max-width:1100px;
-  height:min(94vh,900px);display:flex;flex-direction:column;
-  box-shadow:0 32px 90px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.07);
-  animation:edmIn .25s ease;position:relative;overflow:hidden;
-}
-#hm-exp-modal::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;z-index:2;pointer-events:none;
-  background:linear-gradient(90deg,transparent 5%,rgba(99,102,241,.7) 35%,rgba(168,85,247,.6) 65%,transparent 95%);
-}
-#hm-exp-modal .edm-hdr{
-  padding:16px 20px 14px;
-  border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0;
-  background:linear-gradient(180deg,rgba(99,102,241,.07) 0%,transparent 100%);
-}
-#hm-exp-modal .edm-title{
-  font-size:.95em;font-weight:800;letter-spacing:-.2px;
-  background:linear-gradient(135deg,#fff 0%,#a5b4fc 55%,#c084fc 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-}
-#hm-exp-modal .edm-sub{font-size:.68em;color:rgba(255,255,255,.3);margin-top:3px;}
-#hm-exp-modal .edm-body{padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;}
-#hm-exp-modal .edm-body .hm-wrap{border-radius:0;}
-
 /* ── Expense Divider Modal ── */
 #ed-overlay{
   display:none;position:fixed;inset:0;z-index:9000;
@@ -2521,41 +2488,6 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #ed-modal .edm-sub{font-size:.68em;color:rgba(255,255,255,.3);margin-top:3px;}
 #ed-modal .edm-body{padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;}
 #ed-modal .edm-body .ed-page{padding:0;overflow:hidden;flex:1;}
-
-/* ── Analyze button (Heatmap + Major EXP toggle) ── */
-.analyze-exp-btn{
-  background:linear-gradient(135deg,#6366f1,#8b5cf6);
-  border:none;padding:4px 14px;border-radius:20px;
-  color:#fff;font-size:11px;font-weight:700;
-  cursor:pointer;box-shadow:0 0 10px rgba(99,102,241,.4);
-  transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:5px;
-}
-.analyze-exp-btn:hover{transform:translateY(-1px);box-shadow:0 0 18px rgba(99,102,241,.65);}
-.analyze-exp-btn .aeb-icon{width:15px;height:15px;flex-shrink:0;}
-.analyze-exp-btn .aeb-arrow{font-size:.65em;opacity:.6;transition:transform .2s;}
-.analyze-exp-btn:hover .aeb-arrow{transform:rotate(90deg);}
-
-/* Toggle bar inside modal header */
-.analyze-toggle{display:flex;background:rgba(0,0,0,.35);border-radius:10px;padding:3px;
-  border:1px solid rgba(255,255,255,.07);flex-shrink:0;}
-.analyze-toggle-btn{padding:5px 14px;border-radius:8px;font-size:.6em;font-weight:700;
-  letter-spacing:.3px;cursor:pointer;transition:all .2s;color:rgba(255,255,255,.35);
-  border:none;background:transparent;text-transform:uppercase;white-space:nowrap;}
-.analyze-toggle-btn.active{background:rgba(99,102,241,.25);color:#a5b4fc;
-  box-shadow:0 0 12px rgba(99,102,241,.12);}
-.analyze-toggle-btn:hover:not(.active){color:rgba(255,255,255,.6);}
-
-/* High level content area inside analyze modal */
-#analyze-hm-body{display:none;flex-direction:column;overflow:hidden;flex:1;}
-#analyze-hm-body.open{display:flex;}
-#analyze-me-body{display:none;flex-direction:column;overflow:hidden;flex:1;}
-#analyze-me-body.open{display:flex;}
-#analyze-mc-body{display:none;flex-direction:column;overflow-y:auto;overflow-x:hidden;flex:1;}
-#analyze-mc-body.open{display:flex;}
-
-/* Major EXP Analyzer content area inside analyze modal */
-#analyze-me-body{display:none;flex-direction:column;overflow-y:auto;flex:1;padding:0;}
-#analyze-me-body.open{display:flex;}
 
 /* ── CSE Performance Tab (p5) ── */
 #page-cse #p5 .pf-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
@@ -3735,36 +3667,18 @@ input[type=date].swae-input{color-scheme:dark;}
   }
 }
 
-/* ── Analyze Modal Mobile ── */
+/* ── Expense Divider Modal, mobile ── */
 @media (max-width: 760px) {
-  /* Analyze modal: full-width on mobile */
-  #hm-exp-modal, #ed-modal {
+  #ed-modal {
     max-width: 100% !important;
     height: 95vh !important;
     border-radius: 12px !important;
   }
-  #hm-exp-overlay, #ed-overlay {
-    padding: 8px !important;
-  }
-  /* Header: stack title and close */
-  #hm-exp-modal .edm-hdr, #ed-modal .edm-hdr {
+  #ed-overlay { padding: 8px !important; }
+  #ed-modal .edm-hdr {
     padding: 14px 14px 12px !important;
     flex-wrap: wrap;
     gap: 8px;
-  }
-  /* Analyze modal toggle buttons: smaller */
-  .analyze-toggle-btn {
-    padding: 4px 10px;
-    font-size: .55em;
-  }
-  /* Analyze header: wrap */
-  #hm-exp-modal .edm-hdr {
-    flex-direction: column;
-    align-items: flex-start !important;
-  }
-  #hm-exp-modal .edm-hdr > div:last-child {
-    width: 100%;
-    justify-content: space-between;
   }
 }
 

@@ -292,36 +292,21 @@ var _xfabHoverT=null, _xfabPinned=false;
 
 
 <!-- ═══════════════════════════════════════════
-     ANALYZE MODAL (Heatmap default + Major EXP toggle)
+     ANALYZE PANELS — source hosts only
+
+     The heatmap and the Major EXP analyzer used to live in their own
+     modal with a toggle row. They are now the Year and Major scopes of
+     the month workspace (monthDetail). include() here is
+     createHtmlOutputFromFile, which will not expand a scriptlet nested
+     inside monthDetail.html, so the two panels are still included at
+     this level; mdAdopt() moves their nodes into the workspace the
+     first time it opens, and then removes these hosts.
 ═══════════════════════════════════════════ -->
-<div id="hm-exp-overlay" onclick="if(event.target===this)analyzeExpModalClose()">
-  <div id="hm-exp-modal">
-    <div class="edm-hdr" style="display:flex;align-items:center;justify-content:space-between;">
-      <div>
-        <div class="edm-title" id="analyze-title">🔥 Expense Heatmap</div>
-        <div class="edm-sub" id="analyze-sub">Full year daily spend</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div class="analyze-toggle">
-          <button class="analyze-toggle-btn active" id="analyze-tog-hm" onclick="analyzeSwitchView('heatmap')">🔥 Heatmap</button>
-          <button class="analyze-toggle-btn" id="analyze-tog-me" onclick="analyzeSwitchView('majorexp')">💎 Major EXP</button>
-          <button class="analyze-toggle-btn" id="analyze-tog-mc" onclick="analyzeSwitchView('controller')">🔍 Inspector</button>
-        </div>
-        <button class="edm-close" onclick="analyzeExpModalClose()">✕</button>
-      </div>
-    </div>
-    <div class="edm-body" style="position:relative;">
-      <div id="analyze-hm-body" style="padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;">
-        <?!= include('expenseHeatmap'); ?>
-      </div>
-      <div id="analyze-me-body">
-        <?!= include('majorExpAnalyzer'); ?>
-      </div>
-      <div id="analyze-mc-body">
-        <?!= include('monthlyControllerAnalyzer'); ?>
-      </div>
-    </div>
-  </div>
+<div id="md-src-year" hidden>
+  <?!= include('expenseHeatmap'); ?>
+</div>
+<div id="md-src-major" hidden>
+  <?!= include('majorExpAnalyzer'); ?>
 </div>
 
 <!-- ═══════════════════════════════════════════
@@ -784,8 +769,8 @@ var _xfabHoverT=null, _xfabPinned=false;
 var _spaLoaded = {cse:false, cc:false, ca:false, exp:false, port:false, mf:false, sw:false};
 
 /* ── Background preload state for Analyze modal tabs ── */
-var _analyzePreloaded = { heatmap:false, majorexp:false, inspector:false };
-var _analyzePreloadData = { majorexp:null, inspector:null, allInspectors:null, expensesList:null };
+var _analyzePreloaded = { heatmap:false, majorexp:false };
+var _analyzePreloadData = { majorexp:null };
 /* heatmap uses _hmData/_hmYearTotals set directly & also a flag */
 
 var _activePage = 'exp';
@@ -2696,7 +2681,7 @@ function expBuild(D){
 
   var root=document.getElementById('exp-root');
   root.innerHTML=
-    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><button class="analyze-exp-btn" onclick="analyzeExpModalOpen()"><svg class="aeb-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="14" width="4" height="6" rx="1"/><rect x="10" y="8" width="4" height="12" rx="1"/><rect x="16" y="2" width="4" height="18" rx="1"/></svg>Analyze<span class="aeb-arrow">▾</span></button><div class="exp-badge" id="exp-badge">–</div></div></div>'+
+    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><div class="exp-badge" id="exp-badge">–</div></div></div>'+
     '<div class="sec-lbl">Overall</div>'+
     '<div class="kpi-strip">'+
       '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div></div>'+
@@ -2900,49 +2885,6 @@ function preloadAnalyzeData() {
       .getMajorExpData();
   }
 
-  // Financial Inspector data (current month + all past + expenses list)
-  if (!_analyzePreloaded.inspector) {
-    _analyzePreloaded.inspector = true;
-    var now = new Date();
-    var cm = now.getMonth() + 1, cy = now.getFullYear();
-    // Fetch current month inspector data
-    google.script.run
-      .withSuccessHandler(function(res) {
-        _analyzePreloadData.inspector = res;
-      })
-      .withFailureHandler(function() {
-        _analyzePreloaded.inspector = false;
-      })
-      .getInspectorData(cm, cy);
-    // Fetch all past inspector data
-    google.script.run
-      .withSuccessHandler(function(res) {
-        _analyzePreloadData.allInspectors = res;
-      })
-      .withFailureHandler(function() {
-        _analyzePreloaded.inspector = false;
-      })
-      .getAllInspectorData();
-    // Fetch current month expenses list (needed for Inspector table)
-    google.script.run
-      .withSuccessHandler(function(res) {
-        _analyzePreloadData.expensesList = res;
-      })
-      .withFailureHandler(function() {
-        _analyzePreloaded.inspector = false;
-      })
-      .getCurrentMonthExpensesList(cm, cy);
-  }
-}
-
-/* ── Analyze Modal ── */
-function analyzeExpModalOpen() {
-  document.getElementById('hm-exp-overlay').classList.add('open');
-  // Default to heatmap view
-  analyzeSwitchView('heatmap');
-}
-function analyzeExpModalClose() {
-  document.getElementById('hm-exp-overlay').classList.remove('open');
 }
 
 /* ── Expense Divider Modal ── */
@@ -2962,70 +2904,6 @@ function edOpen() {
 function edClose() {
   document.getElementById('ed-overlay').classList.remove('open');
 }
-
-var _analyzeView = 'heatmap';
-function analyzeSwitchView(view) {
-  _analyzeView = view;
-  var hmBody = document.getElementById('analyze-hm-body');
-  var meBody = document.getElementById('analyze-me-body');
-  var mcBody = document.getElementById('analyze-mc-body');
-  var title = document.getElementById('analyze-title');
-  var sub = document.getElementById('analyze-sub');
-  var togHm = document.getElementById('analyze-tog-hm');
-  var togMe = document.getElementById('analyze-tog-me');
-  var togMc = document.getElementById('analyze-tog-mc');
-
-  // Hide all
-  hmBody.style.display = 'none';
-  if(meBody) meBody.style.display = 'none';
-  if(mcBody) mcBody.style.display = 'none';
-  togHm.classList.remove('active');
-  if(togMe) togMe.classList.remove('active');
-  if(togMc) togMc.classList.remove('active');
-
-  if(view === 'heatmap'){
-    hmBody.style.display = 'flex';
-    title.textContent = '🔥 Expense Heatmap';
-    sub.textContent = 'Full year daily spend';
-    togHm.classList.add('active');
-    // Use preloaded data if available
-    if (_hmData) {
-      hmRender(_hmData);
-    } else {
-      if(typeof hmLoad === 'function') hmLoad();
-    }
-  } else if(view === 'majorexp'){
-    if(meBody) meBody.style.display = 'flex';
-    title.textContent = '💎 Major Expense Analyzer';
-    sub.textContent = 'Portfolio value · Usefulness · Usage tracking';
-    if(togMe) togMe.classList.add('active');
-    analyzeLoadMajorExp();
-  } else if(view === 'controller'){
-    if(mcBody) mcBody.style.display = 'flex';
-    title.textContent = '🔍 Financial Inspector';
-    sub.textContent = 'Audit expenses · Tag recurring & mistakes · Track insights';
-    if(togMc) togMc.classList.add('active');
-    if(typeof finLoad === 'function') finLoad();
-  }
-}
-
-function analyzeLoadMajorExp() {
-  var meBody = document.getElementById('analyze-me-body');
-  if(!meBody) return;
-  // Use preloaded data if available
-  if (_analyzePreloadData.majorexp) {
-    if (typeof mxaDisplayData === 'function') {
-      mxaDisplayData(_analyzePreloadData.majorexp);
-    }
-    return;
-  }
-  // Fallback: fetch on demand
-  var loadingEl = meBody.querySelector('.loading');
-  if(loadingEl && typeof mxaLoad === 'function') {
-    mxaLoad();
-  }
-}
-
 
 /* ═══════════════════════════════════════════
    CSE UNIT TRUST TAB (tab 6) JS

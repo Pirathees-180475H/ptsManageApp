@@ -50,7 +50,7 @@
   --md-mag:#3987e5; --md-mag-hi:#5598e7;
   /* status — steps validated for CVD separation on this surface;
      always shipped with a label, never colour alone */
-  --md-good:#0ca30c; --md-warn:#fab219; --md-crit:#d03b3b;
+  --md-good:#14B88A; --md-warn:#F0A92A; --md-crit:#DC4B4B;
   --md-tag:#B79BFF;
   --md-num:'Sora','Inter',ui-monospace,monospace;
 
@@ -65,6 +65,9 @@
 #md-panel .n{font-family:var(--md-num);font-variant-numeric:tabular-nums;}
 #md-panel button,#md-panel input{font-family:inherit;}
 #md-panel :focus-visible{outline:2px solid var(--md-acc);outline-offset:2px;border-radius:6px;}
+/* several things in here are toggled with the hidden attribute and also carry
+   a display: rule of their own — which would win. This settles it. */
+#md-panel [hidden]{display:none !important;}
 
 /* ── command bar ── */
 #md-panel .md-cmd{
@@ -93,6 +96,48 @@
 }
 #md-panel .md-btn:hover{color:var(--md-ink);border-color:rgba(255,255,255,.24);}
 #md-panel .md-btn.on{background:rgba(46,107,230,.16);border-color:var(--md-acc);color:var(--md-ink);}
+
+/* ── scope switch — Year · Month · Major ──
+   The one control that used to be three separate screens. */
+#md-panel .md-scope{display:flex;gap:2px;padding:3px;border-radius:12px;
+  background:var(--md-field);border:1px solid var(--md-line);}
+#md-panel .md-scope .md-sbtn{height:28px;padding:0 15px;border-radius:9px;border:0;
+  background:transparent;color:var(--md-ink2);font-size:12.5px;font-weight:700;cursor:pointer;}
+#md-panel .md-scope .md-sbtn:hover{color:var(--md-ink);}
+#md-panel .md-scope .md-sbtn.on{background:var(--md-acc);color:#fff;}
+
+/* ── scope bodies — exactly one is on at a time ── */
+#md-panel .md-scopebody{flex:1;min-height:0;display:none;flex-direction:column;}
+#md-panel .md-scopebody.on{display:flex;}
+#md-panel #md-scope-year .hm-wrap{height:auto;flex:1;min-height:0;background:transparent;}
+#md-panel #md-scope-major{overflow-y:auto;}
+#md-panel #md-scope-major::-webkit-scrollbar{width:6px;}
+#md-panel #md-scope-major::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px;}
+
+/* ── heatmap ribbon — the year view's cells, carried into the month ── */
+#md-panel .md-ribbon{display:flex;gap:14px;align-items:flex-start;}
+#md-panel .md-rgrid{display:grid;grid-template-columns:repeat(7,20px);gap:4px;}
+#md-panel .md-rdowlbl{font-size:9px;text-align:center;color:var(--md-ink3);line-height:1;}
+#md-panel .md-rcell{width:20px;height:20px;border-radius:5px;background:#12161C;
+  border:0;padding:0;display:block;}
+#md-panel .md-rcell.l1{background:#16222F;}
+#md-panel .md-rcell.l2{background:#1D3B5C;}
+#md-panel .md-rcell.l3{background:#24568C;}
+#md-panel .md-rcell.l4{background:#2E70BD;}
+#md-panel .md-rcell.l5{background:#4A96EA;}
+#md-panel button.md-rcell{cursor:pointer;}
+#md-panel button.md-rcell:hover{outline:2px solid var(--md-line2);outline-offset:1px;}
+#md-panel .md-rcell.today{box-shadow:0 0 0 2px var(--md-card),0 0 0 3.5px var(--md-ink);}
+#md-panel .md-rcell.sel{box-shadow:0 0 0 2px var(--md-card),0 0 0 3.5px var(--md-acc);}
+#md-panel .md-rnote{font-size:11.5px;line-height:1.6;color:var(--md-ink2);margin:2px 0 0;}
+#md-panel .md-dayfilter{display:flex;align-items:center;gap:9px;margin-bottom:10px;
+  padding:8px 12px;border-radius:10px;font-size:12.5px;
+  background:rgba(46,107,230,.10);border:1px solid rgba(46,107,230,.38);}
+#md-panel .md-dayfilter b{font-family:var(--md-num);}
+#md-panel .md-dayfilter .x{margin-left:auto;height:26px;padding:0 10px;border-radius:8px;
+  border:1px solid var(--md-line2);background:transparent;color:var(--md-ink2);
+  font-size:11px;font-weight:700;cursor:pointer;}
+#md-panel .md-dayfilter .x:hover{color:var(--md-ink);border-color:rgba(255,255,255,.24);}
 
 /* ── columns ── */
 #md-panel .md-body{flex:1;display:grid;grid-template-columns:440px minmax(0,1fr);min-height:0;}
@@ -124,8 +169,8 @@
 #md-panel .md-meter-foot b{color:var(--md-ink);font-family:var(--md-num);font-weight:600;}
 #md-panel .md-pace{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;
   border-radius:12px;font-size:12.5px;line-height:1.5;}
-#md-panel .md-pace.ok{background:rgba(12,163,12,.10);border:1px solid rgba(12,163,12,.28);color:#7FD48A;}
-#md-panel .md-pace.bad{background:rgba(208,59,59,.10);border:1px solid rgba(208,59,59,.30);color:#F09B9B;}
+#md-panel .md-pace.ok{background:rgba(20,184,138,.10);border:1px solid rgba(20,184,138,.30);color:#6FD9BC;}
+#md-panel .md-pace.bad{background:rgba(220,75,75,.10);border:1px solid rgba(220,75,75,.30);color:#F0A3A3;}
 #md-panel .md-pace svg{flex-shrink:0;margin-top:1px;}
 #md-panel .md-pace b{font-family:var(--md-num);}
 
@@ -166,7 +211,7 @@
   background:var(--md-mag);}
 #md-panel .md-cmeta{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--md-ink3);}
 #md-panel .md-mom{margin-left:auto;font-family:var(--md-num);font-size:11px;font-weight:700;}
-#md-panel .md-mom.up{color:#E86A6A;} #md-panel .md-mom.dn{color:#4FBF52;}
+#md-panel .md-mom.up{color:#DC4B4B;} #md-panel .md-mom.dn{color:#14B88A;}
 #md-panel .md-mom.flat{color:var(--md-ink3);}
 
 /* ── ledger ── */
@@ -220,9 +265,9 @@
 #md-panel .md-gmeta{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--md-ink3);}
 #md-panel .md-gmeta b{font-family:var(--md-num);font-weight:700;}
 #md-panel .md-gmeta .plan{margin-left:auto;font-family:var(--md-num);}
-#md-panel .md-gmeta.good b{color:#4FBF52;}
+#md-panel .md-gmeta.good b{color:#14B88A;}
 #md-panel .md-gmeta.warn b{color:var(--md-warn);}
-#md-panel .md-gmeta.crit b{color:#E86A6A;}
+#md-panel .md-gmeta.crit b{color:#DC4B4B;}
 #md-panel .md-gmeta svg{flex-shrink:0;}
 #md-panel .md-grp-bd{border-top:1px solid var(--md-line);}
 #md-panel .md-ent{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:12px;
@@ -243,10 +288,10 @@
 #md-panel .md-tagbtn:disabled{opacity:.5;cursor:wait;}
 #md-panel .md-tagbtn.claim{border-color:rgba(183,155,255,.4);color:var(--md-tag);}
 #md-panel .md-tagbtn.claimed{background:rgba(183,155,255,.16);border-color:rgba(183,155,255,.5);color:#D6C6FF;}
-#md-panel .md-tagbtn.junk{border-color:rgba(250,178,25,.4);color:var(--md-warn);}
+#md-panel .md-tagbtn.junk{border-color:rgba(240,169,42,.4);color:var(--md-warn);}
 #md-panel .md-empty{padding:34px 16px;text-align:center;color:var(--md-ink3);font-size:13px;}
-#md-panel .md-err{padding:14px 16px;border-radius:12px;background:rgba(208,59,59,.10);
-  border:1px solid rgba(208,59,59,.3);color:#F09B9B;font-size:13px;}
+#md-panel .md-err{padding:14px 16px;border-radius:12px;background:rgba(220,75,75,.10);
+  border:1px solid rgba(220,75,75,.3);color:#F0A3A3;font-size:13px;}
 
 /* ── loading ── */
 #md-panel .md-load{flex:1;display:flex;flex-direction:column;align-items:center;
@@ -302,10 +347,10 @@
 
     <header class="md-cmd">
       <h2>Expenses</h2>
-      <div class="md-month">
-        <button class="md-sq" id="md-prev" aria-label="Previous month">&#8249;</button>
+      <div class="md-month" id="md-stepper">
+        <button class="md-sq" id="md-prev" aria-label="Previous">&#8249;</button>
         <b id="md-label">&mdash;</b>
-        <button class="md-sq" id="md-next" aria-label="Next month">&#8250;</button>
+        <button class="md-sq" id="md-next" aria-label="Next">&#8250;</button>
       </div>
 
       <div class="md-hero">
@@ -314,7 +359,14 @@
       </div>
 
       <div class="md-spacer"></div>
-      <div class="md-seg">
+
+      <div class="md-scope" role="group" aria-label="Scope">
+        <button class="md-sbtn" data-scope="year">Year</button>
+        <button class="md-sbtn on" data-scope="month">Month</button>
+        <button class="md-sbtn" data-scope="major">Major</button>
+      </div>
+
+      <div class="md-seg" id="md-paneSeg">
         <button class="md-btn on" data-pane="l">Budget</button>
         <button class="md-btn" data-pane="r">Ledger</button>
       </div>
@@ -325,7 +377,14 @@
       <button class="md-sq" id="md-close" aria-label="Close">&#10005;</button>
     </header>
 
-    <div id="md-content" style="flex:1;display:flex;flex-direction:column;min-height:0;"></div>
+    <!-- Year scope — expenseHeatmap is moved in here at first open -->
+    <div id="md-scope-year" class="md-scopebody"></div>
+
+    <!-- Month scope — the ledger and its analysis -->
+    <div id="md-content" class="md-scopebody on"></div>
+
+    <!-- Major scope — majorExpAnalyzer is moved in here at first open -->
+    <div id="md-scope-major" class="md-scopebody"></div>
 
     <div class="md-drawer-bg" id="md-drawerBg">
       <aside class="md-drawer" role="dialog" aria-modal="true" aria-label="Adjust budgets">
@@ -367,6 +426,10 @@ var _mdFilter = 'all', _mdQuery = '', _mdClosed = {};
 var _mdGroupBy = 'cat';      /* 'cat' — category rows | 'day' — the ledger date by date */
 var _mdClosedDay = {};       /* collapsed day groups, kept apart from _mdClosed */
 var _mdBusy = false;
+var _mdScope = 'month';      /* 'year' — heatmap | 'month' — ledger | 'major' */
+var _mdDay = 0;              /* day picked on the ribbon, 0 — the whole month */
+var _mdAdopted = false;      /* the two other panels have been moved in */
+var _mdMajorShown = false;
 
 function _mdBuzz(k){ if(typeof window.haptic === 'function') window.haptic(k); }
 
@@ -411,25 +474,143 @@ function mdElapsed(){
 /* ═══════════════════════════════════════════════
    OPEN / LOAD
 ═══════════════════════════════════════════════ */
-function mdOpen(){
+function mdOpen(scope){
   document.getElementById('md-overlay').classList.add('open');
+  mdAdopt();
   if(!_mdMonth){
     var n=new Date();
     _mdMonth=n.getMonth()+1; _mdYear=n.getFullYear();
   }
-  mdLoad();
+  /* xfabRun() calls this with no argument — keep the scope we were last in */
+  mdSwitchScope(typeof scope==='string' ? scope : _mdScope);
 }
 function mdClose(){
   document.getElementById('md-overlay').classList.remove('open');
   document.getElementById('md-drawerBg').classList.remove('open');
 }
 /* render.html calls this from reloadPage('exp') */
-function mdReset(){ _mdGen++; _mdCache={}; _mdInflight={}; _mdData=null; _mdMonth=0; _mdYear=0; }
+function mdReset(){
+  _mdGen++; _mdCache={}; _mdInflight={}; _mdData=null;
+  _mdMonth=0; _mdYear=0; _mdDay=0; _mdMajorShown=false;
+}
+
+/* ═══════════════════════════════════════════════
+   SCOPES — Year (heatmap) · Month (ledger) · Major (things owned)
+
+   expenseHeatmap and majorExpAnalyzer are still included by render.html,
+   because include() there is createHtmlOutputFromFile and will not expand
+   a nested scriptlet. They land in two hidden hosts; the first time the
+   workspace opens we move their nodes into the scope bodies, so from then
+   on there is one panel, one command bar and one budget drawer.
+═══════════════════════════════════════════════ */
+function mdAdopt(){
+  if(_mdAdopted) return;
+  _mdAdopted=true;
+  ['year','major'].forEach(function(s){
+    var src=document.getElementById('md-src-'+s);
+    var dst=document.getElementById('md-scope-'+s);
+    if(!src || !dst) return;
+    while(src.firstChild) dst.appendChild(src.firstChild);
+    if(src.parentNode) src.parentNode.removeChild(src);
+  });
+}
+
+function mdSwitchScope(s){
+  if(s!=='year' && s!=='month' && s!=='major') s='month';
+  mdAdopt();
+  _mdScope=s;
+
+  var bodies={ year:'md-scope-year', month:'md-content', major:'md-scope-major' };
+  Object.keys(bodies).forEach(function(k){
+    var el=document.getElementById(bodies[k]);
+    if(el) el.classList.toggle('on', k===s);
+  });
+  document.querySelectorAll('#md-panel .md-scope .md-sbtn').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-scope')===s);
+  });
+
+  var seg=document.getElementById('md-paneSeg');
+  if(seg) seg.hidden = (s!=='month');
+
+  mdSyncBar();
+
+  if(s==='month')      mdLoad();
+  else if(s==='year')  mdYearShow();
+  else                 mdMajorShow();
+}
+
+/* the stepper reads as a year in Year scope, a month in Month scope,
+   and has nothing to step through in Major */
+function mdSyncBar(){
+  var stepper=document.getElementById('md-stepper');
+  var lbl=document.getElementById('md-label');
+  var next=document.getElementById('md-next');
+  if(!stepper || !lbl) return;
+
+  if(_mdScope==='major'){ stepper.hidden=true; return; }
+  stepper.hidden=false;
+
+  if(_mdScope==='year'){
+    lbl.textContent=_mdYear;
+    if(next) next.disabled = _mdYear >= new Date().getFullYear();
+  } else {
+    lbl.textContent=MD_MONTHS[_mdMonth]+' '+_mdYear;
+  }
+}
+
+function mdYearShow(){
+  if(typeof hmLoad!=='function') return;
+  /* the preload in render.html may already have this year in hand */
+  if(typeof _hmData!=='undefined' && _hmData && _hmYear===_mdYear && typeof hmRender==='function'){
+    hmRender(_hmData);
+  } else {
+    _hmYear=_mdYear;
+    hmLoad();
+  }
+}
+
+function mdMajorShow(){
+  if(_mdMajorShown) return;
+  _mdMajorShown=true;
+  var pre=(typeof _analyzePreloadData!=='undefined') && _analyzePreloadData.majorexp;
+  if(pre && typeof mxaDisplayData==='function') mxaDisplayData(pre);
+  else if(typeof mxaLoad==='function') mxaLoad();
+}
+
+/* ── the two ways the heatmap drills down; both land in Month scope ── */
+function mdOpenMonth(y, m){
+  _mdYear=y; _mdMonth=m; _mdDay=0;
+  _mdBuzz('tick');
+  mdSwitchScope('month');
+}
+function mdOpenDay(y, m, d){
+  _mdYear=y; _mdMonth=m; _mdDay=d;
+  _mdBuzz('tick');
+  mdSwitchScope('month');
+}
+/* a year bar in the heatmap */
+function mdGoYear(y){
+  _mdYear=y;
+  if(typeof hmLoad==='function'){ _hmYear=y; hmLoad(); }
+  mdSyncBar();
+}
 
 function mdStep(dir){
+  if(_mdScope==='major') return;
+
+  if(_mdScope==='year'){
+    if(dir>0 && _mdYear>=new Date().getFullYear()) return;
+    _mdYear+=dir;
+    _mdBuzz('step');
+    mdSyncBar();
+    if(typeof hmLoad==='function'){ _hmYear=_mdYear; hmLoad(); }
+    return;
+  }
+
   _mdMonth+=dir;
   if(_mdMonth>12){ _mdMonth=1;  _mdYear++; }
   if(_mdMonth<1) { _mdMonth=12; _mdYear--; }
+  _mdDay=0;
   _mdBuzz('step');
   mdLoad();
 }
@@ -524,6 +705,19 @@ function mdShell(){
       '<section class="md-col md-col-l" id="md-paneL">'+
 
         '<div class="md-card">'+
+          '<div class="md-eye">DAY BY DAY<span class="md-rule"></span>'+
+            '<span class="n" id="md-ribPeak"></span></div>'+
+          '<div class="md-ribbon">'+
+            '<div>'+
+              '<div class="md-rgrid" id="md-ribDow" style="margin-bottom:5px"></div>'+
+              '<div class="md-rgrid" id="md-rib"></div>'+
+            '</div>'+
+            '<p class="md-rnote">Pick a day to filter the ledger beside it. '+
+              'The pale ring marks today; the blue ring is the day you picked.</p>'+
+          '</div>'+
+        '</div>'+
+
+        '<div class="md-card">'+
           '<div class="md-eye">MONTH TO DATE<span class="md-rule"></span>'+
             '<span class="n" id="md-dayCount"></span></div>'+
           '<div class="md-meter-top">'+
@@ -560,6 +754,7 @@ function mdShell(){
       '</section>'+
 
       '<section class="md-col md-col-r" id="md-paneR">'+
+        '<div class="md-dayfilter" id="md-dayBar" hidden></div>'+
         '<div class="md-filters">'+
           '<button class="md-chip on" data-f="all">All <span class="cnt" id="md-cAll">0</span></button>'+
           '<button class="md-chip" data-f="over">Over budget <span class="cnt" id="md-cOver">0</span></button>'+
@@ -593,7 +788,80 @@ function mdShell(){
 /* ═══════════════════════════════════════════════
    LEFT — meter, chart, categories
 ═══════════════════════════════════════════════ */
-function mdRenderAll(){ mdRenderMeter(); mdRenderChart(); mdRenderCats(); mdRenderLedger(); }
+function mdRenderAll(){ mdRenderRibbon(); mdRenderMeter(); mdRenderChart(); mdRenderCats(); mdRenderLedger(); }
+
+/* ═══════════════════════════════════════════════
+   RIBBON — the same five magnitude steps the year view uses,
+   scaled to this month's own peak day.
+═══════════════════════════════════════════════ */
+function mdLevel(v, peak){
+  if(!v || v<=0 || peak<=0) return 0;
+  var r=v/peak;
+  if(r<=.08) return 1;
+  if(r<=.20) return 2;
+  if(r<=.40) return 3;
+  if(r<=.65) return 4;
+  return 5;
+}
+
+function mdDayTotals(){
+  var per={};
+  mdEntries().forEach(function(e){ per[e.day]=(per[e.day]||0)+e.amount; });
+  return per;
+}
+
+function mdRenderRibbon(){
+  var host=document.getElementById('md-rib');
+  if(!host) return;
+
+  document.getElementById('md-ribDow').innerHTML=
+    MD_DOW.map(function(d){ return '<span class="md-rdowlbl">'+d.charAt(0)+'</span>'; }).join('');
+
+  var per=mdDayTotals(), peak=0;
+  Object.keys(per).forEach(function(k){ if(per[k]>peak) peak=per[k]; });
+
+  var dim=mdDaysInMonth();
+  var lead=new Date(_mdYear, _mdMonth-1, 1).getDay();
+  var today=mdIsThisMonth() ? new Date().getDate() : 0;
+
+  var h='';
+  for(var p=0; p<lead; p++) h+='<span class="md-rcell"></span>';
+  for(var d=1; d<=dim; d++){
+    var v=per[d]||0;
+    var cls='md-rcell l'+mdLevel(v, peak)+
+            (d===today ? ' today' : '')+
+            (d===_mdDay ? ' sel'  : '');
+    var when=d+' '+MD_MONTHS[_mdMonth];
+    if(v>0){
+      h+='<button type="button" class="'+cls+'" data-rday="'+d+'"'+
+         ' title="'+when+' — '+mdMoney(v)+'"'+
+         ' aria-label="'+when+', '+mdMoney(v)+'"'+
+         ' aria-pressed="'+(d===_mdDay?'true':'false')+'"></button>';
+    } else {
+      h+='<span class="'+cls+'" title="'+when+' — nothing recorded"></span>';
+    }
+  }
+  host.innerHTML=h;
+
+  var peakLbl=document.getElementById('md-ribPeak');
+  if(peakLbl) peakLbl.textContent = peak>0 ? 'peak '+mdFmt(peak) : '';
+
+  mdRenderDayBar(per);
+}
+
+function mdRenderDayBar(per){
+  var bar=document.getElementById('md-dayBar');
+  if(!bar) return;
+  if(!_mdDay){ bar.hidden=true; bar.innerHTML=''; return; }
+  var n=mdEntries().filter(function(e){ return e.day===_mdDay; }).length;
+  bar.hidden=false;
+  bar.innerHTML=
+    mdIcon('cal')+
+    '<span>'+mdDow(_mdYear,_mdMonth,_mdDay)+' <b>'+_mdDay+' '+MD_MONTHS[_mdMonth]+'</b></span>'+
+    '<span style="color:var(--md-ink2)">'+n+(n===1?' entry':' entries')+
+      ' · <b>'+mdMoney((per||mdDayTotals())[_mdDay]||0)+'</b></span>'+
+    '<button type="button" class="x" id="md-dayClear">Clear day</button>';
+}
 
 function mdRenderMeter(){
   var t=mdTotals(), spent=t.spent, plan=t.plan;
@@ -774,6 +1042,7 @@ function mdRenderCats(){
    RIGHT — the ledger
 ═══════════════════════════════════════════════ */
 function mdMatches(e, spent){
+  if(_mdDay && e.day!==_mdDay) return false;
   if(_mdQuery && ((e.reference||'')+' '+e.category).toLowerCase().indexOf(_mdQuery)<0) return false;
   if(_mdFilter==='claim')   return mdIsClaim(e.reference);
   if(_mdFilter==='claimed') return mdIsClaimed(e.reference);
@@ -830,7 +1099,7 @@ function mdRenderLedger(){
         '<span class="nm">'+c+'</span>'+
         '<span class="cn">'+rows.length+' entr'+(rows.length===1?'y':'ies')+'</span>'+
         '<span class="n" style="font-size:13px;font-weight:600;color:'+
-          (over?'#E86A6A':'var(--md-ink)')+'">'+mdFmt(sum)+'</span>'+
+          (over?'#DC4B4B':'var(--md-ink)')+'">'+mdFmt(sum)+'</span>'+
       '</button>'+
       bud+
       '<div class="md-grp-bd">'+rows.map(function(e){ return mdEntRow(e, all, false); }).join('')+
@@ -963,20 +1232,20 @@ function mdSaveBudgets(){
     .withSuccessHandler(function(res){
       btn.disabled=false; btn.textContent='Save budgets';
       if(res && res.success){
-        msg.style.color='#4FBF52'; msg.textContent='✓ Saved to the Control Plan column';
+        msg.style.color='#14B88A'; msg.textContent='✓ Saved to the Control Plan column';
         _mdBuzz('success');
         /* the cached month still holds the old plan — keep them in step */
         var k=_mdYear+'-'+_mdMonth;
         if(_mdCache[k]) _mdCache[k].controlPlan=JSON.parse(JSON.stringify(updates));
         setTimeout(function(){ msg.textContent=''; },2600);
       } else {
-        msg.style.color='#F09B9B';
+        msg.style.color='#F0A3A3';
         msg.textContent='⚠ '+((res&&res.error)||'Save failed');
       }
     })
     .withFailureHandler(function(err){
       btn.disabled=false; btn.textContent='Save budgets';
-      msg.style.color='#F09B9B';
+      msg.style.color='#F0A3A3';
       msg.textContent='⚠ '+(err&&err.message||err);
     })
     .saveControlPlan(updates);
@@ -997,6 +1266,29 @@ document.getElementById('md-overlay').addEventListener('click',function(ev){
     document.getElementById('md-drawerBg').classList.remove('open'); return;
   }
   if(t.closest('#md-saveBudgets')){ mdSaveBudgets(); return; }
+
+  var sb=t.closest('.md-scope .md-sbtn');
+  if(sb){
+    var want=sb.getAttribute('data-scope');
+    if(want!==_mdScope){ _mdBuzz('tick'); mdSwitchScope(want); }
+    return;
+  }
+
+  var rc=t.closest('[data-rday]');
+  if(rc){
+    var rd=+rc.getAttribute('data-rday');
+    _mdDay = (_mdDay===rd) ? 0 : rd;
+    _mdBuzz('tick');
+    mdRenderRibbon(); mdRenderLedger();
+    if(window.matchMedia('(max-width:900px)').matches) mdShowPane('r');
+    return;
+  }
+
+  if(t.closest('#md-dayClear')){
+    _mdDay=0;
+    mdRenderRibbon(); mdRenderLedger();
+    return;
+  }
 
   var chip=t.closest('.md-chip[data-f]');
   if(chip){
@@ -1046,7 +1338,8 @@ document.getElementById('md-overlay').addEventListener('click',function(ev){
   var cat=t.closest('.md-cat[data-cat]');
   if(cat){
     var name=cat.getAttribute('data-cat');
-    _mdFilter='all'; _mdQuery=''; _mdGroupBy='cat';
+    _mdFilter='all'; _mdQuery=''; _mdGroupBy='cat'; _mdDay=0;
+    mdRenderRibbon();
     document.querySelectorAll('#md-panel .md-gtg').forEach(function(b){
       var on=b.getAttribute('data-grpby')==='cat';
       b.classList.toggle('on', on);
