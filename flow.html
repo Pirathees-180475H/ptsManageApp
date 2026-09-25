@@ -177,6 +177,31 @@
 #page-mf .mf-wf-c.hollow{background:transparent;box-shadow:inset 0 0 0 1.2px rgba(255,255,255,.15);}
 #page-mf .mf-wf-grid.lit .mf-wf-c.hollow{opacity:1;}
 
+/* ── ⇶ Sankey ── */
+#page-mf .mf-top.sk-wide{grid-template-columns:minmax(0,1fr);}
+#page-mf .mf-where .mf-sk{flex:1 1 100%;width:100%;min-width:0;display:flex;flex-direction:column;gap:10px;position:relative;}
+#page-mf .mf-sk-read{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.7em;font-weight:700;color:rgba(255,255,255,.5);}
+#page-mf .mf-sk-read span{display:inline-flex;align-items:center;gap:6px;}
+#page-mf .mf-sk-read i{width:9px;height:9px;border-radius:3px;display:inline-block;}
+#page-mf .mf-sk-read b{color:#fff;font-weight:900;font-variant-numeric:tabular-nums;}
+#page-mf .mf-sk-read .mf-sk-base{color:rgba(255,255,255,.3);font-weight:600;}
+#page-mf .mf-sk-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+#page-mf .mf-sk-svg{display:block;width:100%;min-width:660px;height:auto;}
+#page-mf .mf-sk-link{fill:none;stroke-opacity:.3;transition:stroke-opacity .15s ease;cursor:default;}
+#page-mf .mf-sk-link.go{cursor:pointer;}
+#page-mf .mf-sk-link:hover,#page-mf .mf-sk-link.hot{stroke-opacity:.62;}
+#page-mf .mf-sk-lbl{font-size:12.5px;font-weight:800;fill:rgba(255,255,255,.86);
+  paint-order:stroke;stroke:#0b1224;stroke-width:4px;stroke-linejoin:round;pointer-events:none;}
+#page-mf .mf-sk-val{font-size:11px;font-weight:700;fill:rgba(255,255,255,.45);font-variant-numeric:tabular-nums;}
+#page-mf .mf-sk-tip{position:absolute;z-index:3;pointer-events:none;min-width:150px;max-width:260px;
+  padding:8px 11px;border-radius:10px;background:rgba(6,11,24,.97);border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 10px 28px rgba(0,0,0,.5);font-size:.72em;line-height:1.45;color:rgba(255,255,255,.65);}
+#page-mf .mf-sk-tip b{display:block;color:#fff;font-size:1.05em;margin-bottom:2px;}
+#page-mf .mf-sk-note{font-size:.62em;font-weight:600;color:rgba(255,255,255,.3);line-height:1.5;}
+#page-mf .mf-sk-note b{color:rgba(255,255,255,.55);}
+#page-mf .mf-sk-note.warn{color:#ffb3c1;}
+#page-mf .mf-sk-retry{margin-left:8px;font:inherit;font-weight:800;color:#00d4ff;background:none;border:0;cursor:pointer;padding:0;}
+
 /* ── shared legend ── */
 #page-mf .mf-lg{flex:1 1 170px;min-width:0;display:flex;flex-direction:column;gap:2px;}
 #page-mf .mf-lg-r{
@@ -508,6 +533,7 @@ function mfSvg(tag,attrs){
 
 /* ═══ load ═════════════════════════════════════════════════ */
 function mfLoad() {
+  _mfSkCache={};                             /* ↺ Reload re-reads spending too */
   var _cmdHost=document.getElementById('mf-cmd-host');
   if(_cmdHost) _cmdHost.innerHTML='';        /* no stale month while loading */
   google.script.run
@@ -551,6 +577,7 @@ function mfRender(DATA) {
           '<span class="mf-wv" id="mf-wv">'+
             '<button class="mf-wv-b" type="button" data-v="rose" onclick="mfSetWhereView(\'rose\')" title="Nightingale rose">✿</button>'+
             '<button class="mf-wv-b" type="button" data-v="grid" onclick="mfSetWhereView(\'grid\')" title="Rupee grid">▦</button>'+
+            '<button class="mf-wv-b" type="button" data-v="sankey" onclick="mfSetWhereView(\'sankey\')" title="Sankey — income to spending">⇶</button>'+
           '</span></div>'+
         '<div class="mf-where" id="mf-where"></div>'+
       '</section>'+
@@ -1839,6 +1866,225 @@ function mfDrawWaffle(host, A){
 }
 
 /* ── entry point, called from mfRenderPlanForMonth ───────── */
+/* ═══ ⇶ SANKEY ═══════════════════════════════════════════════
+   Income (+ dividends & interest) → the month → Invested / Spent /
+   Sent home / Left in bank → funds and expense categories.
+   Band thickness ∝ rupees. The invest slots, income and sent home
+   come from the row on screen; spending and passive income are one
+   getMoneyFlowSankey() read per month, cached until ↺ Reload.
+   If out-goings exceed income, the gap enters as "From savings".
+═══════════════════════════════════════════════════════════════ */
+var _mfSkCache={}, _mfSkPending={}, _mfSkErr={};
+var MF_SK = {
+  income :'#94a3b8', passive:'#2dd4bf', savings:'#ff4d6d', hub:'#e2e8f0',
+  inv    :'#00d4ff', spend  :'#ff8f6b', home   :'#ff4d8d', kept :'#64748b'
+};
+
+function mfSkEsc(s){
+  return String(s===undefined||s===null?'':s).replace(/[&<>"]/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];
+  });
+}
+function mfSkRepaint(key){
+  if(_mfWhereView==='sankey' && _mfCurData && _mfCurData.month===key) mfRenderWhere(_mfCurData);
+}
+function mfSkRetry(key){ delete _mfSkErr[key]; mfSkRepaint(key); }
+
+function mfSkGraph(cur, ex){
+  var income  = cur.income>0 ? cur.income : 0;
+  var passive = (ex.passive && ex.passive.amount>0) ? ex.passive.amount : 0;
+  var inflow  = income + passive;
+
+  var inv=[], invTot=0;
+  MF_KEYS.forEach(function(k,i){
+    if(k==='sentHome' || !(cur[k]>0)) return;          /* NTM (0) and FAILED (-1) never happened */
+    inv.push({key:k, name:MF_CATS[i], color:MF_COLORS[i], value:cur[k],
+              status:(cur.status||{})[k] || 'Pending'});
+    invTot+=cur[k];
+  });
+  inv.sort(function(a,b){ return b.value-a.value; });
+
+  var home = cur.sentHome>0 ? cur.sentHome : 0;
+  var spendRaw = (ex.spend||[]).slice().sort(function(a,b){ return b.amount-a.amount; });
+  var spendTot = spendRaw.reduce(function(s,x){ return s+x.amount; },0);
+
+  /* small categories fold into one band so labels never collide */
+  var fold = Math.max(inflow, invTot+spendTot+home)*0.03;
+  var spend=[], small=[], smallTot=0;
+  spendRaw.forEach(function(x){
+    if(x.amount<fold){ small.push(x); smallTot+=x.amount; }
+    else spend.push({name:x.name, color:MF_SK.spend, value:x.amount});
+  });
+  if(small.length===1) spend.push({name:small[0].name, color:MF_SK.spend, value:small[0].amount});
+  else if(small.length) spend.push({name:'Smaller items ('+small.length+')', color:MF_SK.spend, value:smallTot, parts:small});
+
+  var rem = inflow - home - invTot - spendTot;
+  var sources=[];
+  if(income>0)  sources.push({kind:'income',  name:'Income',               color:MF_SK.income,  value:income});
+  if(passive>0) sources.push({kind:'passive', name:'Dividends & interest', color:MF_SK.passive, value:passive,
+                              parts:(ex.passive.items||[]).map(function(p){ return {name:p.source, amount:p.amount}; })});
+  if(rem < -0.5) sources.push({kind:'savings', name:'From savings',        color:MF_SK.savings, value:-rem});
+
+  var groups=[];
+  if(invTot>0)   groups.push({kind:'inv',   name:'Invested',     color:MF_SK.inv,   value:invTot,   kids:inv});
+  if(spendTot>0) groups.push({kind:'spend', name:'Spent',        color:MF_SK.spend, value:spendTot, kids:spend});
+  if(home>0)     groups.push({kind:'home',  name:'Sent home',    color:MF_SK.home,  value:home,     kids:[]});
+  if(rem > 0.5)  groups.push({kind:'kept',  name:'Left in bank', color:MF_SK.kept,  value:rem,      kids:[]});
+
+  var hubVal = sources.reduce(function(s,x){ return s+x.value; },0);
+  return {income:income, passive:passive, inflow:inflow, invTot:invTot, spendTot:spendTot,
+          home:home, rem:rem, sources:sources, groups:groups, hubVal:hubVal};
+}
+
+function mfDrawSankey(host, cur){
+  var key=cur.month;
+  host.className='mf-where';
+
+  if(_mfSkErr[key]){
+    host.innerHTML='<div class="mf-where-empty">⚠️ '+mfSkEsc(_mfSkErr[key])+
+      '<button class="mf-sk-retry" type="button" onclick="mfSkRetry(\''+mfSkEsc(key)+'\')">Retry</button></div>';
+    return;
+  }
+  var ex=_mfSkCache[key];
+  if(!ex){
+    host.innerHTML='<div class="mf-where-empty">Reading this month’s spending…</div>';
+    if(_mfSkPending[key]) return;
+    _mfSkPending[key]=true;
+    google.script.run
+      .withSuccessHandler(function(res){
+        delete _mfSkPending[key];
+        if(res && res.success) _mfSkCache[key]=res;
+        else _mfSkErr[key]=(res && res.error) || 'Could not read this month’s spending.';
+        mfSkRepaint(key);
+      })
+      .withFailureHandler(function(err){
+        delete _mfSkPending[key];
+        _mfSkErr[key]=(err && err.message) || String(err);
+        mfSkRepaint(key);
+      })
+      .getMoneyFlowSankey(key);
+    return;
+  }
+
+  var G=mfSkGraph(cur, ex);
+  if(G.hubVal<=0){
+    host.innerHTML='<div class="mf-where-empty">Nothing recorded for this month yet.</div>';
+    return;
+  }
+  var base = G.inflow>0 ? G.inflow : G.hubVal;
+  var pc = function(v){ var p=v/base*100; return (p<1?p.toFixed(1):Math.round(p))+'%'; };
+
+  /* ── layout ── */
+  var kids=[]; G.groups.forEach(function(g){ g.kids.forEach(function(c){ kids.push(c); }); });
+  var hub={name:'This month', color:MF_SK.hub, value:G.hubVal};
+  var cols=[G.sources, [hub], G.groups, kids];
+  var W=1000, top=30, bot=8, gap=10, nodeW=12, X=[215,420,610,790];
+  var nMax=Math.max(G.sources.length, G.groups.length, kids.length);
+  var H=Math.max(300, Math.min(640, nMax*30+top+bot));
+  var maxGaps=Math.max.apply(null, cols.map(function(c){ return Math.max(0,c.length-1)*gap; }));
+  var k=(H-top-bot-maxGaps)/G.hubVal;
+  cols.forEach(function(c,ci){
+    var y=top;
+    c.forEach(function(n){ n.x=X[ci]; n.y=y; n.h=Math.max(2, n.value*k); n.outY=y; n.inY=y; y+=n.h+gap; });
+  });
+
+  var links=[];
+  G.sources.forEach(function(s){ links.push({s:s, t:hub, v:s.value, color:s.color}); });
+  G.groups.forEach(function(g){ links.push({s:hub, t:g, v:g.value, color:g.color}); });
+  G.groups.forEach(function(g){ g.kids.forEach(function(c){ links.push({s:g, t:c, v:c.value, color:c.color}); }); });
+
+  var svg='<svg class="mf-sk-svg" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Where this month’s money went">';
+  links.forEach(function(L,li){
+    var w=L.v*k;
+    var y0=L.s.outY+w/2; L.s.outY+=w;
+    var y1=L.t.inY+w/2;  L.t.inY+=w;
+    var x0=L.s.x+nodeW, x1=L.t.x, xm=(x0+x1)/2;
+    var go=L.t.key ? ' go' : '';
+    svg+='<path class="mf-sk-link'+go+'" data-l="'+li+'" d="M'+x0.toFixed(1)+','+y0.toFixed(1)+
+      ' C'+xm.toFixed(1)+','+y0.toFixed(1)+' '+xm.toFixed(1)+','+y1.toFixed(1)+' '+x1.toFixed(1)+','+y1.toFixed(1)+
+      '" stroke="'+L.color+'" stroke-width="'+Math.max(1,w).toFixed(1)+'"></path>';
+  });
+  cols.forEach(function(c,ci){
+    c.forEach(function(n){
+      svg+='<rect x="'+n.x+'" y="'+n.y.toFixed(1)+'" width="'+nodeW+'" height="'+n.h.toFixed(1)+'" rx="2" fill="'+n.color+'"'+
+        (n.key ? ' style="cursor:pointer" data-k="'+n.key+'"' : '')+'></rect>';
+    });
+  });
+  cols.forEach(function(c,ci){
+    c.forEach(function(n){
+      var val='₨'+mfK(n.value), tx, ty, anchor='start';
+      if(ci===0){ tx=n.x-8; ty=n.y+n.h/2; anchor='end'; }
+      else if(ci===1){ tx=n.x+nodeW/2; ty=top-13; anchor='middle'; val='₨'+mfK(G.hubVal); }
+      else { tx=n.x+nodeW+7; ty=n.y+n.h/2; }
+      svg+='<text class="mf-sk-lbl" x="'+tx.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="'+anchor+'" dominant-baseline="middle">'+
+        mfSkEsc(n.name)+'<tspan class="mf-sk-val" dx="6">'+val+'</tspan></text>';
+    });
+  });
+  svg+='</svg>';
+
+  /* ── readout + notes ── */
+  var remRow = G.rem < -0.5
+    ? '<span><i style="background:'+MF_SK.savings+'"></i>From savings <b>'+pc(-G.rem)+'</b></span>'
+    : '<span><i style="background:'+MF_SK.kept+'"></i>Left in bank <b>'+pc(Math.max(G.rem,0))+'</b></span>';
+  var read='<div class="mf-sk-read">'+
+    '<span><i style="background:'+MF_SK.inv+'"></i>Invested <b>'+pc(G.invTot)+'</b></span>'+
+    '<span><i style="background:'+MF_SK.spend+'"></i>Spent <b>'+pc(G.spendTot)+'</b></span>'+
+    remRow+
+    '<span><i style="background:'+MF_SK.home+'"></i>Sent home <b>'+pc(G.home)+'</b></span>'+
+    '<span class="mf-sk-base">of '+mfFmt(base)+' in'+(G.passive>0 ? ' · incl. '+mfFmt(G.passive)+' dividends & interest' : '')+'</span>'+
+  '</div>';
+
+  var notes=[];
+  if(!(cur.income>0)) notes.push('<div class="mf-sk-note warn">No income is recorded for '+mfSkEsc(key)+' (Money Flow column J), so everything shows as coming from savings.</div>');
+  if(!ex.expLabel)    notes.push('<div class="mf-sk-note warn">No Monthly Expences column matches '+mfSkEsc(key)+', so spending is missing and Left in bank is overstated.</div>');
+  notes.push('<div class="mf-sk-note">Spending: <b>'+(ex.expLabel ? mfSkEsc(ex.expLabel) : '—')+'</b> column of Monthly Expences · '+
+    'Dividends & interest: <b>'+(ex.passive ? ex.passive.count : 0)+'</b> credit'+((ex.passive && ex.passive.count===1)?'':'s')+' in Transactions · '+
+    'Left in bank = money in − everything logged, so a large one can mean unlogged spending.</div>');
+
+  host.innerHTML='<div class="mf-sk">'+read+'<div class="mf-sk-scroll">'+svg+'</div>'+notes.join('')+
+    '<div class="mf-sk-tip" id="mf-sk-tip" style="display:none"></div></div>';
+
+  /* ── hover + click ── */
+  var wrap=host.querySelector('.mf-sk'), tip=document.getElementById('mf-sk-tip');
+  function tipFor(L){
+    var name = (L.s===hub ? '' : L.s.name+' → ')+L.t.name;
+    var node = L.s===hub || L.t===hub ? (L.s===hub ? L.t : L.s) : L.t;
+    var h='<b>'+mfSkEsc(name)+'</b>'+mfFmt(L.v)+' · '+pc(L.v)+' of money in';
+    if(node.parts && node.parts.length){
+      h+='<div style="margin-top:4px">'+node.parts.map(function(p){ return mfSkEsc(p.name)+' '+mfFmt(p.amount); }).join('<br>')+'</div>';
+    }
+    if(L.t.status) h+='<div style="margin-top:4px">Status: '+mfSkEsc(L.t.status)+' · click to open the slot</div>';
+    if(node.kind==='kept')    h+='<div style="margin-top:4px">Money in minus sent home, invested and spent.</div>';
+    if(node.kind==='savings') h+='<div style="margin-top:4px">Out-goings ran past money in by this much.</div>';
+    return h;
+  }
+  function jump(k){
+    if(!k) return;
+    _mfBuzz('pop');
+    var slot=document.getElementById('mf-pc-'+k);
+    if(slot) slot.scrollIntoView({block:'nearest',behavior:'smooth'});
+    mfFlashSlot(k);
+  }
+  wrap.querySelectorAll('.mf-sk-link').forEach(function(p){
+    var L=links[+p.getAttribute('data-l')];
+    p.addEventListener('mousemove',function(e){
+      tip.innerHTML=tipFor(L);
+      tip.style.display='block';
+      var r=wrap.getBoundingClientRect();
+      var x=e.clientX-r.left, y=e.clientY-r.top;
+      var left=x+14, tw=tip.offsetWidth, th=tip.offsetHeight;
+      if(left+tw>r.width) left=Math.max(0,x-tw-14);
+      tip.style.left=left+'px';
+      tip.style.top=Math.max(0,y-th-10)+'px';
+    });
+    p.addEventListener('mouseleave',function(){ tip.style.display='none'; });
+    if(L.t.key) p.addEventListener('click',function(){ jump(L.t.key); });
+  });
+  wrap.querySelectorAll('rect[data-k]').forEach(function(r){
+    r.addEventListener('click',function(){ jump(r.getAttribute('data-k')); });
+  });
+}
+
 function mfRenderWhere(cur){
   try{
     var host=document.getElementById('mf-where');
@@ -1849,6 +2095,11 @@ function mfRenderWhere(cur){
     document.querySelectorAll('#mf-wv .mf-wv-b').forEach(function(b){
       b.classList.toggle('on', b.getAttribute('data-v')===_mfWhereView);
     });
+
+    /* the Sankey needs the full width — ② spans the row, ③ drops below */
+    var top=document.querySelector('#page-mf .mf-top');
+    if(top) top.classList.toggle('sk-wide', _mfWhereView==='sankey');
+    if(_mfWhereView==='sankey'){ mfDrawSankey(host,cur); return; }
 
     var A=mfWhereAlloc(cur);
     if(!A.entries.length){

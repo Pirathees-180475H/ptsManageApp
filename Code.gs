@@ -431,6 +431,101 @@ function getMoneyFlowData() {
   }
 }
 
+/* "Sep/2026" → { month: 9, year: 2026 }; null when unparseable */
+function mfMonthKey_(monthStr) {
+  var m = String(monthStr || '').trim().match(/^([A-Za-z]{3})[a-z]*\/(\d{4})$/);
+  if (!m) return null;
+  var idx = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m[1].toLowerCase());
+  return idx < 0 ? null : { month: idx + 1, year: parseInt(m[2], 10) };
+}
+
+/* Monthly Expences summary table — same window getExpenseData() reads:
+   row 6 = month headers (30 cols), rows 7–17 = categories + the Total row.
+   cols: [{label, idx, month, year}]  (year is 0 when the header has none) */
+function expSummaryTable_(sheet) {
+  var hdr = sheet.getRange(6, 1, 1, 30).getValues()[0];
+  var cols = [];
+  for (var c = 1; c < hdr.length; c++) {
+    var h = (hdr[c] || '').toString().trim();
+    if (!h || h.toUpperCase() === 'TOTAL' || h.toLowerCase().indexOf('control') >= 0) continue;
+    var my = expLabelToMonthYear_(h);
+    cols.push({ label: h, idx: c, month: my ? my.month : 0, year: my ? my.year : 0 });
+  }
+  var cats = [], totalRow = null;
+  sheet.getRange(7, 1, 11, 30).getValues().forEach(function(row) {
+    var name = (row[0] || '').toString().trim();
+    if (!name) return;
+    if (name.toLowerCase().indexOf('total') >= 0) totalRow = row;
+    else cats.push({ name: name, row: row });
+  });
+  return { cols: cols, cats: cats, totalRow: totalRow };
+}
+
+/* the summary column for a month — exact year first, then a header with no year */
+function expColFor_(cols, month, year) {
+  for (var i = 0; i < cols.length; i++) if (cols[i].month === month && cols[i].year === year) return cols[i];
+  for (var j = 0; j < cols.length; j++) if (cols[j].month === month && cols[j].year === 0) return cols[j];
+  return null;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   getMoneyFlowSankey
+   The two things the Money Flow row does not hold, for one month:
+     spend   — category totals from the Monthly Expences summary table
+     passive — Transactions credits whose source is a dividend or
+               interest (same rule as the Bank tab's Passive income KPI)
+   Income, sent home and the invest slots come from the row already
+   on screen, so they are not re-read here.
+───────────────────────────────────────────────────────────────── */
+function getMoneyFlowSankey(monthStr) {
+  try {
+    var key = mfMonthKey_(monthStr);
+    if (!key) return { success: false, error: 'Unrecognised month "' + monthStr + '"' };
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var tz = ss.getSpreadsheetTimeZone();
+
+    // ── spending by category ──
+    var spend = [], expLabel = '';
+    var expSheet = ss.getSheetByName('Monthly Expences');
+    if (expSheet) {
+      var T = expSummaryTable_(expSheet);
+      var col = expColFor_(T.cols, key.month, key.year);
+      if (col) {
+        expLabel = col.label;
+        T.cats.forEach(function(c) {
+          var v = parseFloat(c.row[col.idx]) || 0;
+          if (v > 0) spend.push({ name: c.name, amount: v });
+        });
+      }
+    }
+
+    // ── passive income ──
+    var passive = { amount: 0, count: 0, items: [] };
+    var txSheet = ss.getSheetByName('Transactions');
+    if (txSheet && txSheet.getLastRow() >= 2) {
+      var tx = txSheet.getRange(2, 1, txSheet.getLastRow() - 1, 5).getValues();
+      tx.forEach(function(r) {
+        if (!(r[0] instanceof Date) || isNaN(r[0])) return;
+        if (parseInt(Utilities.formatDate(r[0], tz, 'M'), 10) !== key.month) return;
+        if (parseInt(Utilities.formatDate(r[0], tz, 'yyyy'), 10) !== key.year) return;
+        var src = String(r[1] || '');
+        if (!/\bdividends?\b/i.test(src) && !/\binterest\b/i.test(src)) return;
+        if (/rollbacked|rolled back/i.test(String(r[4] || ''))) return;
+        var amt = parseFloat(r[3]) || 0;
+        if (amt <= 0) return;
+        passive.amount += amt;
+        passive.count++;
+        passive.items.push({ source: src.trim(), amount: amt });
+      });
+    }
+
+    return { success: true, month: monthStr, spend: spend, expLabel: expLabel, passive: passive };
+  } catch (e) {
+    Logger.log('getMoneyFlowSankey error: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
 function saveMoneyFlowItemStatus(monthStr, jsonString) {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
