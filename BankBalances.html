@@ -165,7 +165,7 @@
 #page-bank .bk-ring-pct{font-size:13px;font-weight:800;color:var(--bk-ink);
   font-variant-numeric:tabular-nums;min-width:48px;text-align:right;}
 
-#page-bank .bk-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+#page-bank .bk-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 #page-bank .bk-kpi{
   padding:13px 15px;border-radius:16px;background:var(--bk-panel);border:1px solid var(--bk-bdr);
   display:flex;flex-direction:column;gap:3px;
@@ -175,6 +175,8 @@
 #page-bank .bk-kpi-s{font-size:11px;color:var(--bk-mut);font-variant-numeric:tabular-nums;}
 #page-bank .bk-kpi.warn{border-color:rgba(255,215,0,.26);background:rgba(255,215,0,.05);}
 #page-bank .bk-kpi.warn .bk-kpi-v{color:var(--bk-gold);}
+#page-bank .bk-kpi.good{border-color:rgba(0,230,118,.22);background:rgba(0,230,118,.045);}
+#page-bank .bk-kpi.good .bk-kpi-v{color:var(--bk-green);}
 
 /* ═══ ③ ACCOUNTS — the passbook shelf ═════════════════════════
    Each account is a savings passbook. Closed on the shelf, it shows
@@ -584,6 +586,69 @@
   font-family:inherit;font-size:12px;font-weight:600;outline:none;cursor:pointer;
 }
 #page-bank .bk-sel option{background:#101828;}
+
+/* date-range calendar — button in the filter row, popover underneath */
+#page-bank .bk-filters{position:relative;}
+#page-bank .bk-date-btn{
+  height:35px;padding:0 12px;border-radius:9px;background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);color:var(--bk-ink2);display:inline-flex;align-items:center;gap:7px;
+  font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;
+  font-variant-numeric:tabular-nums;transition:border-color .2s,background .2s;
+}
+#page-bank .bk-date-btn:hover{border-color:var(--bk-bdr2);color:var(--bk-ink);}
+#page-bank .bk-date-btn.on{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.4);color:var(--bk-cyan);}
+#page-bank .bk-date-x{margin-left:2px;padding:0 3px;border-radius:4px;color:var(--bk-mut);font-size:13px;line-height:1;}
+#page-bank .bk-date-x:hover{color:#fff;background:rgba(255,255,255,.1);}
+#page-bank .bk-cal{
+  position:absolute;top:calc(100% + 6px);right:0;z-index:30;width:max-content;max-width:calc(100vw - 32px);
+  padding:14px;border-radius:14px;background:#0f1729;border:1px solid var(--bk-bdr2);
+  box-shadow:0 18px 48px rgba(0,0,0,.55);
+}
+#page-bank .bk-cal[hidden]{display:none;}
+#page-bank .bk-cal-pre{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+#page-bank .bk-cal-pre button{
+  padding:5px 10px;border-radius:7px;background:rgba(255,255,255,.05);border:1px solid var(--bk-bdr);
+  color:var(--bk-ink2);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;
+}
+#page-bank .bk-cal-pre button:hover{color:#fff;border-color:var(--bk-bdr2);}
+#page-bank .bk-cal-months{display:flex;gap:18px;}
+#page-bank .bk-cal-m{width:224px;}
+#page-bank .bk-cal-hd{display:flex;align-items:center;justify-content:space-between;height:28px;margin-bottom:6px;
+  font-size:12px;font-weight:800;color:var(--bk-ink);}
+#page-bank .bk-cal-nav{width:28px;height:28px;border-radius:7px;background:none;border:1px solid transparent;
+  color:var(--bk-ink2);font-size:16px;cursor:pointer;font-family:inherit;}
+#page-bank .bk-cal-nav:hover:not(:disabled){border-color:var(--bk-bdr2);color:#fff;}
+#page-bank .bk-cal-nav:disabled{opacity:.25;cursor:default;}
+#page-bank .bk-cal-nav.ph{visibility:hidden;}
+#page-bank .bk-cal-grid{display:grid;grid-template-columns:repeat(7,32px);row-gap:2px;}
+#page-bank .bk-cal-wd{height:22px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:800;letter-spacing:.8px;color:var(--bk-faint);}
+#page-bank .bk-cal-d{
+  position:relative;height:32px;border:0;background:none;color:var(--bk-ink2);padding:0;
+  font-family:inherit;font-size:12px;font-variant-numeric:tabular-nums;cursor:pointer;
+}
+#page-bank .bk-cal-d span{display:flex;align-items:center;justify-content:center;width:30px;height:30px;margin:1px;border-radius:8px;}
+#page-bank .bk-cal-d:hover:not(:disabled) span{background:rgba(255,255,255,.08);color:#fff;}
+#page-bank .bk-cal-d.today span{box-shadow:inset 0 0 0 1px var(--bk-bdr2);}
+#page-bank .bk-cal-d.has::after{content:'';position:absolute;left:50%;bottom:4px;width:3px;height:3px;margin-left:-1.5px;
+  border-radius:50%;background:var(--bk-pink);}
+#page-bank .bk-cal-d.in{background:rgba(0,212,255,.1);}
+#page-bank .bk-cal-d.in span{color:var(--bk-ink);}
+#page-bank .bk-cal-d.s{background:linear-gradient(90deg,transparent 50%,rgba(0,212,255,.1) 50%);}
+#page-bank .bk-cal-d.e{background:linear-gradient(90deg,rgba(0,212,255,.1) 50%,transparent 50%);}
+#page-bank .bk-cal-d.s.e{background:none;}
+#page-bank .bk-cal-d.s span,#page-bank .bk-cal-d.e span{background:var(--bk-cyan)!important;color:#04121c!important;font-weight:800;}
+#page-bank .bk-cal-d:disabled{color:rgba(255,255,255,.12);cursor:default;}
+#page-bank .bk-cal-d.pad{visibility:hidden;}
+#page-bank .bk-cal-ft{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;
+  padding-top:11px;border-top:1px solid var(--bk-bdr);}
+#page-bank .bk-cal-sum{font-size:11.5px;color:var(--bk-ink2);font-variant-numeric:tabular-nums;}
+#page-bank .bk-cal-acts{display:flex;gap:7px;}
+#page-bank .bk-cal-apply{
+  height:30px;padding:0 14px;border-radius:8px;border:0;background:var(--bk-cyan);color:#04121c;
+  font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;
+}
+#page-bank .bk-cal-apply:disabled{background:rgba(255,255,255,.08);color:var(--bk-mut);cursor:not-allowed;}
 #page-bank .bk-tbl-wrap{border:1px solid var(--bk-bdr);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.016);}
 #page-bank .bk-tbl-scroll{overflow-x:auto;max-height:52vh;overflow-y:auto;}
 #page-bank table.bk-tbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:640px;}
@@ -682,8 +747,11 @@
 @media(max-width:860px){
   #page-bank .bk-hero-in{grid-template-columns:1fr;gap:18px;}
   #page-bank .bk-arcs{width:240px;height:240px;margin:0 auto;}
-  #page-bank .bk-kpis{grid-template-columns:1fr;}
+  #page-bank .bk-kpis{grid-template-columns:repeat(2,1fr);}
   #page-bank .bk-move{grid-template-columns:1fr;}
+  /* one month only — the older one drops, the newer one takes both arrows */
+  #page-bank .bk-cal-m:first-child:not(:last-child){display:none;}
+  #page-bank .bk-cal-m:last-child .bk-cal-nav.ph{visibility:visible;}
   /* a two-page spread does not fit — the book becomes one page,
      inside cover stacked above the ledger, gutter shadow dropped */
   #page-bank .bk-spread-in{grid-template-columns:1fr;padding:9px;}
@@ -696,6 +764,8 @@
 }
 @media(max-width:560px){
   #page-bank .page-wrap{padding:13px;padding-bottom:96px;}
+  #page-bank .bk-kpis{grid-template-columns:1fr;}
+  #page-bank .bk-cal{left:0;right:auto;}
   #page-bank .bk-hero{padding:18px 16px;}
   #page-bank .bk-fld-row{grid-template-columns:1fr;}
   #page-bank .bk-swap{margin:0 auto;transform:rotate(90deg);}
@@ -784,6 +854,8 @@ var _bkPage    = 1;
 var _bkQuery   = '';
 var _bkBankFilter = 'all';
 var _bkRangeDays  = 90;
+var _bkFrom = null, _bkTo = null;     /* applied calendar range (local midnights, inclusive) — overrides _bkRangeDays */
+var _bkCal  = null;                   /* open calendar draft {from, to, hover, view} */
 /* Transfer fee — charged to the source only, never written to the sheet.
    Pinning keeps it across transfers instead of clearing it each time. */
 var _bkFeePin  = false;
@@ -1008,6 +1080,12 @@ function bkRenderOverview(){
       '<div class="bk-panel-hdr"><i style="background:var(--bk-cyan)"></i>Activity' +
         '<span class="bk-panel-sub">last 30 days</span></div>' +
       '<div class="bk-kpis">' +
+        '<div class="bk-kpi' + (stats.passive.amount > 0 ? ' good' : '') + '"><span class="bk-kpi-k">Passive income · 30 days</span>' +
+          '<span class="bk-kpi-v">' + bkLkr(stats.passive.amount) + '</span>' +
+          '<span class="bk-kpi-s">' + (stats.passive.count
+              ? [stats.passive.div ? stats.passive.div + ' dividend' + (stats.passive.div === 1 ? '' : 's') : '',
+                 stats.passive.int ? stats.passive.int + ' interest' : ''].filter(Boolean).join(' · ')
+              : 'no dividend or interest credits') + '</span></div>' +
         '<div class="bk-kpi"><span class="bk-kpi-k">Moved · 30 days</span>' +
           '<span class="bk-kpi-v">' + bkLkr(stats.moved30) + '</span>' +
           '<span class="bk-kpi-s">across ' + stats.count30 + ' transfer' + (stats.count30 === 1 ? '' : 's') + '</span></div>' +
@@ -1029,14 +1107,29 @@ function bkRenderOverview(){
 }
 
 
+/* 'div' | 'int' | '' — source matched as a whole word, any case (DIVIDEND, Dividends, FD Interest…) */
+function bkPassiveKind(t){
+  if (/rollbacked|rolled back/i.test(t.reference || '')) return '';
+  var src = String(t.source || '');
+  if (/\bdividends?\b/i.test(src)) return 'div';
+  if (/\binterest\b/i.test(src)) return 'int';
+  return '';
+}
+
 /* derived facts — no extra backend calls */
 function bkTxnStats(){
   var cut30 = Date.now() - 30 * 86400000, moved30 = 0, count30 = 0, last = null;
+  var passive = {amount:0, count:0, div:0, int:0};
   var lastPer = {};
   _bkTxns.forEach(function(t){
     var d = bkDate(t.date);
     if (!d) return;
-    if (d.getTime() >= cut30){ moved30 += Number(t.amount) || 0; count30++; }
+    if (d.getTime() >= cut30){
+      moved30 += Number(t.amount) || 0; count30++;
+      /* passive income = credits whose source is a dividend or interest, rolled-back ones excluded */
+      var kind = bkPassiveKind(t);
+      if (kind){ passive.amount += Number(t.amount) || 0; passive.count++; passive[kind]++; }
+    }
     if (!last || d.getTime() > last.d.getTime()) last = {d:d, t:t};
     [t.source, t.destination].forEach(function(n){
       var k = String(n || '').toLowerCase();
@@ -1049,7 +1142,7 @@ function bkTxnStats(){
     var days = d ? bkDaysAgo(d) : 999;
     if (days > 60 && b.amount > 0 && (!idle || b.amount > idle.amount)) idle = b;
   });
-  return {moved30:moved30, count30:count30, last:last, idle:idle, lastPer:lastPer};
+  return {moved30:moved30, count30:count30, last:last, idle:idle, lastPer:lastPer, passive:passive};
 }
 
 /* ═══ THE ARC DIAL ════════════════════════════════════════════
@@ -1836,6 +1929,7 @@ function bkConvQuick(v){
 /* ═══ ⑤ TRANSACTIONS ══════════════════════════════════════════ */
 function bkRenderTxnPanel(){
   if (!_bkBuilt) return;
+  _bkCal = null;   /* the popover is rebuilt closed */
   var banks = _bkData.map(function(b){ return b.source; });
   document.getElementById('bkSecTxns').innerHTML =
     '<div class="bk-panel">' +
@@ -1848,11 +1942,14 @@ function bkRenderTxnPanel(){
           banks.map(function(b){ return '<option value="' + bkEsc(b) + '">' + bkEsc(b) + '</option>'; }).join('') +
         '</select>' +
         '<select class="bk-sel" id="bkRange" onchange="bkSetRange(this.value)">' +
-          '<option value="90">Last 90 days</option>' +
-          '<option value="30">Last 30 days</option>' +
-          '<option value="365">Last year</option>' +
-          '<option value="0">All time</option>' +
+          [['90','Last 90 days'], ['30','Last 30 days'], ['365','Last year'], ['0','All time'], ['custom','Custom range']]
+            .map(function(o){
+              var on = _bkFrom ? o[0] === 'custom' : o[0] === String(_bkRangeDays);
+              return '<option value="' + o[0] + '"' + (on ? ' selected' : '') + '>' + o[1] + '</option>';
+            }).join('') +
         '</select>' +
+        '<button class="bk-date-btn" id="bkDateBtn" type="button" onclick="bkCalToggle()" aria-haspopup="dialog"></button>' +
+        '<div class="bk-cal" id="bkCal" role="dialog" aria-label="Pick a date range" hidden></div>' +
         '<button class="bk-mini" type="button" onclick="bkExportCsv()">↓ Export CSV</button>' +
       '</div>' +
       '<div class="bk-tbl-wrap">' +
@@ -1869,13 +1966,19 @@ function bkRenderTxnPanel(){
         '<div class="bk-pager" id="bkPager"></div>' +
       '</div>' +
     '</div>';
+  bkPaintDateBtn();
   bkRenderTxns();
 }
 
 function bkFilteredTxns(){
   var cut = _bkRangeDays > 0 ? Date.now() - _bkRangeDays * 86400000 : 0;
+  var from = _bkFrom ? _bkFrom.getTime() : 0;
+  var to   = _bkTo ? bkAddDays(_bkTo, 1).getTime() : 0;   /* end day is inclusive */
   return _bkTxns.filter(function(t){
-    if (cut){ var d = bkDate(t.date); if (!d || d.getTime() < cut) return false; }
+    if (from){
+      var dr = bkDate(t.date);
+      if (!dr || dr.getTime() < from || dr.getTime() >= to) return false;
+    } else if (cut){ var d = bkDate(t.date); if (!d || d.getTime() < cut) return false; }
     if (_bkBankFilter !== 'all' && t.source !== _bkBankFilter && t.destination !== _bkBankFilter) return false;
     if (_bkQuery){
       var hay = (t.source + ' ' + t.destination + ' ' + (t.reference || '') + ' ' + t.amount).toLowerCase();
@@ -1966,8 +2069,203 @@ function bkRenderTxns(){
 
 function bkSearch(q){ _bkQuery = (q || '').toLowerCase().trim(); _bkPage = 1; bkRenderTxns(); }
 function bkSetBankFilter(v){ _bkBankFilter = v; _bkPage = 1; bkRenderTxns(); }
-function bkSetRange(v){ _bkRangeDays = parseInt(v, 10) || 0; _bkPage = 1; bkRenderTxns(); }
+function bkSetRange(v){
+  if (v === 'custom'){ bkCalOpen(); return; }
+  _bkRangeDays = parseInt(v, 10) || 0;
+  _bkFrom = _bkTo = null;
+  _bkPage = 1;
+  bkPaintDateBtn();
+  bkRenderTxns();
+}
 function bkGoPage(p){ _bkPage = p; bkRenderTxns(); }
+
+/* ═══ DATE-RANGE CALENDAR ═════════════════════════════════════
+   Two months side by side (one on narrow screens). First click sets
+   the start, second the end — hovering previews the span. Nothing is
+   filtered until Apply; picking a preset in the select clears it.
+   Days with a logged transaction carry a dot.
+═══════════════════════════════════════════════════════════════ */
+var BK_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function bkDay(d){ var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function bkAddDays(d, n){ var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function bkFmtDay(d, withYear){
+  return d.toLocaleDateString('en-GB', withYear ? {day:'numeric', month:'short', year:'numeric'} : {day:'numeric', month:'short'});
+}
+function bkRangeLabel(from, to){
+  if (!from) return '';
+  if (!to || to.getTime() === from.getTime()) return bkFmtDay(from, true);
+  var sameYear = from.getFullYear() === to.getFullYear();
+  return bkFmtDay(from, !sameYear) + ' – ' + bkFmtDay(to, true);
+}
+
+function bkPaintDateBtn(){
+  var b = document.getElementById('bkDateBtn');
+  if (!b) return;
+  b.classList.toggle('on', !!_bkFrom);
+  b.innerHTML = '📅 ' + (_bkFrom
+    ? bkEsc(bkRangeLabel(_bkFrom, _bkTo)) +
+      '<span class="bk-date-x" role="button" title="Clear date range" onclick="event.stopPropagation();bkCalClear(true)">×</span>'
+    : 'Pick dates');
+}
+
+function bkCalToggle(){ if (_bkCal) bkCalClose(); else bkCalOpen(); }
+
+function bkCalOpen(){
+  var today = bkDay(new Date());
+  var anchor = _bkTo || today;
+  _bkCal = {from:_bkFrom, to:_bkTo, hover:null,
+            view:new Date(anchor.getFullYear(), anchor.getMonth(), 1)};   /* view = the newer (right-hand) month */
+  var el = document.getElementById('bkCal');
+  if (!el) return;
+  el.hidden = false;
+  bkCalRender();
+  if (!bkCalOpen._bound){
+    bkCalOpen._bound = true;
+    document.addEventListener('mousedown', function(e){
+      if (!_bkCal) return;
+      var cal = document.getElementById('bkCal'), btn = document.getElementById('bkDateBtn');
+      if (cal && !cal.contains(e.target) && btn && !btn.contains(e.target)) bkCalClose();
+    });
+    document.addEventListener('keydown', function(e){ if (_bkCal && e.key === 'Escape') bkCalClose(); });
+  }
+}
+
+function bkCalClose(){
+  _bkCal = null;
+  var el = document.getElementById('bkCal');
+  if (el){ el.hidden = true; el.innerHTML = ''; }
+  /* the select may have been left on "Custom range" with nothing applied */
+  var sel = document.getElementById('bkRange');
+  if (sel) sel.value = _bkFrom ? 'custom' : String(_bkRangeDays);
+}
+
+function bkCalMonthHTML(y, m, first, last){
+  var today = bkDay(new Date()).getTime();
+  var lead = (new Date(y, m, 1).getDay() + 6) % 7;          /* Monday-first */
+  var days = new Date(y, m + 1, 0).getDate();
+  var html = '<div class="bk-cal-m">' +
+    '<div class="bk-cal-hd">' +
+      '<button class="bk-cal-nav' + (first ? '' : ' ph') + '" type="button" onclick="bkCalNav(-1)" aria-label="Previous month">‹</button>' +
+      '<span>' + BK_MONTHS[m] + ' ' + y + '</span>' +
+      '<button class="bk-cal-nav' + (last ? '' : ' ph') + '" type="button" onclick="bkCalNav(1)" aria-label="Next month"' +
+        (new Date(y, m + 1, 1).getTime() > today ? ' disabled' : '') + '>›</button>' +
+    '</div><div class="bk-cal-grid">' +
+    ['Mo','Tu','We','Th','Fr','Sa','Su'].map(function(w){ return '<span class="bk-cal-wd">' + w + '</span>'; }).join('');
+  for (var p = 0; p < lead; p++) html += '<button class="bk-cal-d pad" type="button" tabindex="-1" disabled></button>';
+  for (var d = 1; d <= days; d++){
+    var t = new Date(y, m, d).getTime();
+    html += '<button class="bk-cal-d' + (t === today ? ' today' : '') + (_bkCal.has[t] ? ' has' : '') + '" type="button"' +
+      ' data-t="' + t + '"' + (t > today ? ' disabled' : '') + '><span>' + d + '</span></button>';
+  }
+  return html + '</div></div>';
+}
+
+function bkCalRender(){
+  var el = document.getElementById('bkCal');
+  if (!el || !_bkCal) return;
+  _bkCal.has = {};
+  _bkTxns.forEach(function(t){ var d = bkDate(t.date); if (d) _bkCal.has[bkDay(d).getTime()] = 1; });
+  var v = _bkCal.view, prev = new Date(v.getFullYear(), v.getMonth() - 1, 1);
+  el.innerHTML =
+    '<div class="bk-cal-pre">' +
+      [['7d','Last 7 days'], ['tm','This month'], ['lm','Last month'], ['ty','This year']].map(function(o){
+        return '<button type="button" onclick="bkCalPreset(\'' + o[0] + '\')">' + o[1] + '</button>';
+      }).join('') +
+    '</div>' +
+    '<div class="bk-cal-months" id="bkCalMonths">' +
+      bkCalMonthHTML(prev.getFullYear(), prev.getMonth(), true, false) +
+      bkCalMonthHTML(v.getFullYear(), v.getMonth(), false, true) +
+    '</div>' +
+    '<div class="bk-cal-ft">' +
+      '<span class="bk-cal-sum" id="bkCalSum"></span>' +
+      '<span class="bk-cal-acts">' +
+        '<button class="bk-mini" type="button" onclick="bkCalClear(false)">Clear</button>' +
+        '<button class="bk-cal-apply" id="bkCalApply" type="button" onclick="bkCalApply()">Apply</button>' +
+      '</span>' +
+    '</div>';
+  var months = document.getElementById('bkCalMonths');
+  months.addEventListener('click', function(e){
+    var b = e.target.closest('.bk-cal-d[data-t]');
+    if (b && !b.disabled) bkCalPick(+b.getAttribute('data-t'));
+  });
+  months.addEventListener('mouseover', function(e){
+    var b = e.target.closest('.bk-cal-d[data-t]');
+    var h = (b && !b.disabled) ? +b.getAttribute('data-t') : null;
+    if (_bkCal && _bkCal.hover !== h){ _bkCal.hover = h; bkCalPaint(); }
+  });
+  months.addEventListener('mouseleave', function(){
+    if (_bkCal && _bkCal.hover !== null){ _bkCal.hover = null; bkCalPaint(); }
+  });
+  bkCalPaint();
+}
+
+/* classes only — the grid is never rebuilt on hover */
+function bkCalPaint(){
+  if (!_bkCal) return;
+  var c = _bkCal, s = c.from ? c.from.getTime() : null, e = c.to ? c.to.getTime() : null;
+  if (s !== null && e === null && c.hover !== null){ e = Math.max(s, c.hover); s = Math.min(s, c.hover); }
+  document.querySelectorAll('#bkCal .bk-cal-d[data-t]').forEach(function(b){
+    var t = +b.getAttribute('data-t');
+    b.classList.toggle('s', t === s);
+    b.classList.toggle('e', e !== null ? t === e : t === s);
+    b.classList.toggle('in', s !== null && e !== null && t > s && t < e);
+  });
+  var sum = document.getElementById('bkCalSum'), apply = document.getElementById('bkCalApply');
+  if (sum){
+    if (!c.from) sum.textContent = 'Pick a start date';
+    else if (!c.to) sum.textContent = bkRangeLabel(c.from) + ' → pick an end date';
+    else {
+      var n = Math.round((c.to - c.from) / 86400000) + 1;
+      sum.textContent = bkRangeLabel(c.from, c.to) + ' · ' + n + ' day' + (n === 1 ? '' : 's');
+    }
+  }
+  if (apply) apply.disabled = !c.from;
+}
+
+function bkCalPick(t){
+  var c = _bkCal, d = new Date(t);
+  if (!c.from || c.to){ c.from = d; c.to = null; }
+  else if (d < c.from){ c.to = c.from; c.from = d; }
+  else c.to = d;
+  bkCalPaint();
+}
+
+function bkCalNav(delta){
+  var v = _bkCal.view, next = new Date(v.getFullYear(), v.getMonth() + delta, 1);
+  if (next > bkDay(new Date())) return;
+  _bkCal.view = next;
+  bkCalRender();
+}
+
+function bkCalPreset(k){
+  var today = bkDay(new Date()), y = today.getFullYear(), m = today.getMonth();
+  var r = k === '7d' ? [bkAddDays(today, -6), today]
+        : k === 'tm' ? [new Date(y, m, 1), today]
+        : k === 'lm' ? [new Date(y, m - 1, 1), new Date(y, m, 0)]
+        :              [new Date(y, 0, 1), today];
+  _bkCal.from = r[0]; _bkCal.to = r[1];
+  bkCalApply();
+}
+
+function bkCalApply(){
+  if (!_bkCal || !_bkCal.from) return;
+  _bkFrom = _bkCal.from;
+  _bkTo   = _bkCal.to || _bkCal.from;                  /* a single click means that one day */
+  _bkPage = 1;
+  bkCalClose();
+  bkPaintDateBtn();
+  bkRenderTxns();
+}
+
+/* Clear inside the popover only resets the draft; the × on the button drops the applied range */
+function bkCalClear(applied){
+  if (!applied && _bkCal){ _bkCal.from = _bkCal.to = _bkCal.hover = null; bkCalPaint(); return; }
+  _bkFrom = _bkTo = null;
+  _bkPage = 1;
+  bkCalClose();
+  bkPaintDateBtn();
+  bkRenderTxns();
+}
 function bkEditTxn(i){ _bkEditRow = i; bkRenderTxns(); }
 function bkCancelEdit(){ _bkEditRow = -1; bkRenderTxns(); }
 

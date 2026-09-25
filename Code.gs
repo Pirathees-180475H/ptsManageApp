@@ -749,7 +749,20 @@ function getCardData() {
     // Get data from range A4:I6 (data starts at row 4, col I = Available to Spend)
     var range = sheet.getRange('A4:I7');
     var values = range.getValues();
-    
+
+    // Append J = transactions in the last 12 months, K = sheet row, so the
+    // Cards tab can rank by activity and still save back to the right row.
+    var counts = [];
+    try {
+      counts = getCardTxnCounts_(values.map(function(r) { return String(r[0] || '').trim(); }));
+    } catch (e) {
+      Logger.log('getCardData count error: ' + e.message);
+    }
+    values.forEach(function(r, i) {
+      r[9]  = counts[i] || 0;
+      r[10] = i + 4;
+    });
+
     return values;
   } catch (error) {
     throw new Error('Failed to load data: ' + error.message);
@@ -5058,6 +5071,46 @@ function deleteLossEntry(rowIndex) {
                       | AJ=36 Selan-Exp | AK=37 Selan-Pay
                       | AL=38 NDB-Exp   | AM=39 NDB-Pay
 ───────────────────────────────────────────────────────────────── */
+/* Hardcoded columns matching ADD_EXP.html (1-based):
+   AE=31 ref | AF=32 Amex-Exp | AG=33 Amex-Pay | AH=34 NTB-Exp | AI=35 NTB-Pay
+   | AJ=36 Selan-Exp | AK=37 Selan-Pay | AL=38 NDB-Exp | AM=39 NDB-Pay
+   Returns {exp:-1, pay:-1} for a card with no mapped columns. */
+function cardCols_(cardName) {
+  var cardLow = (cardName || '').toLowerCase();
+  if (cardLow.indexOf('amex') >= 0 || cardLow.indexOf('american') >= 0) return { exp: 32, pay: 33 }; // AF, AG
+  if (cardLow.indexOf('ntb') >= 0 || cardLow.indexOf('nations') >= 0)   return { exp: 34, pay: 35 }; // AH, AI
+  if (cardLow.indexOf('selan') >= 0)                                    return { exp: 36, pay: 37 }; // AJ, AK
+  if (cardLow.indexOf('ndb') >= 0)                                      return { exp: 38, pay: 39 }; // AL, AM
+  return { exp: -1, pay: -1 };
+}
+
+/* Number of expense/payment lines per card over the last 12 months,
+   in the same order as cardNames. Used to rank the Cards tab. */
+function getCardTxnCounts_(cardNames) {
+  var counts = cardNames.map(function() { return 0; });
+  var sheet  = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Monthly Expences');
+  if (!sheet || sheet.getLastRow() < 1) return counts;
+
+  var colsList = cardNames.map(cardCols_);
+  var numCols  = 39; // AM — the last card column
+  var allData  = sheet.getRange(1, 1, sheet.getLastRow(), numCols).getValues();
+  var cutoff   = Date.now() - 365 * 86400000;
+  var num      = function(v) {
+    return (typeof v === 'number') ? v : parseFloat(String(v).replace(/[^0-9.+-]/g, '')) || 0;
+  };
+
+  for (var r = 0; r < allData.length; r++) {
+    var row = allData[r];
+    if (!(row[0] instanceof Date) || isNaN(row[0]) || row[0].getTime() < cutoff) continue;
+    for (var c = 0; c < colsList.length; c++) {
+      var cols = colsList[c];
+      if (cols.exp < 0) continue;
+      if (num(row[cols.exp - 1]) > 0 || num(row[cols.pay - 1]) > 0) counts[c]++;
+    }
+  }
+  return counts;
+}
+
 function getCardExpenses(cardName, month, year) {
   try {
     var ss    = SpreadsheetApp.getActiveSpreadsheet();
@@ -5071,26 +5124,10 @@ function getCardExpenses(cardName, month, year) {
     var curYear  = (year >= 2000) ? parseInt(year, 10)
                    : parseInt(Utilities.formatDate(now, tz, 'yyyy'), 10);
 
-    // Hardcoded columns matching ADD_EXP.html (1-based):
-    // AE=31 ref | AF=32 Amex-Exp | AG=33 Amex-Pay | AH=34 NTB-Exp | AI=35 NTB-Pay | AJ=36 Selan-Exp | AK=37 Selan-Pay | AL=38 NDB-Exp | AM=39 NDB-Pay
     var REF_COL = 31; // AE — shared CC reference
-    var cardLow = (cardName || '').toLowerCase();
-    var expCol  = -1;
-    var payCol  = -1;
-
-    if (cardLow.indexOf('amex') >= 0 || cardLow.indexOf('american') >= 0) {
-      expCol = 32; // AF
-      payCol = 33; // AG
-    } else if (cardLow.indexOf('ntb') >= 0 || cardLow.indexOf('nations') >= 0) {
-      expCol = 34; // AH
-      payCol = 35; // AI
-    } else if (cardLow.indexOf('selan') >= 0) {
-      expCol = 36; // AJ
-      payCol = 37; // AK
-    } else if (cardLow.indexOf('ndb') >= 0) {
-      expCol = 38; // AL
-      payCol = 39; // AM
-    }
+    var cols    = cardCols_(cardName);
+    var expCol  = cols.exp;
+    var payCol  = cols.pay;
 
     if (expCol < 0) {
       return { success: true, entries: [], total: 0, totalPay: 0, cardName: cardName,
@@ -5130,12 +5167,14 @@ function getCardExpenses(cardName, month, year) {
       if (exp <= 0 && pay <= 0) continue;
 
       var ref = String(row[REF_COL - 1] || '').trim();
-      entries.push({ day: parseInt(parts[2], 10), expense: exp, payment: pay, reference: ref });
+      entries.push({ day: parseInt(parts[2], 10), expense: exp, payment: pay, reference: ref, _r: r });
       totalExp += exp;
       totalPay += pay;
     }
 
-    entries.sort(function(a, b) { return a.day - b.day; });
+    // Latest first; lines on the same day keep newest (lowest in the sheet) on top
+    entries.sort(function(a, b) { return (b.day - a.day) || (b._r - a._r); });
+    entries.forEach(function(e) { delete e._r; });
     return { success: true, entries: entries, totalExp: totalExp, totalPay: totalPay,
              cardName: cardName, month: curMonth, year: curYear };
 

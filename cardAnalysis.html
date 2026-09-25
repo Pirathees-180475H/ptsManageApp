@@ -752,6 +752,16 @@ function ccSettled(row){ return row[3]===true||row[3]==='TRUE'||row[3]==='true';
    truthiness the old alert badge used, so a 0 still reads as "not filled in" */
 function ccHasBal(row){ return !!(row[7] && row[7]!==''); }
 function ccIsWatch(row){ return ccHasBal(row) && ccNum(row[6]) <= ccNum(row[7]); }
+/* getCardData appends J = lines in the last 12 months and K = sheet row.
+   The busiest card leads everywhere (deck, statement tabs, wheel); ties keep
+   sheet order. Rows are re-ordered, so saves go to K, never index+4. */
+function ccTxnCount(row){ return Number(row[9]) || 0; }
+function ccRowNo(i){ var r=ccCurrentData[i]; return (r && Number(r[10])) || (i+4); }
+function ccSortByActivity(data){
+  return data.map(function(row,i){ return {row:row, i:i}; })
+    .sort(function(a,b){ return (ccTxnCount(b.row)-ccTxnCount(a.row)) || (a.i-b.i); })
+    .map(function(o){ return o.row; });
+}
 
 /* ═══ BUILD ══════════════════════════════════════════════════ */
 function ccDisplayData(data){
@@ -759,6 +769,7 @@ function ccDisplayData(data){
     document.getElementById('cc-root').innerHTML='<div class="error-box">⚠️ No card data found.</div>';
     return;
   }
+  data=ccSortByActivity(data);
   ccCurrentData=data;
   _ccDirty={};
 
@@ -856,7 +867,7 @@ function ccSheetHTML(row,i){
     '<div class="cc-sheet-logo" style="background:'+b.bg+';box-shadow:0 0 12px '+b.color+'44">'+esc(b.label)+'</div>'+
     '<div style="flex:1;min-width:0">'+
       '<div class="cc-sheet-name">'+esc(nm)+'</div>'+
-      '<div class="cc-sheet-meta">'+esc(row[2]||'No month')+' statement · sheet row '+(i+4)+'</div>'+
+      '<div class="cc-sheet-meta">'+esc(row[2]||'No month')+' statement · sheet row '+ccRowNo(i)+'</div>'+
     '</div>'+
     '<div class="cc-seg" role="group" aria-label="Settlement status for '+ccAttr(nm)+'">'+
       '<button type="button" id="ccSegP-'+i+'" class="pending'+(st?'':' on')+'" onclick="ccSetSettled('+i+',false)">Pending</button>'+
@@ -998,7 +1009,7 @@ function ccSaveAll(){
     }
   }
   jobs.forEach(function(j){
-    var name=ccCurrentData[j.i][0]||('row '+(j.i+4));
+    var name=ccCurrentData[j.i][0]||('row '+ccRowNo(j.i));
     var run=google.script.run
       .withSuccessHandler(function(){
         if(_ccDirty[j.i]){
@@ -1011,7 +1022,7 @@ function ccSaveAll(){
         fails.push('• '+name+' (settled status): '+(err.message||err));
         done();
       });
-    run.saveMonthlySettled(j.i+4, ccCurrentData[j.i][3]);
+    run.saveMonthlySettled(ccRowNo(j.i), ccCurrentData[j.i][3]);
   });
 }
 
