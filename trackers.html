@@ -1,0 +1,1321 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     TRACKERS  —  every tracker in one modal
+     ───────────────────────────────────────────────────────────
+     Replaces the old tracker modal in render.html and the four
+     include files (budgetTracker, smokingTracker, notesTracker,
+     habbits). One layout for all of them:
+
+       Overview       needs-attention list, coming-up notes, a tile
+                      per tracker, and search across every tracker
+       Money owed     Rotations (read only) · Claims
+       Commitments    Subscriptions · Installments · Budget
+       Life           Habits (smoke-free + junk/drink calendar)
+                      Notes · Losses & lessons
+
+     One side drawer replaces the old per-tracker forms.
+
+     Backend — all already in Code.gs, nothing new:
+       getRotationData
+       getInsuranceData · add/update/deleteInsuranceClaim
+       getSubscriptions · add/deleteSubscription
+                        · add/deleteSubscriptionUsage
+       getInstallments  · updateInstallmentStatus · addInstallmentToExpense
+       getBudgetData    · saveBudgetEntry · deleteBudgetEntry
+       getSmokingData   · getHabbitsData(month, year)
+       getNotesData     · saveNote · deleteNotes
+       getLossesData    · add/update/deleteLossEntry
+
+     Hooks:
+       out — trackerToggle(id?)  opens / closes; id jumps to a tracker
+             trackerClose()
+       in  — haptic() when present
+     The .tk-trigger button sits next to the tool wheel in every page
+     header and carries a badge with the needs-attention count.
+
+     Included from render.html via:  <?!= include('trackers'); ?>
+═══════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Header trigger (lives in every .pg-hdr-actions) ── */
+.tk-trigger{
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);
+  color:rgba(255,255,255,.72);border-radius:10px;width:38px;height:30px;
+  display:inline-flex;align-items:center;justify-content:center;
+  cursor:pointer;padding:0;position:relative;font-family:inherit;
+  transition:background .18s,border-color .18s,color .18s,transform .12s;
+  -webkit-tap-highlight-color:transparent;
+}
+.tk-trigger svg{width:18px;height:18px;}
+.tk-trigger:hover{background:rgba(59,130,246,.16);border-color:rgba(59,130,246,.45);color:#93c5fd;}
+.tk-trigger:active{transform:scale(.9);}
+.tk-trigger.tk-on{background:rgba(59,130,246,.3);border-color:rgba(59,130,246,.7);color:#bfdbfe;}
+.tk-trigger .tk-badge{
+  position:absolute;top:-6px;right:-6px;min-width:16px;height:16px;padding:0 4px;
+  border-radius:8px;background:#f59e0b;color:#1a1204;font-size:9.5px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+  box-shadow:0 0 0 2px #060b18;
+}
+.tk-trigger .tk-badge[hidden]{display:none;}
+@media(max-width:480px){ .tk-trigger{width:40px;height:32px;} }
+
+/* ── Overlay + modal ── */
+#tk-overlay{
+  position:fixed;inset:0;z-index:9300;display:none;
+  background:rgba(3,6,14,.66);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;padding:14px;
+}
+#tk-overlay.open{display:flex;}
+#tk-overlay *{box-sizing:border-box;}
+#tk-modal{
+  --tk-panel:#0b1224; --tk-rail:#080e1e; --tk-field:#0a1020;
+  --tk-bdr:rgba(255,255,255,.08); --tk-bdr2:rgba(255,255,255,.14);
+  --tk-ink:#fff; --tk-ink2:rgba(255,255,255,.72); --tk-mut:rgba(255,255,255,.45);
+  --tk-acc:#00d4ff;
+  /* one status vocabulary for every tracker */
+  --tk-open:#f59e0b; --tk-done:#10b981; --tk-bad:#ef4444; --tk-off:#64748b; --tk-info:#38bdf8;
+  width:min(1060px,100%);height:min(720px,calc(100vh - 28px));
+  display:grid;grid-template-columns:216px 1fr;
+  background:var(--tk-panel);color:var(--tk-ink);
+  border:1px solid var(--tk-bdr);border-radius:18px;overflow:hidden;
+  box-shadow:0 30px 90px rgba(0,0,0,.6);
+  font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;
+  animation:tkIn .2s ease-out;
+}
+@keyframes tkIn{from{opacity:0;transform:translateY(12px) scale(.985);}to{opacity:1;transform:none;}}
+#tk-modal button{font-family:inherit;}
+#tk-modal button:focus-visible,#tk-modal input:focus-visible,#tk-modal select:focus-visible,#tk-modal textarea:focus-visible{outline:2px solid var(--tk-acc);outline-offset:2px;}
+
+/* rail */
+#tk-modal .tk-rail{background:var(--tk-rail);border-right:1px solid var(--tk-bdr);display:flex;flex-direction:column;min-height:0;}
+#tk-modal .tk-rail-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px;}
+#tk-modal .tk-rail-hd b{font-size:14px;font-weight:800;}
+#tk-modal .tk-x-m{display:none;}
+#tk-modal .tk-rsearch{margin:0 10px 8px;display:flex;align-items:center;gap:6px;background:var(--tk-field);border:1px solid var(--tk-bdr);border-radius:9px;padding:6px 9px;}
+#tk-modal .tk-rsearch input{flex:1;min-width:0;background:none;border:0;color:var(--tk-ink);font:500 12px 'Inter',sans-serif;outline:none;}
+#tk-modal .tk-rsearch svg{width:13px;height:13px;color:var(--tk-mut);flex:none;}
+#tk-modal .tk-nav{flex:1;overflow-y:auto;padding:0 8px 10px;}
+#tk-modal .tk-grp{font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--tk-mut);padding:12px 8px 5px;}
+#tk-modal .tk-ri{display:flex;align-items:center;gap:9px;width:100%;border:0;background:none;color:var(--tk-ink2);font-size:12.5px;font-weight:600;padding:7px 8px;border-radius:9px;cursor:pointer;text-align:left;}
+#tk-modal .tk-ri:hover{background:rgba(255,255,255,.04);color:var(--tk-ink);}
+#tk-modal .tk-ri.on{background:rgba(0,212,255,.1);color:var(--tk-ink);}
+#tk-modal .tk-ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;flex:none;}
+#tk-modal .tk-ic svg{width:13px;height:13px;}
+#tk-modal .tk-ri .tk-nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#tk-modal .tk-cnt{font-size:10px;font-weight:800;min-width:18px;height:18px;padding:0 5px;border-radius:9px;display:grid;place-items:center;font-variant-numeric:tabular-nums;}
+#tk-modal .tk-cnt.open{background:rgba(245,158,11,.16);color:var(--tk-open);}
+#tk-modal .tk-cnt.bad{background:rgba(239,68,68,.16);color:#ff7b7b;}
+#tk-modal .tk-cnt.info{background:rgba(56,189,248,.14);color:var(--tk-info);}
+
+/* main */
+#tk-modal .tk-main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;}
+#tk-modal .tk-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-bottom:1px solid var(--tk-bdr);flex-wrap:wrap;}
+#tk-modal .tk-hd h2{font-size:16px;font-weight:800;margin:0;}
+#tk-modal .tk-hd small{color:var(--tk-mut);font-size:11.5px;display:block;font-weight:500;}
+#tk-modal .tk-hd-act{display:flex;gap:6px;align-items:center;}
+#tk-modal .tk-btn{height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--tk-bdr);background:rgba(255,255,255,.04);color:var(--tk-ink2);font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
+#tk-modal .tk-btn:hover{border-color:var(--tk-bdr2);color:var(--tk-ink);}
+#tk-modal .tk-btn.pri{background:linear-gradient(135deg,#00d4ff,#3b82f6);color:#060b18;border:0;}
+#tk-modal .tk-btn.pri:disabled{opacity:.55;cursor:default;}
+#tk-modal .tk-btn.sq{width:30px;padding:0;}
+#tk-modal .tk-body{flex:1;overflow-y:auto;padding:16px 18px 24px;display:flex;flex-direction:column;gap:14px;min-height:0;}
+#tk-modal .tk-body::-webkit-scrollbar,#tk-modal .tk-nav::-webkit-scrollbar,#tk-modal .tk-dr-body::-webkit-scrollbar{width:6px;}
+#tk-modal .tk-body::-webkit-scrollbar-thumb,#tk-modal .tk-nav::-webkit-scrollbar-thumb,#tk-modal .tk-dr-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:8px;}
+#tk-modal .tk-state{text-align:center;color:var(--tk-mut);padding:44px 12px;font-size:13px;}
+#tk-modal .tk-state.err{color:#ff7b7b;}
+#tk-modal .tk-spin{width:26px;height:26px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:tkSpin .8s linear infinite;margin:0 auto 10px;}
+@keyframes tkSpin{to{transform:rotate(360deg);}}
+
+/* summary strip · ribbon · filter bar */
+#tk-modal .tk-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+#tk-modal .tk-sum > div{background:rgba(255,255,255,.04);border:1px solid var(--tk-bdr);border-radius:12px;padding:10px 13px;min-width:0;}
+#tk-modal .tk-sum small{display:block;font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--tk-mut);}
+#tk-modal .tk-sum b{font-size:18px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#tk-modal .tk-sum em{font-style:normal;font-size:11px;color:var(--tk-mut);}
+#tk-modal .c-open{color:var(--tk-open);} #tk-modal .c-done{color:var(--tk-done);} #tk-modal .c-bad{color:#ff7b7b;} #tk-modal .c-info{color:var(--tk-info);}
+#tk-modal .tk-rib{display:flex;height:8px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.06);}
+#tk-modal .tk-rib i{display:block;height:100%;}
+#tk-modal .tk-lg{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--tk-ink2);margin-top:6px;font-variant-numeric:tabular-nums;}
+#tk-modal .tk-lg span{display:inline-flex;align-items:center;gap:5px;}
+#tk-modal .tk-lg i{width:8px;height:8px;border-radius:2px;display:inline-block;}
+#tk-modal .tk-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+#tk-modal .tk-bar .tk-sp{flex:1;}
+#tk-modal .tk-chip{height:26px;padding:0 10px;border-radius:13px;border:1px solid var(--tk-bdr);background:rgba(255,255,255,.03);color:var(--tk-ink2);font-size:11px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;}
+#tk-modal .tk-chip.on{background:rgba(0,212,255,.14);border-color:rgba(0,212,255,.35);color:var(--tk-acc);}
+#tk-modal .tk-fq{height:26px;border-radius:13px;border:1px solid var(--tk-bdr);background:var(--tk-field);color:var(--tk-ink);font:500 11.5px 'Inter',sans-serif;padding:0 11px;width:170px;max-width:100%;}
+
+/* groups + rows */
+#tk-modal .tk-g{border:1px solid var(--tk-bdr);border-radius:12px;background:rgba(255,255,255,.02);overflow:hidden;flex:none;}
+#tk-modal .tk-g-hd{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;width:100%;border:0;background:none;color:inherit;text-align:left;}
+#tk-modal .tk-g-hd:hover{background:rgba(255,255,255,.03);}
+#tk-modal .tk-av{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-size:11px;font-weight:800;flex:none;background:rgba(255,255,255,.06);overflow:hidden;}
+#tk-modal .tk-av img{width:18px;height:18px;filter:brightness(0) invert(1);}
+#tk-modal .tk-g-nm{flex:1;min-width:0;}
+#tk-modal .tk-g-nm b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#tk-modal .tk-g-nm small{color:var(--tk-mut);font-size:11px;}
+#tk-modal .tk-g-amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:13px;text-align:right;white-space:nowrap;}
+#tk-modal .tk-g-amt small{display:block;font-size:10px;color:var(--tk-mut);font-weight:600;}
+#tk-modal .tk-chev{color:var(--tk-mut);transition:transform .15s;font-size:15px;}
+#tk-modal .tk-g.open .tk-chev{transform:rotate(90deg);}
+#tk-modal .tk-g-prog{height:2px;background:rgba(255,255,255,.05);}
+#tk-modal .tk-g-prog i{display:block;height:100%;background:var(--tk-done);}
+#tk-modal .tk-g-prog.bud i{background:var(--tk-acc);}
+#tk-modal .tk-g-prog.bud.warn i{background:var(--tk-open);}
+#tk-modal .tk-g-prog.bud.over i{background:var(--tk-bad);}
+#tk-modal .tk-g-rows{display:none;border-top:1px solid var(--tk-bdr);}
+#tk-modal .tk-g.open .tk-g-rows{display:block;}
+#tk-modal .tk-g-tools{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.015);font-size:11px;color:var(--tk-mut);align-items:center;}
+#tk-modal .tk-row{display:grid;grid-template-columns:88px 1fr auto auto;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.045);font-size:12px;}
+#tk-modal .tk-row:last-child{border-bottom:0;}
+#tk-modal .tk-dt{color:var(--tk-mut);font-variant-numeric:tabular-nums;font-size:11.5px;}
+#tk-modal .tk-tx{min-width:0;color:var(--tk-ink2);word-break:break-word;}
+#tk-modal .tk-tx b{color:var(--tk-ink);font-weight:600;}
+#tk-modal .tk-tx small{display:block;color:var(--tk-mut);font-size:11px;margin-top:1px;}
+#tk-modal .tk-am{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;}
+#tk-modal .tk-acts{display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap;grid-column:1/-1;}
+#tk-modal .tk-acts:empty{display:none;}
+#tk-modal .tk-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;white-space:nowrap;border:0;display:inline-block;}
+#tk-modal button.tk-pill{cursor:pointer;}
+#tk-modal button.tk-pill:hover{filter:brightness(1.25);}
+#tk-modal .tk-pill.open{background:rgba(245,158,11,.15);color:var(--tk-open);}
+#tk-modal .tk-pill.done{background:rgba(16,185,129,.15);color:#34d399;}
+#tk-modal .tk-pill.bad{background:rgba(239,68,68,.15);color:#ff7b7b;}
+#tk-modal .tk-pill.off{background:rgba(100,116,139,.2);color:#94a3b8;}
+#tk-modal .tk-pill.info{background:rgba(56,189,248,.14);color:var(--tk-info);}
+#tk-modal .tk-pill.busy{opacity:.5;pointer-events:none;}
+#tk-modal .tk-mini{height:24px;padding:0 9px;border-radius:7px;border:1px solid var(--tk-bdr);background:none;color:var(--tk-ink2);font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
+#tk-modal .tk-mini:hover{border-color:rgba(0,212,255,.4);color:var(--tk-acc);}
+#tk-modal .tk-mini.del:hover,#tk-modal .tk-mini.armed{border-color:rgba(239,68,68,.5);color:#ff7b7b;}
+#tk-modal .tk-mini.armed{background:rgba(239,68,68,.1);}
+#tk-modal .tk-mini:disabled{opacity:.5;cursor:default;}
+#tk-modal .tk-empty{text-align:center;color:var(--tk-mut);padding:26px 0;font-size:12.5px;}
+#tk-modal .tk-sec{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tk-mut);}
+
+/* subscriptions: cost flow + usage log */
+#tk-modal .tk-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-variant-numeric:tabular-nums;font-size:11px;color:var(--tk-mut);margin-top:3px;}
+#tk-modal .tk-flow b{color:var(--tk-ink2);font-weight:600;}
+#tk-modal .tk-flow .net{color:#34d399;font-weight:700;}
+#tk-modal .tk-usage{grid-column:1/-1;display:flex;flex-direction:column;gap:3px;padding:6px 10px;border-radius:9px;background:rgba(255,255,255,.025);}
+#tk-modal .tk-usage-hd{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--tk-mut);}
+#tk-modal .tk-usage-it{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--tk-ink2);}
+#tk-modal .tk-usage-it span{flex:1;min-width:0;word-break:break-word;}
+#tk-modal .tk-usage-it button{background:none;border:0;color:var(--tk-mut);cursor:pointer;font-size:11px;padding:0 3px;}
+#tk-modal .tk-usage-it button:hover{color:#ff7b7b;}
+#tk-modal .tk-usage-add{display:flex;gap:6px;}
+#tk-modal .tk-usage-add input{flex:1;min-width:0;height:26px;border-radius:7px;border:1px solid var(--tk-bdr);background:var(--tk-field);color:var(--tk-ink);font:500 11.5px 'Inter',sans-serif;padding:0 8px;}
+
+/* overview */
+#tk-modal .tk-att{border:1px solid rgba(245,158,11,.25);background:rgba(245,158,11,.05);border-radius:12px;padding:4px 0;flex:none;}
+#tk-modal .tk-att.calm{border-color:rgba(16,185,129,.25);background:rgba(16,185,129,.05);}
+#tk-modal .tk-att-hd{font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--tk-open);padding:8px 14px 4px;}
+#tk-modal .tk-att.calm .tk-att-hd{color:var(--tk-done);}
+#tk-modal .tk-att.up{border-color:rgba(56,189,248,.22);background:rgba(56,189,248,.04);}
+#tk-modal .tk-att.up .tk-att-hd{color:var(--tk-info);}
+#tk-modal .tk-att-row{display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;width:100%;border:0;background:none;color:inherit;text-align:left;font-size:12.5px;}
+#tk-modal .tk-att-row:hover{background:rgba(255,255,255,.03);}
+#tk-modal .tk-att-row .dot{width:7px;height:7px;border-radius:50%;flex:none;}
+#tk-modal .tk-att-row .t{flex:1;min-width:0;color:var(--tk-ink2);}
+#tk-modal .tk-att-row .t b{color:var(--tk-ink);}
+#tk-modal .tk-att-row .a{font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap;}
+#tk-modal .tk-att-none{padding:6px 14px 10px;font-size:12.5px;color:var(--tk-ink2);}
+#tk-modal .tk-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
+#tk-modal .tk-tile{border:1px solid var(--tk-bdr);background:rgba(255,255,255,.04);border-radius:12px;padding:12px 13px;cursor:pointer;text-align:left;color:inherit;display:flex;flex-direction:column;gap:4px;min-width:0;}
+#tk-modal .tk-tile:hover{border-color:rgba(0,212,255,.35);}
+#tk-modal .tk-tile .th{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--tk-ink2);}
+#tk-modal .tk-tile .tv{font-size:18px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#tk-modal .tk-tile .ts{font-size:11px;color:var(--tk-mut);}
+#tk-modal .tk-hit{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--tk-bdr);border-radius:10px;background:rgba(255,255,255,.02);cursor:pointer;width:100%;color:inherit;text-align:left;font-size:12px;}
+#tk-modal .tk-hit:hover{border-color:rgba(0,212,255,.35);}
+#tk-modal .tk-hit small{display:block;color:var(--tk-mut);font-size:11px;}
+
+/* habits */
+#tk-modal .tk-hab{display:grid;grid-template-columns:1fr 1.25fr;gap:12px;align-items:start;}
+#tk-modal .tk-box{border:1px solid var(--tk-bdr);background:rgba(255,255,255,.035);border-radius:12px;padding:13px 14px;min-width:0;}
+#tk-modal .tk-big{font-size:34px;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums;line-height:1.1;margin-top:4px;}
+#tk-modal .tk-big small{font-size:13px;color:var(--tk-mut);font-weight:600;letter-spacing:0;}
+#tk-modal .tk-kv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
+#tk-modal .tk-kv div{background:rgba(255,255,255,.03);border-radius:9px;padding:8px 10px;}
+#tk-modal .tk-kv small{display:block;font-size:10px;color:var(--tk-mut);text-transform:uppercase;letter-spacing:.6px;font-weight:600;}
+#tk-modal .tk-kv b{font-size:14px;font-variant-numeric:tabular-nums;}
+#tk-modal .tk-miles{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+#tk-modal .tk-mile{display:grid;grid-template-columns:118px 1fr 38px;gap:8px;align-items:center;font-size:11px;color:var(--tk-ink2);}
+#tk-modal .tk-mile .tr{height:5px;border-radius:3px;background:rgba(255,255,255,.06);overflow:hidden;}
+#tk-modal .tk-mile .tr i{display:block;height:100%;background:var(--tk-done);}
+#tk-modal .tk-mile b{text-align:right;font-variant-numeric:tabular-nums;}
+#tk-modal .tk-mnav{display:flex;align-items:center;gap:4px;}
+#tk-modal .tk-mnav span{font-size:12px;font-weight:700;min-width:74px;text-align:center;font-variant-numeric:tabular-nums;}
+#tk-modal .tk-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px;}
+#tk-modal .tk-cal span{aspect-ratio:1;max-width:100%;border-radius:6px;display:grid;place-items:center;font-size:10.5px;color:var(--tk-mut);background:rgba(255,255,255,.03);font-variant-numeric:tabular-nums;}
+#tk-modal .tk-cal .hd{background:none;font-weight:700;font-size:9.5px;aspect-ratio:auto;padding-bottom:2px;}
+#tk-modal .tk-cal .blank{background:none;}
+#tk-modal .tk-cal .j{background:rgba(245,158,11,.38);color:#fff;}
+#tk-modal .tk-cal .d{background:rgba(255,77,109,.42);color:#fff;}
+#tk-modal .tk-cal .b{background:linear-gradient(135deg,rgba(245,158,11,.55) 50%,rgba(255,77,109,.55) 50%);color:#fff;}
+#tk-modal .tk-cal .today{box-shadow:inset 0 0 0 1.5px #fff;color:#fff;}
+#tk-modal .tk-daylist{display:flex;flex-direction:column;margin-top:10px;}
+#tk-modal .tk-daylist div{display:grid;grid-template-columns:26px 18px 1fr auto;gap:8px;align-items:center;font-size:11.5px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);color:var(--tk-ink2);}
+#tk-modal .tk-daylist div:last-child{border-bottom:0;}
+#tk-modal .tk-daylist b{font-variant-numeric:tabular-nums;color:var(--tk-ink);}
+#tk-modal .tk-daylist i{width:8px;height:8px;border-radius:2px;}
+
+/* notes */
+#tk-modal .tk-note{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:start;padding:10px 12px;border:1px solid var(--tk-bdr);border-radius:12px;background:rgba(255,255,255,.02);flex:none;}
+#tk-modal .tk-nd{text-align:center;line-height:1.1;padding-top:2px;}
+#tk-modal .tk-nd b{display:block;font-size:18px;font-weight:800;}
+#tk-modal .tk-nd small{font-size:9.5px;color:var(--tk-mut);letter-spacing:.8px;font-weight:700;text-transform:uppercase;}
+#tk-modal .tk-nt{min-width:0;}
+#tk-modal .tk-nt .ref{font-size:13px;font-weight:600;word-break:break-word;}
+#tk-modal .tk-nt .ref a{color:var(--tk-info);text-decoration:none;}
+#tk-modal .tk-nt .meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:5px;font-size:11px;color:var(--tk-mut);}
+#tk-modal .tk-note-acts{display:flex;gap:4px;}
+
+/* drawer (one form for every tracker) */
+#tk-modal .tk-drawer{position:absolute;top:0;right:0;bottom:0;width:360px;max-width:100%;background:#0d1530;border-left:1px solid var(--tk-bdr);box-shadow:-20px 0 50px rgba(0,0,0,.45);transform:translateX(105%);visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s;display:flex;flex-direction:column;z-index:5;}
+#tk-modal .tk-drawer.open{transform:none;visibility:visible;transition:transform .22s ease;}
+#tk-modal .tk-dr-hd{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--tk-bdr);}
+#tk-modal .tk-dr-hd b{font-size:14px;}
+#tk-modal .tk-dr-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:11px;margin:0;}
+#tk-modal .tk-f label{display:block;font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--tk-mut);margin-bottom:4px;}
+#tk-modal .tk-f input,#tk-modal .tk-f select,#tk-modal .tk-f textarea{width:100%;background:var(--tk-field);border:1px solid var(--tk-bdr);border-radius:9px;color:var(--tk-ink);font:500 13px 'Inter',sans-serif;padding:8px 10px;color-scheme:dark;}
+#tk-modal .tk-f textarea{resize:vertical;min-height:64px;}
+#tk-modal .tk-f .hint{font-size:11px;color:var(--tk-mut);margin-top:4px;}
+#tk-modal .tk-f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+#tk-modal .tk-seg{display:flex;gap:4px;flex-wrap:wrap;}
+#tk-modal .tk-seg button{flex:1;min-width:0;height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--tk-bdr);background:var(--tk-field);color:var(--tk-ink2);font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
+#tk-modal .tk-seg button.on{border-color:rgba(0,212,255,.45);background:rgba(0,212,255,.12);color:var(--tk-acc);}
+#tk-modal .tk-dr-msg{font-size:12px;color:#ff7b7b;min-height:0;}
+#tk-modal .tk-dr-msg:empty{display:none;}
+#tk-modal .tk-dr-ft{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--tk-bdr);}
+
+#tk-modal .tk-toast{position:absolute;left:50%;bottom:16px;transform:translate(-50%,20px);opacity:0;background:#0f1b35;border:1px solid rgba(16,185,129,.4);color:#6ee7b7;font-size:12px;font-weight:700;padding:8px 14px;border-radius:10px;transition:.2s;pointer-events:none;z-index:6;max-width:90%;text-align:center;}
+#tk-modal .tk-toast.err{border-color:rgba(239,68,68,.5);color:#ff9b9b;}
+#tk-modal .tk-toast.show{opacity:1;transform:translate(-50%,0);}
+
+@media(max-width:760px){
+  #tk-overlay{padding:0;}
+  #tk-modal{width:100%;height:100%;border-radius:0;border:0;grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+  #tk-modal .tk-rail{border-right:0;border-bottom:1px solid var(--tk-bdr);}
+  #tk-modal .tk-rsearch,#tk-modal .tk-grp{display:none;}
+  #tk-modal .tk-rail-hd{padding:10px 12px 6px;}
+  #tk-modal .tk-x-m{display:inline-flex;}
+  #tk-modal .tk-x-d{display:none;}
+  #tk-modal .tk-nav{display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;padding:0 8px 8px;flex:none;}
+  #tk-modal .tk-ri{flex:none;width:auto;}
+  #tk-modal .tk-hab{grid-template-columns:1fr;}
+}
+@media(max-width:480px){
+  #tk-modal .tk-sum{grid-template-columns:1fr 1fr;}
+  #tk-modal .tk-sum > div:nth-child(3){grid-column:1/-1;}
+  #tk-modal .tk-row{grid-template-columns:70px 1fr auto;}
+  #tk-modal .tk-row > .tk-pill,#tk-modal .tk-row > button.tk-pill{grid-column:2/-1;justify-self:end;}
+  #tk-modal .tk-fq{width:100%;}
+  #tk-modal .tk-f2{grid-template-columns:1fr;}
+  #tk-modal .tk-mile{grid-template-columns:100px 1fr 36px;}
+}
+@media(prefers-reduced-motion:reduce){
+  #tk-modal,#tk-modal *{animation:none!important;transition:none!important;}
+}
+</style>
+
+<div id="tk-overlay" aria-hidden="true">
+  <div id="tk-modal" role="dialog" aria-modal="true" aria-labelledby="tk-title">
+    <aside class="tk-rail">
+      <div class="tk-rail-hd">
+        <b>Trackers</b>
+        <button class="tk-btn sq tk-x-m" type="button" data-tk-close title="Close" aria-label="Close trackers">✕</button>
+      </div>
+      <div class="tk-rsearch">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="tk-q" type="search" placeholder="Search all trackers" autocomplete="off" aria-label="Search all trackers">
+      </div>
+      <nav class="tk-nav" id="tk-nav"></nav>
+    </aside>
+    <div class="tk-main">
+      <div class="tk-hd">
+        <div><h2 id="tk-title">Overview</h2><small id="tk-sub"></small></div>
+        <div class="tk-hd-act">
+          <button class="tk-btn" type="button" id="tk-reload" title="Reload this tracker">↺</button>
+          <button class="tk-btn pri" type="button" id="tk-add" hidden>+ Add</button>
+          <button class="tk-btn sq tk-x-d" type="button" data-tk-close title="Close" aria-label="Close trackers">✕</button>
+        </div>
+      </div>
+      <div class="tk-body" id="tk-body"></div>
+      <div class="tk-drawer" id="tk-drawer" aria-hidden="true">
+        <div class="tk-dr-hd"><b id="tk-dr-title">New entry</b><button class="tk-btn sq" type="button" id="tk-dr-x" aria-label="Close form">✕</button></div>
+        <form class="tk-dr-body" id="tk-form" autocomplete="off"></form>
+        <div class="tk-dr-ft">
+          <button class="tk-btn" type="button" id="tk-dr-cancel">Cancel</button>
+          <button class="tk-btn pri" type="button" id="tk-dr-save">Save</button>
+        </div>
+      </div>
+      <div class="tk-toast" id="tk-toast" role="status"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ═══ helpers ═════════════════════════════════════════════ */
+  var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var DAY_MS = 864e5;
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function num(n){ return Math.round(Number(n)||0).toLocaleString('en-IN'); }
+  function rs(n){ return '₨ '+num(n); }
+  function sumOf(arr, f){ return arr.reduce(function(s,x){ return s+(Number(f(x))||0); },0); }
+  function pct(a,b){ return b>0 ? Math.round(a/b*100) : 0; }
+  function tap(k){ if(typeof haptic==='function') haptic(k); }
+  function nowMonthLabel(){ var d=new Date(); return MON[d.getMonth()]+' '+d.getFullYear(); }
+  /* "Sep 2026" / "September 2026" → month index (y*12+m), or null */
+  function monthKey(s){
+    if(!s) return null;
+    var m=String(s).match(/([A-Za-z]{3})[A-Za-z]*\.?\s+(\d{4})/);
+    if(m){ var i=MON.map(function(x){return x.toLowerCase();}).indexOf(m[1].toLowerCase()); if(i>=0) return +m[2]*12+i; }
+    var d=new Date(s); return isNaN(d.getTime()) ? null : d.getFullYear()*12+d.getMonth();
+  }
+  function curMonthKey(){ var d=new Date(); return d.getFullYear()*12+d.getMonth(); }
+  function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function parseYmd(s){ var p=String(s||'').split('-'); if(p.length<3) return null; var d=new Date(+p[0],+p[1]-1,+p[2]); return isNaN(d.getTime())?null:d; }
+  function initials(s){ return String(s||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).join('').slice(0,2).toUpperCase() || '?'; }
+  function linkify(t){ return t.replace(/(\bhttps?:\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig, function(u){ return '<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>'; }); }
+  function run(fn){
+    var args=Array.prototype.slice.call(arguments,1);
+    return new Promise(function(res,rej){
+      google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn].apply(null,args);
+    });
+  }
+  function errText(e){ return (e && (e.message||e.error)) || String(e||'Unknown error'); }
+
+  var IC = {
+    home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+    swap:'<path d="M7 7h13l-4-4M17 17H4l4 4"/>',
+    shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+    repeat:'<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
+    cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    pie:'<path d="M21 12A9 9 0 1 1 12 3v9z"/>',
+    leaf:'<path d="M5 21c0-9 6-15 16-16-1 10-7 16-16 16z"/><path d="M5 21l7-7"/>',
+    note:'<path d="M5 3h10l4 4v14H5z"/><path d="M9 12h6M9 16h6"/>',
+    down:'<path d="M3 7l6 6 4-4 8 8"/><path d="M21 11v6h-6"/>'
+  };
+  function svg(k){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+IC[k]+'</svg>'; }
+
+  /* ═══ tracker registry ════════════════════════════════════ */
+  var TK = [
+    { id:'ov',     name:'Overview',         icon:'home',   c:'#00d4ff', sub:'What needs you, across every tracker' },
+    { id:'rot',    name:'Rotations',        icon:'swap',   c:'#3b82f6', grp:'Money owed to me', sub:'Money you lent, by person', load:'getRotationData' },
+    { id:'ins',    name:'Claims',           icon:'shield', c:'#a855f7', grp:'Money owed to me', sub:'Insurance claims, newest first', load:'getInsuranceData', add:'claim' },
+    { id:'sub',    name:'Subscriptions',    icon:'repeat', c:'#10b981', grp:'Commitments', sub:'Monthly services and who chips in', load:'getSubscriptions', add:'entry' },
+    { id:'inst',   name:'Installments',     icon:'cal',    c:'#f59e0b', grp:'Commitments', sub:'Tap a status to switch Pending ↔ Settled', load:'getInstallments' },
+    { id:'budget', name:'Budget',           icon:'pie',    c:'#fb923c', grp:'Commitments', sub:'Planned vs spent for one-off plans', load:'getBudgetData', add:'entry' },
+    { id:'hab',    name:'Habits',           icon:'leaf',   c:'#4ade80', grp:'Life', sub:'Smoke-free streak, junk food and drinks', load:'getSmokingData' },
+    { id:'notes',  name:'Notes',            icon:'note',   c:'#38bdf8', grp:'Life', sub:'Dated notes; flagged ones show on the calendar', load:'getNotesData', add:'note' },
+    { id:'loss',   name:'Losses & lessons', icon:'down',   c:'#ef4444', grp:'Life', sub:'What it cost and what you learned', load:'getLossesData', add:'loss' }
+  ];
+  var ALIAS = { smoke:'hab', habbit:'hab', habits:'hab', claims:'ins', subs:'sub', losses:'loss', overview:'ov' };
+  function meta(id){ for(var i=0;i<TK.length;i++) if(TK[i].id===id) return TK[i]; return TK[0]; }
+
+  /* ═══ state + cache ═══════════════════════════════════════ */
+  var TTL = 5*60*1000;
+  var C = {};          /* id → { ok, data, err, at } */
+  var P = {};          /* id → in-flight promise */
+  var S = { cur:'ov', q:'', f:{}, open:{}, refs:{}, habM:new Date().getMonth()+1, habY:new Date().getFullYear(), form:null };
+
+  function load(id, force){
+    var m = meta(id);
+    if(!m.load) return Promise.resolve(null);
+    var c = C[id];
+    if(!force && c && c.ok && (Date.now()-c.at) < TTL) return Promise.resolve(c);
+    if(P[id]) return P[id];
+    P[id] = run(m.load).then(function(r){
+      if(r && r.success===false) C[id] = { ok:false, err:r.error||'Could not load', at:Date.now() };
+      else C[id] = { ok:true, data:r||{}, at:Date.now() };
+      return C[id];
+    }, function(e){
+      C[id] = { ok:false, err:errText(e), at:Date.now() };
+      return C[id];
+    }).then(function(r){ delete P[id]; return r; });
+    return P[id];
+  }
+  function habKey(){ return 'habm:'+S.habY+'-'+S.habM; }
+  function loadHabMonth(force){
+    var k = habKey(), c = C[k];
+    if(!force && c && c.ok) return Promise.resolve(c);
+    if(P[k]) return P[k];
+    P[k] = run('getHabbitsData', S.habM, S.habY).then(function(r){
+      C[k] = (r && r.success) ? { ok:true, data:r, at:Date.now() } : { ok:false, err:(r&&r.error)||'Could not load', at:Date.now() };
+      return C[k];
+    }, function(e){ C[k] = { ok:false, err:errText(e), at:Date.now() }; return C[k]; })
+      .then(function(r){ delete P[k]; return r; });
+    return P[k];
+  }
+  function loadAll(force){
+    return Promise.all(TK.filter(function(t){return t.load;}).map(function(t){ return load(t.id, force); }));
+  }
+  function data(id){ var c=C[id]; return c && c.ok ? c.data : null; }
+
+  /* ═══ derived records (one shape per tracker) ═════════════ */
+  function rotRows(){
+    var d=data('rot'); if(!d) return [];
+    var now=Date.now();
+    return (d.rotations||[]).map(function(r){
+      var t=Date.parse(r.givenDate), age=isNaN(t)?(parseInt(r.passedDays,10)||0):Math.floor((now-t)/DAY_MS);
+      return { name:r.name, date:r.givenDate||'—', days:r.passedDays, remarks:r.remarks, amount:Number(r.amount)||0, returned:!!r.returned, age:age };
+    });
+  }
+  function claimStage(c){
+    if(c.isSettled) return 'settled';
+    if(c.isRejected) return 'rejected';
+    if(c.isApproved) return 'approved';
+    if(c.isSubmitted) return 'waiting';
+    return 'draft';
+  }
+  var STAGE = { draft:['Not submitted','open'], waiting:['Submitted','info'], approved:['Approved','done'], settled:['Settled','done'], rejected:['Rejected','bad'] };
+  function claimRows(){
+    var d=data('ins'); if(!d) return [];
+    return (d.claims||[]).map(function(c){ var o={}; for(var k in c) o[k]=c[k]; o.amount=Number(c.amount)||0; o.stage=claimStage(c); return o; })
+      .sort(function(a,b){ return (b.date||'') > (a.date||'') ? 1 : (b.date||'') < (a.date||'') ? -1 : 0; });
+  }
+  function instList(){
+    var d=data('inst'); if(!d) return [];
+    return (d.installments||[]).map(function(p){
+      return { name:p.name, entries:(p.entries||[]).map(function(e){
+        var s=String(e.status||'').toLowerCase();
+        return { name:p.name, num:e.num, month:e.month, amount:Number(e.amount)||0, status:e.status, st:s==='settled'?'done':s==='pending'?'open':'off', mk:monthKey(e.month) };
+      }) };
+    });
+  }
+  function budgetGroups(){
+    var d=data('budget'); if(!d) return [];
+    var g={}, order=[];
+    (d.data||[]).forEach(function(it){
+      var p=it.parent||'Uncategorized';
+      if(!g[p]){ g[p]={ parent:p, budget:Number(it.budget)||0, type:it.type||'', items:[], spent:0, excluded:0 }; order.push(p); }
+      var a=Number(it.expenseAmount)||0;
+      g[p].items.push(it); g[p].spent+=a; if(it.isInclude===false) g[p].excluded+=a;
+    });
+    return order.sort().map(function(p){ var x=g[p]; x.rem=x.budget-x.spent; x.over=x.budget>0 && x.spent>x.budget; return x; });
+  }
+  var CLOSED_WORDS = ['no need','closed','cancelled','stopped','expired','ended'];
+  function subPlatforms(){
+    var d=data('sub'); if(!d) return [];
+    var map={}, order=[];
+    (d.entries||[]).forEach(function(e){
+      if(!e.platform) return;
+      var k=e.platform.toLowerCase();
+      if(!map[k]){ map[k]={ key:k, name:e.platform, entries:[] }; order.push(k); }
+      map[k].entries.push(e);
+    });
+    return order.map(function(k){
+      var p=map[k];
+      p.closed=p.entries.some(function(e){ var n=String(e.note||'').toLowerCase(); return CLOSED_WORDS.some(function(w){ return n.indexOf(w)>=0; }); });
+      p.total=sumOf(p.entries,function(e){return e.netCost;});
+      p.latest=p.entries[p.entries.length-1];
+      return p;
+    });
+  }
+  function subMonthLabel(m){
+    var s=String(m||'');
+    if(s.length>15){ var d=new Date(s); if(!isNaN(d.getTime())) return MON[d.getMonth()]+' '+d.getFullYear(); }
+    return s||'—';
+  }
+  function noteGroups(){
+    var d=data('notes'); if(!d) return [];
+    var sorted=(d.data||[]).slice().sort(function(a,b){ return (a.date||'') < (b.date||'') ? -1 : (a.date||'') > (b.date||'') ? 1 : 0; });
+    var groups=[];
+    sorted.forEach(function(n){
+      var last=groups[groups.length-1];
+      if(last && last.reference===n.reference){
+        var ld=parseYmd(last.dates[last.dates.length-1]), cd=parseYmd(n.date);
+        if(ld && cd && Math.round((cd-ld)/DAY_MS)===1){ last.dates.push(n.date); last.rows.push(n.row); last.note=n; return; }
+      }
+      groups.push({ reference:n.reference, dates:[n.date], rows:[n.row], note:n });
+    });
+    return groups.reverse();
+  }
+  /* next occurrence of a note from today (yearly notes roll forward) */
+  function noteNext(n){
+    var d=parseYmd(n.date); if(!d) return null;
+    var t=new Date(); t.setHours(0,0,0,0);
+    if(n.yearly){ var x=new Date(t.getFullYear(), d.getMonth(), d.getDate()); if(x<t) x=new Date(t.getFullYear()+1, d.getMonth(), d.getDate()); return x; }
+    return d>=t ? d : null;
+  }
+  function lossRows(){
+    var d=data('loss'); if(!d) return [];
+    return (d.losses||[]).slice().sort(function(a,b){
+      if(!!a.isConfirmLoss!==!!b.isConfirmLoss) return a.isConfirmLoss?-1:1;
+      return (Number(b.amount)||0)-(Number(a.amount)||0);
+    });
+  }
+
+  /* ═══ needs-attention (drives badges + overview) ══════════ */
+  function attention(){
+    var out=[], cm=curMonthKey();
+    var due=[]; instList().forEach(function(p){ p.entries.forEach(function(e){ if(e.st==='open' && e.mk!=null && e.mk<=cm) due.push(e); }); });
+    if(due.length){
+      var late=due.filter(function(e){return e.mk<cm;}).length;
+      out.push({ id:'inst', c:'#f59e0b', t:'<b>'+due.length+' installment'+(due.length>1?'s':'')+'</b> due this month'+(late?' · '+late+' from earlier months':''), a:rs(sumOf(due,function(e){return e.amount;})) });
+    }
+    var cl=claimRows();
+    var draft=cl.filter(function(c){return c.stage==='draft';}), wait=cl.filter(function(c){return c.stage==='waiting';}), appr=cl.filter(function(c){return c.stage==='approved';});
+    if(draft.length) out.push({ id:'ins', c:'#f59e0b', t:'<b>'+draft.length+' claim'+(draft.length>1?'s':'')+'</b> not submitted yet', a:rs(sumOf(draft,function(c){return c.amount;})) });
+    if(wait.length)  out.push({ id:'ins', c:'#38bdf8', t:'<b>'+wait.length+' claim'+(wait.length>1?'s':'')+'</b> waiting on the insurer', a:rs(sumOf(wait,function(c){return c.amount;})) });
+    if(appr.length)  out.push({ id:'ins', c:'#10b981', t:'<b>'+appr.length+' approved claim'+(appr.length>1?'s':'')+'</b> not paid out yet', a:rs(sumOf(appr,function(c){return c.amount;})) });
+    var over=budgetGroups().filter(function(g){return g.over;});
+    if(over.length) out.push({ id:'budget', c:'#ef4444', t:over.slice(0,3).map(function(g){return '<b>'+esc(g.parent)+'</b>';}).join(', ')+(over.length>3?' +'+(over.length-3):'')+' over budget', a:'+ '+rs(sumOf(over,function(g){return g.spent-g.budget;})) });
+    var old=rotRows().filter(function(r){return !r.returned && r.age>60;});
+    if(old.length){
+      var who={}; old.forEach(function(r){ who[r.name]=(who[r.name]||0)+r.amount; });
+      var names=Object.keys(who).sort(function(a,b){return who[b]-who[a];});
+      out.push({ id:'rot', c:'#3b82f6', t:'<b>'+esc(names[0])+'</b>'+(names.length>1?' and '+(names.length-1)+' more':'')+' · lent over 60 days ago', a:rs(sumOf(old,function(r){return r.amount;})) });
+    }
+    var noLesson=lossRows().filter(function(l){ return l.isConfirmLoss && !String(l.lesson||'').trim(); });
+    if(noLesson.length) out.push({ id:'loss', c:'#ef4444', t:'<b>'+noLesson.length+' confirmed loss'+(noLesson.length>1?'es':'')+'</b> without a lesson written down', a:rs(sumOf(noLesson,function(l){return l.amount;})) });
+    return out;
+  }
+  function counts(){
+    var n={}, cm=curMonthKey();
+    n.inst = 0; instList().forEach(function(p){ p.entries.forEach(function(e){ if(e.st==='open' && e.mk!=null && e.mk<=cm) n.inst++; }); });
+    n.ins  = claimRows().filter(function(c){return c.stage==='draft'||c.stage==='waiting'||c.stage==='approved';}).length;
+    n.budget = budgetGroups().filter(function(g){return g.over;}).length;
+    n.rot  = rotRows().filter(function(r){return !r.returned && r.age>60;}).length;
+    n.loss = lossRows().filter(function(l){ return l.isConfirmLoss && !String(l.lesson||'').trim(); }).length;
+    var d=data('notes'), t=new Date(); t.setHours(0,0,0,0);
+    n.notes = d ? (d.data||[]).filter(function(x){ var nx=noteNext(x); return nx && (nx-t)/DAY_MS<=7; }).length : 0;
+    return n;
+  }
+  var CNT_CLS = { inst:'open', ins:'open', budget:'bad', rot:'open', loss:'bad', notes:'info' };
+  function updateBadge(){
+    var total = attention().length;
+    document.querySelectorAll('.tk-trigger .tk-badge').forEach(function(b){
+      b.textContent = total>9 ? '9+' : String(total);
+      b.hidden = !total;
+    });
+  }
+
+  /* ═══ rail ════════════════════════════════════════════════ */
+  function hitsFor(id, q){
+    var out=[];
+    function has(){ for(var i=0;i<arguments.length;i++) if(String(arguments[i]||'').toLowerCase().indexOf(q)>=0) return true; return false; }
+    if(id==='rot') rotRows().forEach(function(r){ if(has(r.name,r.remarks)) out.push({ t:r.name, s:(r.remarks||r.date)+(r.returned?' · returned':' · pending'), a:r.amount }); });
+    if(id==='ins') claimRows().forEach(function(c){ if(has(c.ref,c.provider,c.reason)) out.push({ t:c.ref, s:(c.provider||'')+' · '+STAGE[c.stage][0], a:c.amount }); });
+    if(id==='sub') subPlatforms().forEach(function(p){ if(has(p.name) || p.entries.some(function(e){return has(e.plan,e.note,e.collectionFrom);})) out.push({ t:p.name, s:p.entries.length+' entries'+(p.closed?' · closed':''), a:p.total }); });
+    if(id==='inst') instList().forEach(function(p){ if(has(p.name)) out.push({ t:p.name, s:p.entries.length+' payments', a:sumOf(p.entries.filter(function(e){return e.st==='open';}),function(e){return e.amount;}) }); });
+    if(id==='budget') budgetGroups().forEach(function(g){ if(has(g.parent,g.type) || g.items.some(function(it){return has(it.expenseDesc);})) out.push({ t:g.parent, s:(g.type||'General')+' · '+g.items.length+' items', a:g.spent }); });
+    if(id==='notes') noteGroups().forEach(function(g){ if(has(g.reference,g.note.category)) out.push({ t:g.reference, s:g.dates[0]+(g.note.category?' · '+g.note.category:''), a:null }); });
+    if(id==='loss') lossRows().forEach(function(l){ if(has(l.ref,l.lesson)) out.push({ t:l.ref, s:l.lesson||'No lesson yet', a:l.amount }); });
+    return out;
+  }
+  function renderRail(){
+    var n=counts(), q=S.q, last=null, h='';
+    TK.forEach(function(t){
+      if(q && t.id!=='ov' && t.id!=='hab' && t.name.toLowerCase().indexOf(q)<0 && !hitsFor(t.id,q).length) return;
+      if(q && t.id==='hab' && t.name.toLowerCase().indexOf(q)<0) return;
+      if(t.grp && t.grp!==last){ h+='<div class="tk-grp">'+t.grp+'</div>'; last=t.grp; }
+      var c=n[t.id]||0;
+      h+='<button type="button" class="tk-ri'+(S.cur===t.id?' on':'')+'" data-go="'+t.id+'"><span class="tk-ic" style="background:'+t.c+'22;color:'+t.c+'">'+svg(t.icon)+'</span><span class="tk-nm">'+t.name+'</span>'+(c?'<span class="tk-cnt '+CNT_CLS[t.id]+'">'+c+'</span>':'')+'</button>';
+    });
+    $('tk-nav').innerHTML = h;
+  }
+
+  /* ═══ view building blocks ════════════════════════════════ */
+  function sum3(items){
+    return '<div class="tk-sum">'+items.map(function(x){ return '<div><small>'+x[0]+'</small><b class="'+(x[2]||'')+'">'+x[1]+'</b>'+(x[3]?'<em>'+x[3]+'</em>':'')+'</div>'; }).join('')+'</div>';
+  }
+  function ribbon(parts){
+    var tot=sumOf(parts,function(p){return p[1];});
+    if(!tot) return '';
+    return '<div><div class="tk-rib">'+parts.map(function(p){ return p[1]>0?'<i style="width:'+(p[1]/tot*100).toFixed(2)+'%;background:'+p[2]+'"></i>':''; }).join('')+'</div>'+
+      '<div class="tk-lg">'+parts.map(function(p){ return p[1]>0?'<span><i style="background:'+p[2]+'"></i>'+esc(p[0])+' '+pct(p[1],tot)+'%'+(p[3]?' · '+p[3]:'')+'</span>':''; }).join('')+'</div></div>';
+  }
+  function filterBar(id, opts, withSearch){
+    var f=S.f[id]||opts[0][0];
+    var h='<div class="tk-bar">'+opts.filter(function(o){ return o[0]==='all' || o[2]!==0 || o[0]===f; }).map(function(o){
+      return '<button type="button" class="tk-chip'+(f===o[0]?' on':'')+'" data-filt="'+id+'|'+o[0]+'">'+o[1]+(o[2]!=null?' '+o[2]:'')+'</button>';
+    }).join('');
+    if(withSearch!==false) h+='<span class="tk-sp"></span><input class="tk-fq" id="tk-fq" type="search" placeholder="Filter this list" value="'+esc(S.q)+'" aria-label="Filter this list">';
+    return h+'</div>';
+  }
+  function curFilter(id, def){ return S.f[id]||def; }
+  function matches(){ var q=S.q; if(!q) return true; for(var i=0;i<arguments.length;i++) if(String(arguments[i]||'').toLowerCase().indexOf(q)>=0) return true; return false; }
+  function groupOpen(id, key, idx){ var k=id+'|'+key; return S.open[k]!==undefined ? S.open[k] : (idx===0 || !!S.q); }
+  function group(id, key, idx, head, inner){
+    return '<div class="tk-g'+(groupOpen(id,key,idx)?' open':'')+'" data-gkey="'+esc(id+'|'+key)+'">'+
+      '<button type="button" class="tk-g-hd">'+head.av+'<span class="tk-g-nm"><b>'+esc(head.title)+'</b><small>'+head.sub+'</small></span>'+
+      '<span class="tk-g-amt">'+head.amt+'<small>'+head.amtLbl+'</small></span><span class="tk-chev">›</span></button>'+
+      (head.prog!=null?'<div class="tk-g-prog'+(head.progCls?' '+head.progCls:'')+'"><i style="width:'+Math.max(0,Math.min(100,head.prog)).toFixed(0)+'%"></i></div>':'')+
+      '<div class="tk-g-rows">'+inner+'</div></div>';
+  }
+  function av(txt, color){ return '<span class="tk-av" style="color:'+color+'">'+esc(txt)+'</span>'; }
+  function ref(id, obj){ var a=S.refs[id]||(S.refs[id]=[]); a.push(obj); return a.length-1; }
+  function empty(msg){ return '<div class="tk-empty">'+msg+'</div>'; }
+  function delBtn(act, i, label){ return '<button type="button" class="tk-mini del" data-act="'+act+'" data-i="'+i+'" data-confirm="1">'+(label||'Delete')+'</button>'; }
+
+  /* ═══ Overview ════════════════════════════════════════════ */
+  function vOverview(){
+    if(S.q){
+      var h='<div class="tk-sec">Results for “'+esc(S.q)+'”</div>', any=false;
+      TK.forEach(function(t){
+        if(!t.load || t.id==='hab') return;
+        hitsFor(t.id, S.q).slice(0,8).forEach(function(x){
+          any=true;
+          h+='<button type="button" class="tk-hit" data-go="'+t.id+'"><span class="tk-ic" style="background:'+t.c+'22;color:'+t.c+'">'+svg(t.icon)+'</span><span><b>'+esc(x.t)+'</b><small>'+t.name+' · '+esc(x.s)+'</small></span><span class="tk-am">'+(x.a!=null?rs(x.a):'')+'</span></button>';
+        });
+      });
+      return any ? h : h+empty('Nothing in any tracker matches that.');
+    }
+    var att=attention(), h2='';
+    if(att.length){
+      h2+='<div class="tk-att"><div class="tk-att-hd">Needs attention · '+att.length+'</div>'+att.map(function(a){
+        return '<button type="button" class="tk-att-row" data-go="'+a.id+'"><span class="dot" style="background:'+a.c+'"></span><span class="t">'+a.t+'</span><span class="a">'+a.a+'</span></button>';
+      }).join('')+'</div>';
+    } else {
+      var loading=TK.some(function(t){ return t.load && !C[t.id]; });
+      h2+='<div class="tk-att calm"><div class="tk-att-hd">'+(loading?'Checking your trackers…':'All clear')+'</div><div class="tk-att-none">'+(loading?'Loading every tracker in the background.':'No installments due, claims waiting or budgets over.')+'</div></div>';
+    }
+    /* coming up: notes in the next 14 days */
+    var nd=data('notes');
+    if(nd){
+      var t0=new Date(); t0.setHours(0,0,0,0);
+      var seen={}, up=[];
+      (nd.data||[]).forEach(function(n){ var nx=noteNext(n); if(!nx) return; var dd=Math.round((nx-t0)/DAY_MS); if(dd>14) return; var k=n.reference+'|'+ymd(nx); if(seen[k]) return; seen[k]=1; up.push({ n:n, d:nx, dd:dd }); });
+      up.sort(function(a,b){return a.d-b.d;});
+      if(up.length){
+        h2+='<div class="tk-att up"><div class="tk-att-hd">Coming up · next 14 days</div>'+up.slice(0,6).map(function(u){
+          var when = u.dd===0?'Today':u.dd===1?'Tomorrow':u.d.getDate()+' '+MON[u.d.getMonth()];
+          return '<button type="button" class="tk-att-row" data-go="notes"><span class="dot" style="background:#38bdf8"></span><span class="t"><b>'+esc(u.n.reference)+'</b>'+(u.n.category?' · '+esc(u.n.category):'')+'</span><span class="a">'+when+'</span></button>';
+        }).join('')+'</div>';
+      }
+    }
+    h2+='<div class="tk-sec">All trackers</div><div class="tk-tiles">'+TK.filter(function(t){return t.load;}).map(function(t){
+      var f=tileFigure(t.id);
+      return '<button type="button" class="tk-tile" data-go="'+t.id+'"><span class="th"><span class="tk-ic" style="background:'+t.c+'22;color:'+t.c+'">'+svg(t.icon)+'</span>'+t.name+'</span><span class="tv">'+f[0]+'</span><span class="ts">'+f[1]+'</span></button>';
+    }).join('')+'</div>';
+    return h2;
+  }
+  function tileFigure(id){
+    var c=C[id];
+    if(!c) return ['…','Loading'];
+    if(!c.ok) return ['—','Could not load'];
+    if(id==='rot'){ var r=rotRows(), p=r.filter(function(x){return !x.returned;}); var ppl={}; p.forEach(function(x){ppl[x.name]=1;}); return [rs(sumOf(p,function(x){return x.amount;})), 'pending with '+Object.keys(ppl).length+' '+(Object.keys(ppl).length===1?'person':'people')]; }
+    if(id==='ins'){ var cl=claimRows(), o=cl.filter(function(x){return x.stage!=='settled'&&x.stage!=='rejected';}); return [rs(sumOf(o,function(x){return x.amount;})), 'open across '+o.length+' claim'+(o.length===1?'':'s')]; }
+    if(id==='sub'){ var ps=subPlatforms(), act=ps.filter(function(p){return !p.closed;}); return [act.length+' active', rs(sumOf(ps,function(p){return p.total;}))+' net spent in total']; }
+    if(id==='inst'){ var il=instList(), left=0, open=0; il.forEach(function(p){ p.entries.forEach(function(e){ if(e.st==='open'){ left+=e.amount; open++; } }); }); return [rs(left), open+' payments left on '+il.length+' plan'+(il.length===1?'':'s')]; }
+    if(id==='budget'){ var bg=budgetGroups(), ov=bg.filter(function(g){return g.over;}).length; return [ov?ov+' over':'On track', bg.length+' plan'+(bg.length===1?'':'s')+' · '+rs(sumOf(bg,function(g){return g.spent;}))+' spent']; }
+    if(id==='hab'){ var s=smokeStats(c.data); return s ? [s.days+' days', 'smoke-free · '+rs(s.saved)+' saved'] : ['—','Set your last smoke date']; }
+    if(id==='notes'){ var d=data('notes'), nx=null, nn=null; (d.data||[]).forEach(function(n){ var x=noteNext(n); if(x && (!nx || x<nx)){ nx=x; nn=n; } }); return nx ? [nx.getDate()+' '+MON[nx.getMonth()], 'next: '+esc(nn.reference)] : [(d.data||[]).length+' notes','nothing coming up']; }
+    if(id==='loss'){ var l=lossRows(); return [rs(sumOf(l,function(x){return x.amount;})), l.filter(function(x){return String(x.lesson||'').trim();}).length+' of '+l.length+' have a lesson']; }
+    return ['',''];
+  }
+
+  /* ═══ Rotations (read only) ═══════════════════════════════ */
+  function vRot(){
+    var rows=rotRows();
+    if(!rows.length) return empty('No rotation entries in the OTHERS sheet.');
+    var pend=rows.filter(function(r){return !r.returned;}), ret=rows.filter(function(r){return r.returned;});
+    var people={}; rows.forEach(function(r){ (people[r.name]=people[r.name]||[]).push(r); });
+    var h=sum3([['Pending',rs(sumOf(pend,function(r){return r.amount;})),'c-open'],['Returned',rs(sumOf(ret,function(r){return r.amount;})),'c-done'],['People',Object.keys(people).length,'',Object.keys(people).filter(function(n){return people[n].some(function(r){return !r.returned;});}).length+' with pending']]);
+    h+=ribbon([['Returned',sumOf(ret,function(r){return r.amount;}),'#10b981'],['Pending',sumOf(pend,function(r){return r.amount;}),'#f59e0b']]);
+    var f=curFilter('rot','all');
+    h+=filterBar('rot',[['all','All',rows.length],['open','Pending',pend.length],['done','Returned',ret.length]]);
+    var names=Object.keys(people).sort(function(a,b){ return sumOf(people[b].filter(function(r){return !r.returned;}),function(r){return r.amount;}) - sumOf(people[a].filter(function(r){return !r.returned;}),function(r){return r.amount;}); });
+    var idx=0, body='';
+    names.forEach(function(nm){
+      var all=people[nm], vis=all.filter(function(r){ return (f==='all'||(f==='open')===!r.returned) && matches(nm,r.remarks,r.date); });
+      if(!vis.length) return;
+      vis.sort(function(a,b){ if(a.returned!==b.returned) return a.returned?1:-1; return b.age-a.age; });
+      var owed=sumOf(all.filter(function(r){return !r.returned;}),function(r){return r.amount;});
+      var retN=all.filter(function(r){return r.returned;}).length;
+      body+=group('rot', nm, idx++, { av:av(initials(nm),'#3b82f6'), title:nm, sub:all.length+' entries · '+(owed?all.filter(function(r){return !r.returned;}).length+' pending':'all returned'), amt:rs(owed||sumOf(all,function(r){return r.amount;})), amtLbl:owed?'pending':'returned', prog:all.length?retN/all.length*100:0 },
+        vis.map(function(r){
+          return '<div class="tk-row"><span class="tk-dt">'+esc(r.date)+'</span><span class="tk-tx">'+(r.remarks?esc(r.remarks):'<span style="opacity:.5">No remarks</span>')+(r.days?'<small>'+esc(r.days)+'</small>':'')+'</span><span class="tk-am">'+rs(r.amount)+'</span><span class="tk-pill '+(r.returned?'done':'open')+'">'+(r.returned?'Returned':'Pending')+'</span></div>';
+        }).join(''));
+    });
+    return h+(body||empty('Nothing matches this filter.'))+'<div class="tk-empty" style="padding:4px 0 0;text-align:left">Rotations are read from the OTHERS sheet. Edit them there.</div>';
+  }
+
+  /* ═══ Claims ══════════════════════════════════════════════ */
+  function vIns(){
+    var rows=claimRows();
+    var by=function(s){ return rows.filter(function(c){return c.stage===s;}); };
+    var open=rows.filter(function(c){return c.stage!=='settled'&&c.stage!=='rejected';});
+    var h=sum3([['Open',rs(sumOf(open,function(c){return c.amount;})),'c-open',open.length+' claims'],['Settled',rs(sumOf(by('settled'),function(c){return c.amount;})),'c-done',by('settled').length+' claims'],['Rejected',rs(sumOf(by('rejected'),function(c){return c.amount;})),'c-bad',by('rejected').length+' claims']]);
+    if(!rows.length) return h+empty('No claims yet. Use “+ Add claim” to record one.');
+    h+=ribbon([['Settled',sumOf(by('settled'),function(c){return c.amount;}),'#10b981'],['Approved',sumOf(by('approved'),function(c){return c.amount;}),'#34d399'],['Submitted',sumOf(by('waiting'),function(c){return c.amount;}),'#38bdf8'],['Not submitted',sumOf(by('draft'),function(c){return c.amount;}),'#f59e0b'],['Rejected',sumOf(by('rejected'),function(c){return c.amount;}),'#ef4444']]);
+    var f=curFilter('ins','all');
+    h+=filterBar('ins',[['all','All',rows.length],['open','Open',open.length],['draft','Not submitted',by('draft').length],['waiting','Submitted',by('waiting').length],['approved','Approved',by('approved').length],['settled','Settled',by('settled').length],['rejected','Rejected',by('rejected').length]]);
+    var provs={}, order=[];
+    rows.forEach(function(c){ var p=c.provider||'No provider'; if(!provs[p]){ provs[p]=[]; order.push(p); } provs[p].push(c); });
+    var idx=0, body='';
+    order.forEach(function(p){
+      var all=provs[p], vis=all.filter(function(c){ return (f==='all'||(f==='open'?(c.stage!=='settled'&&c.stage!=='rejected'):c.stage===f)) && matches(c.ref,c.provider,c.reason,c.source); });
+      if(!vis.length) return;
+      var o=all.filter(function(c){return c.stage!=='settled'&&c.stage!=='rejected';});
+      var done=all.filter(function(c){return c.stage==='settled';}).length;
+      body+=group('ins', p, idx++, { av:av(initials(p),'#a855f7'), title:p, sub:all.length+' claims · '+done+' settled', amt:rs(o.length?sumOf(o,function(c){return c.amount;}):sumOf(all,function(c){return c.amount;})), amtLbl:o.length?'open':'total', prog:all.length?done/all.length*100:0 },
+        vis.map(function(c){
+          var i=ref('ins',c), st=STAGE[c.stage];
+          var meta=[c.source, c.submittedDate?'submitted '+c.submittedDate:''].filter(Boolean).join(' · ');
+          return '<div class="tk-row"><span class="tk-dt">'+esc(c.date||'—')+'</span><span class="tk-tx"><b>'+esc(c.ref||'—')+'</b>'+(meta?'<small>'+esc(meta)+'</small>':'')+(c.reason?'<small>“'+esc(c.reason)+'”</small>':'')+'</span><span class="tk-am">'+rs(c.amount)+'</span><span class="tk-pill '+st[1]+'">'+st[0]+'</span>'+
+            '<div class="tk-acts"><button type="button" class="tk-mini" data-act="ins-edit" data-i="'+i+'">Edit</button>'+delBtn('ins-del',i)+'</div></div>';
+        }).join(''));
+    });
+    return h+(body||empty('Nothing matches this filter.'));
+  }
+
+  /* ═══ Subscriptions (logos kept; no logged / not-logged KPIs) ═ */
+  var SUB_BRANDS = {
+    netflix:{ icon:'netflix',  color:'#E50914', fb:'📺' },
+    pubg:   { icon:'pubg',     color:'#FF6B35', fb:'🎮' },
+    cloude: { icon:'anthropic',color:'#8B5CF6', fb:'🤖' },
+    claude: { icon:'anthropic',color:'#8B5CF6', fb:'🤖' },
+    youtube:{ icon:'youtube',  color:'#FF0000', fb:'▶️' },
+    spotify:{ icon:'spotify',  color:'#1DB954', fb:'🎵' },
+    chatgpt:{ icon:'openai',   color:'#10A37F', fb:'🤖' },
+    openai: { icon:'openai',   color:'#10A37F', fb:'🤖' },
+    playstation:{ icon:'playstation', color:'#0070D1', fb:'🎮' },
+    'ps plus':{ icon:'playstation', color:'#0070D1', fb:'🎮' },
+    ps5:    { icon:'playstation', color:'#0070D1', fb:'🎮' },
+    'google one':{ icon:'google', color:'#4285F4', fb:'☁️' },
+    icloud: { icon:'icloud',   color:'#3693F3', fb:'☁️' },
+    'amazon prime':{ icon:'primevideo', color:'#00A8E1', fb:'📺' },
+    disney: { icon:'disneyplus', color:'#113CCF', fb:'📺' }
+  };
+  function subFallback(name){
+    var n=name.toLowerCase();
+    if(/stream|video|tv|movie/.test(n)) return '📺';
+    if(/game|play/.test(n)) return '🎮';
+    if(/music|spotify|sound/.test(n)) return '🎵';
+    if(/\bai\b|gpt|claude/.test(n)) return '🤖';
+    if(/cloud|storage|drive/.test(n)) return '☁️';
+    if(/mail/.test(n)) return '📧';
+    if(/news|read/.test(n)) return '📰';
+    if(/fitness|health|gym/.test(n)) return '💪';
+    if(/food|delivery/.test(n)) return '🍔';
+    if(/phone|mobile/.test(n)) return '📱';
+    return '💳';
+  }
+  function subLogo(name){
+    var b=SUB_BRANDS[name.toLowerCase()], fb=b?b.fb:subFallback(name);
+    if(b && b.icon){
+      return '<span class="tk-av" style="background:'+b.color+'"><img src="https://cdn.jsdelivr.net/npm/simple-icons@v9/icons/'+b.icon+'.svg" alt="" data-fb="'+esc(fb)+'" onerror="this.parentNode.textContent=this.getAttribute(\'data-fb\')"></span>';
+    }
+    return '<span class="tk-av" style="font-size:15px">'+fb+'</span>';
+  }
+  var SUB_COLORS=['#10b981','#3b82f6','#8b5cf6','#06b6d4','#f59e0b','#ec4899','#ef4444','#14b8a6','#6366f1','#f97316'];
+  function vSub(){
+    var ps=subPlatforms();
+    if(!ps.length) return empty('No subscriptions yet. Use “+ Add entry” to log one.');
+    var act=ps.filter(function(p){return !p.closed;}), cls=ps.filter(function(p){return p.closed;});
+    var all=[]; ps.forEach(function(p){ all=all.concat(p.entries); });
+    var h=sum3([['Net spent',rs(sumOf(all,function(e){return e.netCost;})),'c-done',all.length+' entries'],['Collected back',rs(sumOf(all,function(e){return e.collections;})),'c-info'],['Platforms',act.length+' active','',cls.length?cls.length+' closed':'']]);
+    h+=ribbon(act.slice().sort(function(a,b){return b.total-a.total;}).map(function(p,i){ return [p.name,p.total,SUB_COLORS[i%SUB_COLORS.length],rs(p.total)]; }));
+    var f=curFilter('sub','active');
+    h+=filterBar('sub',[['active','Active',act.length],['closed','Closed',cls.length],['all','All',ps.length]]);
+    var list=(f==='active'?act:f==='closed'?cls:ps).filter(function(p){ return matches(p.name) || p.entries.some(function(e){return matches(e.plan,e.note,e.collectionFrom,e.month);}); });
+    var cm=nowMonthLabel(), body='';
+    list.forEach(function(p, gi){
+      var li=ref('subp', p);
+      var tools='<div class="tk-g-tools"><span style="flex:1">Latest: '+esc(subMonthLabel(p.latest.month))+' · '+esc(p.latest.plan||'—')+' · net '+rs(p.latest.netCost)+'</span>'+
+        (p.closed?'':'<button type="button" class="tk-mini" data-act="sub-again" data-i="'+li+'" data-confirm="1">Log again for '+cm+'</button>')+'</div>';
+      var rows=p.entries.slice().reverse().map(function(e){
+        var i=ref('sub', e);
+        var flow='<span class="tk-flow"><b>'+rs(e.cost)+'</b>'+(Number(e.collections)>0?' − collected <b>'+rs(e.collections)+'</b>'+(e.collectionFrom&&e.collectionFrom!=='N/A'?' from '+esc(e.collectionFrom):''):'')+' → <span class="net">net '+rs(e.netCost)+'</span></span>';
+        var us=(e.usages||[]);
+        var usage='<div class="tk-usage"><div class="tk-usage-hd"><span>Usage log · '+us.length+'</span><button type="button" class="tk-mini" data-act="sub-ushow" data-i="'+i+'">+ Add</button></div>'+
+          us.map(function(u,ui){ return '<div class="tk-usage-it"><span>▸ '+esc(u)+'</span><button type="button" data-act="sub-udel" data-i="'+i+'" data-u="'+ui+'" title="Remove">✕</button></div>'; }).join('')+
+          '<div class="tk-usage-add" id="tk-ua-'+i+'" hidden><input type="text" id="tk-ui-'+i+'" placeholder="e.g. Watched a movie" data-enter="sub-uadd" data-i="'+i+'"><button type="button" class="tk-mini" data-act="sub-uadd" data-i="'+i+'">Add</button></div></div>';
+        return '<div class="tk-row"><span class="tk-dt">'+esc(subMonthLabel(e.month))+'</span><span class="tk-tx"><b>'+esc(e.plan||'—')+'</b>'+flow+(e.note?'<small>📝 '+esc(e.note)+'</small>':'')+'</span><span class="tk-am">'+rs(e.netCost)+'</span><span></span>'+usage+
+          '<div class="tk-acts">'+delBtn('sub-del',i,'Remove entry')+'</div></div>';
+      }).join('');
+      body+=group('sub', p.key, gi, { av:subLogo(p.name), title:p.name+(p.closed?' (closed)':''), sub:p.entries.length+' entries', amt:rs(p.total), amtLbl:'net total' }, tools+rows);
+    });
+    return h+(body||empty('Nothing matches this filter.'));
+  }
+
+  /* ═══ Installments ════════════════════════════════════════ */
+  function vInst(){
+    var il=instList();
+    if(!il.length) return empty('No installments in the OTHERS sheet.');
+    var flat=[]; il.forEach(function(p){ flat=flat.concat(p.entries); });
+    var open=flat.filter(function(e){return e.st==='open';}), done=flat.filter(function(e){return e.st==='done';});
+    var h=sum3([['Pending',rs(sumOf(open,function(e){return e.amount;})),'c-open',open.length+' payments'],['Settled',rs(sumOf(done,function(e){return e.amount;})),'c-done',done.length+' payments'],['Plans',il.length,'',il.filter(function(p){return !p.entries.some(function(e){return e.st==='open';});}).length+' fully paid']]);
+    h+=ribbon([['Settled',sumOf(done,function(e){return e.amount;}),'#10b981'],['Pending',sumOf(open,function(e){return e.amount;}),'#f59e0b']]);
+    var f=curFilter('inst','all'), cm=curMonthKey();
+    h+=filterBar('inst',[['all','All',flat.length],['open','Pending',open.length],['done','Settled',done.length]]);
+    var sorted=il.slice().sort(function(a,b){ return (b.entries.some(function(e){return e.st==='open';})?1:0)-(a.entries.some(function(e){return e.st==='open';})?1:0); });
+    var idx=0, body='';
+    sorted.forEach(function(p){
+      var vis=p.entries.filter(function(e){ return (f==='all'||e.st===f) && matches(p.name,e.month); });
+      if(!vis.length) return;
+      var po=p.entries.filter(function(e){return e.st==='open';}), pd=p.entries.filter(function(e){return e.st==='done';}).length;
+      var sw=p.name.toLowerCase().indexOf('splitwise')>=0;
+      body+=group('inst', p.name, idx++, { av:av(initials(p.name),'#f59e0b'), title:p.name, sub:p.entries.length+' payments · '+pd+' settled', amt:rs(po.length?sumOf(po,function(e){return e.amount;}):sumOf(p.entries,function(e){return e.amount;})), amtLbl:po.length?'left to pay':'all settled', prog:p.entries.length?pd/p.entries.length*100:0 },
+        vis.map(function(e){
+          var i=ref('inst', e), due=e.st==='open' && e.mk!=null && e.mk<=cm;
+          var pill = e.st==='off' ? '<span class="tk-pill off">'+esc(e.status)+'</span>'
+                   : '<button type="button" class="tk-pill '+e.st+'" data-act="inst-st" data-i="'+i+'" title="Tap to mark '+(e.st==='open'?'Settled':'Pending')+'">'+(e.st==='open'?'Pending':'Settled')+'</button>';
+          return '<div class="tk-row"><span class="tk-dt">'+esc(e.month)+'</span><span class="tk-tx">'+(e.num!=null?'Payment '+esc(e.num):'Payment')+(due?' <span class="tk-pill open" style="margin-left:4px">Due</span>':'')+'</span><span class="tk-am">'+rs(e.amount)+'</span>'+pill+
+            (e.st==='open'?'<div class="tk-acts"><button type="button" class="tk-mini" data-act="inst-add" data-mode="other" data-i="'+i+'">+ Other expense</button><button type="button" class="tk-mini" data-act="inst-add" data-mode="'+(sw?'splitwise':'card')+'" data-i="'+i+'">'+(sw?'+ Splitwise':'+ Card')+'</button></div>':'')+'</div>';
+        }).join(''));
+    });
+    return h+(body||empty('Nothing matches this filter.'));
+  }
+
+  /* ═══ Budget ══════════════════════════════════════════════ */
+  function vBudget(){
+    var gs=budgetGroups();
+    var h=sum3([['Budgeted',rs(sumOf(gs,function(g){return g.budget;})),'',gs.length+' plans'],['Spent',rs(sumOf(gs,function(g){return g.spent;})),'c-info'],['Over budget',gs.filter(function(g){return g.over;}).length,gs.some(function(g){return g.over;})?'c-bad':'c-done',gs.some(function(g){return g.over;})?rs(sumOf(gs.filter(function(g){return g.over;}),function(g){return g.spent-g.budget;}))+' over':'all within budget']]);
+    if(!gs.length) return h+empty('No budget entries yet. Use “+ Add entry” to plan one.');
+    var f=curFilter('budget','all');
+    h+=filterBar('budget',[['all','All',gs.length],['over','Over',gs.filter(function(g){return g.over;}).length],['within','Within',gs.filter(function(g){return !g.over;}).length]]);
+    var idx=0, body='';
+    gs.forEach(function(g){
+      if(f==='over' && !g.over) return; if(f==='within' && g.over) return;
+      var items=g.items.filter(function(it){ return matches(g.parent,g.type,it.expenseDesc); });
+      if(!items.length) return;
+      var use=g.budget>0?g.spent/g.budget*100:0;
+      var tools='<div class="tk-g-tools"><span>Budget <b style="color:#fff">'+rs(g.budget)+'</b></span><span>· Spent <b style="color:#fff">'+rs(g.spent)+'</b></span><span>· '+(g.budget>0?Math.round(use)+'% used':'no budget set')+'</span>'+
+        (g.excluded>0?'<span>· Actual <b style="color:#fff">'+rs(g.spent-g.excluded)+'</b> + excluded <b style="color:#fff">'+rs(g.excluded)+'</b></span>':'')+
+        '<span style="flex:1"></span><button type="button" class="tk-mini" data-act="bud-addto" data-i="'+ref('budg',g)+'">+ Item</button></div>';
+      body+=group('budget', g.parent, idx++, { av:av(initials(g.parent),'#fb923c'), title:g.parent, sub:esc(g.type||'General')+' · '+g.items.length+' item'+(g.items.length===1?'':'s'), amt:(g.rem<0?'− ':'')+rs(Math.abs(g.rem)), amtLbl:g.rem<0?'overspent':'remaining', prog:use, progCls:'bud'+(use>100?' over':use>80?' warn':'') },
+        tools+items.map(function(it){
+          var i=ref('budget', it), ex=it.isInclude===false;
+          return '<div class="tk-row"><span class="tk-dt">'+(ex?'<span class="tk-pill off">Excluded</span>':'Item')+'</span><span class="tk-tx"><b>'+esc(it.expenseDesc||'—')+'</b>'+(ex?'<small>Not actual cost</small>':'')+'</span><span class="tk-am">'+rs(it.expenseAmount)+'</span><span></span>'+
+            '<div class="tk-acts"><button type="button" class="tk-mini" data-act="bud-edit" data-i="'+i+'">Edit</button>'+delBtn('bud-del',i)+'</div></div>';
+        }).join(''));
+    });
+    return h+(body||empty('Nothing matches this filter.'));
+  }
+
+  /* ═══ Habits (smoking + junk/drink) ═══════════════════════ */
+  var MILESTONES = [
+    ['Blood pressure', 20/(24*60), 'back to normal'], ['Oxygen level', 8/24, 'back to normal'],
+    ['Carbon monoxide', 1, 'drops out of blood'], ['Heart attack risk', 2, 'starts to fall'],
+    ['Nerve endings', 3, 'start to regrow'], ['Circulation', 14, 'improves'],
+    ['Lung function', 60, 'up to 30% better'], ['Coughing', 270, 'noticeably less']
+  ];
+  function smokeStats(d){
+    if(!d || !d.lastSmokeDate) return null;
+    var last=new Date(d.lastSmokeDate); if(isNaN(last.getTime())) return null;
+    var now=new Date(), ms=now-last; if(ms<0) return null;
+    var days=Math.floor(ms/DAY_MS);
+    var y=now.getFullYear()-last.getFullYear(), mo=now.getMonth()-last.getMonth(), dd=now.getDate()-last.getDate();
+    if(dd<0){ mo--; dd+=new Date(now.getFullYear(), now.getMonth(), 0).getDate(); }
+    if(mo<0){ y--; mo+=12; }
+    var skipped=days*(Number(d.dailyCount)||0);
+    return { last:last, days:days, fdays:ms/DAY_MS, hours:Math.floor(ms/36e5)%24, y:y, mo:mo, d:dd, skipped:skipped, saved:skipped*(Number(d.piecePrice)||0) };
+  }
+  function vHab(){
+    var s=smokeStats(data('hab')), mc=C[habKey()], md=mc&&mc.ok?mc.data:null;
+    var jd=md?(md.junkDays||[]):[], dr=md?(md.drinkDays||[]):[];
+    var dim=new Date(S.habY, S.habM, 0).getDate();
+    var jm={}, dm={}; jd.forEach(function(e){ jm[e.day]=(jm[e.day]||0)+(Number(e.amount)||0); }); dr.forEach(function(e){ dm[e.day]=(dm[e.day]||0)+(Number(e.amount)||0); });
+    var hit={}; Object.keys(jm).forEach(function(k){hit[k]=1;}); Object.keys(dm).forEach(function(k){hit[k]=1;});
+    var h=sum3([['Smoke-free',s?s.days+' days':'—','c-done',s?rs(s.saved)+' saved':''],['Junk food · '+MON[S.habM-1],md?Object.keys(jm).length+' days':'…','c-open',md?rs(sumOf(jd,function(e){return e.amount;})):''],['Drinks · '+MON[S.habM-1],md?Object.keys(dm).length+' days':'…','c-bad',md?(dim-Object.keys(hit).length)+' clean days':'']]);
+    h+='<div class="tk-hab"><div class="tk-box">';
+    if(s){
+      h+='<div class="tk-sec">Smoke-free since '+s.last.getDate()+' '+MON[s.last.getMonth()]+' '+s.last.getFullYear()+'</div>'+
+        '<div class="tk-big">'+(s.y?s.y+'<small> y </small>':'')+s.mo+'<small> mo </small>'+s.d+'<small> d · '+s.hours+'h</small></div>'+
+        '<div class="tk-kv"><div><small>Money saved</small><b>'+rs(s.saved)+'</b></div><div><small>Cigarettes skipped</small><b>'+num(s.skipped)+'</b></div><div><small>Packs avoided</small><b>'+num(Math.floor(s.skipped/20))+'</b></div><div><small>Life regained</small><b>'+(s.skipped*11/1440).toFixed(1)+' days</b></div></div>'+
+        '<div class="tk-miles">'+MILESTONES.map(function(m){ var p=Math.min(100, s.fdays/m[1]*100); return '<div class="tk-mile" title="'+esc(m[0]+' '+m[2])+'"><span>'+m[0]+'</span><span class="tr"><i style="width:'+p.toFixed(0)+'%"></i></span><b>'+Math.floor(p)+'%</b></div>'; }).join('')+'</div>';
+    } else {
+      var hc=C.hab;
+      h+='<div class="tk-sec">Smoking</div><div class="tk-empty">'+(hc&&!hc.ok?esc(hc.err):'Add a valid last smoke date in the Habbit sheet (A2) to start tracking.')+'</div>';
+    }
+    h+='</div><div class="tk-box"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div class="tk-sec">Junk food &amp; drinks</div>'+
+      '<div class="tk-mnav"><button type="button" class="tk-btn sq" data-act="hab-nav" data-dir="-1" aria-label="Previous month">‹</button><span>'+MON[S.habM-1]+' '+S.habY+'</span><button type="button" class="tk-btn sq" data-act="hab-nav" data-dir="1" aria-label="Next month">›</button></div></div>';
+    if(!mc){ h+='<div class="tk-state"><div class="tk-spin"></div>Loading month…</div>'; }
+    else if(!mc.ok){ h+='<div class="tk-state err">'+esc(mc.err)+'</div>'; }
+    else {
+      var first=new Date(S.habY, S.habM-1, 1).getDay(), t=new Date(), today=(t.getMonth()+1===S.habM && t.getFullYear()===S.habY)?t.getDate():0;
+      h+='<div class="tk-cal">'+['Su','Mo','Tu','We','Th','Fr','Sa'].map(function(x){return '<span class="hd">'+x+'</span>';}).join('');
+      for(var b=0;b<first;b++) h+='<span class="blank"></span>';
+      for(var d=1; d<=dim; d++){
+        var j=!!jm[d], k=!!dm[d];
+        var tip=(j?'Junk '+rs(jm[d]):'')+(j&&k?' · ':'')+(k?'Drink '+rs(dm[d]):'');
+        h+='<span class="'+(j&&k?'b':j?'j':k?'d':'')+(d===today?' today':'')+'"'+(tip?' title="'+esc(tip)+'"':'')+'>'+d+'</span>';
+      }
+      h+='</div><div class="tk-lg"><span><i style="background:rgba(245,158,11,.6)"></i>Junk food</span><span><i style="background:rgba(255,77,109,.65)"></i>Drink</span><span><i style="background:linear-gradient(135deg,rgba(245,158,11,.7) 50%,rgba(255,77,109,.7) 50%)"></i>Both</span></div>';
+      var days=jd.map(function(e){return {d:e.day,a:e.amount,r:e.ref||'Junk food',c:'rgba(245,158,11,.7)'};}).concat(dr.map(function(e){return {d:e.day,a:e.amount,r:e.ref||'Drink',c:'rgba(255,77,109,.75)'};})).sort(function(a,b){return a.d-b.d;});
+      h+= days.length ? '<div class="tk-daylist">'+days.map(function(x){ return '<div><b>'+x.d+'</b><i style="background:'+x.c+'"></i><span>'+esc(x.r)+'</span><b>'+rs(x.a)+'</b></div>'; }).join('')+'</div>'
+                      : '<div class="tk-empty" style="padding:14px 0 4px">No junk food or drinks logged this month.</div>';
+    }
+    h+='<div class="tk-empty" style="padding:8px 0 0;text-align:left;font-size:11px">From the food and supermarket entries tagged junk / drink in the month ledger.</div></div></div>';
+    return h;
+  }
+
+  /* ═══ Notes ═══════════════════════════════════════════════ */
+  function vNotes(){
+    var d=data('notes'), all=(d&&d.data)||[], cats=(d&&d.categories)||[];
+    var t0=new Date(); t0.setHours(0,0,0,0);
+    var soon=all.filter(function(n){ var x=noteNext(n); return x && (x-t0)/DAY_MS<=30; }).length;
+    var h=sum3([['Notes',all.length,''],['On calendar',all.filter(function(n){return n.calendar;}).length,'c-info'],['Next 30 days',soon,soon?'c-open':'']]);
+    if(!all.length) return h+empty('No notes yet. Use “+ Add note” to write one.');
+    var used={}; all.forEach(function(n){ var c=n.category||'Uncategorized'; used[c]=(used[c]||0)+1; });
+    var f=curFilter('notes','all');
+    h+=filterBar('notes',[['all','All',all.length],['cal','On calendar',all.filter(function(n){return n.calendar;}).length]].concat(Object.keys(used).sort().map(function(c){return ['c:'+c, c, used[c]];})));
+    var body='';
+    noteGroups().forEach(function(g){
+      var n=g.note, cat=n.category||'Uncategorized';
+      if(f==='cal' && !n.calendar) return;
+      if(f.indexOf('c:')===0 && f.slice(2)!==cat) return;
+      if(!matches(g.reference, n.category)) return;
+      var s=parseYmd(g.dates[0]), e=parseYmd(g.dates[g.dates.length-1]);
+      var i=ref('notes', g);
+      var dayTxt = s ? String(s.getDate()) : '—', monTxt = s ? MON[s.getMonth()]+' '+String(s.getFullYear()).slice(2) : '';
+      var range = g.dates.length>1 && e ? 'until '+e.getDate()+' '+MON[e.getMonth()]+' · '+g.dates.length+' days' : '';
+      body+='<div class="tk-note"><div class="tk-nd"><b>'+dayTxt+'</b><small>'+monTxt+'</small></div><div class="tk-nt"><div class="ref">'+linkify(esc(g.reference))+'</div><div class="meta">'+
+        (n.category?'<span class="tk-pill off">'+esc(n.category)+'</span>':'')+(n.calendar?'<span class="tk-pill info">Calendar</span>':'')+(n.yearly?'<span class="tk-pill done">Yearly</span>':'')+(range?'<span>'+range+'</span>':'')+'</div></div>'+
+        '<div class="tk-note-acts"><button type="button" class="tk-mini" data-act="note-edit" data-i="'+i+'">Edit</button>'+delBtn('note-del',i)+'</div></div>';
+    });
+    return h+(body||empty('Nothing matches this filter.'));
+  }
+
+  /* ═══ Losses & lessons ════════════════════════════════════ */
+  function vLoss(){
+    var rows=lossRows();
+    var conf=rows.filter(function(l){return l.isConfirmLoss;}), un=rows.filter(function(l){return !l.isConfirmLoss;});
+    var h=sum3([['Confirmed',rs(sumOf(conf,function(l){return l.amount;})),'c-bad',conf.length+' entries'],['Unconfirmed',rs(sumOf(un,function(l){return l.amount;})),'c-open',un.length+' entries'],['Lessons written',rows.filter(function(l){return String(l.lesson||'').trim();}).length+' / '+rows.length,'']]);
+    if(!rows.length) return h+empty('No losses recorded. Use “+ Add loss” to record one.');
+    h+=ribbon([['Confirmed',sumOf(conf,function(l){return l.amount;}),'#ef4444'],['Unconfirmed',sumOf(un,function(l){return l.amount;}),'#f59e0b']]);
+    var f=curFilter('loss','all');
+    h+=filterBar('loss',[['all','All',rows.length],['bad','Confirmed',conf.length],['open','Unconfirmed',un.length],['nolesson','No lesson',rows.filter(function(l){return !String(l.lesson||'').trim();}).length]]);
+    var vis=rows.filter(function(l){ return (f==='all'||(f==='bad'&&l.isConfirmLoss)||(f==='open'&&!l.isConfirmLoss)||(f==='nolesson'&&!String(l.lesson||'').trim())) && matches(l.ref,l.lesson); });
+    if(!vis.length) return h+empty('Nothing matches this filter.');
+    h+='<div class="tk-g open">'+vis.map(function(l){
+      var i=ref('loss', l);
+      return '<div class="tk-row"><span class="tk-dt">'+(l.isConfirmLoss?'Confirmed':'Unconfirmed')+'</span><span class="tk-tx"><b>'+esc(l.ref||'—')+'</b><small>'+(String(l.lesson||'').trim()?'💡 '+esc(l.lesson):'<span style="opacity:.6">No lesson written yet</span>')+'</small></span><span class="tk-am">'+rs(l.amount)+'</span>'+
+        '<button type="button" class="tk-pill '+(l.isConfirmLoss?'bad':'open')+'" data-act="loss-st" data-i="'+i+'" title="Tap to mark '+(l.isConfirmLoss?'unconfirmed':'confirmed')+'">'+(l.isConfirmLoss?'Confirmed':'Unconfirmed')+'</button>'+
+        '<div class="tk-acts"><button type="button" class="tk-mini" data-act="loss-edit" data-i="'+i+'">Edit</button>'+delBtn('loss-del',i)+'</div></div>';
+    }).join('')+'</div>';
+    return h;
+  }
+
+  var VIEWS = { ov:vOverview, rot:vRot, ins:vIns, sub:vSub, inst:vInst, budget:vBudget, hab:vHab, notes:vNotes, loss:vLoss };
+
+  /* ═══ render ══════════════════════════════════════════════ */
+  function render(){
+    var m=meta(S.cur), body=$('tk-body');
+    $('tk-title').textContent=m.name;
+    $('tk-sub').textContent=m.sub||'';
+    var add=$('tk-add'); add.hidden=!m.add; if(m.add) add.textContent='+ Add '+m.add;
+    S.refs={};
+    var fq=document.activeElement && document.activeElement.id==='tk-fq', caret=fq?document.activeElement.selectionStart:0;
+    var html;
+    if(S.cur!=='ov'){
+      var c=C[S.cur];
+      if(!c){ body.innerHTML='<div class="tk-state"><div class="tk-spin"></div>Loading '+m.name.toLowerCase()+'…</div>'; renderRail(); return; }
+      if(!c.ok && S.cur!=='hab'){ body.innerHTML='<div class="tk-state err">Could not load '+m.name.toLowerCase()+': '+esc(c.err)+'<br><br><button type="button" class="tk-btn" data-act="retry">Try again</button></div>'; renderRail(); return; }
+    }
+    try { html=VIEWS[S.cur](); }
+    catch(e){ html='<div class="tk-state err">Something went wrong showing this tracker: '+esc(errText(e))+'</div>'; }
+    body.innerHTML=html;
+    if(fq){ var n=$('tk-fq'); if(n){ n.focus(); try{ n.setSelectionRange(caret,caret); }catch(_){} } }
+    renderRail();
+  }
+  function go(id){
+    id=ALIAS[id]||id; if(!VIEWS[id]) id='ov';
+    if(S.cur!==id) tap('step');
+    S.cur=id; closeDrawer();
+    $('tk-body').scrollTop=0;
+    render();
+    ensure(id);
+  }
+  function ensure(id, force){
+    if(id==='ov'){ loadAll(force).then(function(){ updateBadge(); if(S.cur==='ov') render(); }); TK.forEach(function(t){ if(t.load) load(t.id).then(function(){ if(S.cur==='ov') render(); }); }); return; }
+    load(id, force).then(function(){ updateBadge(); if(S.cur===id) render(); });
+    if(id==='hab') loadHabMonth(force).then(function(){ if(S.cur==='hab') render(); });
+  }
+  function refresh(id){
+    delete C[id];
+    if(id==='hab') delete C[habKey()];
+    render(); ensure(id, true);
+  }
+
+  /* ═══ toast ═══════════════════════════════════════════════ */
+  var _tt=null;
+  function toast(msg, isErr){
+    var t=$('tk-toast'); t.textContent=msg; t.classList.toggle('err', !!isErr); t.classList.add('show');
+    clearTimeout(_tt); _tt=setTimeout(function(){ t.classList.remove('show'); }, isErr?4200:1800);
+    tap(isErr?'error':'success');
+  }
+
+  /* ═══ open / close ════════════════════════════════════════ */
+  function isOpen(){ return $('tk-overlay').classList.contains('open'); }
+  function open(id){
+    var o=$('tk-overlay');
+    o.classList.add('open'); o.setAttribute('aria-hidden','false');
+    document.querySelectorAll('.tk-trigger').forEach(function(b){ b.classList.add('tk-on'); });
+    tap('open');
+    go(id||S.cur||'ov');
+  }
+  function close(){
+    closeDrawer();
+    var o=$('tk-overlay');
+    o.classList.remove('open'); o.setAttribute('aria-hidden','true');
+    document.querySelectorAll('.tk-trigger').forEach(function(b){ b.classList.remove('tk-on'); });
+  }
+  window.trackerToggle = function(id){
+    if(isOpen() && (!id || (ALIAS[id]||id)===S.cur)) close();
+    else open(id);
+  };
+  window.trackerClose = close;
+
+  /* ═══ drawer form ═════════════════════════════════════════ */
+  function fld(label, input, hint, id){ return '<div class="tk-f"'+(id?' id="'+id+'"':'')+'><label>'+label+'</label>'+input+(hint?'<div class="hint">'+hint+'</div>':'')+'</div>'; }
+  function inp(id, type, val, attrs){ return '<input id="'+id+'" type="'+type+'" value="'+esc(val==null?'':val)+'"'+(attrs||'')+'>'; }
+  function seg(name, opts, val){ return '<div class="tk-seg" data-seg="'+name+'">'+opts.map(function(o){ return '<button type="button" data-v="'+esc(o[0])+'" class="'+(String(o[0])===String(val)?'on':'')+'">'+o[1]+'</button>'; }).join('')+'</div>'; }
+  function segVal(name){ var b=document.querySelector('#tk-form [data-seg="'+name+'"] button.on'); return b?b.getAttribute('data-v'):null; }
+  function datalist(id, items){ return '<datalist id="'+id+'">'+items.map(function(x){return '<option value="'+esc(x)+'"></option>';}).join('')+'</datalist>'; }
+  function val(id){ var e=$(id); return e?String(e.value).trim():''; }
+  function numVal(id){ return parseFloat(val(id))||0; }
+  function msg(t){ var m=$('tk-dr-msg'); if(m) m.textContent=t||''; }
+
+  function openDrawer(kind, rec){
+    S.form={ kind:kind, rec:rec||null };
+    var t='', h='';
+    var today=ymd(new Date());
+    if(kind==='ins'){
+      var c=rec||{};
+      t=rec?'Edit claim':'New claim';
+      var provs={}; claimRows().forEach(function(x){ if(x.provider) provs[x.provider]=1; });
+      h+='<div class="tk-f2">'+fld('Date', inp('tkf-date','date',c.date||today))+fld('Amount (₨)', inp('tkf-amt','number',c.amount||'',' min="0" step="0.01" inputmode="decimal"'))+'</div>'+
+        fld('Reference', inp('tkf-ref','text',c.ref||'',' placeholder="e.g. OPD visit, Dr. Fernando"'))+
+        '<div class="tk-f2">'+fld('Provider', inp('tkf-prov','text',c.provider||'',' list="tkf-prov-dl" placeholder="e.g. AIA Insurance"')+datalist('tkf-prov-dl',Object.keys(provs)))+
+        fld('Source','<select id="tkf-src"><option value="">— Select —</option>'+[['Company','🏢 Company'],['Personal','👤 Personal'],['Government','🏛️ Government'],['Other','📦 Other']].map(function(o){return '<option value="'+o[0]+'"'+(c.source===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>')+'</div>'+
+        fld('Submitted', seg('sub',[['1','Yes'],['0','Not yet']], c.isSubmitted?'1':'0'))+
+        fld('Submitted on', inp('tkf-subdate','date',c.submittedDate||''), '', 'tkf-subdate-w')+
+        fld('Outcome', seg('out',[['none','Waiting'],['approved','Approved'],['rejected','Rejected']], c.isApproved?'approved':c.isRejected?'rejected':'none'))+
+        fld('Paid out', seg('set',[['0','Not yet'],['1','Settled']], c.isSettled?'1':'0'))+
+        fld('Reason / notes','<textarea id="tkf-reason" rows="3" placeholder="Reason for rejection, delays or any notes">'+esc(c.reason||'')+'</textarea>');
+    }
+    else if(kind==='loss'){
+      var l=rec||{};
+      t=rec?'Edit loss':'New loss';
+      h+=fld('Reference / name', inp('tkf-ref','text',l.ref||'',' placeholder="e.g. BTC trade"'))+
+        fld('Amount (₨)', inp('tkf-amt','number',l.amount||'',' min="0" step="0.01" inputmode="decimal"'))+
+        fld('Lesson learned', '<textarea id="tkf-lesson" rows="3" placeholder="What will you do differently?">'+esc(l.lesson||'')+'</textarea>')+
+        fld('Status', seg('conf',[['0','Unconfirmed'],['1','Confirmed loss']], l.isConfirmLoss?'1':'0'));
+    }
+    else if(kind==='budget'){
+      var b=rec||{}, bd=data('budget')||{};
+      t=rec?'Edit budget item':'New budget item';
+      h+=fld('Plan', inp('tkf-parent','text',b.parent||'',' list="tkf-parent-dl" placeholder="e.g. Ella trip"')+datalist('tkf-parent-dl',(bd.parents||[]).map(function(p){return p.name;})), 'Pick an existing plan to reuse its budget and type.')+
+        '<div class="tk-f2">'+fld('Type', inp('tkf-type','text',b.type||'',' list="tkf-type-dl" placeholder="e.g. Trip"')+datalist('tkf-type-dl',bd.types||[]))+fld('Plan budget (₨)', inp('tkf-budget','number',b.budget!=null?b.budget:'',' min="0" step="0.01" inputmode="decimal"'))+'</div>'+
+        fld('Expense description', inp('tkf-desc','text',b.expenseDesc||'',' placeholder="e.g. Hotel, 2 nights"'))+
+        fld('Amount (₨)', inp('tkf-amt','number',b.expenseAmount!=null?b.expenseAmount:'',' min="0" step="0.01" inputmode="decimal"'))+
+        fld('Counts as actual cost', seg('inc',[['1','Yes'],['0','No, exclude']], b.isInclude===false?'0':'1'), 'Excluded items still count toward spent, and are shown separately.');
+    }
+    else if(kind==='sub'){
+      var s=rec||{};
+      t='New subscription entry';
+      var plats=subPlatforms().map(function(p){return p.name;});
+      h+='<div class="tk-f2">'+fld('Month', inp('tkf-month','text',s.month||nowMonthLabel(),' placeholder="e.g. Sep 2026"'))+fld('Platform', inp('tkf-plat','text',s.platform||'',' list="tkf-plat-dl" placeholder="e.g. Netflix"')+datalist('tkf-plat-dl',plats))+'</div>'+
+        '<div class="tk-f2">'+fld('Plan', inp('tkf-plan','text',s.plan||'',' placeholder="e.g. Premium"'))+fld('Collected from', inp('tkf-cfrom','text',s.collectionFrom||'',' placeholder="Optional"'))+'</div>'+
+        '<div class="tk-f2">'+fld('Cost (₨)', inp('tkf-cost','number',s.cost!=null?s.cost:'',' min="0" step="0.01" inputmode="decimal"'))+fld('Collected (₨)', inp('tkf-coll','number',s.collections!=null?s.collections:'',' min="0" step="0.01" inputmode="decimal"'))+'</div>'+
+        fld('Net cost (₨)', inp('tkf-net','number',s.netCost!=null?s.netCost:'',' step="0.01" inputmode="decimal"'), 'Fills in as cost − collected. You can change it.')+
+        fld('Note', inp('tkf-note','text',s.note||'',' placeholder="Optional"'))+
+        fld('Usage', inp('tkf-usage','text','',' placeholder="Comma-separated, e.g. Watched a film, Shared with Kasun"'));
+    }
+    else if(kind==='notes'){
+      var g=rec, n=g?g.note:{};
+      t=g?(g.rows.length>1?'Edit note ('+g.rows.length+' days)':'Edit note'):'New note';
+      var multi=g && g.dates.length>1;
+      h+=fld('Note', '<textarea id="tkf-ref" rows="3" placeholder="What to remember">'+esc(g?g.reference:'')+'</textarea>')+
+        '<div class="tk-f2">'+fld('Date', inp('tkf-date','date',g?g.dates[0]:today))+fld('Category', inp('tkf-cat','text',n.category||'',' list="tkf-cat-dl" placeholder="e.g. Bills"')+datalist('tkf-cat-dl',((data('notes')||{}).categories)||[]))+'</div>'+
+        fld('Spans several days', seg('multi',[['0','No'],['1','Yes']], multi?'1':'0'))+
+        fld('Up to', inp('tkf-upto','date',multi?g.dates[g.dates.length-1]:''), '', 'tkf-upto-w')+
+        '<div class="tk-f2">'+fld('Show on calendar', seg('cal',[['1','Yes'],['0','No']], n.calendar?'1':'0'))+fld('Repeat yearly', seg('yr',[['1','Yes'],['0','No']], n.yearly?'1':'0'))+'</div>';
+    }
+    h+='<div class="tk-dr-msg" id="tk-dr-msg"></div>';
+    $('tk-dr-title').textContent=t;
+    $('tk-form').innerHTML=h;
+    syncFormVisibility();
+    var btn=$('tk-dr-save'); btn.disabled=false; btn.textContent='Save';
+    var dr=$('tk-drawer'); dr.classList.add('open'); dr.setAttribute('aria-hidden','false');
+    setTimeout(function(){ var f=$('tk-form').querySelector('input:not([type=date]),textarea'); if(f) try{ f.focus(); }catch(_){} }, 60);
+  }
+  function closeDrawer(){ var dr=$('tk-drawer'); if(!dr) return; dr.classList.remove('open'); dr.setAttribute('aria-hidden','true'); S.form=null; }
+  function syncFormVisibility(){
+    var w=$('tkf-subdate-w'); if(w) w.hidden = segVal('sub')!=='1';
+    var u=$('tkf-upto-w'); if(u) u.hidden = segVal('multi')!=='1';
+  }
+  /* form-level listeners: segment buttons, auto net, plan autofill */
+  $('tk-form').addEventListener('click', function(e){
+    var b=e.target.closest('.tk-seg button'); if(!b) return;
+    b.parentNode.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x===b); });
+    syncFormVisibility();
+  });
+  $('tk-form').addEventListener('input', function(e){
+    var id=e.target.id;
+    if(id==='tkf-cost' || id==='tkf-coll'){ var n=numVal('tkf-cost')-numVal('tkf-coll'); $('tkf-net').value = n>0?n:0; }
+    if(id==='tkf-parent'){
+      var bd=data('budget')||{}, v=e.target.value.trim(), p=(bd.parents||[]).filter(function(x){return x.name===v;})[0];
+      if(p){ $('tkf-budget').value=p.budget; var it=(bd.data||[]).filter(function(x){return x.parent===v;})[0]; if(it && it.type) $('tkf-type').value=it.type; }
+    }
+  });
+  $('tk-form').addEventListener('submit', function(e){ e.preventDefault(); save(); });
+
+  function save(){
+    var f=S.form; if(!f) return;
+    var btn=$('tk-dr-save'), job=null, id=f.kind;
+    msg('');
+    if(f.kind==='ins'){
+      var ref=val('tkf-ref'), amt=numVal('tkf-amt');
+      if(!ref) return msg('Enter a reference for the claim.');
+      if(!(amt>0)) return msg('Enter an amount above zero.');
+      var out=segVal('out'), subm=segVal('sub')==='1';
+      var p={ date:val('tkf-date'), ref:ref, provider:val('tkf-prov'), source:$('tkf-src').value, amount:amt,
+              isSubmitted:subm, submittedDate:subm?val('tkf-subdate'):'', isApproved:out==='approved', isRejected:out==='rejected',
+              isSettled:segVal('set')==='1', reason:val('tkf-reason') };
+      if(f.rec){ p.rowIndex=parseInt(f.rec.rowIndex,10); job=run('updateInsuranceClaim', p); }
+      else job=run('addInsuranceClaim', p);
+    }
+    else if(f.kind==='loss'){
+      var lr=val('tkf-ref'), la=val('tkf-amt');
+      if(!lr || !la) return msg('Enter a reference and an amount.');
+      var conf=segVal('conf')==='1';
+      job = f.rec ? run('updateLossEntry', f.rec.rowIndex, lr, la, val('tkf-lesson'), conf)
+                  : run('addLossEntry', lr, la, val('tkf-lesson'), conf);
+    }
+    else if(f.kind==='budget'){
+      var parent=val('tkf-parent');
+      if(!parent) return msg('Enter the plan this item belongs to.');
+      job=run('saveBudgetEntry', { row:f.rec?f.rec.row:null, parent:parent, type:val('tkf-type'), budget:numVal('tkf-budget'),
+        expenseDesc:val('tkf-desc'), expenseAmount:numVal('tkf-amt'), isInclude:segVal('inc')!=='0' });
+    }
+    else if(f.kind==='sub'){
+      var month=val('tkf-month'), plat=val('tkf-plat');
+      if(!month || !plat) return msg('Month and platform are required.');
+      var us=val('tkf-usage');
+      job=run('addSubscription', { month:month, platform:plat, plan:val('tkf-plan'), cost:numVal('tkf-cost'), collections:numVal('tkf-coll'),
+        collectionFrom:val('tkf-cfrom'), netCost:numVal('tkf-net'), note:val('tkf-note'),
+        usages: us ? us.split(',').map(function(s){return s.trim();}).filter(Boolean) : [] });
+    }
+    else if(f.kind==='notes'){
+      var nref=val('tkf-ref'), from=val('tkf-date');
+      if(!nref) return msg('Write the note first.');
+      if(!from) return msg('Pick a date.');
+      var dates=[];
+      if(segVal('multi')==='1'){
+        var upto=val('tkf-upto');
+        if(!upto) return msg('Pick the last day, or switch “Spans several days” off.');
+        var d0=parseYmd(from), d1=parseYmd(upto);
+        if(!d0 || !d1 || d1<d0) return msg('“Up to” must be on or after the first date.');
+        if(Math.round((d1-d0)/DAY_MS)>366) return msg('A note can span at most a year.');
+        for(var d=new Date(d0); d<=d1; d.setDate(d.getDate()+1)) dates.push(ymd(d));
+      } else dates=[from];
+      var notes=dates.map(function(dt){ return { row:null, date:dt, category:val('tkf-cat'), reference:nref, yearly:segVal('yr')==='1', calendar:segVal('cal')==='1' }; });
+      job = f.rec
+        ? run('deleteNotes', f.rec.rows).then(function(r){ if(r && r.success===false) throw new Error(r.error||'Could not replace the old note'); return run('saveNote', notes); })
+        : run('saveNote', notes);
+    }
+    if(!job) return;
+    btn.disabled=true; btn.textContent='Saving…';
+    job.then(function(r){
+      btn.disabled=false; btn.textContent='Save';
+      if(r && r.success===false){ msg(r.error||'Could not save.'); tap('error'); return; }
+      closeDrawer(); toast('Saved'); refresh(id);
+    }, function(e){
+      btn.disabled=false; btn.textContent='Save';
+      msg('Could not save: '+errText(e)); tap('error');
+    });
+  }
+  $('tk-dr-save').addEventListener('click', save);
+  $('tk-dr-x').addEventListener('click', closeDrawer);
+  $('tk-dr-cancel').addEventListener('click', closeDrawer);
+  $('tk-add').addEventListener('click', function(){ if(meta(S.cur).add) openDrawer(S.cur); });
+  $('tk-reload').addEventListener('click', function(){
+    if(S.cur==='ov'){ TK.forEach(function(t){ if(t.load) delete C[t.id]; }); render(); ensure('ov', true); }
+    else refresh(S.cur);
+  });
+
+  /* ═══ row actions ═════════════════════════════════════════ */
+  function arm(btn, fn){
+    if(btn.classList.contains('armed')){ btn.classList.remove('armed'); clearTimeout(btn._t); fn(); return; }
+    btn.classList.add('armed'); btn._orig=btn._orig||btn.textContent; btn.textContent='Tap again to confirm';
+    btn._t=setTimeout(function(){ btn.classList.remove('armed'); btn.textContent=btn._orig; }, 3000);
+  }
+  function act(fnName, args, id, okMsg, btn){
+    if(btn){ btn.disabled=true; btn.classList.add('busy'); }
+    run.apply(null, [fnName].concat(args)).then(function(r){
+      if(r && r.success===false){ if(btn){ btn.disabled=false; btn.classList.remove('busy'); } toast(r.error||'That did not work', true); return; }
+      toast(okMsg); if(id) refresh(id);
+    }, function(e){
+      if(btn){ btn.disabled=false; btn.classList.remove('busy'); }
+      toast('Failed: '+errText(e), true);
+    });
+  }
+  function doAction(b){
+    var a=b.getAttribute('data-act'), i=+b.getAttribute('data-i'), x;
+    switch(a){
+      case 'retry': refresh(S.cur); break;
+      case 'hab-nav':
+        S.habM+=+b.getAttribute('data-dir');
+        if(S.habM<1){ S.habM=12; S.habY--; } if(S.habM>12){ S.habM=1; S.habY++; }
+        render(); loadHabMonth().then(function(){ if(S.cur==='hab') render(); });
+        break;
+      case 'ins-edit': openDrawer('ins', S.refs.ins[i]); break;
+      case 'ins-del': x=S.refs.ins[i]; arm(b, function(){ act('deleteInsuranceClaim',[x.rowIndex],'ins','Claim deleted',b); }); break;
+      case 'loss-edit': openDrawer('loss', S.refs.loss[i]); break;
+      case 'loss-del': x=S.refs.loss[i]; arm(b, function(){ act('deleteLossEntry',[x.rowIndex],'loss','Loss deleted',b); }); break;
+      case 'loss-st': x=S.refs.loss[i]; act('updateLossEntry',[x.rowIndex, x.ref, x.amount, x.lesson||'', !x.isConfirmLoss],'loss', x.isConfirmLoss?'Marked unconfirmed':'Marked confirmed', b); break;
+      case 'bud-edit': openDrawer('budget', S.refs.budget[i]); break;
+      case 'bud-addto': x=S.refs.budg[i]; openDrawer('budget', null); $('tkf-parent').value=x.parent; $('tkf-type').value=x.type||''; $('tkf-budget').value=x.budget; $('tk-dr-title').textContent='New item in '+x.parent; setTimeout(function(){ var d=$('tkf-desc'); if(d) d.focus(); },70); break;
+      case 'bud-del': x=S.refs.budget[i]; arm(b, function(){ act('deleteBudgetEntry',[x.row],'budget','Item deleted',b); }); break;
+      case 'note-edit': openDrawer('notes', S.refs.notes[i]); break;
+      case 'note-del': x=S.refs.notes[i]; arm(b, function(){ act('deleteNotes',[x.rows],'notes', x.rows.length>1?x.rows.length+' notes deleted':'Note deleted', b); }); break;
+      case 'inst-st':
+        x=S.refs.inst[i];
+        act('updateInstallmentStatus',[x.name, x.num, x.st==='open'?'Settled':'Pending', x.month, x.amount],'inst', x.st==='open'?'Marked settled':'Marked pending', b);
+        break;
+      case 'inst-add':
+        x=S.refs.inst[i];
+        var lka=new Date(Date.now()+(5*60+30)*60*1000), key=(lka.getUTCMonth()+1)+'-'+lka.getUTCDate(), mode=b.getAttribute('data-mode');
+        act('addInstallmentToExpense',[x.name, x.amount, key, mode], null, mode==='other'?'Added to other expenses':mode==='card'?'Added to card':'Added to Splitwise', b);
+        setTimeout(function(){ b.disabled=false; b.classList.remove('busy'); }, 2500);
+        break;
+      case 'sub-del': x=S.refs.sub[i]; arm(b, function(){ act('deleteSubscription',[x.rowIndex],'sub','Entry removed',b); }); break;
+      case 'sub-again':
+        x=S.refs.subp[i].latest;
+        arm(b, function(){
+          act('addSubscription',[{ month:nowMonthLabel(), platform:x.platform, plan:x.plan, cost:Number(x.cost)||0, collections:Number(x.collections)||0,
+            collectionFrom:x.collectionFrom||'', netCost:Number(x.netCost)||0, note:x.note||'', usages:[] }],'sub','Logged for '+nowMonthLabel(), b);
+        });
+        break;
+      case 'sub-ushow': var w=$('tk-ua-'+i); if(w){ w.hidden=!w.hidden; if(!w.hidden) $('tk-ui-'+i).focus(); } break;
+      case 'sub-uadd':
+        x=S.refs.sub[i]; var tv=val('tk-ui-'+i);
+        if(!tv) return;
+        act('addSubscriptionUsage',[{ rowIndex:x.rowIndex, usageText:tv }],'sub','Usage added', b);
+        break;
+      case 'sub-udel': x=S.refs.sub[i]; act('deleteSubscriptionUsage',[{ rowIndex:x.rowIndex, usageIndex:+b.getAttribute('data-u') }],'sub','Usage removed', b); break;
+    }
+  }
+
+  /* ═══ delegated events ════════════════════════════════════ */
+  $('tk-body').addEventListener('click', function(e){
+    var t=e.target;
+    var g=t.closest('[data-go]'); if(g){ go(g.getAttribute('data-go')); return; }
+    var f=t.closest('[data-filt]'); if(f){ var p=f.getAttribute('data-filt').split('|'); S.f[p[0]]=p.slice(1).join('|'); render(); return; }
+    var hd=t.closest('.tk-g-hd'); if(hd){ var box=hd.parentNode; box.classList.toggle('open'); S.open[box.getAttribute('data-gkey')]=box.classList.contains('open'); return; }
+    var a=t.closest('[data-act]'); if(a && !a.disabled) doAction(a);
+  });
+  $('tk-body').addEventListener('input', function(e){
+    if(e.target.id==='tk-fq'){ S.q=e.target.value.trim().toLowerCase(); $('tk-q').value=e.target.value; render(); }
+  });
+  $('tk-body').addEventListener('keydown', function(e){
+    if(e.key==='Enter' && e.target.getAttribute('data-enter')){ e.preventDefault(); var b=e.target.parentNode.querySelector('[data-act="'+e.target.getAttribute('data-enter')+'"]'); if(b) doAction(b); }
+  });
+  $('tk-nav').addEventListener('click', function(e){ var b=e.target.closest('[data-go]'); if(b) go(b.getAttribute('data-go')); });
+  $('tk-q').addEventListener('input', function(){ S.q=this.value.trim().toLowerCase(); render(); });
+  $('tk-overlay').addEventListener('click', function(e){ if(e.target===this) close(); });
+  document.querySelectorAll('#tk-modal [data-tk-close]').forEach(function(b){ b.addEventListener('click', close); });
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Escape' || !isOpen()) return;
+    if(S.form){ closeDrawer(); } else close();
+  });
+
+  /* ═══ warm up after boot so the header badge is current ═══ */
+  function prefetch(){ loadAll().then(updateBadge); }
+  window.addEventListener('load', function(){ setTimeout(prefetch, 5000); });
+})();
+</script>

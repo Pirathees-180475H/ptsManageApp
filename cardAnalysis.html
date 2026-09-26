@@ -552,7 +552,7 @@
       <button class="tw-trigger" type="button" title="Tools — hover or tap" aria-label="Open tool wheel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="4.2" r="1.7"/><circle cx="18.8" cy="8.1" r="1.7"/><circle cx="18.8" cy="15.9" r="1.7"/><circle cx="12" cy="19.8" r="1.7"/><circle cx="5.2" cy="15.9" r="1.7"/><circle cx="5.2" cy="8.1" r="1.7"/></svg></button>
       <button class="cc-save-btn" id="ccSaveBtn" type="button" onclick="ccSaveAll()" disabled>💾 Saved</button>
       <button class="pg-money-btn" onclick="moneyToggle()">💵</button>
-      <button class="pg-tracker-btn" onclick="trackerToggle()">📋</button>
+      <button class="tk-trigger" type="button" onclick="trackerToggle()" title="Trackers" aria-label="Open trackers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg><span class="tk-badge" hidden></span></button>
       <button class="pg-docs-btn" onclick="docsToggle()">📂</button>
       <button class="pg-cal-btn" onclick="calToggle()">📅</button>
       <button class="pg-calc-btn" onclick="calcToggle()">🧮</button>
@@ -583,6 +583,7 @@
   <div class="pg-hdr">
     <span class="pg-hdr-title">📊 Card Analysis</span>
     <div class="pg-hdr-actions">
+      <button class="tk-trigger" type="button" onclick="trackerToggle()" title="Trackers" aria-label="Open trackers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 11l2 2 4-4"/><path d="M9 17h6"/></svg><span class="tk-badge" hidden></span></button>
       <button class="pg-reload-btn" onclick="reloadPage('ca')">↺ Reload</button>
       <button class="pg-back-btn" onclick="showPage('cc')" title="Back to Credit Cards">← Back</button>
     </div>
