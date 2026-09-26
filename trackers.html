@@ -72,8 +72,8 @@
   --tk-acc:#00d4ff;
   /* one status vocabulary for every tracker */
   --tk-open:#f59e0b; --tk-done:#10b981; --tk-bad:#ef4444; --tk-off:#64748b; --tk-info:#38bdf8;
-  width:min(1060px,100%);height:min(720px,calc(100vh - 28px));
-  display:grid;grid-template-columns:216px 1fr;
+  width:min(1280px,100%);height:min(860px,calc(100vh - 28px));
+  display:grid;grid-template-columns:230px minmax(0,1fr);
   background:var(--tk-panel);color:var(--tk-ink);
   border:1px solid var(--tk-bdr);border-radius:18px;overflow:hidden;
   box-shadow:0 30px 90px rgba(0,0,0,.6);
@@ -85,10 +85,10 @@
 #tk-modal button:focus-visible,#tk-modal input:focus-visible,#tk-modal select:focus-visible,#tk-modal textarea:focus-visible{outline:2px solid var(--tk-acc);outline-offset:2px;}
 
 /* rail */
-#tk-modal .tk-rail{background:var(--tk-rail);border-right:1px solid var(--tk-bdr);display:flex;flex-direction:column;min-height:0;}
+#tk-modal .tk-rail{background:var(--tk-rail);border-right:1px solid var(--tk-bdr);display:flex;flex-direction:column;min-height:0;min-width:0;}
 #tk-modal .tk-rail-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 10px;}
 #tk-modal .tk-rail-hd b{font-size:14px;font-weight:800;}
-#tk-modal .tk-x-m{display:none;}
+#tk-modal .tk-btn.tk-x-m{display:none;}
 #tk-modal .tk-rsearch{margin:0 10px 8px;display:flex;align-items:center;gap:6px;background:var(--tk-field);border:1px solid var(--tk-bdr);border-radius:9px;padding:6px 9px;}
 #tk-modal .tk-rsearch input{flex:1;min-width:0;background:none;border:0;color:var(--tk-ink);font:500 12px 'Inter',sans-serif;outline:none;}
 #tk-modal .tk-rsearch svg{width:13px;height:13px;color:var(--tk-mut);flex:none;}
@@ -107,16 +107,18 @@
 
 /* main */
 #tk-modal .tk-main{display:flex;flex-direction:column;min-width:0;min-height:0;position:relative;}
-#tk-modal .tk-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-bottom:1px solid var(--tk-bdr);flex-wrap:wrap;}
+#tk-modal .tk-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px;border-bottom:1px solid var(--tk-bdr);}
+#tk-modal .tk-hd > div:first-child{min-width:0;}
+#tk-modal .tk-hd h2,#tk-modal .tk-hd small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 #tk-modal .tk-hd h2{font-size:16px;font-weight:800;margin:0;}
 #tk-modal .tk-hd small{color:var(--tk-mut);font-size:11.5px;display:block;font-weight:500;}
-#tk-modal .tk-hd-act{display:flex;gap:6px;align-items:center;}
+#tk-modal .tk-hd-act{display:flex;gap:6px;align-items:center;flex:none;}
 #tk-modal .tk-btn{height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--tk-bdr);background:rgba(255,255,255,.04);color:var(--tk-ink2);font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
 #tk-modal .tk-btn:hover{border-color:var(--tk-bdr2);color:var(--tk-ink);}
 #tk-modal .tk-btn.pri{background:linear-gradient(135deg,#00d4ff,#3b82f6);color:#060b18;border:0;}
 #tk-modal .tk-btn.pri:disabled{opacity:.55;cursor:default;}
 #tk-modal .tk-btn.sq{width:30px;padding:0;}
-#tk-modal .tk-body{flex:1;overflow-y:auto;padding:16px 18px 24px;display:flex;flex-direction:column;gap:14px;min-height:0;}
+#tk-modal .tk-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 18px 24px;display:flex;flex-direction:column;gap:14px;min-height:0;}
 #tk-modal .tk-body::-webkit-scrollbar,#tk-modal .tk-nav::-webkit-scrollbar,#tk-modal .tk-dr-body::-webkit-scrollbar{width:6px;}
 #tk-modal .tk-body::-webkit-scrollbar-thumb,#tk-modal .tk-nav::-webkit-scrollbar-thumb,#tk-modal .tk-dr-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:8px;}
 #tk-modal .tk-state{text-align:center;color:var(--tk-mut);padding:44px 12px;font-size:13px;}
@@ -125,7 +127,7 @@
 @keyframes tkSpin{to{transform:rotate(360deg);}}
 
 /* summary strip · ribbon · filter bar */
-#tk-modal .tk-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+#tk-modal .tk-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
 #tk-modal .tk-sum > div{background:rgba(255,255,255,.04);border:1px solid var(--tk-bdr);border-radius:12px;padding:10px 13px;min-width:0;}
 #tk-modal .tk-sum small{display:block;font-size:10px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--tk-mut);}
 #tk-modal .tk-sum b{font-size:18px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -163,7 +165,7 @@
 #tk-modal .tk-g-rows{display:none;border-top:1px solid var(--tk-bdr);}
 #tk-modal .tk-g.open .tk-g-rows{display:block;}
 #tk-modal .tk-g-tools{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.04);background:rgba(255,255,255,.015);font-size:11px;color:var(--tk-mut);align-items:center;}
-#tk-modal .tk-row{display:grid;grid-template-columns:88px 1fr auto auto;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.045);font-size:12px;}
+#tk-modal .tk-row{display:grid;grid-template-columns:88px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.045);font-size:12px;}
 #tk-modal .tk-row:last-child{border-bottom:0;}
 #tk-modal .tk-dt{color:var(--tk-mut);font-variant-numeric:tabular-nums;font-size:11.5px;}
 #tk-modal .tk-tx{min-width:0;color:var(--tk-ink2);word-break:break-word;}
@@ -289,30 +291,85 @@
 #tk-modal .tk-toast.err{border-color:rgba(239,68,68,.5);color:#ff9b9b;}
 #tk-modal .tk-toast.show{opacity:1;transform:translate(-50%,0);}
 
-@media(max-width:760px){
-  #tk-overlay{padding:0;}
-  #tk-modal{width:100%;height:100%;border-radius:0;border:0;grid-template-columns:1fr;grid-template-rows:auto 1fr;}
-  #tk-modal .tk-rail{border-right:0;border-bottom:1px solid var(--tk-bdr);}
-  #tk-modal .tk-rsearch,#tk-modal .tk-grp{display:none;}
-  #tk-modal .tk-rail-hd{padding:10px 12px 6px;}
-  #tk-modal .tk-x-m{display:inline-flex;}
-  #tk-modal .tk-x-d{display:none;}
-  #tk-modal .tk-nav{display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;padding:0 8px 8px;flex:none;}
-  #tk-modal .tk-ri{flex:none;width:auto;}
-  #tk-modal .tk-hab{grid-template-columns:1fr;}
+@media(min-width:1500px){
+  #tk-modal{width:min(1380px,100%);height:min(900px,calc(100vh - 40px));}
 }
-@media(max-width:480px){
-  #tk-modal .tk-sum{grid-template-columns:1fr 1fr;}
-  #tk-modal .tk-sum > div:nth-child(3){grid-column:1/-1;}
-  #tk-modal .tk-row{grid-template-columns:70px 1fr auto;}
-  #tk-modal .tk-row > .tk-pill,#tk-modal .tk-row > button.tk-pill{grid-column:2/-1;justify-self:end;}
-  #tk-modal .tk-fq{width:100%;}
-  #tk-modal .tk-f2{grid-template-columns:1fr;}
-  #tk-modal .tk-mile{grid-template-columns:100px 1fr 36px;}
+@media(max-width:760px){
+  #tk-overlay{padding:0;align-items:stretch;}
+  #tk-modal{width:100%;max-width:100vw;height:100vh;height:100dvh;max-height:none;border-radius:0;border:0;
+    grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);animation:none;}
+  #tk-modal .tk-rail{border-right:0;border-bottom:1px solid var(--tk-bdr);padding-top:env(safe-area-inset-top,0px);}
+  #tk-modal .tk-rsearch,#tk-modal .tk-grp{display:none;}
+  #tk-modal .tk-rail-hd{padding:10px 12px 8px;}
+  #tk-modal .tk-rail-hd b{font-size:15px;}
+  #tk-modal .tk-btn.tk-x-m{display:inline-flex;}
+  #tk-modal .tk-btn.tk-x-d{display:none;}
+  /* tabs: one swipeable row, never wider than the screen */
+  #tk-modal .tk-nav{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;padding:0 12px 10px;flex:none;min-width:0;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;}
+  #tk-modal .tk-nav::-webkit-scrollbar{display:none;}
+  #tk-modal .tk-ri{flex:none;width:auto;padding:6px 10px 6px 6px;border:1px solid var(--tk-bdr);border-radius:20px;font-size:12px;scroll-snap-align:start;}
+  #tk-modal .tk-ri.on{border-color:rgba(0,212,255,.35);}
+  #tk-modal .tk-ri .tk-ic{width:20px;height:20px;border-radius:50%;}
+  #tk-modal .tk-hd{padding:10px 12px;}
+  #tk-modal .tk-hd h2{font-size:15px;}
+  #tk-modal .tk-hd small{display:none;}
+  #tk-modal .tk-btn{height:32px;}
+  #tk-modal .tk-body{padding:12px 12px calc(24px + env(safe-area-inset-bottom,0px));gap:12px;}
+  #tk-modal .tk-drawer{width:100%;border-left:0;}
+  #tk-modal .tk-dr-ft{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));}
+  #tk-modal .tk-dr-ft .tk-btn{flex:1;height:40px;}
+  #tk-modal .tk-f input,#tk-modal .tk-f select,#tk-modal .tk-f textarea{font-size:16px;} /* stops iOS zoom on focus */
+  #tk-modal .tk-hab{grid-template-columns:minmax(0,1fr);}
+  #tk-modal .tk-tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  #tk-modal .tk-tile{padding:10px 11px;}
+  #tk-modal .tk-tile .tv{font-size:16px;}
+  #tk-modal .tk-sum{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  #tk-modal .tk-sum > div{padding:9px 11px;}
+  #tk-modal .tk-sum > div:nth-child(3){grid-column:1/-1;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  #tk-modal .tk-sum b{font-size:16px;}
+  #tk-modal .tk-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -12px;padding:0 12px;}
+  #tk-modal .tk-bar::-webkit-scrollbar{display:none;}
+  #tk-modal .tk-chip{flex:none;}
+  #tk-modal .tk-bar .tk-sp{display:none;}
+  #tk-modal .tk-fq{flex:none;width:150px;}
+  #tk-modal .tk-g-hd{padding:10px;gap:9px;}
+  #tk-modal .tk-av{width:30px;height:30px;}
+  #tk-modal .tk-g-amt{font-size:12.5px;}
+  #tk-modal .tk-g-tools{padding:8px 10px;}
+  /* rows become a 2-line card: date + pill on top, text, then amount */
+  #tk-modal .tk-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"dt st" "tx am" "us us" "ac ac";column-gap:10px;row-gap:3px;padding:10px;}
+  #tk-modal .tk-row > .tk-dt{grid-area:dt;}
+  #tk-modal .tk-row > .tk-tx{grid-area:tx;}
+  #tk-modal .tk-row > .tk-am{grid-area:am;align-self:start;}
+  #tk-modal .tk-row > .tk-pill,#tk-modal .tk-row > button.tk-pill,#tk-modal .tk-row > span:empty{grid-area:st;justify-self:end;}
+  #tk-modal .tk-row > .tk-usage{grid-area:us;margin-top:4px;}
+  #tk-modal .tk-row > .tk-acts{grid-area:ac;padding-top:4px;}
+  #tk-modal .tk-mini{height:28px;padding:0 11px;}
+  #tk-modal .tk-note{grid-template-columns:44px minmax(0,1fr);}
+  #tk-modal .tk-note-acts{grid-column:1/-1;justify-content:flex-end;}
+  #tk-modal .tk-att-row{padding:10px 12px;align-items:flex-start;}
+  #tk-modal .tk-att-row .dot{margin-top:6px;}
+  #tk-modal .tk-hit{grid-template-columns:auto minmax(0,1fr) auto;}
+  #tk-modal .tk-mile{grid-template-columns:110px minmax(0,1fr) 36px;}
+  #tk-modal .tk-big{font-size:28px;}
+  #tk-modal .tk-cal{gap:3px;}
+  #tk-modal .tk-cal span{aspect-ratio:auto;height:34px;}
+  #tk-modal .tk-cal .hd{height:auto;}
+  #tk-modal .tk-toast{bottom:calc(16px + env(safe-area-inset-bottom,0px));}
+}
+@media(max-width:340px){
+  #tk-modal .tk-tiles{grid-template-columns:minmax(0,1fr);}
+}
+@media(max-width:400px){
+  #tk-modal .tk-f2{grid-template-columns:minmax(0,1fr);}
+  #tk-modal .tk-mile{grid-template-columns:96px minmax(0,1fr) 34px;}
 }
 @media(prefers-reduced-motion:reduce){
   #tk-modal,#tk-modal *{animation:none!important;transition:none!important;}
 }
+/* last on purpose: [hidden] must beat every display rule above (buttons, usage row, form fields) */
+#tk-overlay [hidden]{display:none!important;}
 </style>
 
 <div id="tk-overlay" aria-hidden="true">
@@ -361,6 +418,7 @@
   function num(n){ return Math.round(Number(n)||0).toLocaleString('en-IN'); }
   function rs(n){ return '₨ '+num(n); }
   function sumOf(arr, f){ return arr.reduce(function(s,x){ return s+(Number(f(x))||0); },0); }
+  function pl(n, w, many){ return n+' '+(n===1?w:(many||w+'s')); }
   function pct(a,b){ return b>0 ? Math.round(a/b*100) : 0; }
   function tap(k){ if(typeof haptic==='function') haptic(k); }
   function nowMonthLabel(){ var d=new Date(); return MON[d.getMonth()]+' '+d.getFullYear(); }
@@ -401,13 +459,13 @@
   var TK = [
     { id:'ov',     name:'Overview',         icon:'home',   c:'#00d4ff', sub:'What needs you, across every tracker' },
     { id:'rot',    name:'Rotations',        icon:'swap',   c:'#3b82f6', grp:'Money owed to me', sub:'Money you lent, by person', load:'getRotationData' },
-    { id:'ins',    name:'Claims',           icon:'shield', c:'#a855f7', grp:'Money owed to me', sub:'Insurance claims, newest first', load:'getInsuranceData', add:'claim' },
-    { id:'sub',    name:'Subscriptions',    icon:'repeat', c:'#10b981', grp:'Commitments', sub:'Monthly services and who chips in', load:'getSubscriptions', add:'entry' },
+    { id:'ins',    name:'Claims',           icon:'shield', c:'#a855f7', grp:'Money owed to me', sub:'Insurance claims, newest first', load:'getInsuranceData', add:'New claim', form:'claim' },
+    { id:'sub',    name:'Subscriptions',    icon:'repeat', c:'#10b981', grp:'Commitments', sub:'Monthly services and who chips in', load:'getSubscriptions', add:'Log subscription', form:'subscription entry' },
     { id:'inst',   name:'Installments',     icon:'cal',    c:'#f59e0b', grp:'Commitments', sub:'Tap a status to switch Pending ↔ Settled', load:'getInstallments' },
-    { id:'budget', name:'Budget',           icon:'pie',    c:'#fb923c', grp:'Commitments', sub:'Planned vs spent for one-off plans', load:'getBudgetData', add:'entry' },
+    { id:'budget', name:'Budget',           icon:'pie',    c:'#fb923c', grp:'Commitments', sub:'Planned vs spent for one-off plans', load:'getBudgetData', add:'Budget item', form:'budget item' },
     { id:'hab',    name:'Habits',           icon:'leaf',   c:'#4ade80', grp:'Life', sub:'Smoke-free streak, junk food and drinks', load:'getSmokingData' },
-    { id:'notes',  name:'Notes',            icon:'note',   c:'#38bdf8', grp:'Life', sub:'Dated notes; flagged ones show on the calendar', load:'getNotesData', add:'note' },
-    { id:'loss',   name:'Losses & lessons', icon:'down',   c:'#ef4444', grp:'Life', sub:'What it cost and what you learned', load:'getLossesData', add:'loss' }
+    { id:'notes',  name:'Notes',            icon:'note',   c:'#38bdf8', grp:'Life', sub:'Dated notes; flagged ones show on the calendar', load:'getNotesData', add:'New note', form:'note' },
+    { id:'loss',   name:'Losses & lessons', icon:'down',   c:'#ef4444', grp:'Life', sub:'What it cost and what you learned', load:'getLossesData', add:'Record loss', form:'loss' }
   ];
   var ALIAS = { smoke:'hab', habbit:'hab', habits:'hab', claims:'ins', subs:'sub', losses:'loss', overview:'ov' };
   function meta(id){ for(var i=0;i<TK.length;i++) if(TK[i].id===id) return TK[i]; return TK[0]; }
@@ -501,6 +559,8 @@
       if(!e.platform) return;
       var k=e.platform.toLowerCase();
       if(!map[k]){ map[k]={ key:k, name:e.platform, entries:[] }; order.push(k); }
+      e.usages = Array.isArray(e.usages) ? e.usages.map(String)
+               : (e.usages!=null && e.usages!=='' ? String(e.usages).split(',').map(function(x){return x.trim();}).filter(Boolean) : []);
       map[k].entries.push(e);
     });
     return order.map(function(k){
@@ -635,7 +695,7 @@
   }
   function curFilter(id, def){ return S.f[id]||def; }
   function matches(){ var q=S.q; if(!q) return true; for(var i=0;i<arguments.length;i++) if(String(arguments[i]||'').toLowerCase().indexOf(q)>=0) return true; return false; }
-  function groupOpen(id, key, idx){ var k=id+'|'+key; return S.open[k]!==undefined ? S.open[k] : (idx===0 || !!S.q); }
+  function groupOpen(id, key, idx){ var k=id+'|'+key; return S.open[k]!==undefined ? S.open[k] : !!S.q; }
   function group(id, key, idx, head, inner){
     return '<div class="tk-g'+(groupOpen(id,key,idx)?' open':'')+'" data-gkey="'+esc(id+'|'+key)+'">'+
       '<button type="button" class="tk-g-hd">'+head.av+'<span class="tk-g-nm"><b>'+esc(head.title)+'</b><small>'+head.sub+'</small></span>'+
@@ -675,7 +735,7 @@
     if(nd){
       var t0=new Date(); t0.setHours(0,0,0,0);
       var seen={}, up=[];
-      (nd.data||[]).forEach(function(n){ var nx=noteNext(n); if(!nx) return; var dd=Math.round((nx-t0)/DAY_MS); if(dd>14) return; var k=n.reference+'|'+ymd(nx); if(seen[k]) return; seen[k]=1; up.push({ n:n, d:nx, dd:dd }); });
+      (nd.data||[]).forEach(function(n){ var nx=noteNext(n); if(!nx) return; var dd=Math.round((nx-t0)/DAY_MS); if(dd>14) return; var k=n.reference+'|'+(n.category||''); if(seen[k] && seen[k].d<=nx) return; if(seen[k]) up.splice(up.indexOf(seen[k]),1); seen[k]={ n:n, d:nx, dd:dd }; up.push(seen[k]); });
       up.sort(function(a,b){return a.d-b.d;});
       if(up.length){
         h2+='<div class="tk-att up"><div class="tk-att-hd">Coming up · next 14 days</div>'+up.slice(0,6).map(function(u){
@@ -723,7 +783,7 @@
       vis.sort(function(a,b){ if(a.returned!==b.returned) return a.returned?1:-1; return b.age-a.age; });
       var owed=sumOf(all.filter(function(r){return !r.returned;}),function(r){return r.amount;});
       var retN=all.filter(function(r){return r.returned;}).length;
-      body+=group('rot', nm, idx++, { av:av(initials(nm),'#3b82f6'), title:nm, sub:all.length+' entries · '+(owed?all.filter(function(r){return !r.returned;}).length+' pending':'all returned'), amt:rs(owed||sumOf(all,function(r){return r.amount;})), amtLbl:owed?'pending':'returned', prog:all.length?retN/all.length*100:0 },
+      body+=group('rot', nm, idx++, { av:av(initials(nm),'#3b82f6'), title:nm, sub:pl(all.length,'entry','entries')+' · '+(owed?all.filter(function(r){return !r.returned;}).length+' pending':'all returned'), amt:rs(owed||sumOf(all,function(r){return r.amount;})), amtLbl:owed?'pending':'returned', prog:all.length?retN/all.length*100:0 },
         vis.map(function(r){
           return '<div class="tk-row"><span class="tk-dt">'+esc(r.date)+'</span><span class="tk-tx">'+(r.remarks?esc(r.remarks):'<span style="opacity:.5">No remarks</span>')+(r.days?'<small>'+esc(r.days)+'</small>':'')+'</span><span class="tk-am">'+rs(r.amount)+'</span><span class="tk-pill '+(r.returned?'done':'open')+'">'+(r.returned?'Returned':'Pending')+'</span></div>';
         }).join(''));
@@ -736,8 +796,8 @@
     var rows=claimRows();
     var by=function(s){ return rows.filter(function(c){return c.stage===s;}); };
     var open=rows.filter(function(c){return c.stage!=='settled'&&c.stage!=='rejected';});
-    var h=sum3([['Open',rs(sumOf(open,function(c){return c.amount;})),'c-open',open.length+' claims'],['Settled',rs(sumOf(by('settled'),function(c){return c.amount;})),'c-done',by('settled').length+' claims'],['Rejected',rs(sumOf(by('rejected'),function(c){return c.amount;})),'c-bad',by('rejected').length+' claims']]);
-    if(!rows.length) return h+empty('No claims yet. Use “+ Add claim” to record one.');
+    var h=sum3([['Open',rs(sumOf(open,function(c){return c.amount;})),'c-open',pl(open.length,'claim')],['Settled',rs(sumOf(by('settled'),function(c){return c.amount;})),'c-done',pl(by('settled').length,'claim')],['Rejected',rs(sumOf(by('rejected'),function(c){return c.amount;})),'c-bad',pl(by('rejected').length,'claim')]]);
+    if(!rows.length) return h+empty('No claims yet. Use “+ New claim” to record one.');
     h+=ribbon([['Settled',sumOf(by('settled'),function(c){return c.amount;}),'#10b981'],['Approved',sumOf(by('approved'),function(c){return c.amount;}),'#34d399'],['Submitted',sumOf(by('waiting'),function(c){return c.amount;}),'#38bdf8'],['Not submitted',sumOf(by('draft'),function(c){return c.amount;}),'#f59e0b'],['Rejected',sumOf(by('rejected'),function(c){return c.amount;}),'#ef4444']]);
     var f=curFilter('ins','all');
     h+=filterBar('ins',[['all','All',rows.length],['open','Open',open.length],['draft','Not submitted',by('draft').length],['waiting','Submitted',by('waiting').length],['approved','Approved',by('approved').length],['settled','Settled',by('settled').length],['rejected','Rejected',by('rejected').length]]);
@@ -749,7 +809,7 @@
       if(!vis.length) return;
       var o=all.filter(function(c){return c.stage!=='settled'&&c.stage!=='rejected';});
       var done=all.filter(function(c){return c.stage==='settled';}).length;
-      body+=group('ins', p, idx++, { av:av(initials(p),'#a855f7'), title:p, sub:all.length+' claims · '+done+' settled', amt:rs(o.length?sumOf(o,function(c){return c.amount;}):sumOf(all,function(c){return c.amount;})), amtLbl:o.length?'open':'total', prog:all.length?done/all.length*100:0 },
+      body+=group('ins', p, idx++, { av:av(initials(p),'#a855f7'), title:p, sub:pl(all.length,'claim')+' · '+done+' settled', amt:rs(o.length?sumOf(o,function(c){return c.amount;}):sumOf(all,function(c){return c.amount;})), amtLbl:o.length?'open':'total', prog:all.length?done/all.length*100:0 },
         vis.map(function(c){
           var i=ref('ins',c), st=STAGE[c.stage];
           var meta=[c.source, c.submittedDate?'submitted '+c.submittedDate:''].filter(Boolean).join(' · ');
@@ -802,10 +862,10 @@
   var SUB_COLORS=['#10b981','#3b82f6','#8b5cf6','#06b6d4','#f59e0b','#ec4899','#ef4444','#14b8a6','#6366f1','#f97316'];
   function vSub(){
     var ps=subPlatforms();
-    if(!ps.length) return empty('No subscriptions yet. Use “+ Add entry” to log one.');
+    if(!ps.length) return empty('No subscriptions yet. Use “+ Log subscription” to add one.');
     var act=ps.filter(function(p){return !p.closed;}), cls=ps.filter(function(p){return p.closed;});
     var all=[]; ps.forEach(function(p){ all=all.concat(p.entries); });
-    var h=sum3([['Net spent',rs(sumOf(all,function(e){return e.netCost;})),'c-done',all.length+' entries'],['Collected back',rs(sumOf(all,function(e){return e.collections;})),'c-info'],['Platforms',act.length+' active','',cls.length?cls.length+' closed':'']]);
+    var h=sum3([['Net spent',rs(sumOf(all,function(e){return e.netCost;})),'c-done',pl(all.length,'entry','entries')],['Collected back',rs(sumOf(all,function(e){return e.collections;})),'c-info'],['Platforms',act.length+' active','',cls.length?cls.length+' closed':'']]);
     h+=ribbon(act.slice().sort(function(a,b){return b.total-a.total;}).map(function(p,i){ return [p.name,p.total,SUB_COLORS[i%SUB_COLORS.length],rs(p.total)]; }));
     var f=curFilter('sub','active');
     h+=filterBar('sub',[['active','Active',act.length],['closed','Closed',cls.length],['all','All',ps.length]]);
@@ -825,7 +885,7 @@
         return '<div class="tk-row"><span class="tk-dt">'+esc(subMonthLabel(e.month))+'</span><span class="tk-tx"><b>'+esc(e.plan||'—')+'</b>'+flow+(e.note?'<small>📝 '+esc(e.note)+'</small>':'')+'</span><span class="tk-am">'+rs(e.netCost)+'</span><span></span>'+usage+
           '<div class="tk-acts">'+delBtn('sub-del',i,'Remove entry')+'</div></div>';
       }).join('');
-      body+=group('sub', p.key, gi, { av:subLogo(p.name), title:p.name+(p.closed?' (closed)':''), sub:p.entries.length+' entries', amt:rs(p.total), amtLbl:'net total' }, tools+rows);
+      body+=group('sub', p.key, gi, { av:subLogo(p.name), title:p.name+(p.closed?' (closed)':''), sub:pl(p.entries.length,'entry','entries'), amt:rs(p.total), amtLbl:'net total' }, tools+rows);
     });
     return h+(body||empty('Nothing matches this filter.'));
   }
@@ -836,7 +896,7 @@
     if(!il.length) return empty('No installments in the OTHERS sheet.');
     var flat=[]; il.forEach(function(p){ flat=flat.concat(p.entries); });
     var open=flat.filter(function(e){return e.st==='open';}), done=flat.filter(function(e){return e.st==='done';});
-    var h=sum3([['Pending',rs(sumOf(open,function(e){return e.amount;})),'c-open',open.length+' payments'],['Settled',rs(sumOf(done,function(e){return e.amount;})),'c-done',done.length+' payments'],['Plans',il.length,'',il.filter(function(p){return !p.entries.some(function(e){return e.st==='open';});}).length+' fully paid']]);
+    var h=sum3([['Pending',rs(sumOf(open,function(e){return e.amount;})),'c-open',pl(open.length,'payment')],['Settled',rs(sumOf(done,function(e){return e.amount;})),'c-done',pl(done.length,'payment')],['Plans',il.length,'',il.filter(function(p){return !p.entries.some(function(e){return e.st==='open';});}).length+' fully paid']]);
     h+=ribbon([['Settled',sumOf(done,function(e){return e.amount;}),'#10b981'],['Pending',sumOf(open,function(e){return e.amount;}),'#f59e0b']]);
     var f=curFilter('inst','all'), cm=curMonthKey();
     h+=filterBar('inst',[['all','All',flat.length],['open','Pending',open.length],['done','Settled',done.length]]);
@@ -847,7 +907,7 @@
       if(!vis.length) return;
       var po=p.entries.filter(function(e){return e.st==='open';}), pd=p.entries.filter(function(e){return e.st==='done';}).length;
       var sw=p.name.toLowerCase().indexOf('splitwise')>=0;
-      body+=group('inst', p.name, idx++, { av:av(initials(p.name),'#f59e0b'), title:p.name, sub:p.entries.length+' payments · '+pd+' settled', amt:rs(po.length?sumOf(po,function(e){return e.amount;}):sumOf(p.entries,function(e){return e.amount;})), amtLbl:po.length?'left to pay':'all settled', prog:p.entries.length?pd/p.entries.length*100:0 },
+      body+=group('inst', p.name, idx++, { av:av(initials(p.name),'#f59e0b'), title:p.name, sub:pl(p.entries.length,'payment')+' · '+pd+' settled', amt:rs(po.length?sumOf(po,function(e){return e.amount;}):sumOf(p.entries,function(e){return e.amount;})), amtLbl:po.length?'left to pay':'all settled', prog:p.entries.length?pd/p.entries.length*100:0 },
         vis.map(function(e){
           var i=ref('inst', e), due=e.st==='open' && e.mk!=null && e.mk<=cm;
           var pill = e.st==='off' ? '<span class="tk-pill off">'+esc(e.status)+'</span>'
@@ -862,8 +922,8 @@
   /* ═══ Budget ══════════════════════════════════════════════ */
   function vBudget(){
     var gs=budgetGroups();
-    var h=sum3([['Budgeted',rs(sumOf(gs,function(g){return g.budget;})),'',gs.length+' plans'],['Spent',rs(sumOf(gs,function(g){return g.spent;})),'c-info'],['Over budget',gs.filter(function(g){return g.over;}).length,gs.some(function(g){return g.over;})?'c-bad':'c-done',gs.some(function(g){return g.over;})?rs(sumOf(gs.filter(function(g){return g.over;}),function(g){return g.spent-g.budget;}))+' over':'all within budget']]);
-    if(!gs.length) return h+empty('No budget entries yet. Use “+ Add entry” to plan one.');
+    var h=sum3([['Budgeted',rs(sumOf(gs,function(g){return g.budget;})),'',pl(gs.length,'plan')],['Spent',rs(sumOf(gs,function(g){return g.spent;})),'c-info'],['Over budget',gs.filter(function(g){return g.over;}).length,gs.some(function(g){return g.over;})?'c-bad':'c-done',gs.some(function(g){return g.over;})?rs(sumOf(gs.filter(function(g){return g.over;}),function(g){return g.spent-g.budget;}))+' over':'all within budget']]);
+    if(!gs.length) return h+empty('No budget entries yet. Use “+ Budget item” to plan one.');
     var f=curFilter('budget','all');
     h+=filterBar('budget',[['all','All',gs.length],['over','Over',gs.filter(function(g){return g.over;}).length],['within','Within',gs.filter(function(g){return !g.over;}).length]]);
     var idx=0, body='';
@@ -909,7 +969,7 @@
     var dim=new Date(S.habY, S.habM, 0).getDate();
     var jm={}, dm={}; jd.forEach(function(e){ jm[e.day]=(jm[e.day]||0)+(Number(e.amount)||0); }); dr.forEach(function(e){ dm[e.day]=(dm[e.day]||0)+(Number(e.amount)||0); });
     var hit={}; Object.keys(jm).forEach(function(k){hit[k]=1;}); Object.keys(dm).forEach(function(k){hit[k]=1;});
-    var h=sum3([['Smoke-free',s?s.days+' days':'—','c-done',s?rs(s.saved)+' saved':''],['Junk food · '+MON[S.habM-1],md?Object.keys(jm).length+' days':'…','c-open',md?rs(sumOf(jd,function(e){return e.amount;})):''],['Drinks · '+MON[S.habM-1],md?Object.keys(dm).length+' days':'…','c-bad',md?(dim-Object.keys(hit).length)+' clean days':'']]);
+    var h=sum3([['Smoke-free',s?pl(s.days,'day'):'—','c-done',s?rs(s.saved)+' saved':''],['Junk food · '+MON[S.habM-1],md?pl(Object.keys(jm).length,'day'):'…','c-open',md?rs(sumOf(jd,function(e){return e.amount;})):''],['Drinks · '+MON[S.habM-1],md?pl(Object.keys(dm).length,'day'):'…','c-bad',md?pl(dim-Object.keys(hit).length,'clean day'):'']]);
     h+='<div class="tk-hab"><div class="tk-box">';
     if(s){
       h+='<div class="tk-sec">Smoke-free since '+s.last.getDate()+' '+MON[s.last.getMonth()]+' '+s.last.getFullYear()+'</div>'+
@@ -948,7 +1008,7 @@
     var t0=new Date(); t0.setHours(0,0,0,0);
     var soon=all.filter(function(n){ var x=noteNext(n); return x && (x-t0)/DAY_MS<=30; }).length;
     var h=sum3([['Notes',all.length,''],['On calendar',all.filter(function(n){return n.calendar;}).length,'c-info'],['Next 30 days',soon,soon?'c-open':'']]);
-    if(!all.length) return h+empty('No notes yet. Use “+ Add note” to write one.');
+    if(!all.length) return h+empty('No notes yet. Use “+ New note” to write one.');
     var used={}; all.forEach(function(n){ var c=n.category||'Uncategorized'; used[c]=(used[c]||0)+1; });
     var f=curFilter('notes','all');
     h+=filterBar('notes',[['all','All',all.length],['cal','On calendar',all.filter(function(n){return n.calendar;}).length]].concat(Object.keys(used).sort().map(function(c){return ['c:'+c, c, used[c]];})));
@@ -973,8 +1033,8 @@
   function vLoss(){
     var rows=lossRows();
     var conf=rows.filter(function(l){return l.isConfirmLoss;}), un=rows.filter(function(l){return !l.isConfirmLoss;});
-    var h=sum3([['Confirmed',rs(sumOf(conf,function(l){return l.amount;})),'c-bad',conf.length+' entries'],['Unconfirmed',rs(sumOf(un,function(l){return l.amount;})),'c-open',un.length+' entries'],['Lessons written',rows.filter(function(l){return String(l.lesson||'').trim();}).length+' / '+rows.length,'']]);
-    if(!rows.length) return h+empty('No losses recorded. Use “+ Add loss” to record one.');
+    var h=sum3([['Confirmed',rs(sumOf(conf,function(l){return l.amount;})),'c-bad',pl(conf.length,'entry','entries')],['Unconfirmed',rs(sumOf(un,function(l){return l.amount;})),'c-open',pl(un.length,'entry','entries')],['Lessons written',rows.filter(function(l){return String(l.lesson||'').trim();}).length+' / '+rows.length,'']]);
+    if(!rows.length) return h+empty('No losses recorded. Use “+ Record loss” to add one.');
     h+=ribbon([['Confirmed',sumOf(conf,function(l){return l.amount;}),'#ef4444'],['Unconfirmed',sumOf(un,function(l){return l.amount;}),'#f59e0b']]);
     var f=curFilter('loss','all');
     h+=filterBar('loss',[['all','All',rows.length],['bad','Confirmed',conf.length],['open','Unconfirmed',un.length],['nolesson','No lesson',rows.filter(function(l){return !String(l.lesson||'').trim();}).length]]);
@@ -996,7 +1056,7 @@
     var m=meta(S.cur), body=$('tk-body');
     $('tk-title').textContent=m.name;
     $('tk-sub').textContent=m.sub||'';
-    var add=$('tk-add'); add.hidden=!m.add; if(m.add) add.textContent='+ Add '+m.add;
+    var add=$('tk-add'); add.hidden=!m.add; add.textContent=m.add?'+ '+m.add:'';
     S.refs={};
     var fq=document.activeElement && document.activeElement.id==='tk-fq', caret=fq?document.activeElement.selectionStart:0;
     var html;
