@@ -75,7 +75,7 @@
   width:min(1280px,100%);height:min(860px,calc(100vh - 28px));
   display:grid;grid-template-columns:230px minmax(0,1fr);
   background:var(--tk-panel);color:var(--tk-ink);
-  border:1px solid var(--tk-bdr);border-radius:18px;overflow:hidden;
+  border:1px solid var(--tk-bdr);border-radius:18px;overflow:hidden;overflow:clip;
   box-shadow:0 30px 90px rgba(0,0,0,.6);
   font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.45;
   animation:tkIn .2s ease-out;
@@ -277,8 +277,18 @@
 #tk-modal .tk-note-acts{display:flex;gap:4px;}
 
 /* drawer (one form for every tracker) */
-#tk-modal .tk-drawer{position:absolute;top:0;right:0;bottom:0;width:360px;max-width:100%;background:#0d1530;border-left:1px solid var(--tk-bdr);box-shadow:-20px 0 50px rgba(0,0,0,.45);transform:translateX(105%);visibility:hidden;transition:transform .22s ease,visibility 0s linear .22s;display:flex;flex-direction:column;z-index:5;}
-#tk-modal .tk-drawer.open{transform:none;visibility:visible;transition:transform .22s ease;}
+#tk-modal .tk-drawer{position:absolute;top:0;right:0;bottom:0;width:360px;max-width:100%;background:#0d1530;border-left:1px solid var(--tk-bdr);box-shadow:-20px 0 50px rgba(0,0,0,.45);transform:translateX(104%);opacity:.4;visibility:hidden;transition:transform .3s cubic-bezier(.22,.8,.26,1),opacity .3s ease,visibility 0s linear .3s;display:flex;flex-direction:column;z-index:5;will-change:transform;}
+#tk-modal .tk-drawer.open{transform:none;opacity:1;visibility:visible;transition:transform .34s cubic-bezier(.22,.8,.26,1),opacity .2s ease;}
+#tk-modal .tk-drawer.open .tk-dr-body > *{animation:tkRise .34s cubic-bezier(.22,.8,.26,1) both;}
+#tk-modal .tk-drawer.open .tk-dr-body > *:nth-child(2){animation-delay:.03s;}
+#tk-modal .tk-drawer.open .tk-dr-body > *:nth-child(3){animation-delay:.06s;}
+#tk-modal .tk-drawer.open .tk-dr-body > *:nth-child(4){animation-delay:.09s;}
+#tk-modal .tk-drawer.open .tk-dr-body > *:nth-child(n+5){animation-delay:.12s;}
+#tk-modal .tk-drawer.swap .tk-dr-body{animation:tkFade .22s ease;}
+@keyframes tkRise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+@keyframes tkFade{from{opacity:.2;}to{opacity:1;}}
+#tk-modal .tk-scrim{position:absolute;inset:0;z-index:4;background:rgba(3,6,14,.5);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:opacity .3s ease,visibility 0s linear .3s;}
+#tk-modal .tk-scrim.open{opacity:1;visibility:visible;transition:opacity .3s ease;}
 #tk-modal .tk-dr-hd{display:flex;justify-content:space-between;align-items:center;padding:13px 16px;border-bottom:1px solid var(--tk-bdr);}
 #tk-modal .tk-dr-hd b{font-size:14px;}
 #tk-modal .tk-dr-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:11px;margin:0;}
@@ -409,6 +419,69 @@
 #tk-modal .tk-f label{color:color-mix(in srgb,var(--tk-acc) 45%,rgba(255,255,255,.55));}
 #tk-modal .tk-f input:focus,#tk-modal .tk-f select:focus,#tk-modal .tk-f textarea:focus{border-color:color-mix(in srgb,var(--tk-acc) 55%,transparent);outline:none;}
 
+/* ── card design ── */
+#tk-modal{--tk-lift:0 1px 0 rgba(255,255,255,.05) inset,0 8px 24px -12px rgba(0,0,0,.55);}
+/* summary cards: soft glass with a coloured glow in the corner */
+#tk-modal .tk-sum > div{position:relative;overflow:hidden;border-radius:14px;padding:12px 14px 11px;box-shadow:var(--tk-lift);
+  background:radial-gradient(120% 90% at 100% 0%,color-mix(in srgb,var(--sc) 20%,transparent),transparent 60%),linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));}
+#tk-modal .tk-sum > div::before{content:'';position:absolute;left:14px;top:0;width:26px;height:3px;border-radius:0 0 3px 3px;background:var(--sc);}
+#tk-modal .tk-sum b{font-size:19px;margin-top:3px;}
+#tk-modal .tk-sum em{display:block;margin-top:1px;}
+/* tiles */
+#tk-modal .tk-tile{position:relative;overflow:hidden;border-radius:15px;padding:14px 14px 13px;gap:6px;box-shadow:var(--tk-lift);
+  background:radial-gradient(130% 100% at 0% 0%,color-mix(in srgb,var(--c,#00d4ff) 18%,transparent),transparent 55%),linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.012));
+  transition:transform .18s ease,border-color .18s,box-shadow .18s;}
+#tk-modal .tk-tile::after{content:'';position:absolute;right:-26px;bottom:-26px;width:80px;height:80px;border-radius:50%;background:color-mix(in srgb,var(--c,#00d4ff) 10%,transparent);}
+#tk-modal .tk-tile:hover{transform:translateY(-2px);box-shadow:0 1px 0 rgba(255,255,255,.06) inset,0 14px 30px -14px color-mix(in srgb,var(--c,#00d4ff) 55%,transparent);}
+#tk-modal .tk-tile .th .tk-ic{width:26px;height:26px;border-radius:8px;}
+#tk-modal .tk-tile .tv{font-size:20px;position:relative;z-index:1;}
+#tk-modal .tk-tile .ts{position:relative;z-index:1;}
+/* attention / coming-up panels */
+#tk-modal .tk-att{border-radius:14px;box-shadow:var(--tk-lift);}
+#tk-modal .tk-att-row{border-radius:10px;margin:0 6px;width:calc(100% - 12px);}
+/* group cards */
+#tk-modal .tk-g{border-radius:14px;box-shadow:var(--tk-lift);transition:border-color .18s,background .18s;}
+#tk-modal .tk-g-hd{padding:12px 14px;}
+#tk-modal .tk-av{width:34px;height:34px;border-radius:11px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gc,var(--tk-acc)) 30%,transparent);}
+#tk-modal .tk-g-amt{font-size:13.5px;}
+#tk-modal .tk-g-prog{height:3px;margin:0 14px;border-radius:3px;background:rgba(255,255,255,.06);}
+#tk-modal .tk-g.open .tk-g-prog{margin-bottom:0;}
+#tk-modal .tk-g-rows{border-top-color:color-mix(in srgb,var(--gc) 18%,transparent);margin-top:10px;}
+#tk-modal .tk-g:not(.open) .tk-g-prog{margin-bottom:12px;}
+#tk-modal .tk-g-hd .tk-chev{width:24px;height:24px;border-radius:8px;display:grid;place-items:center;background:color-mix(in srgb,var(--gc) 10%,transparent);}
+/* rotation heat: more pending → redder card; all returned → calm green */
+#tk-modal .tk-g.heat{background:linear-gradient(135deg,color-mix(in srgb,#ef4444 var(--hb),transparent),color-mix(in srgb,#ef4444 calc(var(--hb) / 3),transparent));
+  border-color:color-mix(in srgb,#ef4444 var(--hl),transparent);border-left-color:var(--gc);}
+#tk-modal .tk-g.heat > .tk-g-hd{background:none;}
+#tk-modal .tk-g.heat .tk-g-amt{color:color-mix(in srgb,var(--gc) 70%,#fff);}
+#tk-modal .tk-g.heat .tk-av{background:color-mix(in srgb,var(--gc) 26%,transparent);color:#fff;}
+#tk-modal .tk-g.calm{background:linear-gradient(135deg,rgba(52,211,153,.06),transparent 70%);border-color:rgba(52,211,153,.2);border-left-color:#34d399;}
+#tk-modal .tk-g.calm .tk-g-amt{color:#6ee7b7;}
+/* rows */
+#tk-modal .tk-row{margin:6px 8px;border-radius:10px;border:1px solid transparent;border-bottom:1px solid rgba(255,255,255,.04);}
+#tk-modal .tk-row:hover{background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.06);}
+#tk-modal .tk-row.r-bad{background:linear-gradient(90deg,rgba(239,68,68,.16),rgba(239,68,68,.05));border-color:rgba(239,68,68,.3);box-shadow:inset 3px 0 0 #ef4444;}
+#tk-modal .tk-row.r-bad .tk-tx b{color:#fecaca;}
+#tk-modal .tk-row.r-bad .tk-dt{color:#fca5a5;}
+#tk-modal .tk-row.r-warn{background:linear-gradient(90deg,rgba(250,204,21,.14),rgba(250,204,21,.04));border-color:rgba(250,204,21,.3);box-shadow:inset 3px 0 0 #facc15;}
+#tk-modal .tk-row.r-warn .tk-tx b{color:#fef08a;}
+#tk-modal .tk-row.r-warn .tk-dt{color:#fde047;}
+#tk-modal .tk-row.r-warn .tk-am{color:#fde047;}
+/* notes + hits */
+#tk-modal .tk-note{border-radius:14px;box-shadow:var(--tk-lift);background:linear-gradient(90deg,rgba(56,189,248,.07),rgba(255,255,255,.015) 45%);}
+#tk-modal .tk-nd{background:rgba(56,189,248,.1);border-radius:10px;padding:6px 0;}
+#tk-modal .tk-hit{border-radius:12px;box-shadow:var(--tk-lift);background:linear-gradient(90deg,color-mix(in srgb,var(--c,#00d4ff) 8%,transparent),rgba(255,255,255,.015) 50%);}
+/* habits boxes */
+#tk-modal .tk-box{border-radius:15px;box-shadow:var(--tk-lift);background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));}
+#tk-modal .tk-kv div{border:1px solid rgba(255,255,255,.05);}
+#tk-modal .tk-cal span{transition:transform .12s;}
+#tk-modal .tk-cal span[title]:hover{transform:scale(1.08);}
+@media(max-width:760px){
+  #tk-modal .tk-row{margin:5px 6px;}
+  #tk-modal .tk-sum b{font-size:17px;}
+  #tk-modal .tk-tile .tv{font-size:17px;}
+}
+
 /* last on purpose: [hidden] must beat every display rule above (buttons, usage row, form fields) */
 #tk-overlay [hidden]{display:none!important;}
 </style>
@@ -436,6 +509,7 @@
         </div>
       </div>
       <div class="tk-body" id="tk-body"></div>
+      <div class="tk-scrim" id="tk-scrim"></div>
       <div class="tk-drawer" id="tk-drawer" aria-hidden="true">
         <div class="tk-dr-hd"><b id="tk-dr-title">New entry</b><button class="tk-btn sq" type="button" id="tk-dr-x" aria-label="Close form">✕</button></div>
         <form class="tk-dr-body" id="tk-form" autocomplete="off"></form>
@@ -546,7 +620,7 @@
     return P[k];
   }
   function loadAll(force){
-    return Promise.all(TK.filter(function(t){return t.load;}).map(function(t){ return load(t.id, force); }));
+    return Promise.all(TK.filter(function(t){return t.load;}).map(function(t){ return load(t.id, force); }).concat([loadHabMonth(force)]));
   }
   function data(id){ var c=C[id]; return c && c.ok ? c.data : null; }
 
@@ -738,7 +812,13 @@
   function matches(){ var q=S.q; if(!q) return true; for(var i=0;i<arguments.length;i++) if(String(arguments[i]||'').toLowerCase().indexOf(q)>=0) return true; return false; }
   function groupOpen(id, key, idx){ var k=id+'|'+key; return S.open[k]!==undefined ? S.open[k] : !!S.q; }
   function group(id, key, idx, head, inner){
-    return '<div class="tk-g'+(groupOpen(id,key,idx)?' open':'')+'" data-gkey="'+esc(id+'|'+key)+'" style="--gc:'+gcolor(key)+'">'+
+    var st='--gc:'+gcolor(key), cls='';
+    if(head.heat!=null){
+      var hp=Math.max(0,Math.min(1,head.heat));
+      cls=hp>0?' heat':' calm';
+      st = hp>0 ? '--gc:color-mix(in srgb,#ef4444 '+Math.round(45+55*hp)+'%,#f59e0b);--hb:'+Math.round(5+20*hp)+'%;--hl:'+Math.round(22+58*hp)+'%' : '--gc:#34d399';
+    }
+    return '<div class="tk-g'+cls+(groupOpen(id,key,idx)?' open':'')+'" data-gkey="'+esc(id+'|'+key)+'" style="'+st+'">'+
       '<button type="button" class="tk-g-hd">'+head.av+'<span class="tk-g-nm"><b>'+esc(head.title)+'</b><small>'+head.sub+'</small></span>'+
       '<span class="tk-g-amt">'+head.amt+'<small>'+head.amtLbl+'</small></span><span class="tk-chev">›</span></button>'+
       (head.prog!=null?'<div class="tk-g-prog'+(head.progCls?' '+head.progCls:'')+'"><i style="width:'+Math.max(0,Math.min(100,head.prog)).toFixed(0)+'%"></i></div>':'')+
@@ -827,7 +907,8 @@
       vis.sort(function(a,b){ if(a.returned!==b.returned) return a.returned?1:-1; return b.age-a.age; });
       var owed=sumOf(all.filter(function(r){return !r.returned;}),function(r){return r.amount;});
       var retN=all.filter(function(r){return r.returned;}).length;
-      body+=group('rot', nm, idx++, { av:av(initials(nm)), title:nm, sub:pl(all.length,'entry','entries')+' · '+(owed?all.filter(function(r){return !r.returned;}).length+' pending':'all returned'), amt:rs(owed||sumOf(all,function(r){return r.amount;})), amtLbl:owed?'pending':'returned', prog:all.length?retN/all.length*100:0 },
+      var tot=sumOf(all,function(r){return r.amount;});
+      body+=group('rot', nm, idx++, { heat:tot?owed/tot:0, av:av(initials(nm)), title:nm, sub:pl(all.length,'entry','entries')+' · '+(owed?all.filter(function(r){return !r.returned;}).length+' pending':'all returned'), amt:rs(owed||sumOf(all,function(r){return r.amount;})), amtLbl:owed?'pending':'returned', prog:all.length?retN/all.length*100:0 },
         vis.map(function(r){
           return '<div class="tk-row"><span class="tk-dt">'+esc(r.date)+'</span><span class="tk-tx">'+(r.remarks?esc(r.remarks):'<span style="opacity:.5">No remarks</span>')+(r.days?'<small>'+esc(r.days)+'</small>':'')+'</span><span class="tk-am '+(r.returned?'c-done':'c-open')+'">'+rs(r.amount)+'</span><span class="tk-pill '+(r.returned?'done':'open')+'">'+(r.returned?'Returned':'Pending')+'</span></div>';
         }).join(''));
@@ -857,7 +938,7 @@
         vis.map(function(c){
           var i=ref('ins',c), st=STAGE[c.stage];
           var meta=[c.source, c.submittedDate?'submitted '+c.submittedDate:''].filter(Boolean).join(' · ');
-          return '<div class="tk-row"><span class="tk-dt">'+esc(c.date||'—')+'</span><span class="tk-tx"><b>'+esc(c.ref||'—')+'</b>'+(meta?'<small>'+esc(meta)+'</small>':'')+(c.reason?'<small>“'+esc(c.reason)+'”</small>':'')+'</span><span class="tk-am c-'+st[1]+'">'+rs(c.amount)+'</span><span class="tk-pill '+st[1]+'">'+st[0]+'</span>'+
+          return '<div class="tk-row'+(c.stage==='rejected'?' r-bad':'')+'"><span class="tk-dt">'+esc(c.date||'—')+'</span><span class="tk-tx"><b>'+esc(c.ref||'—')+'</b>'+(meta?'<small>'+esc(meta)+'</small>':'')+(c.reason?'<small>“'+esc(c.reason)+'”</small>':'')+'</span><span class="tk-am c-'+st[1]+'">'+rs(c.amount)+'</span><span class="tk-pill '+st[1]+'">'+st[0]+'</span>'+
             '<div class="tk-acts"><button type="button" class="tk-mini edit" data-act="ins-edit" data-i="'+i+'">Edit</button>'+delBtn('ins-del',i)+'</div></div>';
         }).join(''));
     });
@@ -1086,7 +1167,7 @@
     if(!vis.length) return h+empty('Nothing matches this filter.');
     h+='<div class="tk-g open">'+vis.map(function(l){
       var i=ref('loss', l);
-      return '<div class="tk-row"><span class="tk-dt">'+(l.isConfirmLoss?'Confirmed':'Unconfirmed')+'</span><span class="tk-tx"><b>'+esc(l.ref||'—')+'</b><small>'+(String(l.lesson||'').trim()?'💡 '+esc(l.lesson):'<span style="opacity:.6">No lesson written yet</span>')+'</small></span><span class="tk-am '+(l.isConfirmLoss?'c-bad':'c-open')+'">'+rs(l.amount)+'</span>'+
+      return '<div class="tk-row '+(l.isConfirmLoss?'r-bad':'r-warn')+'"><span class="tk-dt">'+(l.isConfirmLoss?'Confirmed':'Unconfirmed')+'</span><span class="tk-tx"><b>'+esc(l.ref||'—')+'</b><small>'+(String(l.lesson||'').trim()?'💡 '+esc(l.lesson):'<span style="opacity:.6">No lesson written yet</span>')+'</small></span><span class="tk-am '+(l.isConfirmLoss?'c-bad':'c-open')+'">'+rs(l.amount)+'</span>'+
         '<button type="button" class="tk-pill '+(l.isConfirmLoss?'bad':'open')+'" data-act="loss-st" data-i="'+i+'" title="Tap to mark '+(l.isConfirmLoss?'unconfirmed':'confirmed')+'">'+(l.isConfirmLoss?'Confirmed':'Unconfirmed')+'</button>'+
         '<div class="tk-acts"><button type="button" class="tk-mini edit" data-act="loss-edit" data-i="'+i+'">Edit</button>'+delBtn('loss-del',i)+'</div></div>';
     }).join('')+'</div>';
@@ -1150,6 +1231,7 @@
     o.classList.add('open'); o.setAttribute('aria-hidden','false');
     document.querySelectorAll('.tk-trigger').forEach(function(b){ b.classList.add('tk-on'); });
     tap('open');
+    loadHabMonth();
     go(id||S.cur||'ov');
   }
   function close(){
@@ -1235,10 +1317,14 @@
     $('tk-form').innerHTML=h;
     syncFormVisibility();
     var btn=$('tk-dr-save'); btn.disabled=false; btn.textContent='Save';
-    var dr=$('tk-drawer'); dr.classList.add('open'); dr.setAttribute('aria-hidden','false');
-    setTimeout(function(){ var f=$('tk-form').querySelector('input:not([type=date]),textarea'); if(f) try{ f.focus(); }catch(_){} }, 60);
+    $('tk-form').scrollTop=0;
+    var dr=$('tk-drawer'), was=dr.classList.contains('open');
+    dr.classList.add('open'); dr.setAttribute('aria-hidden','false');
+    $('tk-scrim').classList.add('open');
+    if(was){ dr.classList.remove('swap'); void dr.offsetWidth; dr.classList.add('swap'); }
+    setTimeout(function(){ var f=$('tk-form').querySelector('input:not([type=date]),textarea'); if(f) try{ f.focus({preventScroll:true}); }catch(_){} }, was?0:340);
   }
-  function closeDrawer(){ var dr=$('tk-drawer'); if(!dr) return; dr.classList.remove('open'); dr.setAttribute('aria-hidden','true'); S.form=null; }
+  function closeDrawer(){ var dr=$('tk-drawer'); if(!dr) return; dr.classList.remove('open','swap'); dr.setAttribute('aria-hidden','true'); $('tk-scrim').classList.remove('open'); S.form=null; }
   function syncFormVisibility(){
     var w=$('tkf-subdate-w'); if(w) w.hidden = segVal('sub')!=='1';
     var u=$('tkf-upto-w'); if(u) u.hidden = segVal('multi')!=='1';
@@ -1327,6 +1413,7 @@
   $('tk-dr-save').addEventListener('click', save);
   $('tk-dr-x').addEventListener('click', closeDrawer);
   $('tk-dr-cancel').addEventListener('click', closeDrawer);
+  $('tk-scrim').addEventListener('click', closeDrawer);
   $('tk-add').addEventListener('click', function(){ if(meta(S.cur).add) openDrawer(S.cur); });
   $('tk-reload').addEventListener('click', function(){
     if(S.cur==='ov'){ TK.forEach(function(t){ if(t.load) delete C[t.id]; }); render(); ensure('ov', true); }
@@ -1364,7 +1451,7 @@
       case 'loss-del': x=S.refs.loss[i]; arm(b, function(){ act('deleteLossEntry',[x.rowIndex],'loss','Loss deleted',b); }); break;
       case 'loss-st': x=S.refs.loss[i]; act('updateLossEntry',[x.rowIndex, x.ref, x.amount, x.lesson||'', !x.isConfirmLoss],'loss', x.isConfirmLoss?'Marked unconfirmed':'Marked confirmed', b); break;
       case 'bud-edit': openDrawer('budget', S.refs.budget[i]); break;
-      case 'bud-addto': x=S.refs.budg[i]; openDrawer('budget', null); $('tkf-parent').value=x.parent; $('tkf-type').value=x.type||''; $('tkf-budget').value=x.budget; $('tk-dr-title').textContent='New item in '+x.parent; setTimeout(function(){ var d=$('tkf-desc'); if(d) d.focus(); },70); break;
+      case 'bud-addto': x=S.refs.budg[i]; openDrawer('budget', null); $('tkf-parent').value=x.parent; $('tkf-type').value=x.type||''; $('tkf-budget').value=x.budget; $('tk-dr-title').textContent='New item in '+x.parent; setTimeout(function(){ var d=$('tkf-desc'); if(d) d.focus({preventScroll:true}); },350); break;
       case 'bud-del': x=S.refs.budget[i]; arm(b, function(){ act('deleteBudgetEntry',[x.row],'budget','Item deleted',b); }); break;
       case 'note-edit': openDrawer('notes', S.refs.notes[i]); break;
       case 'note-del': x=S.refs.notes[i]; arm(b, function(){ act('deleteNotes',[x.rows],'notes', x.rows.length>1?x.rows.length+' notes deleted':'Note deleted', b); }); break;
