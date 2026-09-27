@@ -1931,6 +1931,20 @@ function logMonthlyEarnings() {
 
 
 // ── Log current portfolio total (B15) into growth log (P:Q:R from row 3) ──
+/* FX rates for the Summary page currency picker — USD-based, cached 6h */
+function getFxRates() {
+  var cache = CacheService.getScriptCache();
+  var hit = cache.get('fxRatesUSD');
+  if (hit) return JSON.parse(hit);
+  var res = UrlFetchApp.fetch('https://open.er-api.com/v6/latest/USD', { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) throw new Error('FX rate service unavailable (' + res.getResponseCode() + ')');
+  var json = JSON.parse(res.getContentText());
+  if (!json.rates || !json.rates.LKR) throw new Error('FX rates missing LKR');
+  var out = { rates: json.rates, updated: json.time_last_update_utc || '' };
+  try { cache.put('fxRatesUSD', JSON.stringify(out), 21600); } catch (e) {}
+  return out;
+}
+
 function logPortfolioAmount(note) {
   var ss    = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Portfolio');
