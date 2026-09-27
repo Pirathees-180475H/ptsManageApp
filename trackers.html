@@ -95,8 +95,9 @@
 #tk-modal .tk-nav{flex:1;overflow-y:auto;padding:0 8px 10px;}
 #tk-modal .tk-grp{font-size:9.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--tk-mut);padding:12px 8px 5px;}
 #tk-modal .tk-ri{display:flex;align-items:center;gap:9px;width:100%;border:0;background:none;color:var(--tk-ink2);font-size:12.5px;font-weight:600;padding:7px 8px;border-radius:9px;cursor:pointer;text-align:left;}
-#tk-modal .tk-ri:hover{background:rgba(255,255,255,.04);color:var(--tk-ink);}
-#tk-modal .tk-ri.on{background:rgba(0,212,255,.1);color:var(--tk-ink);}
+#tk-modal .tk-ri:hover{background:color-mix(in srgb,var(--c,#fff) 7%,transparent);color:var(--tk-ink);}
+#tk-modal .tk-ri.on{background:color-mix(in srgb,var(--c,#00d4ff) 15%,transparent);color:var(--tk-ink);box-shadow:inset 3px 0 0 var(--c,#00d4ff);}
+#tk-modal .tk-ri.on .tk-nm{color:color-mix(in srgb,var(--c,#fff) 45%,#fff);}
 #tk-modal .tk-ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;flex:none;}
 #tk-modal .tk-ic svg{width:13px;height:13px;}
 #tk-modal .tk-ri .tk-nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -115,7 +116,7 @@
 #tk-modal .tk-hd-act{display:flex;gap:6px;align-items:center;flex:none;}
 #tk-modal .tk-btn{height:30px;padding:0 12px;border-radius:9px;border:1px solid var(--tk-bdr);background:rgba(255,255,255,.04);color:var(--tk-ink2);font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;}
 #tk-modal .tk-btn:hover{border-color:var(--tk-bdr2);color:var(--tk-ink);}
-#tk-modal .tk-btn.pri{background:linear-gradient(135deg,#00d4ff,#3b82f6);color:#060b18;border:0;}
+#tk-modal .tk-btn.pri{background:linear-gradient(135deg,var(--tk-acc),color-mix(in srgb,var(--tk-acc) 68%,#1e293b));color:#0a0f1c;border:0;}
 #tk-modal .tk-btn.pri:disabled{opacity:.55;cursor:default;}
 #tk-modal .tk-btn.sq{width:30px;padding:0;}
 #tk-modal .tk-body{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 18px 24px;display:flex;flex-direction:column;gap:14px;min-height:0;}
@@ -123,7 +124,7 @@
 #tk-modal .tk-body::-webkit-scrollbar-thumb,#tk-modal .tk-nav::-webkit-scrollbar-thumb,#tk-modal .tk-dr-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:8px;}
 #tk-modal .tk-state{text-align:center;color:var(--tk-mut);padding:44px 12px;font-size:13px;}
 #tk-modal .tk-state.err{color:#ff7b7b;}
-#tk-modal .tk-spin{width:26px;height:26px;border:3px solid rgba(0,212,255,.15);border-top-color:#00d4ff;border-radius:50%;animation:tkSpin .8s linear infinite;margin:0 auto 10px;}
+#tk-modal .tk-spin{width:26px;height:26px;border:3px solid color-mix(in srgb,var(--tk-acc) 18%,transparent);border-top-color:var(--tk-acc);border-radius:50%;animation:tkSpin .8s linear infinite;margin:0 auto 10px;}
 @keyframes tkSpin{to{transform:rotate(360deg);}}
 
 /* summary strip · ribbon · filter bar */
@@ -141,7 +142,8 @@
 #tk-modal .tk-bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 #tk-modal .tk-bar .tk-sp{flex:1;}
 #tk-modal .tk-chip{height:26px;padding:0 10px;border-radius:13px;border:1px solid var(--tk-bdr);background:rgba(255,255,255,.03);color:var(--tk-ink2);font-size:11px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums;}
-#tk-modal .tk-chip.on{background:rgba(0,212,255,.14);border-color:rgba(0,212,255,.35);color:var(--tk-acc);}
+#tk-modal .tk-chip:hover{border-color:var(--tk-bdr2);color:var(--tk-ink);}
+#tk-modal .tk-chip.on{background:color-mix(in srgb,var(--tk-acc) 16%,transparent);border-color:color-mix(in srgb,var(--tk-acc) 45%,transparent);color:color-mix(in srgb,var(--tk-acc) 55%,#fff);}
 #tk-modal .tk-fq{height:26px;border-radius:13px;border:1px solid var(--tk-bdr);background:var(--tk-field);color:var(--tk-ink);font:500 11.5px 'Inter',sans-serif;padding:0 11px;width:170px;max-width:100%;}
 
 /* groups + rows */
@@ -184,7 +186,12 @@
 #tk-modal .tk-pill.info{background:rgba(56,189,248,.14);color:var(--tk-info);}
 #tk-modal .tk-pill.busy{opacity:.5;pointer-events:none;}
 #tk-modal .tk-mini{height:24px;padding:0 9px;border-radius:7px;border:1px solid var(--tk-bdr);background:none;color:var(--tk-ink2);font-size:10.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
-#tk-modal .tk-mini:hover{border-color:rgba(0,212,255,.4);color:var(--tk-acc);}
+#tk-modal .tk-mini:hover{border-color:var(--tk-bdr2);color:var(--tk-ink);}
+#tk-modal .tk-mini.edit{border-color:rgba(96,165,250,.3);color:#93c5fd;background:rgba(96,165,250,.06);}
+#tk-modal .tk-mini.edit:hover{border-color:rgba(96,165,250,.6);background:rgba(96,165,250,.14);color:#bfdbfe;}
+#tk-modal .tk-mini.add{border-color:rgba(52,211,153,.3);color:#6ee7b7;background:rgba(52,211,153,.06);}
+#tk-modal .tk-mini.add:hover{border-color:rgba(52,211,153,.6);background:rgba(52,211,153,.14);color:#a7f3d0;}
+#tk-modal .tk-mini.del{border-color:rgba(248,113,113,.2);color:#fca5a5;}
 #tk-modal .tk-mini.del:hover,#tk-modal .tk-mini.armed{border-color:rgba(239,68,68,.5);color:#ff7b7b;}
 #tk-modal .tk-mini.armed{background:rgba(239,68,68,.1);}
 #tk-modal .tk-mini:disabled{opacity:.5;cursor:default;}
@@ -220,12 +227,12 @@
 #tk-modal .tk-att-none{padding:6px 14px 10px;font-size:12.5px;color:var(--tk-ink2);}
 #tk-modal .tk-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px;}
 #tk-modal .tk-tile{border:1px solid var(--tk-bdr);background:rgba(255,255,255,.04);border-radius:12px;padding:12px 13px;cursor:pointer;text-align:left;color:inherit;display:flex;flex-direction:column;gap:4px;min-width:0;}
-#tk-modal .tk-tile:hover{border-color:rgba(0,212,255,.35);}
+#tk-modal .tk-tile:hover{border-color:color-mix(in srgb,var(--c,#00d4ff) 55%,transparent);}
 #tk-modal .tk-tile .th{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--tk-ink2);}
 #tk-modal .tk-tile .tv{font-size:18px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 #tk-modal .tk-tile .ts{font-size:11px;color:var(--tk-mut);}
 #tk-modal .tk-hit{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--tk-bdr);border-radius:10px;background:rgba(255,255,255,.02);cursor:pointer;width:100%;color:inherit;text-align:left;font-size:12px;}
-#tk-modal .tk-hit:hover{border-color:rgba(0,212,255,.35);}
+#tk-modal .tk-hit:hover{border-color:color-mix(in srgb,var(--c,#00d4ff) 55%,transparent);}
 #tk-modal .tk-hit small{display:block;color:var(--tk-mut);font-size:11px;}
 
 /* habits */
@@ -282,7 +289,7 @@
 #tk-modal .tk-f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 #tk-modal .tk-seg{display:flex;gap:4px;flex-wrap:wrap;}
 #tk-modal .tk-seg button{flex:1;min-width:0;height:30px;padding:0 8px;border-radius:8px;border:1px solid var(--tk-bdr);background:var(--tk-field);color:var(--tk-ink2);font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;}
-#tk-modal .tk-seg button.on{border-color:rgba(0,212,255,.45);background:rgba(0,212,255,.12);color:var(--tk-acc);}
+#tk-modal .tk-seg button.on{border-color:color-mix(in srgb,var(--tk-acc) 50%,transparent);background:color-mix(in srgb,var(--tk-acc) 15%,transparent);color:color-mix(in srgb,var(--tk-acc) 55%,#fff);}
 #tk-modal .tk-dr-msg{font-size:12px;color:#ff7b7b;min-height:0;}
 #tk-modal .tk-dr-msg:empty{display:none;}
 #tk-modal .tk-dr-ft{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--tk-bdr);}
@@ -309,7 +316,7 @@
     scrollbar-width:none;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;}
   #tk-modal .tk-nav::-webkit-scrollbar{display:none;}
   #tk-modal .tk-ri{flex:none;width:auto;padding:6px 10px 6px 6px;border:1px solid var(--tk-bdr);border-radius:20px;font-size:12px;scroll-snap-align:start;}
-  #tk-modal .tk-ri.on{border-color:rgba(0,212,255,.35);}
+  #tk-modal .tk-ri.on{border-color:color-mix(in srgb,var(--c,#00d4ff) 50%,transparent);box-shadow:none;}
   #tk-modal .tk-ri .tk-ic{width:20px;height:20px;border-radius:50%;}
   #tk-modal .tk-hd{padding:10px 12px;}
   #tk-modal .tk-hd h2{font-size:15px;}
@@ -368,6 +375,40 @@
 @media(prefers-reduced-motion:reduce){
   #tk-modal,#tk-modal *{animation:none!important;transition:none!important;}
 }
+/* ── colour tones: the modal accent follows the open tracker, groups get their own ── */
+#tk-modal .tk-hd{box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--tk-acc) 35%,transparent);}
+#tk-modal .tk-hd h2{display:flex;align-items:center;gap:8px;}
+#tk-modal .tk-hd h2::before{content:'';width:9px;height:9px;border-radius:3px;background:var(--tk-acc);flex:none;}
+#tk-modal .tk-sec{color:color-mix(in srgb,var(--tk-acc) 60%,rgba(255,255,255,.6));}
+#tk-modal .tk-sum > div{--sc:var(--tk-acc);background:linear-gradient(180deg,color-mix(in srgb,var(--sc) 10%,transparent),rgba(255,255,255,.02));border-color:color-mix(in srgb,var(--sc) 22%,transparent);}
+#tk-modal .tk-sum > .s-open{--sc:var(--tk-open);}
+#tk-modal .tk-sum > .s-done{--sc:var(--tk-done);}
+#tk-modal .tk-sum > .s-bad{--sc:var(--tk-bad);}
+#tk-modal .tk-sum > .s-info{--sc:var(--tk-info);}
+#tk-modal .tk-sum small{color:color-mix(in srgb,var(--sc) 45%,rgba(255,255,255,.55));}
+#tk-modal .tk-g{--gc:var(--tk-acc);border-left:3px solid color-mix(in srgb,var(--gc) 45%,transparent);}
+#tk-modal .tk-g.open{border-color:color-mix(in srgb,var(--gc) 28%,transparent);border-left-color:var(--gc);background:color-mix(in srgb,var(--gc) 4%,transparent);}
+#tk-modal .tk-g.open > .tk-g-hd{background:color-mix(in srgb,var(--gc) 8%,transparent);}
+#tk-modal .tk-av{background:color-mix(in srgb,var(--gc,var(--tk-acc)) 18%,transparent);color:var(--gc,var(--tk-acc));}
+#tk-modal .tk-g-nm small{color:color-mix(in srgb,var(--gc) 35%,rgba(255,255,255,.5));}
+#tk-modal .tk-chev{color:var(--gc);}
+#tk-modal .tk-g-tools{background:color-mix(in srgb,var(--gc) 6%,transparent);color:#aab6ca;}
+#tk-modal .tk-g-prog i{background:var(--gc);}
+#tk-modal .tk-row:hover{background:rgba(255,255,255,.025);}
+#tk-modal .tk-dt{color:#8fa6cc;}
+#tk-modal .tk-tx small{color:#a3a9b8;}
+#tk-modal .tk-flow{color:#94a3b8;}
+#tk-modal .tk-usage{background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.14);}
+#tk-modal .tk-usage-hd{color:#c4b5fd;}
+#tk-modal .tk-tile{background:linear-gradient(160deg,color-mix(in srgb,var(--c,#00d4ff) 14%,transparent),rgba(255,255,255,.02) 65%);border-color:color-mix(in srgb,var(--c,#00d4ff) 20%,transparent);}
+#tk-modal .tk-tile .th{color:color-mix(in srgb,var(--c,#fff) 40%,#fff);}
+#tk-modal .tk-note{border-left:3px solid rgba(56,189,248,.45);}
+#tk-modal .tk-nd b{color:#7dd3fc;}
+#tk-modal .tk-drawer{background:linear-gradient(180deg,color-mix(in srgb,var(--tk-acc) 7%,#0d1530),#0d1530 40%);}
+#tk-modal .tk-dr-hd{box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--tk-acc) 35%,transparent);}
+#tk-modal .tk-f label{color:color-mix(in srgb,var(--tk-acc) 45%,rgba(255,255,255,.55));}
+#tk-modal .tk-f input:focus,#tk-modal .tk-f select:focus,#tk-modal .tk-f textarea:focus{border-color:color-mix(in srgb,var(--tk-acc) 55%,transparent);outline:none;}
+
 /* last on purpose: [hidden] must beat every display rule above (buttons, usage row, form fields) */
 #tk-overlay [hidden]{display:none!important;}
 </style>
@@ -670,14 +711,14 @@
       if(q && t.id==='hab' && t.name.toLowerCase().indexOf(q)<0) return;
       if(t.grp && t.grp!==last){ h+='<div class="tk-grp">'+t.grp+'</div>'; last=t.grp; }
       var c=n[t.id]||0;
-      h+='<button type="button" class="tk-ri'+(S.cur===t.id?' on':'')+'" data-go="'+t.id+'"><span class="tk-ic" style="background:'+t.c+'22;color:'+t.c+'">'+svg(t.icon)+'</span><span class="tk-nm">'+t.name+'</span>'+(c?'<span class="tk-cnt '+CNT_CLS[t.id]+'">'+c+'</span>':'')+'</button>';
+      h+='<button type="button" class="tk-ri'+(S.cur===t.id?' on':'')+'" data-go="'+t.id+'" style="--c:'+t.c+'"><span class="tk-ic" style="background:'+t.c+'22;color:'+t.c+'">'+svg(t.icon)+'</span><span class="tk-nm">'+t.name+'</span>'+(c?'<span class="tk-cnt '+CNT_CLS[t.id]+'">'+c+'</span>':'')+'</button>';
     });
     $('tk-nav').innerHTML = h;
   }
 
   /* ═══ view building blocks ════════════════════════════════ */
   function sum3(items){
-    return '<div class="tk-sum">'+items.map(function(x){ return '<div><small>'+x[0]+'</small><b class="'+(x[2]||'')+'">'+x[1]+'</b>'+(x[3]?'<em>'+x[3]+'</em>':'')+'</div>'; }).join('')+'</div>';
+    return '<div class="tk-sum">'+items.map(function(x){ return '<div'+(x[2]?' class="s'+x[2].slice(1)+'"':'')+'><small>'+x[0]+'</small><b class="'+(x[2]||'')+'">'+x[1]+'</b>'+(x[3]?'<em>'+x[3]+'</em>':'')+'</div>'; }).join('')+'</div>';
   }
   function ribbon(parts){
     var tot=sumOf(parts,function(p){return p[1];});
@@ -697,13 +738,16 @@
   function matches(){ var q=S.q; if(!q) return true; for(var i=0;i<arguments.length;i++) if(String(arguments[i]||'').toLowerCase().indexOf(q)>=0) return true; return false; }
   function groupOpen(id, key, idx){ var k=id+'|'+key; return S.open[k]!==undefined ? S.open[k] : !!S.q; }
   function group(id, key, idx, head, inner){
-    return '<div class="tk-g'+(groupOpen(id,key,idx)?' open':'')+'" data-gkey="'+esc(id+'|'+key)+'">'+
+    return '<div class="tk-g'+(groupOpen(id,key,idx)?' open':'')+'" data-gkey="'+esc(id+'|'+key)+'" style="--gc:'+gcolor(key)+'">'+
       '<button type="button" class="tk-g-hd">'+head.av+'<span class="tk-g-nm"><b>'+esc(head.title)+'</b><small>'+head.sub+'</small></span>'+
       '<span class="tk-g-amt">'+head.amt+'<small>'+head.amtLbl+'</small></span><span class="tk-chev">›</span></button>'+
       (head.prog!=null?'<div class="tk-g-prog'+(head.progCls?' '+head.progCls:'')+'"><i style="width:'+Math.max(0,Math.min(100,head.prog)).toFixed(0)+'%"></i></div>':'')+
       '<div class="tk-g-rows">'+inner+'</div></div>';
   }
-  function av(txt, color){ return '<span class="tk-av" style="color:'+color+'">'+esc(txt)+'</span>'; }
+  function av(txt){ return '<span class="tk-av">'+esc(txt)+'</span>'; }
+  /* each group gets its own colour, fixed by name so it never jumps around when filtering */
+  var GC = ['#60a5fa','#f472b6','#34d399','#fbbf24','#a78bfa','#22d3ee','#fb7185','#a3e635','#fb923c','#2dd4bf','#e879f9','#facc15'];
+  function gcolor(key){ var h=0; key=String(key||''); for(var i=0;i<key.length;i++) h=(h*31+key.charCodeAt(i))|0; return GC[Math.abs(h)%GC.length]; }
   function ref(id, obj){ var a=S.refs[id]||(S.refs[id]=[]); a.push(obj); return a.length-1; }
   function empty(msg){ return '<div class="tk-empty">'+msg+'</div>'; }
   function delBtn(act, i, label){ return '<button type="button" class="tk-mini del" data-act="'+act+'" data-i="'+i+'" data-confirm="1">'+(label||'Delete')+'</button>'; }
@@ -716,7 +760,7 @@
         if(!t.load || t.id==='hab') return;
         hitsFor(t.id, S.q).slice(0,8).forEach(function(x){
           any=true;
-          h+='<button type="button" class="tk-hit" data-go="'+t.id+'"><span class="tk-ic" style="background:'+t.c+'22;color:'+t.c+'">'+svg(t.icon)+'</span><span><b>'+esc(x.t)+'</b><small>'+t.name+' · '+esc(x.s)+'</small></span><span class="tk-am">'+(x.a!=null?rs(x.a):'')+'</span></button>';
+          h+='<button type="button" class="tk-hit" data-go="'+t.id+'" style="--c:'+t.c+'"><span class="tk-ic" style="background:'+t.c+'22;color:'+t.c+'">'+svg(t.icon)+'</span><span><b>'+esc(x.t)+'</b><small>'+t.name+' · '+esc(x.s)+'</small></span><span class="tk-am">'+(x.a!=null?rs(x.a):'')+'</span></button>';
         });
       });
       return any ? h : h+empty('Nothing in any tracker matches that.');
@@ -746,7 +790,7 @@
     }
     h2+='<div class="tk-sec">All trackers</div><div class="tk-tiles">'+TK.filter(function(t){return t.load;}).map(function(t){
       var f=tileFigure(t.id);
-      return '<button type="button" class="tk-tile" data-go="'+t.id+'"><span class="th"><span class="tk-ic" style="background:'+t.c+'22;color:'+t.c+'">'+svg(t.icon)+'</span>'+t.name+'</span><span class="tv">'+f[0]+'</span><span class="ts">'+f[1]+'</span></button>';
+      return '<button type="button" class="tk-tile" data-go="'+t.id+'" style="--c:'+t.c+'"><span class="th"><span class="tk-ic" style="background:'+t.c+'22;color:'+t.c+'">'+svg(t.icon)+'</span>'+t.name+'</span><span class="tv">'+f[0]+'</span><span class="ts">'+f[1]+'</span></button>';
     }).join('')+'</div>';
     return h2;
   }
@@ -783,9 +827,9 @@
       vis.sort(function(a,b){ if(a.returned!==b.returned) return a.returned?1:-1; return b.age-a.age; });
       var owed=sumOf(all.filter(function(r){return !r.returned;}),function(r){return r.amount;});
       var retN=all.filter(function(r){return r.returned;}).length;
-      body+=group('rot', nm, idx++, { av:av(initials(nm),'#3b82f6'), title:nm, sub:pl(all.length,'entry','entries')+' · '+(owed?all.filter(function(r){return !r.returned;}).length+' pending':'all returned'), amt:rs(owed||sumOf(all,function(r){return r.amount;})), amtLbl:owed?'pending':'returned', prog:all.length?retN/all.length*100:0 },
+      body+=group('rot', nm, idx++, { av:av(initials(nm)), title:nm, sub:pl(all.length,'entry','entries')+' · '+(owed?all.filter(function(r){return !r.returned;}).length+' pending':'all returned'), amt:rs(owed||sumOf(all,function(r){return r.amount;})), amtLbl:owed?'pending':'returned', prog:all.length?retN/all.length*100:0 },
         vis.map(function(r){
-          return '<div class="tk-row"><span class="tk-dt">'+esc(r.date)+'</span><span class="tk-tx">'+(r.remarks?esc(r.remarks):'<span style="opacity:.5">No remarks</span>')+(r.days?'<small>'+esc(r.days)+'</small>':'')+'</span><span class="tk-am">'+rs(r.amount)+'</span><span class="tk-pill '+(r.returned?'done':'open')+'">'+(r.returned?'Returned':'Pending')+'</span></div>';
+          return '<div class="tk-row"><span class="tk-dt">'+esc(r.date)+'</span><span class="tk-tx">'+(r.remarks?esc(r.remarks):'<span style="opacity:.5">No remarks</span>')+(r.days?'<small>'+esc(r.days)+'</small>':'')+'</span><span class="tk-am '+(r.returned?'c-done':'c-open')+'">'+rs(r.amount)+'</span><span class="tk-pill '+(r.returned?'done':'open')+'">'+(r.returned?'Returned':'Pending')+'</span></div>';
         }).join(''));
     });
     return h+(body||empty('Nothing matches this filter.'))+'<div class="tk-empty" style="padding:4px 0 0;text-align:left">Rotations are read from the OTHERS sheet. Edit them there.</div>';
@@ -809,12 +853,12 @@
       if(!vis.length) return;
       var o=all.filter(function(c){return c.stage!=='settled'&&c.stage!=='rejected';});
       var done=all.filter(function(c){return c.stage==='settled';}).length;
-      body+=group('ins', p, idx++, { av:av(initials(p),'#a855f7'), title:p, sub:pl(all.length,'claim')+' · '+done+' settled', amt:rs(o.length?sumOf(o,function(c){return c.amount;}):sumOf(all,function(c){return c.amount;})), amtLbl:o.length?'open':'total', prog:all.length?done/all.length*100:0 },
+      body+=group('ins', p, idx++, { av:av(initials(p)), title:p, sub:pl(all.length,'claim')+' · '+done+' settled', amt:rs(o.length?sumOf(o,function(c){return c.amount;}):sumOf(all,function(c){return c.amount;})), amtLbl:o.length?'open':'total', prog:all.length?done/all.length*100:0 },
         vis.map(function(c){
           var i=ref('ins',c), st=STAGE[c.stage];
           var meta=[c.source, c.submittedDate?'submitted '+c.submittedDate:''].filter(Boolean).join(' · ');
-          return '<div class="tk-row"><span class="tk-dt">'+esc(c.date||'—')+'</span><span class="tk-tx"><b>'+esc(c.ref||'—')+'</b>'+(meta?'<small>'+esc(meta)+'</small>':'')+(c.reason?'<small>“'+esc(c.reason)+'”</small>':'')+'</span><span class="tk-am">'+rs(c.amount)+'</span><span class="tk-pill '+st[1]+'">'+st[0]+'</span>'+
-            '<div class="tk-acts"><button type="button" class="tk-mini" data-act="ins-edit" data-i="'+i+'">Edit</button>'+delBtn('ins-del',i)+'</div></div>';
+          return '<div class="tk-row"><span class="tk-dt">'+esc(c.date||'—')+'</span><span class="tk-tx"><b>'+esc(c.ref||'—')+'</b>'+(meta?'<small>'+esc(meta)+'</small>':'')+(c.reason?'<small>“'+esc(c.reason)+'”</small>':'')+'</span><span class="tk-am c-'+st[1]+'">'+rs(c.amount)+'</span><span class="tk-pill '+st[1]+'">'+st[0]+'</span>'+
+            '<div class="tk-acts"><button type="button" class="tk-mini edit" data-act="ins-edit" data-i="'+i+'">Edit</button>'+delBtn('ins-del',i)+'</div></div>';
         }).join(''));
     });
     return h+(body||empty('Nothing matches this filter.'));
@@ -874,15 +918,15 @@
     list.forEach(function(p, gi){
       var li=ref('subp', p);
       var tools='<div class="tk-g-tools"><span style="flex:1">Latest: '+esc(subMonthLabel(p.latest.month))+' · '+esc(p.latest.plan||'—')+' · net '+rs(p.latest.netCost)+'</span>'+
-        (p.closed?'':'<button type="button" class="tk-mini" data-act="sub-again" data-i="'+li+'" data-confirm="1">Log again for '+cm+'</button>')+'</div>';
+        (p.closed?'':'<button type="button" class="tk-mini add" data-act="sub-again" data-i="'+li+'" data-confirm="1">Log again for '+cm+'</button>')+'</div>';
       var rows=p.entries.slice().reverse().map(function(e){
         var i=ref('sub', e);
         var flow='<span class="tk-flow"><b>'+rs(e.cost)+'</b>'+(Number(e.collections)>0?' − collected <b>'+rs(e.collections)+'</b>'+(e.collectionFrom&&e.collectionFrom!=='N/A'?' from '+esc(e.collectionFrom):''):'')+' → <span class="net">net '+rs(e.netCost)+'</span></span>';
         var us=(e.usages||[]);
-        var usage='<div class="tk-usage"><div class="tk-usage-hd"><span>Usage log · '+us.length+'</span><button type="button" class="tk-mini" data-act="sub-ushow" data-i="'+i+'">+ Add</button></div>'+
+        var usage='<div class="tk-usage"><div class="tk-usage-hd"><span>Usage log · '+us.length+'</span><button type="button" class="tk-mini add" data-act="sub-ushow" data-i="'+i+'">+ Add</button></div>'+
           us.map(function(u,ui){ return '<div class="tk-usage-it"><span>▸ '+esc(u)+'</span><button type="button" data-act="sub-udel" data-i="'+i+'" data-u="'+ui+'" title="Remove">✕</button></div>'; }).join('')+
           '<div class="tk-usage-add" id="tk-ua-'+i+'" hidden><input type="text" id="tk-ui-'+i+'" placeholder="e.g. Watched a movie" data-enter="sub-uadd" data-i="'+i+'"><button type="button" class="tk-mini" data-act="sub-uadd" data-i="'+i+'">Add</button></div></div>';
-        return '<div class="tk-row"><span class="tk-dt">'+esc(subMonthLabel(e.month))+'</span><span class="tk-tx"><b>'+esc(e.plan||'—')+'</b>'+flow+(e.note?'<small>📝 '+esc(e.note)+'</small>':'')+'</span><span class="tk-am">'+rs(e.netCost)+'</span><span></span>'+usage+
+        return '<div class="tk-row"><span class="tk-dt">'+esc(subMonthLabel(e.month))+'</span><span class="tk-tx"><b>'+esc(e.plan||'—')+'</b>'+flow+(e.note?'<small>📝 '+esc(e.note)+'</small>':'')+'</span><span class="tk-am c-done">'+rs(e.netCost)+'</span><span></span>'+usage+
           '<div class="tk-acts">'+delBtn('sub-del',i,'Remove entry')+'</div></div>';
       }).join('');
       body+=group('sub', p.key, gi, { av:subLogo(p.name), title:p.name+(p.closed?' (closed)':''), sub:pl(p.entries.length,'entry','entries'), amt:rs(p.total), amtLbl:'net total' }, tools+rows);
@@ -907,13 +951,13 @@
       if(!vis.length) return;
       var po=p.entries.filter(function(e){return e.st==='open';}), pd=p.entries.filter(function(e){return e.st==='done';}).length;
       var sw=p.name.toLowerCase().indexOf('splitwise')>=0;
-      body+=group('inst', p.name, idx++, { av:av(initials(p.name),'#f59e0b'), title:p.name, sub:pl(p.entries.length,'payment')+' · '+pd+' settled', amt:rs(po.length?sumOf(po,function(e){return e.amount;}):sumOf(p.entries,function(e){return e.amount;})), amtLbl:po.length?'left to pay':'all settled', prog:p.entries.length?pd/p.entries.length*100:0 },
+      body+=group('inst', p.name, idx++, { av:av(initials(p.name)), title:p.name, sub:pl(p.entries.length,'payment')+' · '+pd+' settled', amt:rs(po.length?sumOf(po,function(e){return e.amount;}):sumOf(p.entries,function(e){return e.amount;})), amtLbl:po.length?'left to pay':'all settled', prog:p.entries.length?pd/p.entries.length*100:0 },
         vis.map(function(e){
           var i=ref('inst', e), due=e.st==='open' && e.mk!=null && e.mk<=cm;
           var pill = e.st==='off' ? '<span class="tk-pill off">'+esc(e.status)+'</span>'
                    : '<button type="button" class="tk-pill '+e.st+'" data-act="inst-st" data-i="'+i+'" title="Tap to mark '+(e.st==='open'?'Settled':'Pending')+'">'+(e.st==='open'?'Pending':'Settled')+'</button>';
-          return '<div class="tk-row"><span class="tk-dt">'+esc(e.month)+'</span><span class="tk-tx">'+(e.num!=null?'Payment '+esc(e.num):'Payment')+(due?' <span class="tk-pill open" style="margin-left:4px">Due</span>':'')+'</span><span class="tk-am">'+rs(e.amount)+'</span>'+pill+
-            (e.st==='open'?'<div class="tk-acts"><button type="button" class="tk-mini" data-act="inst-add" data-mode="other" data-i="'+i+'">+ Other expense</button><button type="button" class="tk-mini" data-act="inst-add" data-mode="'+(sw?'splitwise':'card')+'" data-i="'+i+'">'+(sw?'+ Splitwise':'+ Card')+'</button></div>':'')+'</div>';
+          return '<div class="tk-row"><span class="tk-dt">'+esc(e.month)+'</span><span class="tk-tx">'+(e.num!=null?'Payment '+esc(e.num):'Payment')+(due?' <span class="tk-pill open" style="margin-left:4px">Due</span>':'')+'</span><span class="tk-am'+(e.st==='done'?' c-done':e.st==='open'?' c-open':'')+'">'+rs(e.amount)+'</span>'+pill+
+            (e.st==='open'?'<div class="tk-acts"><button type="button" class="tk-mini add" data-act="inst-add" data-mode="other" data-i="'+i+'">+ Other expense</button><button type="button" class="tk-mini add" data-act="inst-add" data-mode="'+(sw?'splitwise':'card')+'" data-i="'+i+'">'+(sw?'+ Splitwise':'+ Card')+'</button></div>':'')+'</div>';
         }).join(''));
     });
     return h+(body||empty('Nothing matches this filter.'));
@@ -934,12 +978,12 @@
       var use=g.budget>0?g.spent/g.budget*100:0;
       var tools='<div class="tk-g-tools"><span>Budget <b style="color:#fff">'+rs(g.budget)+'</b></span><span>· Spent <b style="color:#fff">'+rs(g.spent)+'</b></span><span>· '+(g.budget>0?Math.round(use)+'% used':'no budget set')+'</span>'+
         (g.excluded>0?'<span>· Actual <b style="color:#fff">'+rs(g.spent-g.excluded)+'</b> + excluded <b style="color:#fff">'+rs(g.excluded)+'</b></span>':'')+
-        '<span style="flex:1"></span><button type="button" class="tk-mini" data-act="bud-addto" data-i="'+ref('budg',g)+'">+ Item</button></div>';
-      body+=group('budget', g.parent, idx++, { av:av(initials(g.parent),'#fb923c'), title:g.parent, sub:esc(g.type||'General')+' · '+g.items.length+' item'+(g.items.length===1?'':'s'), amt:(g.rem<0?'− ':'')+rs(Math.abs(g.rem)), amtLbl:g.rem<0?'overspent':'remaining', prog:use, progCls:'bud'+(use>100?' over':use>80?' warn':'') },
+        '<span style="flex:1"></span><button type="button" class="tk-mini add" data-act="bud-addto" data-i="'+ref('budg',g)+'">+ Item</button></div>';
+      body+=group('budget', g.parent, idx++, { av:av(initials(g.parent)), title:g.parent, sub:esc(g.type||'General')+' · '+g.items.length+' item'+(g.items.length===1?'':'s'), amt:(g.rem<0?'− ':'')+rs(Math.abs(g.rem)), amtLbl:g.rem<0?'overspent':'remaining', prog:use, progCls:'bud'+(use>100?' over':use>80?' warn':'') },
         tools+items.map(function(it){
           var i=ref('budget', it), ex=it.isInclude===false;
           return '<div class="tk-row"><span class="tk-dt">'+(ex?'<span class="tk-pill off">Excluded</span>':'Item')+'</span><span class="tk-tx"><b>'+esc(it.expenseDesc||'—')+'</b>'+(ex?'<small>Not actual cost</small>':'')+'</span><span class="tk-am">'+rs(it.expenseAmount)+'</span><span></span>'+
-            '<div class="tk-acts"><button type="button" class="tk-mini" data-act="bud-edit" data-i="'+i+'">Edit</button>'+delBtn('bud-del',i)+'</div></div>';
+            '<div class="tk-acts"><button type="button" class="tk-mini edit" data-act="bud-edit" data-i="'+i+'">Edit</button>'+delBtn('bud-del',i)+'</div></div>';
         }).join(''));
     });
     return h+(body||empty('Nothing matches this filter.'));
@@ -1024,7 +1068,7 @@
       var range = g.dates.length>1 && e ? 'until '+e.getDate()+' '+MON[e.getMonth()]+' · '+g.dates.length+' days' : '';
       body+='<div class="tk-note"><div class="tk-nd"><b>'+dayTxt+'</b><small>'+monTxt+'</small></div><div class="tk-nt"><div class="ref">'+linkify(esc(g.reference))+'</div><div class="meta">'+
         (n.category?'<span class="tk-pill off">'+esc(n.category)+'</span>':'')+(n.calendar?'<span class="tk-pill info">Calendar</span>':'')+(n.yearly?'<span class="tk-pill done">Yearly</span>':'')+(range?'<span>'+range+'</span>':'')+'</div></div>'+
-        '<div class="tk-note-acts"><button type="button" class="tk-mini" data-act="note-edit" data-i="'+i+'">Edit</button>'+delBtn('note-del',i)+'</div></div>';
+        '<div class="tk-note-acts"><button type="button" class="tk-mini edit" data-act="note-edit" data-i="'+i+'">Edit</button>'+delBtn('note-del',i)+'</div></div>';
     });
     return h+(body||empty('Nothing matches this filter.'));
   }
@@ -1042,9 +1086,9 @@
     if(!vis.length) return h+empty('Nothing matches this filter.');
     h+='<div class="tk-g open">'+vis.map(function(l){
       var i=ref('loss', l);
-      return '<div class="tk-row"><span class="tk-dt">'+(l.isConfirmLoss?'Confirmed':'Unconfirmed')+'</span><span class="tk-tx"><b>'+esc(l.ref||'—')+'</b><small>'+(String(l.lesson||'').trim()?'💡 '+esc(l.lesson):'<span style="opacity:.6">No lesson written yet</span>')+'</small></span><span class="tk-am">'+rs(l.amount)+'</span>'+
+      return '<div class="tk-row"><span class="tk-dt">'+(l.isConfirmLoss?'Confirmed':'Unconfirmed')+'</span><span class="tk-tx"><b>'+esc(l.ref||'—')+'</b><small>'+(String(l.lesson||'').trim()?'💡 '+esc(l.lesson):'<span style="opacity:.6">No lesson written yet</span>')+'</small></span><span class="tk-am '+(l.isConfirmLoss?'c-bad':'c-open')+'">'+rs(l.amount)+'</span>'+
         '<button type="button" class="tk-pill '+(l.isConfirmLoss?'bad':'open')+'" data-act="loss-st" data-i="'+i+'" title="Tap to mark '+(l.isConfirmLoss?'unconfirmed':'confirmed')+'">'+(l.isConfirmLoss?'Confirmed':'Unconfirmed')+'</button>'+
-        '<div class="tk-acts"><button type="button" class="tk-mini" data-act="loss-edit" data-i="'+i+'">Edit</button>'+delBtn('loss-del',i)+'</div></div>';
+        '<div class="tk-acts"><button type="button" class="tk-mini edit" data-act="loss-edit" data-i="'+i+'">Edit</button>'+delBtn('loss-del',i)+'</div></div>';
     }).join('')+'</div>';
     return h;
   }
@@ -1055,6 +1099,7 @@
   function render(){
     var m=meta(S.cur), body=$('tk-body');
     $('tk-title').textContent=m.name;
+    $('tk-modal').style.setProperty('--tk-acc', m.c);
     $('tk-sub').textContent=m.sub||'';
     var add=$('tk-add'); add.hidden=!m.add; add.textContent=m.add?'+ '+m.add:'';
     S.refs={};
