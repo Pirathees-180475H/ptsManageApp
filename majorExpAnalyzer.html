@@ -5,15 +5,15 @@
        A Planed Date · B Bought Date · C Reference · D Portfolio State
        E is usefull? · F Usages (free text) · G Bought? · H Price (LKR)
 
-     Wears monthDetail's tokens, like the Year scope does. The four
-     Chart.js canvases are gone: one cumulative area for money spent
-     over time, plain HTML bars for price by item, and a single
-     stacked bar for "was it worth buying" say the same things without
-     a chart library, and they inherit the panel's type and colour.
+     Wears monthDetail's tokens, like the Year scope does. No chart
+     library: a smooth cumulative curve with one point per purchase
+     (hover for the item), an SVG donut for price by item, and a single
+     stacked bar for "was it worth buying".
 
-     Colour: blue carries magnitude (price, cumulative spend); the
-     status trio only ever appears with a word beside it; purple means
-     a Major item, matching the badge the ledger draws.
+     Colour and surfaces match the expense page (#page-exp): glass
+     cards with a 2px gradient cap, indigo → violet for magnitude
+     (price, cumulative spend), and the status trio only ever with a
+     word beside it.
 
      Backend, unchanged:
        getMajorExpData() · addMajorExpEntry(e)
@@ -21,12 +21,12 @@
 ═══════════════════════════════════════════════════════════════ -->
 <style>
 .mxa-page{
-  --mx-pane:#12151B; --mx-field:#0F1218;
+  --mx-pane:rgba(255,255,255,.04); --mx-field:rgba(255,255,255,.03);
   --mx-line:rgba(255,255,255,.08); --mx-line2:rgba(255,255,255,.13);
-  --mx-ink:#E9EEF4; --mx-ink2:#98A2B1; --mx-ink3:#6C7788;
-  --mx-acc:#2E6BE6; --mx-mag:#2E70BD; --mx-mag-hi:#4A96EA;
-  --mx-good:#14B88A; --mx-warn:#F0A92A; --mx-crit:#DC4B4B; --mx-tag:#B79BFF;
-  --mx-num:'Sora','Inter',ui-monospace,monospace;
+  --mx-ink:#fff; --mx-ink2:rgba(255,255,255,.7); --mx-ink3:rgba(255,255,255,.42);
+  --mx-acc:#6366f1; --mx-mag:#6366f1; --mx-mag-hi:#8b5cf6;
+  --mx-good:#10b981; --mx-warn:#f59e0b; --mx-crit:#ef4444; --mx-tag:#8b5cf6;
+  --mx-num:'Inter',system-ui,-apple-system,sans-serif;
   font-family:'Inter',system-ui,-apple-system,sans-serif;
   color:var(--mx-ink);padding:16px 18px 20px;width:100%;
   display:flex;flex-direction:column;gap:13px;
@@ -35,11 +35,22 @@
 .mxa-page button,.mxa-page input,.mxa-page select,.mxa-page textarea{font-family:inherit;}
 .mxa-n{font-family:var(--mx-num);font-variant-numeric:tabular-nums;}
 
-.mxa-card{padding:14px 16px;border-radius:12px;background:var(--mx-pane);
-  border:1px solid var(--mx-line);}
+.mxa-card{padding:14px 16px;border-radius:16px;background:var(--mx-pane);
+  border:1px solid var(--mx-line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;}
+/* the 2px gradient cap the expense page's cards wear */
+.mxa-card::before,.mxa-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,#6366f1,#8b5cf6);}
+.mxa-row2 > .mxa-card:nth-child(2)::before{background:linear-gradient(90deg,#06b6d4,#0ea5e9);}
+.mxa-kpis .mxa-kpi:nth-child(6n+2)::before{background:linear-gradient(90deg,#f59e0b,#fb923c);}
+.mxa-kpis .mxa-kpi:nth-child(6n+3)::before{background:linear-gradient(90deg,#10b981,#34d399);}
+.mxa-kpis .mxa-kpi:nth-child(6n+4)::before{background:linear-gradient(90deg,#06b6d4,#0ea5e9);}
+.mxa-kpis .mxa-kpi:nth-child(6n+5)::before{background:linear-gradient(90deg,#ec4899,#f43f5e);}
+.mxa-kpis .mxa-kpi:nth-child(6n+6)::before{background:linear-gradient(90deg,#f97316,#f59e0b);}
+.mxa-ins .mxa-kpi::before{background:linear-gradient(90deg,#8b5cf6,#6366f1);}
 .mxa-eye{display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap;}
-.mxa-eye h2{margin:0;font-size:10px;font-weight:700;letter-spacing:1.6px;
-  text-transform:uppercase;color:var(--mx-ink3);}
+.mxa-eye h2{margin:0;font-size:11px;font-weight:600;letter-spacing:1px;line-height:1.2;
+  text-transform:uppercase;color:rgba(255,255,255,.45);padding-left:8px;border-left:3px solid #6366f1;}
 .mxa-rule{flex:1;height:1px;background:var(--mx-line);min-width:12px;}
 .mxa-key{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:var(--mx-ink2);}
 .mxa-key i{width:9px;height:9px;border-radius:2px;flex-shrink:0;}
@@ -50,25 +61,26 @@
   border:1px solid var(--mx-line2);background:var(--mx-field);color:var(--mx-ink);
   font-size:12.5px;font-weight:500;}
 .mxa-sel{padding-right:28px;cursor:pointer;appearance:none;-webkit-appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2398A2B1' stroke-width='2.4' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.4' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 10px center;}
-.mxa-sel option{background:#12151B;color:var(--mx-ink);}
+.mxa-sel option{background:#0b1224;color:var(--mx-ink);}
 .mxa-inp{flex:1;min-width:150px;}
 .mxa-sel:focus,.mxa-inp:focus{outline:2px solid var(--mx-acc);outline-offset:1px;}
 .mxa-lbl{font-size:11px;color:var(--mx-ink3);}
 .mxa-add{margin-left:auto;display:inline-flex;align-items:center;gap:7px;height:34px;
-  padding:0 14px;border-radius:9px;border:1px solid rgba(183,155,255,.4);
-  background:rgba(183,155,255,.12);color:var(--mx-tag);
+  padding:0 14px;border-radius:9px;border:0;
+  background:linear-gradient(135deg,#6366f1,#8b5cf6);box-shadow:0 0 14px rgba(99,102,241,.4);color:#fff;
   font-size:12.5px;font-weight:600;cursor:pointer;}
-.mxa-add:hover{background:rgba(183,155,255,.2);}
+.mxa-add:hover{filter:brightness(1.1);}
 
 /* ── KPI strip ── */
 .mxa-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;}
-.mxa-kpi{padding:12px 13px;border-radius:12px;background:var(--mx-pane);
-  border:1px solid var(--mx-line);}
-.mxa-kpi-lbl{font-size:9.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
-  color:var(--mx-ink3);margin-bottom:7px;}
-.mxa-kpi-val{font-family:var(--mx-num);font-size:19px;font-weight:700;letter-spacing:-.6px;
+.mxa-kpi{padding:13px 15px;border-radius:14px;background:var(--mx-pane);
+  border:1px solid var(--mx-line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;}
+.mxa-kpi-lbl{font-size:10px;font-weight:500;letter-spacing:.6px;text-transform:uppercase;
+  color:var(--mx-ink3);margin-bottom:5px;}
+.mxa-kpi-val{font-family:var(--mx-num);font-size:17px;font-weight:700;letter-spacing:-.4px;
   line-height:1.05;font-variant-numeric:tabular-nums;overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;}
 .mxa-kpi-val.txt{font-family:'Inter',sans-serif;font-size:14px;letter-spacing:-.2px;}
@@ -79,16 +91,44 @@
 
 /* ── charts ── */
 .mxa-row2{display:grid;grid-template-columns:1.15fr 1fr;gap:13px;}
-.mxa-svg{width:100%;height:178px;display:block;}
+.mxa-svg{width:100%;height:200px;display:block;overflow:visible;}
 .mxa-grid{stroke:rgba(255,255,255,.07);stroke-width:1;}
-.mxa-ax{fill:#6C7788;font-size:9.5px;font-family:'Sora',sans-serif;}
-.mxa-prow{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
-.mxa-pnm{width:126px;flex-shrink:0;font-size:11.5px;color:var(--mx-ink2);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.mxa-ptrack{flex:1;display:flex;align-items:center;gap:8px;min-width:0;}
-.mxa-pbar{display:block;height:11px;border-radius:0 4px 4px 0;background:var(--mx-mag);flex-shrink:0;}
-.mxa-pbar.wish{background:#24568C;opacity:.55;}
-.mxa-pamt{font-family:var(--mx-num);font-size:11px;color:var(--mx-ink3);flex-shrink:0;}
+.mxa-ax{fill:#64748b;font-size:9.5px;font-family:'Inter',sans-serif;}
+/* cumulative curve */
+.mxa-cwrap{position:relative;}
+.mxa-cwrap .pt{transition:r .12s;}
+.mxa-cwrap .hit{fill:transparent;cursor:pointer;}
+.mxa-guide{stroke:rgba(255,255,255,.25);stroke-width:1;stroke-dasharray:3 3;}
+.mxa-tip{position:absolute;pointer-events:none;z-index:5;min-width:170px;max-width:240px;
+  padding:10px 12px;border-radius:12px;background:rgba(10,15,30,.95);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 30px rgba(0,0,0,.55);
+  opacity:0;transform:translateY(4px);transition:opacity .12s,transform .12s;}
+.mxa-tip.on{opacity:1;transform:none;}
+.mxa-tip .d{font-size:10.5px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#a5b4fc;}
+.mxa-tip .nm{font-size:13.5px;font-weight:700;margin:3px 0 6px;}
+.mxa-tip .r{display:flex;justify-content:space-between;gap:12px;font-size:11.5px;color:var(--mx-ink2);line-height:1.7;}
+.mxa-tip .r b{color:#fff;font-variant-numeric:tabular-nums;}
+
+/* price donut */
+.mxa-donut{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.mxa-donut svg{width:190px;height:190px;flex-shrink:0;display:block;margin:0 auto;}
+.mxa-donut .seg{cursor:pointer;transition:opacity .15s,transform .15s;transform-origin:95px 95px;}
+.mxa-donut.hl .seg{opacity:.3;}
+.mxa-donut.hl .seg.on{opacity:1;transform:scale(1.04);}
+.mxa-dc1{font-size:10px;fill:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;}
+.mxa-dc2{font-size:17px;font-weight:800;fill:#fff;}
+.mxa-dc3{font-size:10.5px;fill:rgba(255,255,255,.55);}
+.mxa-dleg{flex:1;min-width:170px;display:flex;flex-direction:column;gap:2px;}
+.mxa-drow{display:flex;align-items:center;gap:8px;padding:5px 8px;margin:0 -8px;border-radius:8px;
+  font-size:12px;cursor:default;}
+.mxa-drow:hover,.mxa-drow.on{background:rgba(255,255,255,.05);}
+.mxa-drow i{width:9px;height:9px;border-radius:3px;flex-shrink:0;}
+.mxa-drow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mx-ink2);}
+.mxa-drow .w{font-size:9.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+  color:var(--mx-warn);flex-shrink:0;}
+.mxa-drow b{font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.mxa-drow .pc{width:34px;text-align:right;color:var(--mx-ink3);font-variant-numeric:tabular-nums;flex-shrink:0;}
 
 /* ── worth-it stacked bar ── */
 .mxa-stack{display:flex;gap:2px;height:26px;border-radius:7px;overflow:hidden;margin-bottom:10px;}
@@ -104,8 +144,8 @@
   letter-spacing:0;line-height:1.3;white-space:normal;}
 
 /* ── table ── */
-.mxa-tblwrap{border-radius:12px;background:var(--mx-pane);border:1px solid var(--mx-line);
-  overflow:hidden;}
+.mxa-tblwrap{border-radius:16px;background:var(--mx-pane);border:1px solid var(--mx-line);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);overflow:hidden;}
 .mxa-scroll{overflow-x:auto;}
 .mxa-tbl{width:100%;border-collapse:collapse;}
 .mxa-tbl th{padding:9px 12px;text-align:left;font-size:9.5px;font-weight:700;
@@ -121,15 +161,15 @@
   color:var(--mx-ink2);white-space:nowrap;}
 .mxa-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;
   font-size:10.5px;font-weight:700;border:1px solid transparent;}
-.mxa-chip.good{background:rgba(20,184,138,.13);border-color:rgba(20,184,138,.35);color:var(--mx-good);}
-.mxa-chip.bad{background:rgba(220,75,75,.13);border-color:rgba(220,75,75,.35);color:var(--mx-crit);}
-.mxa-chip.wait{background:rgba(240,169,42,.13);border-color:rgba(240,169,42,.35);color:var(--mx-warn);}
+.mxa-chip.good{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.35);color:var(--mx-good);}
+.mxa-chip.bad{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.35);color:var(--mx-crit);}
+.mxa-chip.wait{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.35);color:var(--mx-warn);}
 .mxa-chip.mute{background:rgba(255,255,255,.05);border-color:var(--mx-line2);color:var(--mx-ink2);}
 .mxa-act{width:28px;height:28px;border-radius:7px;border:1px solid var(--mx-line2);
   background:transparent;color:var(--mx-ink2);cursor:pointer;margin-left:5px;
   display:inline-flex;align-items:center;justify-content:center;}
 .mxa-act:hover{color:var(--mx-ink);border-color:rgba(255,255,255,.26);}
-.mxa-act.del:hover{color:var(--mx-crit);border-color:rgba(220,75,75,.45);}
+.mxa-act.del:hover{color:var(--mx-crit);border-color:rgba(239,68,68,.45);}
 .mxa-pag{display:flex;align-items:center;gap:9px;padding:10px 14px;
   border-top:1px solid var(--mx-line);}
 .mxa-pag span{font-size:11.5px;color:var(--mx-ink3);}
@@ -139,32 +179,33 @@
 .mxa-pgbtn:disabled{opacity:.35;cursor:not-allowed;}
 
 .mxa-empty{padding:40px 16px;text-align:center;font-size:12.5px;color:var(--mx-ink2);}
-.mxa-err{padding:14px 16px;border-radius:12px;font-size:12.5px;color:#F09B9B;
-  background:rgba(220,75,75,.10);border:1px solid rgba(220,75,75,.30);}
+.mxa-err{padding:14px 16px;border-radius:12px;font-size:12.5px;color:#fca5a5;
+  background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.32);}
 
 /* ── add / edit form ── */
 #mxa-overlay{position:fixed;inset:0;z-index:9500;display:none;
-  background:rgba(4,6,10,.62);backdrop-filter:blur(6px);}
+  background:rgba(6,11,24,.6);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
 #mxa-overlay.open{display:block;}
 #mxa-modal{position:fixed;z-index:9501;top:50%;left:50%;transform:translate(-50%,-50%);
   width:min(520px,94vw);max-height:92vh;overflow-y:auto;display:none;
   flex-direction:column;gap:13px;padding:18px;border-radius:16px;
-  background:#12151B;border:1px solid rgba(255,255,255,.13);
-  box-shadow:0 32px 80px rgba(0,0,0,.75);
-  font-family:'Inter',system-ui,sans-serif;color:#E9EEF4;}
+  background:rgba(8,13,28,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);box-shadow:0 30px 80px rgba(0,0,0,.55);
+  font-family:'Inter',system-ui,sans-serif;color:#fff;}
 #mxa-modal.open{display:flex;}
 #mxa-modal h3{margin:0;font-size:15px;font-weight:700;}
 .mxa-fgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
 .mxa-f{display:flex;flex-direction:column;gap:6px;}
-.mxa-f label{font-size:11px;font-weight:600;color:#98A2B1;}
+.mxa-f label{font-size:11px;font-weight:600;color:rgba(255,255,255,.6);}
 .mxa-f input,.mxa-f select{height:36px;padding:0 11px;border-radius:9px;
-  border:1px solid rgba(255,255,255,.13);background:#0F1218;color:#E9EEF4;font-size:12.5px;}
-.mxa-f input:focus,.mxa-f select:focus{outline:2px solid #2E6BE6;outline-offset:1px;}
-.mxa-f select option{background:#12151B;}
+  border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.04);color:#fff;font-size:12.5px;}
+.mxa-f input:focus,.mxa-f select:focus{outline:2px solid #6366f1;outline-offset:1px;}
+.mxa-f select option{background:#0b1224;}
 .mxa-facts{display:flex;gap:9px;justify-content:flex-end;}
 .mxa-btn{height:38px;padding:0 16px;border-radius:10px;border:1px solid rgba(255,255,255,.13);
-  background:transparent;color:#98A2B1;font-size:12.5px;font-weight:600;cursor:pointer;}
-.mxa-btn.go{background:#2E6BE6;border-color:#2E6BE6;color:#fff;}
+  background:transparent;color:rgba(255,255,255,.7);font-size:12.5px;font-weight:600;cursor:pointer;}
+.mxa-btn.go{background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;color:#fff;
+  box-shadow:0 0 14px rgba(99,102,241,.4);}
 .mxa-btn:disabled{opacity:.5;cursor:not-allowed;}
 
 @media(max-width:1080px){
@@ -372,8 +413,8 @@ function mxaDisplayData(res){
     '<section class="mxa-card">' +
       '<div class="mxa-eye"><h2>Price by item</h2><span class="mxa-rule"></span>' +
         '<span class="mxa-key"><i style="background:var(--mx-mag)"></i>Bought</span>' +
-        '<span class="mxa-key"><i style="background:#24568C;opacity:.55"></i>Wishlist</span>' +
-      '</div>' + mxaPriceBars() + '</section>' +
+        '<span class="mxa-key"><i style="background:var(--mx-mag);opacity:.4"></i>Wishlist</span>' +
+      '</div>' + mxaDonut() + '</section>' +
     '</div>';
 
   /* worth it + insights */
@@ -415,6 +456,7 @@ function mxaDisplayData(res){
     '<div class="mxa-pag" id="mxa-pag"></div></div>';
 
   document.getElementById('mxa-body').innerHTML = h;
+  mxaWireCharts();
   mxaApply();
 }
 
@@ -424,80 +466,192 @@ function mxaInsight(lbl, val, sub){
     '<div class="mxa-kpi-foot"><span class="mxa-kpi-sub">' + mxaEsc(sub) + '</span></div></div>';
 }
 
-/* ── cumulative spend, as an SVG area ── */
+/* ── cumulative spend: a smooth curve, one point per purchase ── */
+var _mxaCum = [];                 /* the plotted points, for the hover card */
 function mxaCumulative(bought){
   var pts = bought.filter(function(r){ return mxaParseDate(r.boughtDate); })
     .sort(function(a,b){ return mxaParseDate(a.boughtDate) - mxaParseDate(b.boughtDate); });
+  _mxaCum = [];
   if(pts.length < 2){
-    return '<div class="mxa-empty" style="height:178px;display:flex;align-items:center;' +
+    return '<div class="mxa-empty" style="height:200px;display:flex;align-items:center;' +
            'justify-content:center">Two dated purchases will draw this.</div>';
   }
-  var W = 560, H = 178, padL = 46, padR = 6, padT = 14, padB = 34;
+  var W = 560, H = 200, padL = 46, padR = 14, padT = 16, padB = 28;
   var t0 = mxaParseDate(pts[0].boughtDate).getTime();
   var t1 = mxaParseDate(pts[pts.length-1].boughtDate).getTime();
   var span = (t1 - t0) || 1;
-  var run = 0, xy = [];
+  var run = 0;
   pts.forEach(function(r){
     run += (r.price || 0);
-    var x = padL + (mxaParseDate(r.boughtDate).getTime() - t0) / span * (W - padL - padR);
-    xy.push({x:x, y:run, ref:r.reference, price:r.price});
+    _mxaCum.push({ x: padL + (mxaParseDate(r.boughtDate).getTime() - t0) / span * (W - padL - padR),
+                   total: run, ref: r.reference, price: r.price || 0, date: r.boughtDate,
+                   useful: r.isUseful });
   });
   var peak = run || 1;
   var Y = function(v){ return padT + (1 - v / peak) * (H - padT - padB); };
+  _mxaCum.forEach(function(p){ p.y = Y(p.total); });
 
-  var line = xy.map(function(p,i){
-    return (i ? 'L' : 'M') + p.x.toFixed(1) + ',' + Y(p.y).toFixed(1);
-  }).join(' ');
-  var area = line + ' L' + xy[xy.length-1].x.toFixed(1) + ',' + Y(0).toFixed(1) +
-             ' L' + xy[0].x.toFixed(1) + ',' + Y(0).toFixed(1) + ' Z';
+  var line = mxaSmooth(_mxaCum);
+  var last = _mxaCum[_mxaCum.length-1], first = _mxaCum[0];
+  var area = line + ' L' + last.x.toFixed(1) + ',' + Y(0).toFixed(1) +
+             ' L' + first.x.toFixed(1) + ',' + Y(0).toFixed(1) + ' Z';
 
-  var s = '<svg class="mxa-svg" viewBox="0 0 ' + W + ' ' + H + '" role="img"' +
-    ' aria-label="Cumulative money spent on major items over time">';
+  var s = '<div class="mxa-cwrap"><svg class="mxa-svg" id="mxa-cum" viewBox="0 0 ' + W + ' ' + H + '" role="img"' +
+    ' aria-label="Cumulative money spent on major items over time">' +
+    '<defs><linearGradient id="mxa-areaG" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#8b5cf6" stop-opacity=".38"/>' +
+      '<stop offset="1" stop-color="#6366f1" stop-opacity="0"/></linearGradient>' +
+    '<linearGradient id="mxa-lineG" x1="0" y1="0" x2="1" y2="0">' +
+      '<stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#a78bfa"/></linearGradient></defs>';
   for(var g = 0; g <= 3; g++){
     var gv = peak * g / 3, gy = Y(gv);
     s += '<line class="mxa-grid" x1="' + padL + '" y1="' + gy.toFixed(1) +
          '" x2="' + (W-padR) + '" y2="' + gy.toFixed(1) + '"/>';
-    s += '<text class="mxa-ax" x="' + (padL-6) + '" y="' + (gy+3).toFixed(1) +
-         '" text-anchor="end">' + mxaFmtK(gv).replace('₨ ','') + '</text>';
+    s += '<text class="mxa-ax" x="' + (padL-8) + '" y="' + (gy+3).toFixed(1) +
+         '" text-anchor="end">' + mxaFmtK(gv).replace(/^₨\s*/,'') + '</text>';
   }
-  s += '<path d="' + area + '" fill="#2E70BD" fill-opacity="0.16"></path>';
-  s += '<path d="' + line + '" fill="none" stroke="#4A96EA" stroke-width="2"' +
-       ' stroke-linejoin="round" stroke-linecap="round"></path>';
-
-  /* label only the two biggest single purchases — never every point */
-  var big = xy.slice().sort(function(a,b){ return (b.price||0)-(a.price||0); }).slice(0,2);
-  big.forEach(function(p){
-    s += '<circle cx="' + p.x.toFixed(1) + '" cy="' + Y(p.y).toFixed(1) +
-         '" r="4.5" fill="#4A96EA" stroke="#12151B" stroke-width="2"><title>' +
-         mxaEsc(p.ref) + ' — ' + mxaFmt(p.price) + '</title></circle>';
-    s += '<text class="mxa-ax" x="' + p.x.toFixed(1) + '" y="' + (Y(p.y)-10).toFixed(1) +
-         '" text-anchor="middle" style="fill:#E9EEF4">' +
-         mxaEsc(String(p.ref || '').split(' ')[0]) + '</text>';
+  s += '<path d="' + area + '" fill="url(#mxa-areaG)"></path>';
+  s += '<path d="' + line + '" fill="none" stroke="url(#mxa-lineG)" stroke-width="2.5"' +
+       ' stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 6px rgba(139,92,246,.55))"></path>';
+  s += '<line class="mxa-guide" id="mxa-guide" x1="0" x2="0" y1="' + padT + '" y2="' + Y(0) + '" visibility="hidden"/>';
+  _mxaCum.forEach(function(p, i){
+    s += '<circle class="pt" id="mxa-pt' + i + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) +
+         '" r="4" fill="#0b1224" stroke="#a78bfa" stroke-width="2"></circle>';
   });
-  s += '<text class="mxa-ax" x="' + padL + '" y="' + (H-10) + '" text-anchor="start">' +
+  _mxaCum.forEach(function(p, i){
+    s += '<circle class="hit" data-ci="' + i + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="12"></circle>';
+  });
+  s += '<text class="mxa-ax" x="' + padL + '" y="' + (H-8) + '" text-anchor="start">' +
        mxaFormatDate(pts[0].boughtDate) + '</text>';
-  s += '<text class="mxa-ax" x="' + (W-padR) + '" y="' + (H-10) + '" text-anchor="end">' +
+  s += '<text class="mxa-ax" x="' + (W-padR) + '" y="' + (H-8) + '" text-anchor="end">' +
        mxaFormatDate(pts[pts.length-1].boughtDate) + '</text>';
-  s += '</svg>';
+  s += '</svg><div class="mxa-tip" id="mxa-ctip"></div></div>';
   return s;
 }
 
-/* ── price by item, plain HTML bars ── */
-function mxaPriceBars(){
-  var rows = mxaData.slice().filter(function(r){ return (r.price||0) > 0; })
-    .sort(function(a,b){ return (b.price||0)-(a.price||0); }).slice(0, 7);
+/* Monotone cubic through the points (Fritsch–Carlson): smooth, and it
+   never dips or overshoots, so a running total still only climbs. */
+function mxaSmooth(p){
+  var n = p.length, d = [], m = [], i;
+  for(i = 0; i < n - 1; i++){
+    var dx = p[i+1].x - p[i].x;
+    d.push(dx > 0.5 ? (p[i+1].y - p[i].y) / dx : 0);
+  }
+  m[0] = d[0]; m[n-1] = d[n-2];
+  for(i = 1; i < n - 1; i++) m[i] = (d[i-1] * d[i] <= 0) ? 0 : (d[i-1] + d[i]) / 2;
+  for(i = 0; i < n - 1; i++){
+    if(d[i] === 0){ m[i] = 0; m[i+1] = 0; continue; }
+    var a = m[i] / d[i], b = m[i+1] / d[i], h = a*a + b*b;
+    if(h > 9){ var t = 3 / Math.sqrt(h); m[i] = t * a * d[i]; m[i+1] = t * b * d[i]; }
+  }
+  var path = 'M' + p[0].x.toFixed(1) + ',' + p[0].y.toFixed(1);
+  for(i = 0; i < n - 1; i++){
+    var ddx = p[i+1].x - p[i].x;
+    if(ddx <= 0.5){ path += ' L' + p[i+1].x.toFixed(1) + ',' + p[i+1].y.toFixed(1); continue; }
+    path += ' C' + (p[i].x + ddx/3).toFixed(1) + ',' + (p[i].y + m[i]*ddx/3).toFixed(1) + ' ' +
+            (p[i+1].x - ddx/3).toFixed(1) + ',' + (p[i+1].y - m[i+1]*ddx/3).toFixed(1) + ' ' +
+            p[i+1].x.toFixed(1) + ',' + p[i+1].y.toFixed(1);
+  }
+  return path;
+}
+
+/* ── price by item: a donut, largest first, the tail folded into "Other" ── */
+var MXA_PAL = ['#6366f1','#06b6d4','#f59e0b','#10b981','#ec4899','#8b5cf6'];
+var _mxaSlices = [];
+function mxaDonut(){
+  var rows = mxaData.filter(function(r){ return (r.price||0) > 0; })
+    .sort(function(a,b){ return (b.price||0)-(a.price||0); });
   if(!rows.length) return '<div class="mxa-empty">No prices recorded yet.</div>';
-  var peak = rows[0].price || 1;
-  return rows.map(function(r){
-    return '<div class="mxa-prow">' +
-      '<span class="mxa-pnm" title="' + mxaEsc(r.reference) + '">' +
-        mxaEsc(r.reference || 'Item') + '</span>' +
-      '<span class="mxa-ptrack">' +
-        '<span class="mxa-pbar' + (r.bought === true ? '' : ' wish') +
-          '" style="width:' + (r.price / peak * 100).toFixed(1) + '%"></span>' +
-        '<span class="mxa-pamt">' + mxaFmtK(r.price) + '</span>' +
-      '</span></div>';
-  }).join('');
+  var total = rows.reduce(function(s,r){ return s + r.price; }, 0);
+  _mxaSlices = rows.slice(0, 6).map(function(r, i){
+    return { name: r.reference || 'Item', val: r.price, wish: r.bought !== true, col: MXA_PAL[i] };
+  });
+  if(rows.length > 6){
+    var rest = rows.slice(6);
+    _mxaSlices.push({ name: 'Other · ' + rest.length + ' items', col: '#64748b', wish: false,
+      val: rest.reduce(function(s,r){ return s + r.price; }, 0) });
+  }
+  var C = 95, R = 84, r0 = 58, gap = _mxaSlices.length > 1 ? 0.025 : 0, a = -Math.PI / 2;
+  var svg = '<svg viewBox="0 0 190 190" role="img" aria-label="Price by item">';
+  _mxaSlices.forEach(function(sl, i){
+    var sweep = sl.val / total * Math.PI * 2;
+    svg += '<path class="seg" data-di="' + i + '" d="' + mxaArc(C, R, r0, a + gap/2, a + Math.max(sweep - gap/2, gap/2 + .001)) +
+           '" fill="' + sl.col + '"' + (sl.wish ? ' fill-opacity=".4" stroke="' + sl.col + '" stroke-width="1" stroke-dasharray="3 2"' : '') + '></path>';
+    a += sweep;
+  });
+  svg += '<text class="mxa-dc1" id="mxa-dc1" x="95" y="80" text-anchor="middle">Total</text>' +
+         '<text class="mxa-dc2" id="mxa-dc2" x="95" y="102" text-anchor="middle">' + mxaFmtK(total) + '</text>' +
+         '<text class="mxa-dc3" id="mxa-dc3" x="95" y="120" text-anchor="middle">' + rows.length + ' items</text></svg>';
+  var leg = '<div class="mxa-dleg">' + _mxaSlices.map(function(sl, i){
+    return '<div class="mxa-drow" data-di="' + i + '"><i style="background:' + sl.col + (sl.wish ? ';opacity:.45' : '') + '"></i>' +
+      '<span class="nm" title="' + mxaEsc(sl.name) + '">' + mxaEsc(sl.name) + '</span>' +
+      (sl.wish ? '<span class="w">wishlist</span>' : '') +
+      '<b>' + mxaFmtK(sl.val) + '</b><span class="pc">' + Math.round(sl.val / total * 100) + '%</span></div>';
+  }).join('') + '</div>';
+  _mxaSlices.total = total; _mxaSlices.count = rows.length;
+  return '<div class="mxa-donut" id="mxa-donut">' + svg + leg + '</div>';
+}
+function mxaArc(c, R, r, a0, a1){
+  if(a1 - a0 > Math.PI * 2 - 0.001) a1 = a0 + Math.PI * 2 - 0.001;   /* one slice: a full ring */
+  var big = (a1 - a0) > Math.PI ? 1 : 0;
+  function P(rad, ang){ return (c + rad * Math.cos(ang)).toFixed(2) + ',' + (c + rad * Math.sin(ang)).toFixed(2); }
+  return 'M' + P(R, a0) + ' A' + R + ',' + R + ' 0 ' + big + ' 1 ' + P(R, a1) +
+         ' L' + P(r, a1) + ' A' + r + ',' + r + ' 0 ' + big + ' 0 ' + P(r, a0) + ' Z';
+}
+
+/* hover: the curve's points and the donut's slices / legend rows */
+function mxaWireCharts(){
+  var cum = document.getElementById('mxa-cum'), tip = document.getElementById('mxa-ctip');
+  if(cum && tip){
+    var guide = document.getElementById('mxa-guide'), on = -1;
+    cum.addEventListener('mouseover', function(ev){
+      var h = ev.target.closest && ev.target.closest('[data-ci]');
+      if(!h) return;
+      var i = +h.getAttribute('data-ci'), p = _mxaCum[i];
+      if(on >= 0){ var o = document.getElementById('mxa-pt' + on); if(o) o.setAttribute('r', 4); }
+      on = i;
+      document.getElementById('mxa-pt' + i).setAttribute('r', 6.5);
+      guide.setAttribute('x1', p.x); guide.setAttribute('x2', p.x); guide.setAttribute('visibility', 'visible');
+      tip.innerHTML = '<div class="d">' + mxaFormatDate(p.date) + '</div>' +
+        '<div class="nm">' + mxaEsc(p.ref || 'Item') + '</div>' +
+        '<div class="r"><span>Price</span><b>+ ' + mxaFmt(p.price) + '</b></div>' +
+        '<div class="r"><span>Running total</span><b>' + mxaFmt(p.total) + '</b></div>' +
+        (p.useful === true ? '<div class="r"><span>Worth it</span><b style="color:var(--mx-good)">Useful</b></div>'
+          : p.useful === false ? '<div class="r"><span>Worth it</span><b style="color:var(--mx-crit)">Regret</b></div>' : '');
+      tip.classList.add('on');
+      /* the SVG keeps its aspect ratio, so map through the same fit */
+      var box = cum.getBoundingClientRect(), k = Math.min(box.width / 560, box.height / 200);
+      var x = (box.width - 560 * k) / 2 + p.x * k, y = (box.height - 200 * k) / 2 + p.y * k;
+      var w = tip.offsetWidth, hh = tip.offsetHeight;
+      var left = x + 14; if(left + w > box.width) left = x - w - 14;
+      var top = y - hh - 10; if(top < 0) top = y + 14;
+      tip.style.left = Math.max(0, left) + 'px'; tip.style.top = top + 'px';
+    });
+    cum.addEventListener('mouseleave', function(){
+      tip.classList.remove('on'); guide.setAttribute('visibility', 'hidden');
+      if(on >= 0){ var o = document.getElementById('mxa-pt' + on); if(o) o.setAttribute('r', 4); on = -1; }
+    });
+  }
+  var dn = document.getElementById('mxa-donut');
+  if(dn){
+    var c1 = document.getElementById('mxa-dc1'), c2 = document.getElementById('mxa-dc2'), c3 = document.getElementById('mxa-dc3');
+    var reset = function(){
+      dn.classList.remove('hl');
+      dn.querySelectorAll('.on').forEach(function(x){ x.classList.remove('on'); });
+      c1.textContent = 'Total'; c2.textContent = mxaFmtK(_mxaSlices.total); c3.textContent = _mxaSlices.count + ' items';
+    };
+    dn.addEventListener('mouseover', function(ev){
+      var t = ev.target.closest && ev.target.closest('[data-di]');
+      if(!t){ reset(); return; }
+      var i = +t.getAttribute('data-di'), sl = _mxaSlices[i];
+      dn.classList.add('hl');
+      dn.querySelectorAll('[data-di]').forEach(function(x){ x.classList.toggle('on', +x.getAttribute('data-di') === i); });
+      var nm = sl.name.length > 16 ? sl.name.slice(0, 15) + '…' : sl.name;
+      c1.textContent = nm; c2.textContent = mxaFmtK(sl.val);
+      c3.textContent = Math.round(sl.val / _mxaSlices.total * 100) + '%' + (sl.wish ? ' · wishlist' : '');
+    });
+    dn.addEventListener('mouseleave', reset);
+  }
 }
 
 /* ═══ filter · search · page ═══ */

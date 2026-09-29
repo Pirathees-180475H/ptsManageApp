@@ -5399,16 +5399,17 @@ function getExpenseHeatmapData(reqYear) {
 
     // Category definitions matching expense dashboard
     var CATS = [
-      { name: 'Food',               amtCol: 3,  color: '#f59e0b' },
-      { name: 'Supermarket',        amtCol: 5,  color: '#10b981' },
-      { name: 'Uber',               amtCol: 7,  color: '#6366f1' },
-      { name: 'Uber Work',          amtCol: 8,  color: '#8b5cf6' },
-      { name: 'Movies & Outing',    amtCol: 10, color: '#ec4899' },
-      { name: 'Other',              amtCol: 12, color: '#f97316' },
-      { name: 'Bus Fair',           amtCol: 13, color: '#06b6d4' },
-      { name: 'Party',              amtCol: 15, color: '#ef4444' },
-      { name: 'Dress & Appearance', amtCol: 17, color: '#84cc16' },
-      { name: 'Rent',               amtCol: 18, color: '#64748b' }
+      // refCol matches getCurrentMonthExpensesList (0 = the category has no reference column)
+      { name: 'Food',               amtCol: 3,  refCol: 4,  color: '#f59e0b' },
+      { name: 'Supermarket',        amtCol: 5,  refCol: 6,  color: '#10b981' },
+      { name: 'Uber',               amtCol: 7,  refCol: 0,  color: '#6366f1' },
+      { name: 'Uber Work',          amtCol: 8,  refCol: 0,  color: '#8b5cf6' },
+      { name: 'Movies & Outing',    amtCol: 10, refCol: 9,  color: '#ec4899' },
+      { name: 'Other',              amtCol: 12, refCol: 11, color: '#f97316' },
+      { name: 'Bus Fair',           amtCol: 13, refCol: 0,  color: '#06b6d4' },
+      { name: 'Party',              amtCol: 15, refCol: 14, color: '#ef4444' },
+      { name: 'Dress & Appearance', amtCol: 17, refCol: 16, color: '#84cc16' },
+      { name: 'Rent',               amtCol: 18, refCol: 0,  color: '#64748b' }
     ];
 
     var lastRow = sheet.getLastRow();
@@ -5435,7 +5436,8 @@ function getExpenseHeatmapData(reqYear) {
       }
 
       var key = year + '-' + String(rowMonth).padStart(2,'0') + '-' + String(rowDay).padStart(2,'0');
-      if (!dailyMap[key]) dailyMap[key] = { total: 0, cats: {} };
+      // items: one { c: category, r: reference, a: amount } per entry, for the hover detail
+      if (!dailyMap[key]) dailyMap[key] = { total: 0, cats: {}, items: [] };
       var dayEntry = dailyMap[key];
 
       CATS.forEach(function(cat) {
@@ -5450,6 +5452,11 @@ function getExpenseHeatmapData(reqYear) {
           amt = Math.round(amt * 100) / 100;
           dayEntry.total += amt;
           dayEntry.cats[cat.name] = (dayEntry.cats[cat.name] || 0) + amt;
+          dayEntry.items.push({
+            c: cat.name,
+            r: cat.refCol > 0 ? String(row[cat.refCol - 1] || '').trim() : '',
+            a: amt
+          });
         }
       });
 

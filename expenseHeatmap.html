@@ -5,8 +5,9 @@
      tokens and carries no chrome of its own: the shell supplies the
      command bar, the year stepper and the budget drawer.
 
-     Colour does one job here. A single blue ramp carries magnitude —
-     the same five steps the month ribbon uses — and the only other
+     Colour does one job here. The four GitHub contribution greens carry
+     magnitude (each day ranked against the year's other spend days, in
+     quarters; the same greens the month calendar uses), and the only other
      hues are status (over / under plan, always with a word beside
      them) and one purple that means "a Major EXP item" and nothing
      else. The old per-month gradient accents are gone: they coloured
@@ -22,12 +23,13 @@
 ═══════════════════════════════════════════════════════════════════ -->
 <style>
 .yrs-wrap{
-  --yrs-pane:#12151B; --yrs-field:#0F1218;
+  /* the expense page's glass surfaces and indigo accent */
+  --yrs-pane:rgba(255,255,255,.04); --yrs-field:rgba(255,255,255,.03);
   --yrs-line:rgba(255,255,255,.08); --yrs-line2:rgba(255,255,255,.13);
-  --yrs-ink:#E9EEF4; --yrs-ink2:#98A2B1; --yrs-ink3:#6C7788;
-  --yrs-acc:#2E6BE6;
-  --yrs-good:#14B88A; --yrs-warn:#F0A92A; --yrs-crit:#DC4B4B; --yrs-tag:#B79BFF;
-  --yrs-num:'Sora','Inter',ui-monospace,monospace;
+  --yrs-ink:#fff; --yrs-ink2:rgba(255,255,255,.7); --yrs-ink3:rgba(255,255,255,.42);
+  --yrs-acc:#6366f1;
+  --yrs-good:#10b981; --yrs-warn:#f59e0b; --yrs-crit:#ef4444; --yrs-tag:#8b5cf6;
+  --yrs-num:'Inter',system-ui,-apple-system,sans-serif;
   font-family:'Inter',system-ui,-apple-system,sans-serif;
   color:var(--yrs-ink);width:100%;height:100%;
   display:flex;flex-direction:column;overflow:hidden;background:transparent;
@@ -38,8 +40,11 @@
 /* ── KPI strip ── */
 .yrs-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;
   padding:16px 18px 0;flex-shrink:0;}
-.yrs-kpi{padding:12px 13px;border-radius:12px;background:var(--yrs-pane);
-  border:1px solid var(--yrs-line);}
+.yrs-kpi{padding:12px 13px;border-radius:14px;background:var(--yrs-pane);
+  border:1px solid var(--yrs-line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;}
+.yrs-kpi::before,.yrs-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,#6366f1,#8b5cf6);}
 .yrs-kpi-lbl{font-size:9.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
   color:var(--yrs-ink3);margin-bottom:7px;}
 .yrs-kpi-val{font-family:var(--yrs-num);font-size:19px;font-weight:700;letter-spacing:-.6px;
@@ -56,11 +61,12 @@
 .yrs-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:14px;}
 .yrs-rail{width:322px;flex-shrink:0;display:flex;flex-direction:column;gap:12px;}
 
-.yrs-card{padding:14px 15px;border-radius:12px;background:var(--yrs-pane);
-  border:1px solid var(--yrs-line);}
+.yrs-card{padding:14px 15px;border-radius:16px;background:var(--yrs-pane);
+  border:1px solid var(--yrs-line);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;}
 .yrs-eye{display:flex;align-items:center;gap:10px;margin-bottom:11px;flex-wrap:wrap;}
-.yrs-eye h2{margin:0;font-size:10px;font-weight:700;letter-spacing:1.6px;
-  text-transform:uppercase;color:var(--yrs-ink3);}
+.yrs-eye h2{margin:0;font-size:11px;font-weight:600;letter-spacing:1px;line-height:1.2;
+  text-transform:uppercase;color:rgba(255,255,255,.45);padding-left:8px;border-left:3px solid #6366f1;}
 .yrs-rule{flex:1;height:1px;background:var(--yrs-line);min-width:12px;}
 
 /* ── category chips ── */
@@ -69,30 +75,47 @@
   background:var(--yrs-pane);color:var(--yrs-ink2);font-size:11.5px;font-weight:600;
   cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
 .yrs-chip:hover{color:var(--yrs-ink);border-color:rgba(255,255,255,.24);}
-.yrs-chip.active{background:var(--yrs-acc);border-color:var(--yrs-acc);color:#fff;}
+.yrs-chip.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;color:#fff;
+  box-shadow:0 0 12px rgba(99,102,241,.4);}
 .yrs-chip i{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
 
-/* ── the ramp: one hue, five steps ── */
-.yrs-cell{width:18px;height:18px;border-radius:4px;background:#232A36;
+/* ── the scale: four GitHub greens, lightest quarter → heaviest;
+   each cell's colour is set inline by hmHeat() ── */
+.yrs-cell{width:18px;height:18px;border-radius:4px;background:#161b22;
   border:0;padding:0;display:block;position:static;flex:none;}
-.yrs-cell.l1{background:#1E3A5C;}
-.yrs-cell.l2{background:#26558E;}
-.yrs-cell.l3{background:#2E70BD;}
-.yrs-cell.l4{background:#3E8AD9;}
-.yrs-cell.l5{background:#5BA3F0;}
 button.yrs-cell{cursor:pointer;}
-button.yrs-cell:hover{outline:2px solid var(--yrs-ink2);outline-offset:1px;}
-.yrs-cell.today{box-shadow:0 0 0 2px var(--yrs-pane),0 0 0 3.5px var(--yrs-ink);}
+button.yrs-cell:hover{outline:2px solid #fff;outline-offset:1px;}
+.yrs-cell.today{box-shadow:0 0 0 2px #060b18,0 0 0 3.5px var(--yrs-ink);}
 
-.yrs-legend{display:flex;align-items:center;gap:5px;}
+.yrs-legend{display:flex;align-items:center;gap:6px;}
 .yrs-legend span.t{font-size:10.5px;color:var(--yrs-ink3);}
 .yrs-legend .yrs-cell{width:13px;height:13px;}
+.yrs-legend .st{display:flex;gap:3px;}
+.yrs-legend .st i{width:13px;height:13px;border-radius:3px;}
+
+/* ── hover card — lives on <body> so no glass ancestor can clip it ── */
+.yrs-tip{position:fixed;z-index:9700;pointer-events:none;width:260px;max-width:calc(100vw - 16px);
+  padding:11px 13px;border-radius:12px;background:rgba(10,15,30,.95);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 36px rgba(0,0,0,.6);
+  font-family:'Inter',system-ui,sans-serif;color:#fff;opacity:0;transition:opacity .12s;}
+.yrs-tip.on{opacity:1;}
+.yrs-tip .d{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:#a5b4fc;}
+.yrs-tip .t{font-size:22px;font-weight:800;letter-spacing:-.6px;margin:3px 0 2px;font-variant-numeric:tabular-nums;}
+.yrs-tip .s{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:8px;}
+.yrs-tip .it{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid rgba(255,255,255,.07);font-size:12px;}
+.yrs-tip .it i{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.yrs-tip .it .x{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.yrs-tip .it .x small{color:rgba(255,255,255,.45);margin-left:5px;font-size:10.5px;}
+.yrs-tip .it b{font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.yrs-tip .more{font-size:11px;color:rgba(255,255,255,.45);padding-top:5px;}
 
 /* ── month cards ── */
 .yrs-months{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:12px;}
-.yrs-mcard{padding:12px;border-radius:12px;background:var(--yrs-pane);
-  border:1px solid var(--yrs-line);color:inherit;cursor:pointer;}
-.yrs-mcard:hover{background:#161A21;border-color:rgba(255,255,255,.22);}
+.yrs-mcard{padding:12px;border-radius:14px;background:var(--yrs-pane);
+  border:1px solid var(--yrs-line);color:inherit;cursor:pointer;
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);}
+.yrs-mcard:hover{background:rgba(255,255,255,.06);border-color:rgba(99,102,241,.38);}
 .yrs-mcard.now{border-color:var(--yrs-acc);}
 .yrs-mcard-hd{display:flex;align-items:baseline;gap:6px;margin-bottom:9px;}
 .yrs-mcard-nm{font-size:12.5px;font-weight:600;}
@@ -107,7 +130,7 @@ button.yrs-cell:hover{outline:2px solid var(--yrs-ink2);outline-offset:1px;}
   cursor:pointer;border:0;background:transparent;padding:0;}
 .yrs-tcol:hover .yrs-tbar{filter:brightness(1.3);}
 .yrs-tbox{position:relative;width:100%;height:78px;display:flex;align-items:flex-end;}
-.yrs-tbar{width:100%;border-radius:4px 4px 0 0;background:#2E70BD;min-height:2px;}
+.yrs-tbar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#8b5cf6,#6366f1);min-height:2px;}
 .yrs-tbar.over{background:var(--yrs-crit);}
 .yrs-tplan{position:absolute;left:0;right:0;height:2px;background:var(--yrs-ink2);border-radius:1px;}
 .yrs-tlbl{font-size:9.5px;color:var(--yrs-ink3);}
@@ -121,7 +144,7 @@ button.yrs-cell:hover{outline:2px solid var(--yrs-ink2);outline-offset:1px;}
   padding:8px 4px;border-radius:10px;border:1px solid var(--yrs-line);
   background:var(--yrs-field);cursor:pointer;color:inherit;}
 .yrs-ycol:hover{border-color:rgba(255,255,255,.22);}
-.yrs-ycol.on{border-color:var(--yrs-acc);background:rgba(46,107,230,.10);}
+.yrs-ycol.on{border-color:var(--yrs-acc);background:rgba(99,102,241,.14);}
 .yrs-ycol b{font-family:var(--yrs-num);font-size:12px;font-weight:600;}
 .yrs-ycol span{font-family:var(--yrs-num);font-size:10.5px;color:var(--yrs-ink2);}
 
@@ -135,7 +158,7 @@ button.yrs-cell:hover{outline:2px solid var(--yrs-ink2);outline-offset:1px;}
 .yrs-row .note{font-size:11px;color:var(--yrs-ink3);overflow:hidden;
   text-overflow:ellipsis;white-space:nowrap;}
 .yrs-bar{height:6px;border-radius:3px;background:var(--yrs-field);overflow:hidden;}
-.yrs-bar i{display:block;height:100%;border-radius:3px;background:#2E70BD;}
+.yrs-bar i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#6366f1,#8b5cf6);}
 .yrs-catrow{margin-bottom:10px;}
 .yrs-cattop{display:flex;align-items:baseline;gap:8px;margin-bottom:5px;}
 .yrs-cattop .nm{font-size:12px;font-weight:500;}
@@ -146,7 +169,7 @@ button.yrs-cell:hover{outline:2px solid var(--yrs-ink2);outline-offset:1px;}
 
 .yrs-empty,.yrs-loading,.yrs-error{padding:44px 16px;text-align:center;
   font-size:12.5px;color:var(--yrs-ink2);width:100%;}
-.yrs-error{color:#F09B9B;}
+.yrs-error{color:#fca5a5;}
 
 @media(max-width:1080px){
   .yrs-scroll{flex-direction:column;}
@@ -191,16 +214,22 @@ function hmEsc(s){ return String(s==null?'':s)
 /* quote a name safely for an inline onclick */
 function hmQ(s){ return "'" + String(s).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'"; }
 
-/* the five magnitude steps, shared with the month ribbon */
-function hmLevel(val, maxVal){
-  if(!val || val <= 0 || maxVal <= 0) return 0;
-  var r = val / maxVal;
-  if(r <= .08) return 1;
-  if(r <= .20) return 2;
-  if(r <= .40) return 3;
-  if(r <= .65) return 4;
-  return 5;
+/* The four GitHub contribution greens, by quarter of the year's
+   spend days. Same greens as MD_GREENS in monthDetail. */
+var HM_GREENS = ['#0e4429','#006d32','#26a641','#39d353'];
+function hmHeat(t){ return HM_GREENS[Math.min(3, Math.floor(Math.max(0, t) * 4))]; }
+/* Where a day sits among the year's spend days, 0 (lightest) … 1 (heaviest).
+   Ranking rather than dividing by the peak keeps one rent day from
+   washing every other day out to green. */
+var _hmSorted = [];
+function hmRank(v){
+  var n = _hmSorted.length;
+  if(!v || n < 2) return n ? .5 : 0;
+  var lo = 0, hi = n;
+  while(lo < hi){ var mid = (lo + hi) >> 1; if(_hmSorted[mid] < v) lo = mid + 1; else hi = mid; }
+  return lo / (n - 1);
 }
+function hmCellStyle(v){ return v > 0 ? ' style="background:' + hmHeat(hmRank(v)) + '"' : ''; }
 function hmDayVal(dayData){
   if(!dayData) return 0;
   if(_hmActiveCat === 'all') return dayData.total || 0;
@@ -283,6 +312,9 @@ function hmRender(d){
     Object.keys(dc).forEach(function(c){ catTotals[c] = (catTotals[c] || 0) + dc[c]; });
   });
 
+  _hmSorted = Object.keys(data).map(function(k){ return hmDayVal(data[k]); })
+    .filter(function(v){ return v > 0; }).sort(function(a,b){ return a - b; });
+
   var activeMonths = 0;
   for(var mi = 0; mi < 12; mi++){ if(monthTotals[mi] > 0) activeMonths++; }
   var avgDay = activeDays > 0 ? totalSpend / activeDays : 0;
@@ -340,7 +372,7 @@ function hmRender(d){
   cats.forEach(function(c){
     h += '<button type="button" class="yrs-chip' + (_hmActiveCat === c.name ? ' active' : '') +
       '" onclick="hmSetCat(' + hmEsc(hmQ(c.name)) + ')">' +
-      '<i style="background:' + (c.color || '#2E70BD') + '"></i>' + hmEsc(c.name) + '</button>';
+      '<i style="background:' + (c.color || '#6366f1') + '"></i>' + hmEsc(c.name) + '</button>';
   });
   h += '</div>';
 
@@ -350,10 +382,9 @@ function hmRender(d){
        (_hmActiveCat !== 'all' ? ' · ' + hmEsc(_hmActiveCat) : '') + '</h2>' +
        '<span class="yrs-rule"></span>' +
        '<span class="yrs-legend"><span class="t">No spend</span>' +
-       '<span class="yrs-cell"></span><span class="t" style="margin-left:4px">Low</span>' +
-       '<span class="yrs-cell l1"></span><span class="yrs-cell l2"></span>' +
-       '<span class="yrs-cell l3"></span><span class="yrs-cell l4"></span>' +
-       '<span class="yrs-cell l5"></span><span class="t">High</span></span></div>';
+       '<span class="yrs-cell"></span><span class="t" style="margin-left:6px">Low</span>' +
+       '<span class="st">' + HM_GREENS.map(function(c){ return '<i style="background:' + c + '"></i>'; }).join('') +
+       '</span><span class="t">High</span></span></div>';
 
   h += '<div class="yrs-months">';
   for(var m = 0; m < 12; m++){
@@ -377,15 +408,14 @@ function hmRender(d){
       var key = _hmYear + '-' + String(m + 1).padStart(2,'0') + '-' + String(day).padStart(2,'0');
       var val = hmDayVal(data[key]);
       var isToday = isThisYear && m === curMonth && day === curDate;
-      var cls = 'yrs-cell l' + hmLevel(val, globalMax) + (isToday ? ' today' : '');
+      var cls = 'yrs-cell' + (isToday ? ' today' : '');
       var when = day + ' ' + _hmMonthNames[m];
       if(val > 0){
-        h += '<button type="button" class="' + cls + '"' +
+        h += '<button type="button" class="' + cls + '" data-hmkey="' + key + '"' + hmCellStyle(val) +
              ' onclick="event.stopPropagation();mdOpenDay(' + _hmYear + ',' + (m + 1) + ',' + day + ')"' +
-             ' title="' + when + ' — ' + hmFmtFull(val) + '"' +
              ' aria-label="' + when + ', ' + hmFmtFull(val) + '"></button>';
       } else {
-        h += '<span class="' + cls + '" title="' + when + ' — nothing recorded"></span>';
+        h += '<span class="' + cls + '" data-hmkey="' + key + '"></span>';
       }
     }
     h += '</div></div>';
@@ -397,7 +427,7 @@ function hmRender(d){
   h += '<section class="yrs-card">';
   h += '<div class="yrs-eye"><h2>Month totals' + (plan > 0 ? ' against plan' : '') + '</h2>' +
        '<span class="yrs-rule"></span>' +
-       '<span class="yrs-key"><i style="background:#2E70BD"></i>' +
+       '<span class="yrs-key"><i style="background:#6366f1"></i>' +
          (plan > 0 ? 'Within plan' : 'Spend') + '</span>' +
        (plan > 0
          ? '<span class="yrs-key"><i style="background:var(--yrs-crit)"></i>Over plan</span>' +
@@ -471,7 +501,7 @@ function hmRender(d){
       var mm = parseInt(pp[1],10), dd = parseInt(pp[2],10);
       h += '<button type="button" class="yrs-row"' +
         ' onclick="mdOpenDay(' + _hmYear + ',' + mm + ',' + dd + ')">' +
-        '<span class="yrs-cell l' + hmLevel(x.val, globalMax) + '"></span>' +
+        '<span class="yrs-cell"' + hmCellStyle(x.val) + '></span>' +
         '<span style="font-size:12px;flex-shrink:0">' + dd + ' ' + _hmMonthNames[mm - 1] + '</span>' +
         '<span class="note">' + hmTopCat(x.key) + '</span>' +
         '<span class="amt">' + hmFmt(x.val) + '</span></button>';
@@ -485,7 +515,73 @@ function hmRender(d){
 
   h += '</aside>';
 
-  document.getElementById('hmScroll').innerHTML = h;
+  var scroll = document.getElementById('hmScroll');
+  scroll.innerHTML = h;
+  hmWireTip(scroll);
+}
+
+/* ═══ hover card — the day's total, then every entry with its reference ═══ */
+function hmTipEl(){
+  var el = document.getElementById('yrs-tip');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'yrs-tip'; el.className = 'yrs-tip'; el.setAttribute('role','tooltip');
+    document.body.appendChild(el);
+  }
+  return el;
+}
+function hmCatColor(name){
+  var cats = (_hmData && _hmData.categories) || [];
+  for(var i = 0; i < cats.length; i++) if(cats[i].name === name) return cats[i].color;
+  return '#94a3b8';
+}
+function hmTipHtml(key){
+  var dd = _hmData && _hmData.data && _hmData.data[key];
+  var p = key.split('-'), dt = new Date(+p[0], +p[1] - 1, +p[2]);
+  var head = dt.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'});
+  var val = hmDayVal(dd);
+  if(!val) return '<div class="d">' + head + '</div><div class="s" style="margin:4px 0 0">Nothing recorded</div>';
+
+  /* entries with references when the backend sends them; categories otherwise */
+  var rows = (dd.items || []).filter(function(it){ return _hmActiveCat === 'all' || it.c === _hmActiveCat; })
+    .map(function(it){ return {c:it.c, r:it.r, a:it.a}; });
+  if(!rows.length){
+    rows = Object.keys(dd.cats || {}).filter(function(c){ return _hmActiveCat === 'all' || c === _hmActiveCat; })
+      .map(function(c){ return {c:c, r:'', a:dd.cats[c]}; });
+  }
+  rows.sort(function(a,b){ return b.a - a.a; });
+  var shown = rows.slice(0, 8);
+  var t = hmRank(val);
+  var feel = t < .34 ? 'A light day' : t < .67 ? 'An average day' : 'A heavy day';
+  return '<div class="d">' + head + (_hmActiveCat !== 'all' ? ' · ' + hmEsc(_hmActiveCat) : '') + '</div>' +
+    '<div class="t">' + hmFmtFull(val) + '</div>' +
+    '<div class="s">' + feel + ' for ' + _hmYear + ' · ' + rows.length + (rows.length === 1 ? ' entry' : ' entries') + '</div>' +
+    shown.map(function(it){
+      return '<div class="it"><i style="background:' + hmCatColor(it.c) + '"></i>' +
+        '<span class="x">' + hmEsc(it.r || it.c) + (it.r ? '<small>' + hmEsc(it.c) + '</small>' : '') + '</span>' +
+        '<b>' + Math.round(it.a).toLocaleString('en-IN') + '</b></div>';
+    }).join('') +
+    (rows.length > shown.length ? '<div class="more">+ ' + (rows.length - shown.length) + ' more</div>' : '');
+}
+function hmWireTip(host){
+  if(host._hmTip) return;
+  host._hmTip = true;
+  var tip = hmTipEl();
+  host.addEventListener('mouseover', function(ev){
+    var c = ev.target.closest && ev.target.closest('[data-hmkey]');
+    if(!c){ tip.classList.remove('on'); return; }
+    tip.innerHTML = hmTipHtml(c.getAttribute('data-hmkey'));
+    tip.classList.add('on');
+  });
+  host.addEventListener('mousemove', function(ev){
+    if(!tip.classList.contains('on')) return;
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    var x = ev.clientX + 16, y = ev.clientY + 16;
+    if(x + w > window.innerWidth - 8)  x = ev.clientX - w - 16;
+    if(y + h > window.innerHeight - 8) y = ev.clientY - h - 16;
+    tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+  });
+  host.addEventListener('mouseleave', function(){ tip.classList.remove('on'); });
 }
 
 /* the biggest category on one day, for the rail's note column */
