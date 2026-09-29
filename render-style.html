@@ -1997,9 +1997,10 @@ input[type=date].swae-input{color-scheme:dark;}
   #xfab .xfab-arc,#xfab-hub svg,.xfab-arm{transition-duration:.01ms;}
 }
 
+/* the same glass backdrop as #md-overlay; the modal inside is see-through */
 #ae-overlay{
   position:fixed;inset:0;z-index:9500;
-  background:rgba(0,0,0,.82);backdrop-filter:blur(10px);
+  background:rgba(6,11,24,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   display:none;align-items:center;justify-content:center;
   animation:aeFadeIn .2s ease;
 }
@@ -2017,11 +2018,11 @@ input[type=date].swae-input{color-scheme:dark;}
 #ae-iframe{
   width:min(1440px,98vw);
   height:90vh;
-  border:none;
-  border-radius:16px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:18px;
   overflow:hidden;
-  background:#0d1117;
-  box-shadow:0 32px 80px rgba(0,0,0,.8);
+  background:transparent;
+  box-shadow:0 30px 80px rgba(0,0,0,.5);
   display:block;
 }
 .ae-loading{

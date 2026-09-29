@@ -1300,6 +1300,14 @@ function edClose() {
     }
     /* Esc inside the iframe closes the overlay */
     if (e.data.type === 'aeclose') { closeAddExp(); return; }
+    /* the modal's day calendar wants a month's budget — answered from
+       monthDetail's cache, the same read the Month tab shows */
+    if (e.data.type === 'aeplanreq') {
+      var pm = e.data.month, py = e.data.year;
+      if (typeof mdPlanFor === 'function')
+        mdPlanFor(pm, py, function(plan){ _post({type:'aeplan', month:pm, year:py, plan:plan}); });
+      return;
+    }
     if (e.data.type !== 'gsrun') return;
 
     if (!iframe || !iframe.contentWindow) return;
@@ -1384,6 +1392,11 @@ function edClose() {
     /* show what we have, then quietly refresh if it has aged */
     _post({type:'aemonth', payload:_month, stale:_stale(), focus:focusCol || null});
     if (_stale()) fetchMonth(function(){ _post({type:'aemonth', payload:_month, stale:false}); });
+  };
+
+  /* budgets saved in Month Detail — recolour the modal's calendar */
+  window.aePlanChanged = function(m, y, plan) {
+    _post({type:'aeplan', month:m, year:y, plan:plan});
   };
 
   /* ── Close overlay ── */

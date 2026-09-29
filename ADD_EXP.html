@@ -6,31 +6,51 @@
 <title>ADD EXP</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
 /* ═══════════════════════════════════════════════════════════════
    ADD EXPENSE — one layout, three widths.
 
-     ≥1100px   day list | editable rows | totals rail   (Sheets modal, laptop overlay)
-     640–1100  editable rows | totals rail
+     >1180px   heat + day list | editable rows | totals rail   (Sheets modal, laptop overlay)
+     640–1180  day strip, then editable rows | heat + totals rail
      <640px    day strip + tappable feed, editor in a bottom sheet
 
    The month arrives from render.html through postMessage (already
    prefetched on app boot), so switching days costs no round trip.
    Opened straight from the sheet, it fetches the month itself.
+
+   Colours and glass match monthDetail.html (the expense page's look):
+   white-on-navy surfaces, indigo → violet accent. The day list is
+   topped by the same round-dot calendar in the four GitHub greens,
+   measured against the daily budget, with a week column per row.
 ═══════════════════════════════════════════════════════════════ */
 :root{
-  --bg:#0E1014; --pane:#12151B; --card:#181C23; --card2:#1F242D; --field:#0F1218;
-  --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.13);
-  --text:#E9EEF4; --dim:#98A2B1; --faint:#6C7788;
-  --acc:#2E6BE6; --r:#5FBE6E; --nr:#E0854D; --sw:#B79BFF; --cc:#7FB3FF; --bad:#F26D6D;
-  --sans:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
-  --num:'Sora',ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* surfaces — the expense page's glass: white at a few % over the navy */
+  --bg:rgba(6,11,24,.42); --pane:rgba(255,255,255,.02); --card:rgba(255,255,255,.04);
+  --card2:rgba(255,255,255,.07); --field:rgba(255,255,255,.03);
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.13);
+  --text:#fff; --dim:rgba(255,255,255,.7); --faint:rgba(255,255,255,.42);
+  /* accent — indigo → violet; status steps as in monthDetail */
+  --acc:#6366f1; --acc2:#8b5cf6; --acc-hi:#a5b4fc;
+  --r:#10b981; --nr:#f59e0b; --sw:#a78bfa; --cc:#06b6d4; --bad:#ef4444;
+  --h0:#161b22;   /* no spend — GitHub's empty cell */
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  --num:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;
+/* inside render.html the page is see-through glass over its blurred
+   overlay; in a Sheets modal there is white behind it, so the page
+   starts .solid (navy underneath) and drops it once render.html answers */
+body{background:
+    radial-gradient(520px 380px at 0% 0%,rgba(0,212,255,.10),transparent 70%),
+    radial-gradient(480px 360px at 100% 100%,rgba(168,85,247,.10),transparent 70%),
+    radial-gradient(360px 260px at 62% 48%,rgba(255,215,0,.05),transparent 70%),
+    radial-gradient(rgba(255,255,255,.025) 1px,transparent 1px) 0 0/28px 28px,
+    var(--bg);
+  color:var(--text);font-family:var(--sans);font-size:14px;
   -webkit-font-smoothing:antialiased;overflow:hidden;}
+body.solid{background-color:#060b18;}
 button,input,textarea{font-family:inherit;}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px;}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;}}
@@ -40,7 +60,8 @@ button,input,textarea{font-family:inherit;}
 /* ══ TOP BAR ══ */
 .top{flex-shrink:0;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
   padding:12px 20px;padding-top:calc(12px + env(safe-area-inset-top,0px));
-  background:var(--pane);border-bottom:1px solid var(--line);}
+  background:rgba(6,11,24,.7);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);}
 .brand{display:flex;align-items:center;gap:9px;min-width:0;}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--r);flex-shrink:0;}
 .brand b{font-size:14px;font-weight:800;letter-spacing:-.2px;}
@@ -61,21 +82,22 @@ button,input,textarea{font-family:inherit;}
 .datebox input::-webkit-calendar-picker-indicator{width:100%;height:100%;
   position:absolute;inset:0;opacity:0;cursor:pointer;}
 .ghost{height:36px;padding:0 14px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:700;
-  border:1px solid rgba(95,190,110,.28);background:rgba(95,190,110,.08);color:var(--r);}
-.ghost:hover{background:rgba(95,190,110,.16);}
+  border:1px solid rgba(99,102,241,.35);background:rgba(99,102,241,.12);color:var(--acc-hi);}
+.ghost:hover{background:rgba(99,102,241,.22);color:#fff;}
 .chip{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;
-  background:rgba(127,179,255,.10);border:1px solid rgba(127,179,255,.22);
+  background:rgba(6,182,212,.10);border:1px solid rgba(6,182,212,.24);
   font-size:11px;font-weight:700;color:var(--cc);letter-spacing:.4px;white-space:nowrap;}
 .chip i{width:6px;height:6px;border-radius:50%;background:var(--cc);}
-.chip.warn{background:rgba(242,109,109,.10);border-color:rgba(242,109,109,.24);color:var(--bad);}
+.chip.warn{background:rgba(239,68,68,.10);border-color:rgba(239,68,68,.26);color:#fca5a5;}
 .chip.warn i{background:var(--bad);}
-.save{height:38px;padding:0 20px;border-radius:11px;border:none;background:var(--acc);color:#fff;
-  font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
-.save:hover{background:#3B79F0;}
-.save:disabled{opacity:.42;cursor:not-allowed;}
+.save{height:38px;padding:0 20px;border-radius:11px;border:none;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;
+  font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 0 14px rgba(99,102,241,.45);}
+.save:hover{filter:brightness(1.1);}
+.save:disabled{opacity:.42;cursor:not-allowed;box-shadow:none;filter:none;}
 
 /* ══ PANES ══ */
-.body{flex:1;display:grid;grid-template-columns:266px minmax(0,1fr) 344px;min-height:0;}
+.body{flex:1;display:grid;grid-template-columns:300px minmax(0,1fr) 344px;min-height:0;}
 .rail{background:var(--pane);overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px;}
 .rail-l{border-right:1px solid var(--line);}
 .rail-r{border-left:1px solid var(--line);gap:14px;padding:16px 14px;}
@@ -91,15 +113,69 @@ button,input,textarea{font-family:inherit;}
 .day{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;
   background:var(--card);border:1px solid transparent;cursor:pointer;text-align:left;width:100%;}
 .day:hover{border-color:var(--line2);}
-.day.on{background:var(--acc);border-color:var(--acc);}
+.day.on{background:linear-gradient(135deg,var(--acc),var(--acc2));border-color:transparent;
+  box-shadow:0 0 14px rgba(99,102,241,.4);}
 .day .d{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
 .day .d b{font-size:13px;font-weight:600;color:var(--text);}
 .day .d span{font-size:11px;color:var(--faint);}
 .day .amt{font-family:var(--num);font-size:13.5px;font-weight:600;color:var(--dim);
   font-variant-numeric:tabular-nums;}
 .day.on .d b,.day.on .amt{color:#fff;}
-.day.on .d span{color:#D8E5FF;}
+.day.on .d span{color:rgba(255,255,255,.8);}
 .day.blank .d b{color:var(--faint);}
+
+/* ══ DAY HEAT — monthDetail's round-dot calendar, sized for the rail.
+   Every day is a button: tapping one opens it for editing. ══ */
+.heat{flex-shrink:0;gap:8px;padding:12px 12px 11px;}
+.heat h3 .pk{font-family:var(--num);font-size:11px;font-weight:600;letter-spacing:0;
+  color:var(--dim);font-variant-numeric:tabular-nums;}
+.hgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr)) 44px;gap:4px 3px;align-items:center;}
+.hdow{font-size:9.5px;font-weight:600;text-align:center;color:var(--faint);line-height:1;}
+.hcell{aspect-ratio:1;min-width:0;border-radius:50%;border:0;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--h0);color:var(--faint);font:inherit;font-size:10px;font-weight:700;
+  font-variant-numeric:tabular-nums;cursor:pointer;transition:transform .12s,box-shadow .12s;}
+.hcell.g1{background:#0e4429;color:#fff;}
+.hcell.g2{background:#006d32;color:#fff;}
+.hcell.g3{background:#26a641;color:#04210f;}
+.hcell.g4{background:#39d353;color:#04210f;}
+.hcell.pad{visibility:hidden;cursor:default;}
+.hcell.fut{background:transparent;border:1px dashed var(--line2);opacity:.55;}
+.hcell:not(.pad):hover{transform:scale(1.1);box-shadow:0 6px 18px rgba(0,0,0,.35);}
+.hcell.today{box-shadow:0 0 0 2px #060b18,0 0 0 3.5px #fff;}
+.hcell.sel{box-shadow:0 0 0 2px #060b18,0 0 0 3.5px var(--acc2),0 0 14px rgba(99,102,241,.6);}
+.hwk{display:flex;flex-direction:column;justify-content:center;gap:3px;padding-left:5px;
+  font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--dim);cursor:default;
+  border-left:1px solid var(--line);min-height:100%;}
+.hwk.over{color:#fca5a5;}
+.hwk.none{color:var(--faint);}
+.hwk .trk{display:block;height:3px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;}
+.hwk .trk i{display:block;height:100%;border-radius:2px;background:#26a641;}
+.hwk.over .trk i{background:#ef4444;}
+.hwkh{font-size:9.5px;font-weight:600;color:var(--faint);padding-left:5px;}
+.hkey{display:flex;align-items:center;justify-content:center;gap:7px;font-size:10.5px;color:var(--faint);}
+.hkey .st{display:flex;gap:3px;}
+.hkey .st i{width:10px;height:10px;border-radius:3px;}
+
+/* hover card — the same one monthDetail shows */
+.htip{position:fixed;z-index:70;pointer-events:none;width:260px;max-width:calc(100vw - 16px);
+  padding:12px 14px;border-radius:14px;background:rgba(10,15,30,.96);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.14);box-shadow:0 14px 36px rgba(0,0,0,.6);
+  color:#fff;opacity:0;transition:opacity .12s;}
+.htip.on{opacity:1;}
+.htip .d{font-size:10.5px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--acc-hi);}
+.htip .t{font-size:24px;font-weight:800;letter-spacing:-.8px;margin:3px 0 4px;font-variant-numeric:tabular-nums;}
+.htip .b{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:10px;margin-bottom:8px;}
+.htip .b.up{background:rgba(239,68,68,.16);color:#fca5a5;}
+.htip .b.dn{background:rgba(16,185,129,.16);color:#6ee7b7;}
+.htip .b.nt{background:rgba(148,163,184,.12);color:rgba(255,255,255,.6);}
+.htip .it{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid rgba(255,255,255,.07);font-size:12px;}
+.htip .it i{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.htip .it .x{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.htip .it .x small{color:rgba(255,255,255,.45);margin-left:5px;font-size:10.5px;}
+.htip .it b{font-weight:600;font-variant-numeric:tabular-nums;flex-shrink:0;}
+.htip .none{font-size:12px;color:rgba(255,255,255,.55);margin-top:5px;}
 
 .grpsw{display:flex;gap:8px;margin-bottom:4px;}
 .grpsw button{flex:1;min-height:46px;padding:7px 12px;border-radius:12px;
@@ -109,7 +185,7 @@ button,input,textarea{font-family:inherit;}
 .grpsw button b{font-size:13px;font-weight:700;flex:1;}
 .grpsw button em{font-family:var(--num);font-size:13px;font-weight:600;font-style:normal;
   font-variant-numeric:tabular-nums;}
-.grpsw button.on{background:rgba(46,107,230,.14);border-color:var(--acc);color:var(--text);}
+.grpsw button.on{background:rgba(99,102,241,.16);border-color:var(--acc);color:var(--text);}
 .grpsw button:hover{border-color:rgba(255,255,255,.22);}
 
 .railcard{border-radius:14px;background:var(--card);border:1px solid var(--line);padding:14px;
@@ -121,16 +197,16 @@ button,input,textarea{font-family:inherit;}
 .pills{display:flex;gap:6px;}
 .pill{flex:1;padding:7px 4px;border-radius:9px;font-size:11px;font-weight:700;text-align:center;
   font-variant-numeric:tabular-nums;}
-.p-r{background:rgba(95,190,110,.11);color:var(--r);}
-.p-nr{background:rgba(224,133,77,.13);color:var(--nr);}
-.p-sw{background:rgba(183,155,255,.13);color:var(--sw);}
-.p-cc{background:rgba(127,179,255,.13);color:var(--cc);}
+.p-r{background:rgba(16,185,129,.13);color:#6ee7b7;}
+.p-nr{background:rgba(245,158,11,.14);color:#fcd34d;}
+.p-sw{background:rgba(167,139,250,.14);color:#c4b5fd;}
+.p-cc{background:rgba(6,182,212,.13);color:#67e8f9;}
 
 /* ══ CENTRE ══ */
 .centre{overflow-y:auto;padding:18px 20px 16px;display:flex;flex-direction:column;gap:11px;min-width:0;}
 .row{display:grid;grid-template-columns:150px 176px minmax(0,1fr) 104px;gap:10px;align-items:center;}
 .lbl{display:flex;align-items:center;gap:7px;min-width:0;}
-.lbl b{font-size:13px;font-weight:700;color:#CFD7E1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lbl b{font-size:13px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .cid{font-family:var(--num);font-size:9.5px;color:var(--faint);border:1px solid var(--line);
   border-radius:4px;padding:1px 4px;flex-shrink:0;}
 .inp{height:42px;border-radius:11px;border:1px solid var(--line2);background:var(--field);
@@ -138,11 +214,11 @@ button,input,textarea{font-family:inherit;}
 .inp:hover{border-color:rgba(255,255,255,.22);}
 .inp:focus{border-color:var(--acc);outline:none;}
 .inp.num{font-family:var(--num);text-align:right;font-variant-numeric:tabular-nums;}
-.inp.edited{border-color:var(--r);background:rgba(95,190,110,.05);}
+.inp.edited{border-color:var(--r);background:rgba(16,185,129,.07);}
 .inp.sm{height:37px;font-size:12.5px;padding:0 10px;}
 .inp:disabled{opacity:.45;cursor:not-allowed;}
 .noref{height:42px;border-radius:11px;border:1px dashed var(--line2);display:flex;align-items:center;
-  padding:0 12px;font-size:13px;color:#59626F;}
+  padding:0 12px;font-size:13px;color:var(--faint);}
 .out{font-family:var(--num);font-size:13px;color:var(--faint);text-align:right;
   font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .out.live{color:var(--cc);}
@@ -151,10 +227,10 @@ button,input,textarea{font-family:inherit;}
 .more:hover{color:var(--text);border-color:rgba(255,255,255,.24);}
 .keys{margin-top:auto;display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:11px 14px;
   border-radius:12px;background:var(--pane);border:1px solid var(--line);font-size:12px;color:var(--dim);}
-.keys b{font-family:var(--num);font-weight:600;color:#CFD7E1;font-size:11.5px;}
+.keys b{font-family:var(--num);font-weight:600;color:rgba(255,255,255,.85);font-size:11.5px;}
 .hint{font-size:12.5px;color:var(--faint);line-height:1.6;}
-.banner{padding:12px 14px;border-radius:12px;background:rgba(242,109,109,.08);
-  border:1px solid rgba(242,109,109,.22);color:#F6A2A2;font-size:12.5px;line-height:1.55;}
+.banner{padding:12px 14px;border-radius:12px;background:rgba(239,68,68,.08);
+  border:1px solid rgba(239,68,68,.24);color:#fca5a5;font-size:12.5px;line-height:1.55;}
 
 /* feed rows — the phone's editor entry point */
 .feed{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;
@@ -166,12 +242,12 @@ button,input,textarea{font-family:inherit;}
 .feed .t span{font-size:12px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .feed .v{font-family:var(--num);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;}
 .feed.blank .t b{color:var(--dim);font-weight:600;}
-.feed.blank .v{color:#59626F;}
+.feed.blank .v{color:var(--faint);}
 
 .sw-row{display:flex;gap:8px;}
 .cc-row{display:grid;grid-template-columns:54px minmax(0,1fr) minmax(0,1fr);gap:8px;
   align-items:center;margin-bottom:8px;}
-.cc-row .nm{font-size:12.5px;font-weight:600;color:#CFD7E1;}
+.cc-row .nm{font-size:12.5px;font-weight:600;color:rgba(255,255,255,.85);}
 .cc-h{display:grid;grid-template-columns:54px minmax(0,1fr) minmax(0,1fr);gap:8px;
   font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--faint);}
 .cc-h span:nth-child(n+2){text-align:right;padding-right:11px;}
@@ -179,17 +255,18 @@ button,input,textarea{font-family:inherit;}
 .prev{flex:1;min-height:110px;display:flex;flex-direction:column;gap:7px;overflow-y:auto;}
 .prev .pr{display:flex;gap:10px;font-size:12px;align-items:baseline;}
 .prev .c{font-family:var(--num);color:var(--faint);width:28px;flex-shrink:0;}
-.prev .v{flex:1;color:#CFD7E1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prev .v{flex:1;color:rgba(255,255,255,.85);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .prev .e{color:var(--r);font-weight:700;font-size:10.5px;}
 .prev .none{color:var(--faint);font-size:12px;}
 
 /* ══ BOTTOM SHEET (phone editor) ══ */
-.sheetbg{position:fixed;inset:0;background:rgba(6,8,11,.72);display:none;z-index:40;}
+.sheetbg{position:fixed;inset:0;background:rgba(6,11,24,.6);backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);display:none;z-index:40;}
 .sheetbg.open{display:block;}
-.sheet{position:absolute;left:0;right:0;bottom:0;border-radius:26px 26px 0 0;background:var(--pane);
+.sheet{position:absolute;left:0;right:0;bottom:0;border-radius:26px 26px 0 0;background:rgba(10,15,30,.97);
   border-top:1px solid var(--line2);padding:12px 20px calc(22px + env(safe-area-inset-bottom,0px));
   display:flex;flex-direction:column;gap:14px;max-height:90%;overflow-y:auto;}
-.grab{width:42px;height:4px;border-radius:4px;background:#39404C;align-self:center;flex-shrink:0;}
+.grab{width:42px;height:4px;border-radius:4px;background:rgba(255,255,255,.2);align-self:center;flex-shrink:0;}
 .sheet-hd{display:flex;align-items:center;gap:12px;}
 .sheet-hd .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
 .sheet-hd .t b{font-size:17px;font-weight:800;letter-spacing:-.3px;}
@@ -202,24 +279,25 @@ button,input,textarea{font-family:inherit;}
 .sheet-amt .eq{font-family:var(--num);font-size:12px;color:var(--dim);min-height:16px;}
 .quick{display:flex;gap:8px;}
 .quick button{flex:1;padding:11px 6px;border-radius:12px;border:none;background:var(--card2);
-  color:#CFD7E1;font-size:13px;font-weight:700;cursor:pointer;}
-.quick button:hover{background:#262C37;}
+  color:rgba(255,255,255,.85);font-size:13px;font-weight:700;cursor:pointer;}
+.quick button:hover{background:rgba(255,255,255,.11);}
 .lab{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--dim);}
 .sheet-foot{display:flex;gap:10px;}
-.sheet-foot .done{flex:1;height:52px;border-radius:16px;border:none;background:var(--acc);color:#fff;
+.sheet-foot .done{flex:1;height:52px;border-radius:16px;border:none;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;
   font-size:15px;font-weight:700;cursor:pointer;}
 .sheet-foot .clr{width:52px;height:52px;border-radius:16px;border:1px solid var(--line2);
   background:var(--field);color:var(--dim);font-size:17px;cursor:pointer;}
 
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);
-  background:var(--card2);border:1px solid rgba(95,190,110,.4);color:var(--r);
+  background:rgba(10,15,30,.96);border:1px solid rgba(16,185,129,.45);color:#6ee7b7;
   padding:11px 20px;border-radius:12px;font-size:13px;font-weight:700;
   opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:60;max-width:90%;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-#toast.err{border-color:rgba(242,109,109,.45);color:var(--bad);}
+#toast.err{border-color:rgba(239,68,68,.5);color:#fca5a5;}
 
 /* ══ REFLOW ══ */
-@media(max-width:1100px){
+@media(max-width:1180px){
   .body{grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:auto 1fr;}
   .rail-l{grid-column:1 / -1;border-right:none;border-bottom:1px solid var(--line);
     flex-direction:row;overflow-x:auto;overflow-y:hidden;padding:10px 12px;align-items:stretch;}
@@ -245,7 +323,7 @@ button,input,textarea{font-family:inherit;}
 }
 </style>
 </head>
-<body>
+<body class="solid">
 
 <div class="app">
 
@@ -349,8 +427,11 @@ var _saving = false;
 var _embedded = (window.parent && window.parent !== window);
 var _gotMonth = false;   /* the parent answered our handshake */
 var _sheetCat = null;    /* category open in the bottom sheet */
+var _plans    = {};      /* "y-m" -> control plan { category: budget }, from monthDetail's cache */
+var _planAsked= {};      /* "y-m" -> already requested */
 
 function isPhone(){ return window.matchMedia('(max-width:640px)').matches; }
+function isWide(){ return window.matchMedia('(min-width:1181px)').matches; }
 
 /* ═══════════════════════════════════════════════
    DATES — Sri Lanka, UTC+5:30
@@ -443,7 +524,8 @@ function renderDays(){
     if(parseInt(kp[0],10)===m && parseInt(kp[1],10)<=cap) monthTotal+=dayTotalOf(days()[k]);
   });
 
-  var html='<div class="eyebrow">'+MONTHS[m-1].toUpperCase()+' 1\u2013'+cap+
+  var html=(isWide()?'<div class="railcard heat" id="heatHost"></div>':'')+
+    '<div class="eyebrow">'+MONTHS[m-1].toUpperCase()+' 1\u2013'+cap+
     '<span class="rule"></span><span class="num">'+fmt(monthTotal)+'</span></div>';
 
   for(var dd=cap; dd>=1; dd--){
@@ -460,6 +542,220 @@ function renderDays(){
   }
 
   host.innerHTML=html;
+  renderHeat();
+}
+
+/* ═══════════════════════════════════════════════
+   DAY HEAT — the Month Detail calendar for the month on screen.
+   Each day is measured against the daily budget: the plan less rent,
+   spread over the month (rent is paid once, and would make every
+   ordinary day read as light). With no plan, days are ranked among
+   the month's own spend days. The budget comes from monthDetail's
+   prefetched getCurrentMonthExpensesList(), handed over by render.html.
+═══════════════════════════════════════════════ */
+var GREENS = ['#161b22','#0e4429','#006d32','#26a641','#39d353'];
+/* column -> the category name and colour monthDetail uses */
+var HEAT_CATS = [
+  {col:'C',ref:'D',name:'Food',color:'#f59e0b'},
+  {col:'E',ref:'F',name:'Supermarket',color:'#10b981'},
+  {col:'G',ref:null,name:'Uber',color:'#6366f1'},
+  {col:'H',ref:null,name:'Uber Work',color:'#8b5cf6'},
+  {col:'J',ref:'I',name:'Movies & Outing',color:'#ec4899'},
+  {col:'L',ref:'K',name:'Other',color:'#f97316'},
+  {col:'M',ref:null,name:'Bus Fair',color:'#06b6d4'},
+  {col:'O',ref:'N',name:'Party',color:'#ef4444'},
+  {col:'Q',ref:'P',name:'Dress & Appearance',color:'#84cc16'},
+  {col:'R',ref:null,name:'Rent',color:'#64748b'}
+];
+function greenStep(t){ return t<=0 ? 0 : Math.min(4, Math.ceil(t*4)); }
+function short(n){
+  return n>=1e5 ? Math.round(n/1e3)+'K' : n>=1e3 ? (n/1e3).toFixed(n>=1e4?0:1)+'K' : String(Math.round(n));
+}
+function heatYM(){ var p=_date.split('-'); return {y:parseInt(p[0],10), m:parseInt(p[1],10)}; }
+function allowance(y,m){
+  var plan=_plans[y+'-'+m];
+  if(!plan) return 0;
+  var t=HEAT_CATS.reduce(function(a,c){ return a+(c.name==='Rent'?0:(Number(plan[c.name])||0)); },0);
+  return t>0 ? t/new Date(y,m,0).getDate() : 0;
+}
+/* the day's entries as the ledger shows them; the day on screen is live */
+function entriesOf(d){
+  var ym=heatYM(), live=(d===parseInt(_date.split('-')[2],10));
+  var o=days()[ym.m+'-'+d]||{};
+  var out=[];
+  HEAT_CATS.forEach(function(c){
+    var v=evalF(live?raw(c.col):o[c.col]);
+    if(v) out.push({cat:c.name, color:c.color, amt:v,
+      ref:c.ref ? String((live?raw(c.ref):o[c.ref])||'') : ''});
+  });
+  return out.sort(function(a,b){ return b.amt-a.amt; });
+}
+function heatTotals(){
+  var ym=heatYM(), dim=new Date(ym.y,ym.m,0).getDate(), per={};
+  var cur=parseInt(_date.split('-')[2],10);
+  for(var d=1; d<=dim; d++){
+    var o=days()[ym.m+'-'+d];
+    per[d]=(d===cur)?liveDayTotal():(o?dayTotalOf(o):0);
+  }
+  return per;
+}
+function heatT(v, sorted, allow){
+  if(allow>0) return Math.min(1, v/allow/2);
+  var n=sorted.length;
+  if(n<2) return .5;
+  var i=0; while(i<n && sorted[i]<v) i++;
+  return i/(n-1);
+}
+
+function renderHeat(){
+  var host=document.getElementById('heatHost');
+  if(!host) return;
+  var ym=heatYM(), y=ym.y, m=ym.m;
+  askPlan(y,m);
+
+  var dim=new Date(y,m,0).getDate();
+  var lead=new Date(y,m-1,1).getDay();
+  var t=lkaToday().split('-');
+  var today=(y===parseInt(t[0],10) && m===parseInt(t[1],10)) ? parseInt(t[2],10) : 0;
+  var cur=parseInt(_date.split('-')[2],10);
+  var per=heatTotals(), allow=allowance(y,m), peak=0, peakDay=0;
+  Object.keys(per).forEach(function(k){ if(per[k]>peak){ peak=per[k]; peakDay=+k; } });
+  var sorted=Object.keys(per).map(function(k){ return per[k]; })
+    .filter(function(v){ return v>0; }).sort(function(a,b){ return a-b; });
+
+  function weekCell(from, to){
+    var tot=0; for(var x=from; x<=to; x++) tot+=per[x]||0;
+    var bud=allow*(to-from+1), over=bud>0 && tot>bud, pct=bud>0 ? Math.min(tot/bud,1)*100 : 0;
+    return '<span class="hwk'+(over?' over':'')+(tot?'':' none')+'" data-wk="'+from+'-'+to+'">'+
+      (tot?short(tot):'\u2014')+(bud>0?'<span class="trk"><i style="width:'+pct.toFixed(0)+'%"></i></span>':'')+'</span>';
+  }
+
+  var g='', col=lead, wkFrom=1;
+  for(var p=0; p<lead; p++) g+='<span class="hcell pad" aria-hidden="true"></span>';
+  for(var d=1; d<=dim; d++){
+    if(col===7){ g+=weekCell(wkFrom, d-1); col=0; wkFrom=d; }
+    col++;
+    var v=per[d]||0;
+    var cls='hcell'+(today && d>today ? ' fut' : v>0 ? ' g'+greenStep(heatT(v, sorted, allow)) : '')+
+      (d===today?' today':'')+(d===cur?' sel':'');
+    g+='<button type="button" class="'+cls+'" data-hd="'+d+'" data-d="'+y+'-'+pad(m)+'-'+pad(d)+'"'+
+       ' aria-label="'+d+' '+MONTHS[m-1]+(v?', LKR '+fmt(v):', nothing recorded')+'"'+
+       ' aria-pressed="'+(d===cur?'true':'false')+'">'+d+'</button>';
+  }
+  for(; col<7; col++) g+='<span class="hcell pad" aria-hidden="true"></span>';
+  g+=weekCell(wkFrom, dim);
+
+  var tips = allow>0 ? ['Under half the daily budget','Under the daily budget','Up to 1.5\u00d7 the daily budget','Over 1.5\u00d7 the daily budget']
+                     : ['Lightest quarter','Second quarter','Third quarter','Heaviest quarter'];
+  host.innerHTML=
+    '<h3>'+MONTHS[m-1].toUpperCase()+' BY DAY<span class="rule"></span>'+
+      '<span class="pk">'+(peak>0?'peak '+short(peak)+' on the '+peakDay:'')+'</span></h3>'+
+    '<div class="hgrid">'+DOWS.map(function(x){ return '<span class="hdow">'+x.slice(0,2)+'</span>'; }).join('')+
+      '<span class="hwkh">Week</span></div>'+
+    '<div class="hgrid" id="heatGrid">'+g+'</div>'+
+    '<div class="hkey"><span>Less</span><span class="st">'+
+      GREENS.slice(1).map(function(c,i){ return '<i style="background:'+c+'" title="'+tips[i]+'"></i>'; }).join('')+
+    '</span><span>More</span></div>';
+  host._sorted=sorted;
+  wireHeatTip(host);
+}
+
+/* ── hover card ── */
+function tipEl(){
+  var el=document.getElementById('htip');
+  if(!el){
+    el=document.createElement('div');
+    el.id='htip'; el.className='htip'; el.setAttribute('role','tooltip');
+    document.body.appendChild(el);
+  }
+  return el;
+}
+function dayTipHtml(d, sorted){
+  var ym=heatYM(), rows=entriesOf(d);
+  var v=rows.reduce(function(a,e){ return a+e.amt; },0);
+  var head=DOWS[new Date(ym.y,ym.m-1,d).getDay()]+' '+d+' '+MONTHS[ym.m-1];
+  if(!v) return '<div class="d">'+head+'</div><div class="none">Nothing recorded \u2014 click to add</div>';
+  var allow=allowance(ym.y,ym.m), badge;
+  if(allow>0){
+    var pc=Math.round(v/allow*100);
+    badge = v>allow
+      ? '<span class="b up">'+pc+'% of daily budget \u00b7 over by '+fmt(Math.round(v-allow))+'</span>'
+      : '<span class="b dn">'+pc+'% of daily budget \u00b7 '+fmt(Math.round(allow-v))+' to spare</span>';
+  } else {
+    var t=heatT(v, sorted, 0);
+    badge='<span class="b nt">'+(t<.34?'A light day':t<.67?'An average day':'A heavy day')+' this month</span>';
+  }
+  var shown=rows.slice(0,8);
+  return '<div class="d">'+head+'</div><div class="t">LKR '+fmt(v)+'</div>'+badge+
+    shown.map(function(e){
+      return '<div class="it"><i style="background:'+e.color+'"></i>'+
+        '<span class="x">'+esc(e.ref||e.cat)+(e.ref?'<small>'+esc(e.cat)+'</small>':'')+'</span>'+
+        '<b>'+fmt(e.amt)+'</b></div>';
+    }).join('')+
+    (rows.length>shown.length?'<div class="none">+ '+(rows.length-shown.length)+' more</div>':'');
+}
+function weekTipHtml(from, to){
+  var ym=heatYM(), byCat={}, colors={}, tot=0;
+  for(var d=from; d<=to; d++) entriesOf(d).forEach(function(e){
+    byCat[e.cat]=(byCat[e.cat]||0)+e.amt; colors[e.cat]=e.color; tot+=e.amt;
+  });
+  var bud=allowance(ym.y,ym.m)*(to-from+1);
+  var cats=Object.keys(byCat).sort(function(a,b){ return byCat[b]-byCat[a]; });
+  var badge = bud>0
+    ? (tot>bud ? '<span class="b up">over the week\'s budget by '+fmt(Math.round(tot-bud))+'</span>'
+               : '<span class="b dn">'+fmt(Math.round(bud-tot))+' left of '+fmt(Math.round(bud))+' for the week</span>')
+    : '';
+  return '<div class="d">Week \u00b7 '+from+'\u2013'+to+' '+MONTHS[ym.m-1]+'</div>'+
+    '<div class="t">LKR '+fmt(tot)+'</div>'+badge+
+    (cats.length ? cats.slice(0,6).map(function(c){
+      return '<div class="it"><i style="background:'+colors[c]+'"></i><span class="x">'+esc(c)+'</span><b>'+fmt(byCat[c])+'</b></div>';
+    }).join('') : '<div class="none">Nothing recorded</div>');
+}
+/* host is rebuilt on every render, so the listeners go on each new one */
+function wireHeatTip(host){
+  var tip=tipEl();
+  host.addEventListener('mouseover',function(ev){
+    var w=ev.target.closest('[data-wk]');
+    if(w){
+      var rg=w.getAttribute('data-wk').split('-');
+      tip.innerHTML=weekTipHtml(+rg[0], +rg[1]);
+      tip.classList.add('on'); return;
+    }
+    var c=ev.target.closest('[data-hd]');
+    if(!c){ tip.classList.remove('on'); return; }
+    tip.innerHTML=dayTipHtml(+c.getAttribute('data-hd'), host._sorted||[]);
+    tip.classList.add('on');
+  });
+  host.addEventListener('mousemove',function(ev){
+    if(!tip.classList.contains('on')) return;
+    var w=tip.offsetWidth, h=tip.offsetHeight, x=ev.clientX+16, y=ev.clientY+16;
+    if(x+w>window.innerWidth-8)  x=ev.clientX-w-16;
+    if(y+h>window.innerHeight-8) y=ev.clientY-h-16;
+    tip.style.left=Math.max(8,x)+'px'; tip.style.top=Math.max(8,y)+'px';
+  });
+  host.addEventListener('mouseleave',function(){ tip.classList.remove('on'); });
+}
+
+/* The budget for a month: embedded, render.html answers from monthDetail's
+   cache (warmed on boot, so usually instantly); straight from Sheets there
+   is no parent, so read it here. Asked once per month. */
+function askPlan(y,m){
+  var k=y+'-'+m;
+  if(_plans[k] || _planAsked[k]) return;
+  _planAsked[k]=true;
+  if(_gotMonth){ window.parent.postMessage({type:'aeplanreq', month:m, year:y},'*'); return; }
+  /* a Sheets modal has a parent too, but it never answers — wait until
+     the month is in hand (fetched here after the handshake timed out) */
+  if(_embedded && !MONTH){ _planAsked[k]=false; return; }
+  runner()
+    .withSuccessHandler(function(res){ if(res&&res.success) applyPlan(m,y,res.controlPlan||{}); })
+    .withFailureHandler(function(){})
+    .getCurrentMonthExpensesList(m,y);
+}
+function applyPlan(m,y,plan){
+  _plans[y+'-'+m]=plan;
+  var ym=heatYM();
+  if(ym.m===m && ym.y===y) renderHeat();
 }
 
 /* ═══════════════════════════════════════════════
@@ -506,7 +802,7 @@ function renderCentre(){
          '<b>Non-regular</b><em id="grpTotNR">0</em></button>'+
      '</div>';
 
-  var color = _grp==='r' ? '#5FBE6E' : '#E0854D';
+  var color = _grp==='r' ? '#10b981' : '#f59e0b';
   var cats  = _grp==='r' ? REG : NONREG;
 
   h += cats.map(phone ? function(c){ return catFeedHTML(c,color); } : catRowHTML).join('');
@@ -524,6 +820,7 @@ function renderCentre(){
 ═══════════════════════════════════════════════ */
 function renderRail(){
   document.getElementById('railR').innerHTML=
+    (isWide()?'':'<div class="railcard heat" id="heatHost"></div>')+
     '<div class="railcard">'+
       '<h3>DAY TOTAL</h3>'+
       '<div class="big" id="total">LKR 0</div>'+
@@ -559,6 +856,7 @@ function renderRail(){
 
     '<div class="railcard" style="flex:1">'+
       '<h3>SHEET ROW PREVIEW</h3><div class="prev" id="prev"></div></div>';
+  renderHeat();
 }
 
 /* ═══════════════════════════════════════════════
@@ -701,7 +999,7 @@ function sheetCommit(){
   writeCell(_sheetCat.col, document.getElementById('shAmt').value.trim());
   if(_sheetCat.ref) writeCell(_sheetCat.ref, document.getElementById('shRef').value.trim());
   closeSheet();
-  renderDays(); renderCentre(); recalc();
+  renderDays(); if(!isWide()) renderHeat(); renderCentre(); recalc();
 }
 
 /* ═══════════════════════════════════════════════
@@ -780,14 +1078,14 @@ document.addEventListener('input',function(e){
   if(!col) return;
   writeCell(col, el.value.trim());
   el.classList.add('edited');
-  renderDays(); recalc();
+  renderDays(); if(!isWide()) renderHeat(); recalc();
 });
 
 document.addEventListener('click',function(e){
   var t=e.target;
 
-  var day=t.closest('.day');
-  if(day){ goto(day.getAttribute('data-d')); return; }
+  var day=t.closest('.day,.hcell[data-d]');
+  if(day){ tipEl().classList.remove('on'); goto(day.getAttribute('data-d')); return; }
 
   if(t.closest('#dateBox')){ openDatePicker(); return; }
 
@@ -848,17 +1146,22 @@ document.addEventListener('keydown',function(e){
 });
 
 /* re-render when the layout crosses the phone breakpoint */
-var _wasPhone=isPhone();
+var _wasPhone=isPhone(), _wasWide=isWide();
 window.addEventListener('resize',function(){
+  if(isWide()!==_wasWide){ _wasWide=isWide(); renderDays(); renderRail(); recalc(); }
   if(isPhone()!==_wasPhone){ _wasPhone=isPhone(); renderCentre(); recalc(); }
 });
 
 /* the parent hands us the prefetched month */
 window.addEventListener('message',function(e){
-  if(!e.data||e.data.type!=='aemonth') return;
+  if(!e.data) return;
+  if(e.data.type==='aeplan'){ applyPlan(e.data.month, e.data.year, e.data.plan||{}); return; }
+  if(e.data.type!=='aemonth') return;
   _gotMonth=true;
+  document.body.classList.remove('solid');
   applyMonth(e.data.payload,e.data.stale);
   if(e.data.focus) focusCat(e.data.focus);
+  renderHeat();   /* now the parent can be asked for the budget */
 });
 
 function focusCat(col){

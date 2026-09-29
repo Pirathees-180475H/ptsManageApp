@@ -28,11 +28,13 @@
        updateClaimStatus(m, y, day, cat, ref)     claim toggle
        updateFoodJunkStatus(m, y, day, ref)       junk toggle
 
-     Talks to render.html through three hooks only:
+     Talks to render.html through four hooks only:
        out — mdOpen()     opened by the expense FAB wheel
              mdReset()    called from reloadPage('exp')
              mdPrefetch() called on boot — warms the current month
+             mdPlanFor()  the Add Expense heatmap's daily budget
        in  — haptic() when present
+             aePlanChanged() when present — budgets were saved
 
      Included from render.html via:  <?!= include('monthDetail'); ?>
 ═══════════════════════════════════════════════════════════════ -->
@@ -603,6 +605,7 @@ var _mdDay = 0;              /* day picked on the ribbon, 0 — the whole month 
 var _mdAdopted = false;      /* the two other panels have been moved in */
 var _mdMajorShown = false;
 var _mdSheetCat = '';        /* category open in the ledger, '' — the card grid */
+var _mdPlanWait = {};        /* "y-m" -> callbacks waiting on mdPlanFor() */
 
 function _mdBuzz(k){ if(typeof window.haptic === 'function') window.haptic(k); }
 
@@ -666,6 +669,10 @@ function mdClose(){
 function mdReset(){
   _mdGen++; _mdCache={}; _mdInflight={}; _mdData=null;
   _mdMonth=0; _mdYear=0; _mdDay=0; _mdMajorShown=false;
+  /* anyone still waiting on a plan rode a request that is now dropped */
+  Object.keys(_mdPlanWait).forEach(function(k){
+    var p=k.split('-'); mdFetch(+p[1], +p[0]);
+  });
 }
 
 /* ═══════════════════════════════════════════════
@@ -814,6 +821,8 @@ function mdFetch(m, y){
       if(gen!==_mdGen) return;               /* a reload has since wiped the cache */
       delete _mdInflight[key];
       if(res && res.success) _mdCache[key]=res;
+      var wait=_mdPlanWait[key]; delete _mdPlanWait[key];
+      if(wait) wait.forEach(function(cb){ cb((res && res.success && res.controlPlan) || {}); });
       if(!showing()) return;
       if(!res || !res.success){ mdErr((res&&res.error)||'Could not read the month'); return; }
       mdApply(res);
@@ -832,6 +841,16 @@ function mdFetch(m, y){
 function mdPrefetch(){
   var n=new Date();
   mdFetch(n.getMonth()+1, n.getFullYear());
+}
+
+/* The control plan for a month, from the same cached read the Month tab
+   uses — Add Expense colours its day calendar against it. Answers at
+   once when the month is cached (the current one is warmed on boot). */
+function mdPlanFor(m, y, cb){
+  var key=y+'-'+m;
+  if(_mdCache[key]){ cb(_mdCache[key].controlPlan || {}); return; }
+  (_mdPlanWait[key] || (_mdPlanWait[key]=[])).push(cb);
+  mdFetch(m, y);
 }
 
 function mdLoad(){
@@ -1616,6 +1635,7 @@ function mdSaveBudgets(){
         /* the cached month still holds the old plan — keep them in step */
         var k=_mdYear+'-'+_mdMonth;
         if(_mdCache[k]) _mdCache[k].controlPlan=JSON.parse(JSON.stringify(updates));
+        if(typeof window.aePlanChanged==='function') window.aePlanChanged(_mdMonth, _mdYear, updates);
         setTimeout(function(){ msg.textContent=''; },2600);
       } else {
         msg.style.color='#fca5a5';
