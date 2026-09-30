@@ -13,7 +13,7 @@
 
      >1180px   heat + day list | editable rows | totals rail   (Sheets modal, laptop overlay)
      640–1180  day strip, then editable rows | heat + totals rail
-     <640px    day strip + tappable feed, editor in a bottom sheet
+     <640px    day strip, heat, tappable feed; editor in a bottom sheet
 
    The month arrives from render.html through postMessage (already
    prefetched on app boot), so switching days costs no round trip.
@@ -141,7 +141,8 @@ button,input,textarea{font-family:inherit;}
 .hcell.g4{background:#39d353;color:#04210f;}
 .hcell.pad{visibility:hidden;cursor:default;}
 .hcell.fut{background:transparent;border:1px dashed var(--line2);opacity:.55;}
-.hcell:not(.pad):hover{transform:scale(1.1);box-shadow:0 6px 18px rgba(0,0,0,.35);}
+@media(hover:hover){.hcell:not(.pad):hover{transform:scale(1.1);box-shadow:0 6px 18px rgba(0,0,0,.35);}}
+.hcell:not(.pad):active{transform:scale(.92);}
 .hcell.today{box-shadow:0 0 0 2px #060b18,0 0 0 3.5px #fff;}
 .hcell.sel{box-shadow:0 0 0 2px #060b18,0 0 0 3.5px var(--acc2),0 0 14px rgba(99,102,241,.6);}
 .hwk{display:flex;flex-direction:column;justify-content:center;gap:3px;padding-left:5px;
@@ -156,6 +157,8 @@ button,input,textarea{font-family:inherit;}
 .hkey{display:flex;align-items:center;justify-content:center;gap:7px;font-size:10.5px;color:var(--faint);}
 .hkey .st{display:flex;gap:3px;}
 .hkey .st i{width:10px;height:10px;border-radius:3px;}
+/* the phone's own slot for the calendar, between the day strip and the feed */
+.heatslot{display:none;}
 
 /* hover card — the same one monthDetail shows */
 .htip{position:fixed;z-index:70;pointer-events:none;width:260px;max-width:calc(100vw - 16px);
@@ -320,6 +323,23 @@ button,input,textarea{font-family:inherit;}
   .nav .datebox{flex:1;justify-content:center;}
   .save{flex:1;}
   .keys{display:none;}
+
+  /* the calendar comes up top, under the day strip, rather than at the
+     foot of the rail below every card; wider dots and larger figures for
+     thumbs, capped so a landscape phone does not blow them up */
+  .heatslot{display:block;padding:12px 16px 0;}
+  .heatslot .heat{max-width:420px;margin:0 auto;padding:12px 12px 10px;gap:8px;}
+  .heat h3{flex-wrap:wrap;row-gap:4px;}
+  /* fixed dots, not fluid columns: every row is exactly one dot tall, so
+     the grid is the same compact block in every phone browser */
+  .heatslot{--dot:clamp(26px,calc((100vw - 158px) / 7),34px);}
+  .heatslot .hgrid{grid-template-columns:repeat(7,var(--dot)) 46px;
+    justify-content:space-between;gap:5px 0;}
+  .heatslot #heatGrid{grid-auto-rows:var(--dot);}
+  .heatslot .hcell{width:var(--dot);height:var(--dot);aspect-ratio:auto;font-size:11.5px;}
+  .heatslot .hwk{min-height:0;height:var(--dot);padding-left:6px;font-size:10.5px;}
+  .hdow,.hwkh{font-size:10.5px;}
+  .hkey{font-size:10.5px;}
 }
 </style>
 </head>
@@ -350,6 +370,7 @@ button,input,textarea{font-family:inherit;}
 
   <div class="body">
     <nav class="rail rail-l" id="dayList" aria-label="Days"></nav>
+    <section class="heatslot" id="heatSlot" aria-label="Month by day"></section>
     <main class="centre" id="centre"></main>
     <aside class="rail rail-r" id="railR" aria-label="Day summary"></aside>
   </div>
@@ -712,9 +733,15 @@ function weekTipHtml(from, to){
     }).join('') : '<div class="none">Nothing recorded</div>');
 }
 /* host is rebuilt on every render, so the listeners go on each new one */
+/* hover only — on a touch screen the emulated mouseover would leave the
+   card stuck open over the page after the tap has already opened the day */
+function canHover(){ return window.matchMedia('(hover:hover) and (pointer:fine)').matches; }
 function wireHeatTip(host){
   var tip=tipEl();
+  if(host._wired) return;
+  host._wired=true;
   host.addEventListener('mouseover',function(ev){
+    if(!canHover()){ tip.classList.remove('on'); return; }
     var w=ev.target.closest('[data-wk]');
     if(w){
       var rg=w.getAttribute('data-wk').split('-');
@@ -819,8 +846,10 @@ function renderCentre(){
    RIGHT RAIL
 ═══════════════════════════════════════════════ */
 function renderRail(){
+  document.getElementById('heatSlot').innerHTML=
+    isPhone() ? '<div class="railcard heat" id="heatHost"></div>' : '';
   document.getElementById('railR').innerHTML=
-    (isWide()?'':'<div class="railcard heat" id="heatHost"></div>')+
+    (isWide()||isPhone()?'':'<div class="railcard heat" id="heatHost"></div>')+
     '<div class="railcard">'+
       '<h3>DAY TOTAL</h3>'+
       '<div class="big" id="total">LKR 0</div>'+
@@ -1149,7 +1178,7 @@ document.addEventListener('keydown',function(e){
 var _wasPhone=isPhone(), _wasWide=isWide();
 window.addEventListener('resize',function(){
   if(isWide()!==_wasWide){ _wasWide=isWide(); renderDays(); renderRail(); recalc(); }
-  if(isPhone()!==_wasPhone){ _wasPhone=isPhone(); renderCentre(); recalc(); }
+  if(isPhone()!==_wasPhone){ _wasPhone=isPhone(); renderCentre(); renderRail(); recalc(); }
 });
 
 /* the parent hands us the prefetched month */
