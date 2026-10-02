@@ -6,7 +6,7 @@
      of each other. Four zones now, each an anchor of the tab rail:
 
        ① command bar   pinned · live USD/LKR · save · reload
-       ② overview      hero + concentric arc dial + ring rows + 3 KPIs
+       ② overview      balance card (bank-colour glow) + spotlight + KPIs
        ③ passbooks     a shelf of bound savings books; open one and
                        its two-leaf spread carries the balance (left)
                        and its ruled ledger (right)
@@ -115,55 +115,111 @@
 }
 
 /* ═══ ② OVERVIEW ══════════════════════════════════════════════ */
+/* ── the balance card ──────────────────────────────────────────
+   One premium debit card carries every account. Hovering (or tapping)
+   a row lifts it to a large font and tints the whole card in that
+   bank's colour; the spotlight beside it spells the account out.
+   The glow is a blurred orb whose background-color transitions, so
+   the hue fades between banks instead of snapping. */
 #page-bank .bk-hero{
-  position:relative;overflow:hidden;border-radius:20px;padding:22px 24px;margin-bottom:14px;
-  background:linear-gradient(145deg,rgba(0,212,255,.09),rgba(168,85,247,.05) 48%,rgba(255,255,255,.02));
-  border:1px solid rgba(0,212,255,.16);animation:fadeUp .45s ease both;
+  display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:16px;align-items:stretch;
+  margin-bottom:14px;animation:fadeUp .45s ease both;--glow:#00d4ff;
 }
-#page-bank .bk-hero::before{
-  content:'';position:absolute;top:-70px;right:-50px;width:230px;height:230px;border-radius:50%;
-  background:radial-gradient(circle,rgba(0,212,255,.18),transparent 68%);pointer-events:none;
+#page-bank .bk-gc{
+  position:relative;isolation:isolate;aspect-ratio:1.586;max-width:100%;
+  display:flex;flex-direction:column;padding:20px 22px 24px;border-radius:20px;color:#fff;
+  background:#0b0d12;border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 22px 44px rgba(0,0,0,.55), 0 0 42px -14px var(--glow), inset 0 1px 0 rgba(255,255,255,.07);
+  transition:box-shadow .45s ease;
 }
-#page-bank .bk-hero-in{position:relative;z-index:1;display:grid;grid-template-columns:268px 1fr;gap:32px;align-items:center;}
-#page-bank .bk-hero-lbl{
-  display:flex;align-items:center;gap:8px;font-size:10px;font-weight:800;
-  letter-spacing:2.6px;text-transform:uppercase;color:var(--bk-mut);
+#page-bank .bk-gc-fx{position:absolute;inset:0;z-index:-1;border-radius:inherit;overflow:hidden;pointer-events:none;}
+#page-bank .bk-gc-orb{
+  position:absolute;top:-38%;right:-18%;width:78%;aspect-ratio:1;border-radius:50%;
+  background-color:var(--glow);opacity:.42;filter:blur(56px);
+  transition:background-color .45s ease;
 }
-#page-bank .bk-hero-lbl i{
-  width:7px;height:7px;border-radius:50%;background:var(--bk-cyan);
-  box-shadow:0 0 10px var(--bk-cyan);animation:pls 2.6s ease-in-out infinite;
+#page-bank .bk-gc-orb.b{top:auto;right:auto;bottom:-55%;left:-25%;width:60%;opacity:.12;}
+#page-bank .bk-gc-fx::after{     /* faint diagonal sheen over the glow */
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.045) 48%,transparent 60%);
 }
-#page-bank .bk-hero-amt{
-  font-size:clamp(28px,5.2vw,48px);font-weight:900;letter-spacing:-2px;line-height:1.05;margin-top:7px;
-  font-variant-numeric:tabular-nums;
-  background:linear-gradient(92deg,#fff,rgba(0,212,255,.82));
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-#page-bank .bk-hero-usd{margin-top:5px;font-size:13px;font-weight:600;color:var(--bk-green);font-variant-numeric:tabular-nums;}
-#page-bank .bk-hero-usd em{font-style:normal;color:var(--bk-faint);font-weight:500;}
-/* ── the arc dial ──────────────────────────────────────────────
-   One ring per account, outermost first, each swept to its share of
-   the total. Beyond four holdings the tail is folded into a single
-   "Other" ring: a fifth hairline ring reads as noise, and the rows
-   beside the dial name what went into it. Drawn as plain SVG — the
-   page no longer loads Chart.js for this. */
-#page-bank .bk-arcs{position:relative;width:268px;height:268px;}
-#page-bank .bk-arcs svg{display:block;width:100%;height:100%;overflow:visible;}
-#page-bank .bk-arc{transition:stroke-dasharray .55s cubic-bezier(.22,1,.36,1);}
-#page-bank .bk-arc:hover{filter:brightness(1.28);}
+#page-bank .bk-gc-stripe{position:absolute;left:0;right:0;bottom:0;height:6px;display:flex;}
+#page-bank .bk-gc-stripe span{transition:opacity .25s, filter .25s;}
+#page-bank .bk-gc-stripe.pick span{opacity:.28;}
+#page-bank .bk-gc-stripe.pick span.on{opacity:1;filter:brightness(1.15);}
 
-#page-bank .bk-rings{margin-top:16px;}
-#page-bank .bk-ring{
-  display:flex;align-items:center;gap:10px;padding:8px 0;
-  border-bottom:1px solid var(--bk-bdr);
+#page-bank .bk-gc-top{display:flex;align-items:center;gap:10px;}
+#page-bank .bk-gc-brand{font-size:10px;font-weight:800;letter-spacing:2.6px;text-transform:uppercase;color:rgba(255,255,255,.62);}
+#page-bank .bk-gc-count{font-size:10px;font-weight:700;color:rgba(255,255,255,.34);margin-left:auto;}
+#page-bank .bk-gc-nfc{width:18px;height:18px;flex-shrink:0;opacity:.7;}
+
+#page-bank .bk-gc-rows{margin:10px 0 14px;display:flex;flex-direction:column;gap:1px;}
+#page-bank .bk-gc-r{
+  display:grid;grid-template-columns:8px minmax(0,1fr) auto;gap:10px;align-items:center;
+  width:auto;margin:0 -6px;padding:1px 6px;border:0;border-radius:7px;background:transparent;
+  font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:12.5px;line-height:1.55;
+  color:rgba(255,255,255,.66);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;
+  transition:font-size .28s cubic-bezier(.2,.8,.2,1), color .2s, opacity .2s, background .2s;
 }
-#page-bank .bk-ring:last-child{border-bottom:0;}
-#page-bank .bk-ring i{width:10px;height:10px;border-radius:3px;flex:0 0 auto;}
-#page-bank .bk-ring b{flex:1 1 auto;min-width:0;font-size:12px;font-weight:700;color:var(--bk-ink);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-#page-bank .bk-ring-amt{font-size:12px;color:var(--bk-mut);font-variant-numeric:tabular-nums;}
-#page-bank .bk-ring-pct{font-size:13px;font-weight:800;color:var(--bk-ink);
-  font-variant-numeric:tabular-nums;min-width:48px;text-align:right;}
+#page-bank .bk-gc-r i{width:8px;height:8px;border-radius:2px;font-style:normal;transition:transform .28s;}
+#page-bank .bk-gc-r .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:uppercase;letter-spacing:.4px;}
+#page-bank .bk-gc-r .am{font-variant-numeric:tabular-nums;white-space:nowrap;}
+#page-bank .bk-gc-r .pc{font-size:.7em;margin-left:7px;opacity:0;transition:opacity .2s;}
+#page-bank .bk-gc-r:focus-visible{outline:2px solid var(--glow);outline-offset:1px;}
+#page-bank .bk-gc-rows.pick .bk-gc-r{opacity:.36;}
+#page-bank .bk-gc-rows .bk-gc-r.on{
+  opacity:1;font-size:17px;font-weight:700;color:#fff;background:rgba(255,255,255,.08);
+}
+#page-bank .bk-gc-r.on i{transform:scale(1.45);}
+#page-bank .bk-gc-r.on .pc{opacity:.75;}
+/* seven-plus accounts — a tighter ledger so the card keeps its shape */
+#page-bank .bk-gc-rows.dense .bk-gc-r{font-size:11px;line-height:1.45;}
+#page-bank .bk-gc-rows.dense .bk-gc-r.on{font-size:14.5px;}
+
+#page-bank .bk-gc-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;}
+#page-bank .bk-gc-tl{font-size:8.5px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.5);}
+#page-bank .bk-gc-tot{
+  font-size:clamp(20px,4.6vw,27px);font-weight:900;letter-spacing:-.8px;line-height:1.15;margin-top:2px;
+  font-variant-numeric:tabular-nums;white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.6);
+}
+#page-bank .bk-gc-usd{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:10.5px;color:rgba(255,255,255,.58);margin-top:2px;font-variant-numeric:tabular-nums;}
+#page-bank .bk-gc-usd em{font-style:normal;color:rgba(255,255,255,.34);}
+#page-bank .bk-gc-chip{
+  width:40px;height:30px;border-radius:6px;flex-shrink:0;position:relative;
+  background:linear-gradient(135deg,#f3f4f6,#9ca3af 55%,#e5e7eb);
+}
+#page-bank .bk-gc-chip::before{content:'';position:absolute;inset:8px 0;border-top:1px solid rgba(0,0,0,.28);border-bottom:1px solid rgba(0,0,0,.28);}
+#page-bank .bk-gc-chip::after{content:'';position:absolute;inset:0 14px;border-left:1px solid rgba(0,0,0,.28);border-right:1px solid rgba(0,0,0,.28);}
+
+/* ── the spotlight — whichever account the card has lifted ── */
+#page-bank .bk-spot{
+  position:relative;overflow:hidden;border-radius:20px;padding:18px 20px;min-width:0;
+  display:flex;flex-direction:column;gap:12px;
+  background:var(--bk-panel);border:1px solid var(--bk-bdr);
+}
+#page-bank .bk-spot::before{
+  content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;
+  background-color:var(--glow,#00d4ff);opacity:.14;filter:blur(50px);pointer-events:none;
+  transition:background-color .45s ease;
+}
+#page-bank .bk-spot>*{position:relative;}
+#page-bank .bk-spot-k{font-size:10px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:var(--bk-mut);}
+#page-bank .bk-spot-name{display:flex;align-items:center;gap:10px;min-width:0;}
+#page-bank .bk-spot-name i{width:12px;height:12px;border-radius:4px;flex-shrink:0;}
+#page-bank .bk-spot-name b{font-size:20px;font-weight:900;letter-spacing:-.4px;color:var(--bk-ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#page-bank .bk-spot-full{font-size:12px;color:var(--bk-mut);margin-top:-8px;}
+#page-bank .bk-spot-amt{font-size:clamp(24px,3.6vw,34px);font-weight:900;letter-spacing:-1.2px;line-height:1.05;
+  font-variant-numeric:tabular-nums;color:var(--bk-ink);}
+#page-bank .bk-spot-usd{font-size:12px;font-weight:600;color:var(--bk-green);margin-top:-6px;font-variant-numeric:tabular-nums;}
+#page-bank .bk-spot-bar{height:8px;border-radius:5px;background:rgba(255,255,255,.06);overflow:hidden;}
+#page-bank .bk-spot-bar span{display:block;height:100%;border-radius:5px;transition:width .5s cubic-bezier(.22,1,.36,1), background-color .3s;}
+#page-bank .bk-spot-meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+#page-bank .bk-spot-meta div{display:flex;flex-direction:column;gap:2px;min-width:0;}
+#page-bank .bk-spot-meta span{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--bk-faint);}
+#page-bank .bk-spot-meta b{font-size:14px;font-weight:800;color:var(--bk-ink);font-variant-numeric:tabular-nums;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#page-bank .bk-spot-go{align-self:flex-start;margin-top:auto;}
 
 #page-bank .bk-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 #page-bank .bk-kpi{
@@ -745,8 +801,8 @@
 
 /* ═══ RESPONSIVE ══════════════════════════════════════════════ */
 @media(max-width:860px){
-  #page-bank .bk-hero-in{grid-template-columns:1fr;gap:18px;}
-  #page-bank .bk-arcs{width:240px;height:240px;margin:0 auto;}
+  #page-bank .bk-hero{grid-template-columns:1fr;}
+  #page-bank .bk-gc{width:100%;max-width:480px;margin:0 auto;}
   #page-bank .bk-kpis{grid-template-columns:repeat(2,1fr);}
   #page-bank .bk-move{grid-template-columns:1fr;}
   /* one month only — the older one drops, the newer one takes both arrows */
@@ -766,7 +822,14 @@
   #page-bank .page-wrap{padding:13px;padding-bottom:96px;}
   #page-bank .bk-kpis{grid-template-columns:1fr;}
   #page-bank .bk-cal{left:0;right:auto;}
-  #page-bank .bk-hero{padding:18px 16px;}
+  #page-bank .bk-gc{padding:16px 16px 20px;border-radius:18px;}
+  #page-bank .bk-gc-rows{margin:8px 0 12px;}
+  #page-bank .bk-gc-r{font-size:12px;gap:8px;}
+  #page-bank .bk-gc-rows .bk-gc-r.on{font-size:15px;}
+  #page-bank .bk-gc-rows.dense .bk-gc-r.on{font-size:13px;}
+  #page-bank .bk-gc-chip{width:34px;height:26px;}
+  #page-bank .bk-spot{padding:16px;}
+  #page-bank .bk-spot-meta b{font-size:13px;}
   #page-bank .bk-fld-row{grid-template-columns:1fr;}
   #page-bank .bk-swap{margin:0 auto;transform:rotate(90deg);}
   #page-bank .bk-swap:hover{transform:rotate(270deg);}
@@ -780,7 +843,12 @@
 @media(hover:none){
   #page-bank .bk-book:hover{transform:none;}
 }
+@media(max-width:360px){
+  #page-bank .bk-gc-r .pc{display:none;}
+  #page-bank .bk-gc-count{display:none;}
+}
 @media(prefers-reduced-motion:reduce){
+  #page-bank .bk-gc,#page-bank .bk-gc-r,#page-bank .bk-gc-orb,#page-bank .bk-spot::before{transition:none;}
   #page-bank .bk-book,#page-bank .bk-cover{transition:none;}
   #page-bank .bk-book:hover{transform:none;}
   #page-bank .bk-spread.open{animation:none;}
@@ -850,6 +918,8 @@ var _bkRate    = 0;
 var _bkDirty   = {};
 var _bkEditRow = -1;
 var _bkOpenBook = -1;   /* index of the passbook currently open, -1 = shelf */
+var _bkCardLock = '';   /* lower-cased source tapped on the balance card, '' = none */
+var _bkCardCtx  = null; /* {sorted, total, stats} the card was last drawn from */
 var _bkPage    = 1;
 var _bkQuery   = '';
 var _bkBankFilter = 'all';
@@ -1052,28 +1122,12 @@ function bkRenderOverview(){
 
   var sorted = _bkData.slice().sort(function(a,b){ return b.amount - a.amount; });
   var stats = bkTxnStats();
-  var rings = bkRings(sorted, total);
+  _bkCardCtx = {sorted:sorted, total:total, stats:stats};
 
   host.innerHTML =
-    '<div class="bk-hero">' +
-      '<div class="bk-hero-in">' +
-        '<div class="bk-arcs">' + bkArcSvg(rings, total) + '</div>' +
-        '<div>' +
-          '<div class="bk-hero-lbl"><i></i>Total liquid balance · ' + _bkData.length + ' account' + (_bkData.length === 1 ? '' : 's') + '</div>' +
-          '<div class="bk-hero-amt">' + bkLkr(total, 2) + '</div>' +
-          '<div class="bk-hero-usd" data-lkr="' + total + '" data-usd-tail="<span id=&quot;bkHeroRate&quot;></span>">' +
-              (_bkRate > 0 ? '≈ ' + bkUsd(total / _bkRate) + ' USD' : '≈ — USD') +
-              '<span id="bkHeroRate">' + (_bkRate > 0 ? ' <em>@ ' + _bkRate.toFixed(2) + '</em>' : '') + '</span>' +
-          '</div>' +
-          '<div class="bk-rings">' + rings.map(function(r){
-              return '<div class="bk-ring" title="' + bkEsc(r.title) + '">' +
-                '<i style="background:' + r.c + '"></i>' +
-                '<b>' + bkEsc(r.name) + '</b>' +
-                '<span class="bk-ring-amt">' + bkLkr(r.amount) + '</span>' +
-                '<span class="bk-ring-pct">' + bkPct(r.amount, total) + '</span></div>';
-            }).join('') + '</div>' +
-        '</div>' +
-      '</div>' +
+    '<div class="bk-hero" id="bkHero">' +
+      bkCardHtml(sorted, total) +
+      '<div class="bk-spot" id="bkSpot" aria-live="polite"></div>' +
     '</div>' +
 
     '<div class="bk-panel">' +
@@ -1103,6 +1157,8 @@ function bkRenderOverview(){
             '<span class="bk-kpi-s">every account moved &lt; 60d</span></div>') +
       '</div>' +
     '</div>';
+
+  bkBindCard();
 
 }
 
@@ -1145,61 +1201,130 @@ function bkTxnStats(){
   return {moved30:moved30, count30:count30, last:last, idle:idle, lastPer:lastPer, passive:passive};
 }
 
-/* ═══ THE ARC DIAL ════════════════════════════════════════════
-   Concentric rings, one per holding, outermost = largest. Each ring
-   is a full track with a coloured arc swept over it, so a 0.1%
-   account is still a visible tick on its own circle instead of a
-   sub-pixel pie slice. Past four holdings the tail folds into one
-   "Other" ring — its members are listed in its tooltip.
+/* ═══ THE BALANCE CARD ════════════════════════════════════════
+   A debit card whose face lists every account, largest first, with
+   the total where the card number would be. Pointing at a row (or
+   tapping it on a phone) lifts that row to a large font, dims the
+   rest, and washes the card and the spotlight in that bank's colour.
+   A tap locks the pick; hovering elsewhere previews, and leaving the
+   card falls back to whatever is locked.
 ═══════════════════════════════════════════════════════════════ */
-var BK_MAX_RINGS = 4;
-
-function bkRings(sorted, total){
-  if (sorted.length <= BK_MAX_RINGS){
-    return sorted.map(function(b){
-      return {name:b.source, amount:b.amount, c:bkStyle(b.source).c,
-              title:b.source + ' · ' + bkLkr(b.amount) + ' · ' + bkPct(b.amount, total)};
-    });
-  }
-  var head = sorted.slice(0, BK_MAX_RINGS - 1).map(function(b){
-    return {name:b.source, amount:b.amount, c:bkStyle(b.source).c,
-            title:b.source + ' · ' + bkLkr(b.amount) + ' · ' + bkPct(b.amount, total)};
-  });
-  var tail = sorted.slice(BK_MAX_RINGS - 1);
-  var sum  = tail.reduce(function(a, b){ return a + b.amount; }, 0);
-  head.push({
-    name:'Other · ' + tail.length + ' accounts',
-    amount:sum,
-    c:'#56637a',
-    title:tail.map(function(b){ return b.source + ' ' + bkLkr(b.amount); }).join('  ·  ')
-  });
-  return head;
+function bkCardHtml(sorted, total){
+  var dense = sorted.length >= 7 ? ' dense' : '';
+  var rows = sorted.map(function(b, k){
+    return '<button type="button" class="bk-gc-r" data-k="' + k + '" ' +
+             'aria-label="' + bkEsc(b.source + ' ' + bkLkr(b.amount) + ', ' + bkPct(b.amount, total)) + '">' +
+             '<i style="background:' + bkStyle(b.source).c + '"></i>' +
+             '<span class="nm">' + bkEsc(b.source) + '</span>' +
+             '<span class="am">' + (Number(b.amount) || 0).toLocaleString('en-US') +
+               '<span class="pc">' + bkPct(b.amount, total) + '</span></span>' +
+           '</button>';
+  }).join('');
+  var stripe = sorted.map(function(b, k){
+    return '<span data-k="' + k + '" style="flex:' + Math.max(Number(b.amount) || 0, 0) +
+             ';background:' + bkStyle(b.source).c + '"></span>';
+  }).join('');
+  return '<div class="bk-gc" id="bkCard">' +
+      '<div class="bk-gc-fx"><span class="bk-gc-orb"></span><span class="bk-gc-orb b"></span>' +
+        '<div class="bk-gc-stripe" id="bkCardStripe">' + stripe + '</div></div>' +
+      '<div class="bk-gc-top"><span class="bk-gc-brand">PTS · Liquid</span>' +
+        '<span class="bk-gc-count">' + sorted.length + ' account' + (sorted.length === 1 ? '' : 's') + '</span>' +
+        '<svg class="bk-gc-nfc" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true">' +
+          '<path d="M8 6c2 3 2 9 0 12M12 4c3 4 3 12 0 16M16 2c4 5 4 15 0 20"/></svg></div>' +
+      '<div class="bk-gc-rows' + dense + '" id="bkCardRows">' + rows + '</div>' +
+      '<div class="bk-gc-foot"><div style="min-width:0">' +
+        '<div class="bk-gc-tl">Total liquid balance</div>' +
+        '<div class="bk-gc-tot">' + bkLkr(total, 2) + '</div>' +
+        '<div class="bk-gc-usd" data-lkr="' + total + '" data-usd-tail="<span id=&quot;bkHeroRate&quot;></span>">' +
+          (_bkRate > 0 ? '≈ ' + bkUsd(total / _bkRate) + ' USD' : '≈ — USD') +
+          '<span id="bkHeroRate">' + (_bkRate > 0 ? ' <em>@ ' + _bkRate.toFixed(2) + '</em>' : '') + '</span>' +
+        '</div></div>' +
+        '<div class="bk-gc-chip" aria-hidden="true"></div>' +
+      '</div>' +
+    '</div>';
 }
 
-/* 276-unit box, rings stepped inward by 22 with a 15-wide stroke, so
-   four of them clear the centred total without crowding it. */
-function bkArcSvg(rings, total){
-  var CX = 138, R0 = 120, STEP = 22, SW = 15;
-  var track = '', arc = '';
-  rings.forEach(function(r, i){
-    var rad  = R0 - i * STEP;
-    var circ = 2 * Math.PI * rad;
-    var len  = total > 0 ? circ * Math.max(r.amount, 0) / total : 0;
-    track += '<circle cx="' + CX + '" cy="' + CX + '" r="' + rad + '" fill="none" ' +
-             'stroke="rgba(255,255,255,.05)" stroke-width="' + SW + '"></circle>';
-    arc   += '<circle class="bk-arc" cx="' + CX + '" cy="' + CX + '" r="' + rad + '" fill="none" ' +
-             'stroke="' + r.c + '" stroke-width="' + SW + '" stroke-linecap="round" ' +
-             'stroke-dasharray="' + len.toFixed(1) + ' ' + circ.toFixed(1) + '" ' +
-             'transform="rotate(-90 ' + CX + ' ' + CX + ')">' +
-             '<title>' + bkEsc(r.name) + ' · ' + bkPct(r.amount, total) + '</title></circle>';
+function bkCardLockedIndex(){
+  if (!_bkCardCtx || !_bkCardLock) return -1;
+  for (var k = 0; k < _bkCardCtx.sorted.length; k++){
+    if (String(_bkCardCtx.sorted[k].source).toLowerCase() === _bkCardLock) return k;
+  }
+  return -1;
+}
+
+/* k = index into the sorted list, -1 = nothing lifted */
+function bkCardShow(k){
+  var ctx = _bkCardCtx, hero = document.getElementById('bkHero');
+  if (!ctx || !hero) return;
+  var rows = document.getElementById('bkCardRows'), stripe = document.getElementById('bkCardStripe');
+  rows.classList.toggle('pick', k >= 0);
+  stripe.classList.toggle('pick', k >= 0);
+  [].forEach.call(rows.children, function(el, i){ el.classList.toggle('on', i === k); });
+  [].forEach.call(stripe.children, function(el, i){ el.classList.toggle('on', i === k); });
+  if (k >= 0) hero.style.setProperty('--glow', bkStyle(ctx.sorted[k].source).c);
+  else hero.style.removeProperty('--glow');
+  bkSpotPaint(k);
+}
+
+function bkSpotPaint(k){
+  var ctx = _bkCardCtx, host = document.getElementById('bkSpot');
+  if (!ctx || !host) return;
+  var b = ctx.sorted[k >= 0 ? k : 0], st = bkStyle(b.source);
+  var last = ctx.stats.lastPer[String(b.source).toLowerCase()];
+  var share = ctx.total > 0 ? Math.max(b.amount, 0) / ctx.total * 100 : 0;
+  host.innerHTML =
+    '<div class="bk-spot-k">' + (k >= 0 ? 'Selected account' : 'Largest holding') + '</div>' +
+    '<div class="bk-spot-name"><i style="background:' + st.c + '"></i><b>' + bkEsc(b.source) + '</b></div>' +
+    (st.full && st.full.toLowerCase() !== String(b.source).toLowerCase()
+      ? '<div class="bk-spot-full">' + bkEsc(st.full) + '</div>' : '') +
+    '<div class="bk-spot-amt">' + bkLkr(b.amount, 2) + '</div>' +
+    '<div class="bk-spot-usd" data-lkr="' + b.amount + '">' +
+      (_bkRate > 0 ? '≈ ' + bkUsd(b.amount / _bkRate) + ' USD' : '≈ — USD') + '</div>' +
+    '<div class="bk-spot-bar"><span style="width:' + share.toFixed(1) + '%;background-color:' + st.c + '"></span></div>' +
+    '<div class="bk-spot-meta">' +
+      '<div><span>Share</span><b>' + share.toFixed(1) + '%</b></div>' +
+      '<div><span>Rank</span><b>#' + ((k >= 0 ? k : 0) + 1) + ' of ' + ctx.sorted.length + '</b></div>' +
+      '<div><span>Last moved</span><b>' + bkAgo(last || null) + '</b></div>' +
+    '</div>' +
+    '<button type="button" class="bk-mini go bk-spot-go" onclick="bkSpotOpen(' + (k >= 0 ? k : 0) + ')">Open passbook →</button>';
+}
+
+function bkSpotOpen(k){
+  var name = String(_bkCardCtx.sorted[k].source).toLowerCase();
+  for (var i = 0; i < _bkData.length; i++){
+    if (String(_bkData[i].source).toLowerCase() === name){
+      bkOpenBook(i);
+      bkGoSec('bkSecAccounts');
+      return;
+    }
+  }
+}
+
+function bkBindCard(){
+  var rows = document.getElementById('bkCardRows');
+  if (!rows) return;
+  function rowOf(e){ var el = e.target.closest && e.target.closest('.bk-gc-r'); return el ? +el.getAttribute('data-k') : -1; }
+  /* mouse and pen preview on hover; touch skips straight to the tap below */
+  rows.addEventListener('pointerover', function(e){
+    if (e.pointerType === 'touch') return;
+    var k = rowOf(e); if (k >= 0) bkCardShow(k);
   });
-  return '<svg viewBox="0 0 276 276" role="img" aria-label="Share of liquid cash by account">' +
-    track + arc +
-    '<text x="' + CX + '" y="' + (CX - 6) + '" text-anchor="middle" fill="rgba(255,255,255,.34)" ' +
-      'font-family="Inter,system-ui,sans-serif" font-size="9" font-weight="800" letter-spacing="1.8">TOTAL LIQUID</text>' +
-    '<text x="' + CX + '" y="' + (CX + 19) + '" text-anchor="middle" fill="rgba(255,255,255,.92)" ' +
-      'font-family="Inter,system-ui,sans-serif" font-size="22" font-weight="900" letter-spacing="-.8">' + bkLkr(total) + '</text>' +
-  '</svg>';
+  rows.addEventListener('pointerleave', function(e){
+    if (e.pointerType === 'touch') return;
+    bkCardShow(bkCardLockedIndex());
+  });
+  rows.addEventListener('click', function(e){
+    var k = rowOf(e); if (k < 0) return;
+    var name = String(_bkCardCtx.sorted[k].source).toLowerCase();
+    _bkCardLock = _bkCardLock === name ? '' : name;
+    bkCardShow(bkCardLockedIndex());
+    if (typeof haptic === 'function') haptic('select');
+  });
+  rows.addEventListener('focusin', function(e){ var k = rowOf(e); if (k >= 0) bkCardShow(k); });
+  rows.addEventListener('focusout', function(e){
+    if (!rows.contains(e.relatedTarget)) bkCardShow(bkCardLockedIndex());
+  });
+  bkCardShow(bkCardLockedIndex());
 }
 
 /* ═══ ③ ACCOUNTS — the passbook shelf ═════════════════════════
