@@ -166,42 +166,61 @@
 #page-cse .inv-note{font-size:11px;color:rgba(255,255,255,.4);}
 #page-cse .inv-note b{color:#fff;}
 
-/* ── ③ summary band ── */
-#page-cse .inv-hero{position:relative;border-radius:20px;padding:26px 28px;margin-bottom:18px;overflow:hidden;
-  background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(168,85,247,.05),rgba(0,255,136,.04));
-  border:1px solid rgba(255,255,255,.1);box-shadow:0 8px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);
-  display:grid;grid-template-columns:minmax(240px,1fr) minmax(0,1.7fr);gap:28px;align-items:center;}
-#page-cse .inv-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;
-  background:radial-gradient(circle,rgba(0,212,255,.13),transparent 70%);pointer-events:none;}
+/* ── ③ summary band — the metal card deck ─────────────────────
+   A private-reserve readout on the left; on the right five metal
+   cards (total + the four assets) in an overlapping row. Point at a
+   card and it lifts, tilts toward the light and a sheen crosses it;
+   click/tap opens that asset's tab, and the card for the open tab
+   stays raised. Card geometry is set from the deck's own width, so
+   the row fits any screen. */
+#page-cse .inv-hero{position:relative;border-radius:20px;padding:24px 26px;margin-bottom:18px;overflow:hidden;
+  background:radial-gradient(120% 120% at 0% 0%,rgba(212,175,55,.08),transparent 50%),linear-gradient(160deg,#121217,#08080b);
+  border:1px solid rgba(214,205,180,.14);box-shadow:0 10px 40px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);
+  display:grid;grid-template-columns:minmax(230px,.8fr) minmax(0,1.6fr);gap:22px;align-items:center;}
+#page-cse .inv-hero::before{content:'';position:absolute;top:-80px;right:-60px;width:320px;height:320px;border-radius:50%;
+  background:radial-gradient(circle,rgba(212,175,55,.08),transparent 70%);pointer-events:none;}
 #page-cse .inv-hero > div{position:relative;z-index:1;min-width:0;}
-#page-cse .inv-hero-lbl{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.4);
+#page-cse .inv-hero-lbl{font-size:9.5px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(236,232,222,.45);
   display:flex;align-items:center;gap:8px;}
-#page-cse .inv-hero-amt{font-size:clamp(26px,4.4vw,40px);font-weight:900;letter-spacing:-1.5px;line-height:1.05;margin:8px 0 10px;
-  font-variant-numeric:tabular-nums;background:linear-gradient(135deg,#fff 0%,var(--blue) 55%,var(--purple) 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+#page-cse .inv-hero-lbl i{width:6px;height:6px;border-radius:50%;background:#d4af37;box-shadow:0 0 8px #d4af37;animation:invPulse 2.6s ease-in-out infinite;}
+#page-cse .inv-hero-amt{font:800 clamp(28px,3.6vw,42px)/1.08 'Bodoni Moda',Didot,serif;letter-spacing:-.5px;margin:10px 0 12px;
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+  background:linear-gradient(180deg,#fff2c4 0%,#d4af37 45%,#8f6a1c 62%,#f3dca0 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 2px 10px rgba(212,175,55,.18));}
 #page-cse .inv-deltas{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
-#page-cse .inv-delta{font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums;}
-#page-cse .inv-delta.up{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);color:#00ff88;}
-#page-cse .inv-delta.dn{background:rgba(255,77,141,.1);border:1px solid rgba(255,77,141,.25);color:var(--red2);}
-#page-cse .inv-delta.fl{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.45);}
-#page-cse .inv-hero-note{font-size:10px;color:rgba(255,255,255,.3);margin-top:8px;}
-#page-cse .inv-ribbon{display:flex;gap:2px;height:10px;margin:10px 0 12px;}
-#page-cse .inv-ribbon span{height:10px;border-radius:2px;min-width:2px;transition:filter .2s;}
-#page-cse .inv-ribbon span:first-child{border-radius:6px 2px 2px 6px;}
-#page-cse .inv-ribbon span:last-child{border-radius:2px 6px 6px 2px;}
-#page-cse .inv-ribbon span:only-child{border-radius:6px;}
-#page-cse .inv-ribbon span:hover{filter:brightness(1.25);}
-#page-cse .inv-assets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
-#page-cse .inv-asset{text-align:left;font-family:'Inter',sans-serif;cursor:pointer;border-radius:13px;padding:13px 14px;min-height:84px;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:2px;
-  transition:all .2s;min-width:0;color:#fff;}
-#page-cse .inv-asset:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16);transform:translateY(-1px);}
-#page-cse .inv-asset.active{border-color:rgba(0,212,255,.35);background:rgba(0,212,255,.07);}
-#page-cse .inv-asset-t{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:700;letter-spacing:1.5px;
-  text-transform:uppercase;color:rgba(255,255,255,.4);}
-#page-cse .inv-asset-t i{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
-#page-cse .inv-asset-v{font-size:17px;font-weight:800;letter-spacing:-.4px;font-variant-numeric:tabular-nums;}
-#page-cse .inv-asset-r{font-size:10px;font-variant-numeric:tabular-nums;color:rgba(255,255,255,.4);}
+#page-cse .inv-delta{font:700 11px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:7px;white-space:nowrap;font-variant-numeric:tabular-nums;}
+#page-cse .inv-delta.up{background:rgba(159,227,196,.07);border:1px solid rgba(159,227,196,.28);color:#9fe3c4;}
+#page-cse .inv-delta.dn{background:rgba(255,143,174,.07);border:1px solid rgba(255,143,174,.28);color:#ff8fae;}
+#page-cse .inv-delta.fl{background:rgba(236,232,222,.04);border:1px solid rgba(236,232,222,.12);color:rgba(236,232,222,.5);}
+#page-cse .inv-ribbon{display:flex;gap:2px;height:4px;margin:16px 0 8px;}
+#page-cse .inv-ribbon span{height:4px;border-radius:2px;min-width:2px;}
+#page-cse .inv-rlegend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:10px;color:rgba(236,232,222,.5);}
+#page-cse .inv-rlegend i{display:inline-block;width:8px;height:3px;border-radius:2px;margin-right:5px;vertical-align:2px;}
+#page-cse .inv-hero-note{font-size:10px;color:rgba(236,232,222,.32);margin-top:10px;}
+
+#page-cse .inv-deck{position:relative;height:var(--dh,210px);perspective:1000px;touch-action:pan-y;}
+#page-cse .inv-mc{position:absolute;left:50%;top:50%;width:var(--cw,240px);height:var(--ch,151px);
+  margin:calc(var(--ch,151px) / -2) 0 0 calc(var(--cw,240px) / -2);cursor:pointer;border:0;padding:0;background:none;
+  transition:transform .6s cubic-bezier(.2,.8,.2,1),opacity .45s ease,filter .45s ease;-webkit-tap-highlight-color:transparent;}
+#page-cse .inv-mc:focus-visible{outline:none;}
+#page-cse .inv-mc:focus-visible .inv-mc-in{box-shadow:0 0 0 2px #d4af37,0 18px 36px rgba(0,0,0,.6);}
+#page-cse .inv-mc-in{position:relative;width:100%;height:100%;border-radius:calc(var(--cw,240px) * .05);overflow:hidden;
+  transform:rotateX(var(--tx,0deg)) rotateY(var(--ty,0deg));transition:transform .25s ease-out,box-shadow .4s;
+  box-shadow:0 14px 30px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.05);}
+#page-cse .inv-mc.on .inv-mc-in{box-shadow:0 24px 46px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.08),0 0 34px -8px var(--mc,#d4af37);}
+#page-cse .inv-mc-in svg{display:block;width:100%;height:100%;}
+/* light that follows the pointer */
+#page-cse .inv-mc-in::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(60% 80% at var(--mx,50%) var(--my,0%),rgba(255,255,255,.16),transparent 60%);}
+#page-cse .inv-mc.on .inv-mc-in::before{opacity:1;}
+/* the sheen — a band of light that crosses the raised card */
+#page-cse .inv-mc-in::after{content:'';position:absolute;top:-20%;bottom:-20%;left:0;width:45%;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.22) 50%,transparent);transform:translateX(-160%) skewX(-12deg);}
+#page-cse .inv-mc.on .inv-mc-in::after{animation:invSheen 3.6s ease-in-out .15s infinite;}
+@keyframes invPulse{0%,100%{opacity:1}50%{opacity:.45}}
+@keyframes invSheen{0%{transform:translateX(-160%) skewX(-12deg)}45%,100%{transform:translateX(330%) skewX(-12deg)}}
+#page-cse .inv-deck-init .inv-mc{transition:none;}
+#page-cse .inv-deck-hint{position:absolute;right:2px;bottom:-2px;font:600 9px 'JetBrains Mono',monospace;letter-spacing:1px;color:rgba(236,232,222,.28);pointer-events:none;}
 
 /* ── chart boxes ── */
 #page-cse .inv-chart{position:relative;flex:1 1 auto;min-height:300px;height:300px;}
@@ -350,8 +369,9 @@
 }
 @media(max-width:680px){
   #page-cse .inv-wrap{padding:14px;padding-bottom:110px;}
-  #page-cse .inv-hero{padding:16px;}
-  #page-cse .inv-assets{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #page-cse .inv-hero{padding:18px 16px 16px;gap:16px;}
+  #page-cse .inv-hero-amt{font-size:30px;}
+  #page-cse .inv-deck-hint{display:none;}
   #page-cse .inv-kpis.k3,#page-cse .inv-kpis.k6{grid-template-columns:repeat(2,minmax(0,1fr));}
   #page-cse .inv-hide-sm{display:none;}
   #page-cse .inv-upd{display:none;}
@@ -371,6 +391,7 @@
   #page-cse .inv-fdr{grid-template-columns:62px minmax(0,1fr) auto;}
 }
 @media(prefers-reduced-motion:reduce){
+  #page-cse .inv-mc,#page-cse .inv-mc-in{transition:none;}
   #page-cse *,.inv-modal *{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;}
 }
 </style>
@@ -611,7 +632,7 @@ function invTab(k){
     b.classList.toggle('active', on); b.setAttribute('aria-selected', on);
   });
   INV_TABS.forEach(function(t){ document.getElementById('invP-' + t.k).hidden = t.k !== k; });
-  document.querySelectorAll('#invHero .inv-asset').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-go') === k); });
+  invDeckApply();
 
   if(k === 'div'  && _divState  === 'idle') invLoadDiv();
   if(k === 'perf' && _perfState === 'idle') invLoadPerf();
@@ -662,7 +683,9 @@ function cseStartLoad(){
 
   INV_TABS.forEach(function(t){ document.getElementById('invP-' + t.k).innerHTML = ''; });
   document.getElementById('invP-stk').innerHTML = invLoader('Reading your stocks…', 'invStkProg');
+  _invDeckPin = 0; _invDeckHover = -1;   /* a reload brings Total back to the front */
   invRenderHero();
+  invDeckApply();
   invTab(_invTab);
 
   var gen = _invGen;
@@ -812,6 +835,82 @@ function invUtTotals(){
 /* ═══════════════════════════════════════════
    ③ SUMMARY BAND
 ═══════════════════════════════════════════ */
+/* one metal per card: gradient stops for the rim and the value, and the
+   engraving colour used for the artwork */
+var INV_METALS = {
+  tot:{ c:'#d4af37', s:['#7a5a14','#f5d77a','#b8862b','#fbe7a1','#8f6a1c'] },
+  stk:{ c:'#c4ccd8', s:['#6b7380','#eef1f5','#a4adba','#f7f9fb','#7b8390'] },
+  gld:{ c:'#d4af37', s:['#7a5a14','#f5d77a','#b8862b','#fbe7a1','#8f6a1c'] },
+  fd: { c:'#c49a6c', s:['#5e3b1e','#e0b58a','#9a6a3e','#f0c9a0','#6d4526'] },
+  ut: { c:'#8fbfa8', s:['#2f5a48','#bfe6d2','#5f9a80','#d8f0e3','#3d6b57'] }
+};
+var _invDeck = [];          /* cards currently in the deck, in row order */
+var _invDeckHover = -1;     /* card under the pointer, -1 = none */
+var _invDeckPin   = 0;      /* card raised when nothing is hovered — Total by default */
+var _invDeckRO = null;
+
+/* card face — 340×214 artboard, black metal with engraved line-work */
+function invCardFace(c, n){
+  var M = INV_METALS[c.k], id = 'invmc' + n, ink = M.c, L = 'stroke="' + ink + '" fill="none"';
+  var s = '<svg viewBox="0 0 340 214" aria-hidden="true"><defs><linearGradient id="' + id + 'm" x1="0" y1="0" x2="1" y2="1">' +
+      M.s.map(function(x, i){ return '<stop offset="' + (i / 4) + '" stop-color="' + x + '"/>'; }).join('') + '</linearGradient>' +
+      '<pattern id="' + id + 'b" width="3" height="3" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="3" y2="0" stroke="rgba(255,255,255,.035)"/></pattern></defs>' +
+    '<rect width="340" height="214" rx="16" fill="#111215"/><rect width="340" height="214" rx="16" fill="url(#' + id + 'b)"/>';
+  for(var k = 0; k < 26; k++) s += '<path d="M0 ' + (120 + k * 3) + ' C90 ' + (80 + k * 4) + ' 220 ' + (170 - k * 2) + ' 340 ' + (110 + k * 3) + '" fill="none" stroke="' + ink + '" stroke-opacity=".09"/>';
+  s += '<rect x="1" y="1" width="338" height="212" rx="15" fill="none" stroke="url(#' + id + 'm)" stroke-width="1.6"/>';
+
+  if(c.k === 'tot'){
+    for(var q = 0; q < 3; q++){
+      var R = 60 - q * 14, rr = R * 13 / 120, dd = R * 44 / 120, d = '';
+      for(var t = 0; t <= Math.PI * 26; t += .06){
+        var X = 252 + ((R - rr) * Math.cos(t) + dd * Math.cos((R - rr) / rr * t)) * .55, Y = 92 + ((R - rr) * Math.sin(t) - dd * Math.sin((R - rr) / rr * t)) * .55;
+        d += (t ? 'L' : 'M') + X.toFixed(1) + ',' + Y.toFixed(1);
+      }
+      s += '<path d="' + d + '" ' + L + ' stroke-opacity="' + (.5 - q * .12) + '" stroke-width=".6"/>';
+    }
+    s += '<text x="252" y="99" text-anchor="middle" font-family="Bodoni Moda,Didot,serif" font-size="20" font-weight="800" fill="' + ink + '">PTS</text>';
+  }
+  if(c.k === 'stk'){
+    var p = 60;
+    for(var k2 = 0; k2 < 12; k2++){
+      var o = p, cl = p + Math.sin(k2 * 1.6) * 8 + 2.6, hi = Math.max(o, cl) + 5, lo = Math.min(o, cl) - 5, x = 196 + k2 * 11;
+      var sc = function(v){ return 156 - (v - 40) * 1.4; };
+      s += '<line x1="' + x + '" y1="' + sc(hi) + '" x2="' + x + '" y2="' + sc(lo) + '" ' + L + ' stroke-opacity=".7"/>' +
+           '<rect x="' + (x - 3) + '" y="' + sc(Math.max(o, cl)) + '" width="6" height="' + Math.max(2, Math.abs(sc(o) - sc(cl))) + '" ' + (cl >= o ? 'fill="' + ink + '"' : L) + '/>';
+      p = cl;
+    }
+    s += '<path d="M192 146 L232 114 L262 124 L318 62" ' + L + ' stroke-width="1.6" stroke-dasharray="3 3"/><path d="M308 60 L320 60 L320 72" ' + L + ' stroke-width="1.6"/>';
+  }
+  if(c.k === 'gld'){
+    s += '<path d="M206 136 L222 92 L300 92 L316 136 Z" fill="url(#' + id + 'm)" stroke="' + ink + '"/><path d="M222 92 L230 80 L292 80 L300 92 Z" fill="#fbe7a1" stroke="' + ink + '"/>' +
+      '<text x="261" y="114" text-anchor="middle" font-size="9" font-weight="800" letter-spacing="1.5" fill="#5a420c">FINE GOLD</text><text x="261" y="127" text-anchor="middle" font-size="8" fill="#5a420c">999.9</text>' +
+      '<circle cx="216" cy="50" r="11" ' + L + '/><circle cx="244" cy="50" r="11" ' + L + '/><text x="216" y="53" text-anchor="middle" font-size="7" font-weight="700" fill="' + ink + '">24K</text><text x="244" y="53" text-anchor="middle" font-size="7" font-weight="700" fill="' + ink + '">AU</text>';
+  }
+  if(c.k === 'fd'){
+    s += '<circle cx="258" cy="94" r="50" ' + L + ' stroke-width="1.2"/><circle cx="258" cy="94" r="38" ' + L + ' stroke-opacity=".6"/>';
+    for(var k3 = 0; k3 < 48; k3++){ var an = k3 * 7.5 * Math.PI / 180, l = k3 % 4 ? 3 : 7;
+      s += '<line x1="' + (258 + 50 * Math.cos(an)) + '" y1="' + (94 + 50 * Math.sin(an)) + '" x2="' + (258 + (50 - l) * Math.cos(an)) + '" y2="' + (94 + (50 - l) * Math.sin(an)) + '" ' + L + '/>'; }
+    for(var k4 = 0; k4 < 3; k4++){ var a4 = k4 * 120 * Math.PI / 180 + .4;
+      s += '<line x1="258" y1="94" x2="' + (258 + 32 * Math.cos(a4)) + '" y2="' + (94 + 32 * Math.sin(a4)) + '" ' + L + ' stroke-width="3" stroke-linecap="round"/><circle cx="' + (258 + 32 * Math.cos(a4)) + '" cy="' + (94 + 32 * Math.sin(a4)) + '" r="4" fill="' + ink + '"/>'; }
+    s += '<circle cx="258" cy="94" r="9" fill="' + ink + '"/>';
+  }
+  if(c.k === 'ut'){
+    [[48,.43],[36,.3],[24,.18]].forEach(function(r, i){ var C = 2 * Math.PI * r[0];
+      s += '<circle cx="258" cy="94" r="' + r[0] + '" ' + L + ' stroke-opacity=".2" stroke-width="7"/><circle cx="258" cy="94" r="' + r[0] + '" ' + L + ' stroke-width="7" stroke-linecap="round" stroke-dasharray="' + (C * (.35 + i * .18)).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 258 94)"/>'; });
+    s += '<path d="M196 172 L222 162 L246 166 L276 146 L320 134" ' + L + ' stroke-width="1.4"/>';
+  }
+
+  var chip = c.k === 'tot' || c.k === 'stk';
+  s += '<text x="22" y="34" font-size="10" font-weight="800" letter-spacing="2.4" fill="' + ink + '">' + invEsc(c.n.toUpperCase()) + '</text>' +
+       '<text x="22" y="50" font-size="9.5" fill="rgba(236,232,222,.55)">' + invEsc(c.sub) + '</text>';
+  if(chip) s += '<rect x="22" y="68" width="38" height="28" rx="5" fill="url(#' + id + 'm)"/><path d="M22 82 H60 M35 68 V96 M47 68 V96" stroke="rgba(0,0,0,.3)"/>';
+  s += '<text x="22" y="' + (chip ? 146 : 134) + '" font-family="Bodoni Moda,Didot,serif" font-size="' + (c.k === 'tot' ? 34 : 31) + '" font-weight="800" fill="url(#' + id + 'm)">' +
+         (c.ready ? invShort(c.val).replace('₨', 'Rs ') : '—') + '</text>' +
+       '<text x="22" y="' + (chip ? 170 : 158) + '" font-size="10.5" font-weight="600" fill="rgba(236,232,222,.6)">' + invEsc(c.line) + '</text>' +
+       '<text x="318" y="196" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9" fill="rgba(236,232,222,.45)">' + (c.k === 'tot' ? '•••• ' + String(Math.round((c.val || 0) / 1000)).slice(-4) : 'OPEN ›') + '</text>';
+  return s + '</svg>';
+}
+
 function invRenderHero(){
   var el = document.getElementById('invHero'); if(!el) return;
   var st = invStockTotals(), gt = invGoldTotals(), ut = invUtTotals();
@@ -819,10 +918,10 @@ function invRenderHero(){
   var stkReady = _stkState === 'done' || _stkState === 'sheet';
 
   var assets = [
-    { k:'stk', n:'Stocks',         col:INV_COL.stk, ready:stkReady,              val:st.val, inv:st.inv },
-    { k:'gld', n:'Gold',           col:INV_COL.gld, ready:!!gt,                  val:gt ? gt.val : 0, inv:gt ? gt.inv : 0 },
-    { k:'fd',  n:'Fixed Deposits', col:INV_COL.fd,  ready:_fdState === 'done',   val:fdPrin, inv:fdPrin, fd:true },
-    { k:'ut',  n:'Unit Trust',     col:INV_COL.ut,  ready:_utState === 'done',   val:ut.val, inv:ut.inv }
+    { k:'stk', n:'Stocks',         ready:stkReady,            val:st.val, inv:st.inv },
+    { k:'gld', n:'Gold',           ready:!!gt,                val:gt ? gt.val : 0, inv:gt ? gt.inv : 0 },
+    { k:'fd',  n:'Fixed Deposits', ready:_fdState === 'done', val:fdPrin, inv:fdPrin, fd:true },
+    { k:'ut',  n:'Unit Trust',     ready:_utState === 'done', val:ut.val, inv:ut.inv }
   ];
   var total = 0, gainInv = 0, gain = 0, pending = [];
   assets.forEach(function(a){
@@ -831,40 +930,149 @@ function invRenderHero(){
     if(!a.fd){ gain += a.val - a.inv; gainInv += a.inv; }
   });
   var roi = gainInv > 0 ? gain / gainInv * 100 : 0;
+  var share = function(a){ return total ? Math.round(a.val / total * 100) : 0; };
 
   var deltas = '<span class="inv-delta ' + invCls(gain) + '">' + invSigned(gain) + ' gain</span>' +
     '<span class="inv-delta ' + invCls(roi) + '">' + invPct(roi) + ' ROI</span>';
   if(st.hasDay) deltas += '<span class="inv-delta ' + invCls(st.day) + '">' + invSigned(st.day) + ' today</span>';
 
-  var ribbon = assets.filter(function(a){ return a.ready && a.val > 0; }).map(function(a){
-    return '<span title="' + a.n + ' · ' + (total ? (a.val / total * 100).toFixed(1) : 0) + '%" style="flex:' + a.val + ';background:' + a.col + '"></span>';
-  }).join('');
+  var live = assets.filter(function(a){ return a.ready && a.val > 0; });
+  var ribbon = live.map(function(a){
+    return '<span title="' + a.n + ' · ' + share(a) + '%" style="flex:' + a.val + ';background:' + INV_METALS[a.k].c + '"></span>'; }).join('');
+  var legend = live.map(function(a){
+    return '<span><i style="background:' + INV_METALS[a.k].c + '"></i>' + a.n + ' ' + share(a) + '%</span>'; }).join('');
 
-  var tiles = assets.map(function(a){
-    var sub;
-    if(!a.ready) sub = '<span class="inv-asset-r">loading…</span>';
-    else if(a.fd) sub = '<span class="inv-asset-r">' + fdAct.length + ' active · ' + (total ? Math.round(a.val / total * 100) : 0) + '%</span>';
-    else {
-      var p = a.inv > 0 ? (a.val - a.inv) / a.inv * 100 : 0;
-      sub = '<span class="inv-asset-r"><span class="' + invCls(p) + '">' + invPct(p) + '</span> · ' + (total ? Math.round(a.val / total * 100) : 0) + '%</span>';
+  /* the deck: total first, then the four assets */
+  _invDeck = [{ k:'tot', n:'Total invested', ready:true, val:total,
+                sub:live.length + ' asset class' + (live.length === 1 ? '' : 'es'),
+                line:invSigned(gain).replace('₨', 'Rs') + ' gain · ' + invPct(roi, 1) + ' ROI' }]
+    .concat(assets.map(function(a){
+      var line;
+      if(!a.ready) line = 'loading…';
+      else if(a.fd) line = fdAct.length + ' active · ' + share(a) + '% of book';
+      else { var p = a.inv > 0 ? (a.val - a.inv) / a.inv * 100 : 0; line = invPct(p, 1) + ' return · ' + share(a) + '% of book'; }
+      var sub = a.k === 'stk' ? 'CSE holdings' : a.k === 'gld' ? '24K bullion' : a.k === 'fd' ? 'Term deposits' : 'Managed funds';
+      return { k:a.k, n:a.n, ready:a.ready, val:a.val, sub:sub, line:line };
+    }));
+
+  /* build the shell once; every later data load only patches values,
+     so the cards never get recreated (that re-creation was the flicker) */
+  if(!document.getElementById('invDeck')){
+    el.innerHTML =
+      '<div>' +
+        '<div class="inv-hero-lbl"><i></i>Total invested value</div>' +
+        '<div class="inv-hero-amt" id="invHeroAmt"></div>' +
+        '<div class="inv-deltas" id="invHeroDeltas"></div>' +
+        '<div class="inv-ribbon" id="invHeroRibbon"></div>' +
+        '<div class="inv-rlegend" id="invHeroLegend"></div>' +
+        '<div class="inv-hero-note" id="invHeroNote"></div>' +
+      '</div>' +
+      '<div><div class="inv-deck inv-deck-init" id="invDeck" role="group" aria-label="Holdings">' +
+        _invDeck.map(function(c, i){
+          return '<button class="inv-mc" type="button" data-i="' + i + '" style="--mc:' + INV_METALS[c.k].c + '">' +
+            '<span class="inv-mc-in" style="display:block"></span></button>';
+        }).join('') +
+        '<span class="inv-deck-hint">POINT · TAP TO OPEN</span></div></div>';
+    invDeckBind();
+  }
+
+  invSet('invHeroAmt', invFmt(total));
+  invSet('invHeroDeltas', deltas);
+  invSet('invHeroRibbon', ribbon || '<span style="flex:1;background:rgba(255,255,255,.07)"></span>');
+  invSet('invHeroLegend', legend);
+  invSet('invHeroNote', pending.length ? 'Still loading: ' + pending.join(', ') : 'Gain and ROI cover stocks, gold and unit trusts');
+
+  var btns = document.querySelectorAll('#invDeck .inv-mc');
+  _invDeck.forEach(function(c, i){
+    var b = btns[i]; if(!b) return;
+    var face = invCardFace(c, i);
+    if(b._face !== face){ b._face = face; b.firstChild.innerHTML = face; }
+    b.classList.toggle('loading', !c.ready);
+    b.setAttribute('aria-label', c.n + (c.ready ? ' ' + invShort(c.val) : ', loading') + (c.k === 'tot' ? '' : ', open tab'));
+  });
+}
+
+/* write only when the markup actually changed — no needless repaints */
+function invSet(id, html){
+  var e = document.getElementById(id);
+  if(e && e._h !== html){ e._h = html; e.innerHTML = html; }
+}
+
+/* where every card sits: the row at rest, the raised card lifted and
+   its neighbours stepping aside */
+function invDeckApply(){
+  var deck = document.getElementById('invDeck'); if(!deck) return;
+  var cards = deck.querySelectorAll('.inv-mc'), n = cards.length; if(!n) return;
+  var W = deck.clientWidth || 300;
+  var narrow = W < 420;
+  var cw = Math.min(300, W * (narrow ? .7 : .5)), ch = cw / 1.586;
+  var step = Math.min(narrow ? 34 : 84, (W - cw - 16) / (n - 1));
+  deck.style.setProperty('--cw', cw.toFixed(1) + 'px');
+  deck.style.setProperty('--ch', ch.toFixed(1) + 'px');
+  deck.style.setProperty('--dh', (ch + (narrow ? 40 : 46)).toFixed(0) + 'px');
+
+  var a = _invDeckHover >= 0 ? _invDeckHover : _invDeckPin;
+  var push = Math.min(30, step * .7);
+
+  for(var i = 0; i < n; i++){
+    var x = (i - (n - 1) / 2) * step, y = 6, sc = 1, op = 1, br = 1, z = i;
+    if(a >= 0){
+      if(i === a){ y = -14; sc = 1.07; z = 60; }
+      else { x += (i < a ? -push : push); y = 12; sc = .94; op = .62; br = .62; z = i < a ? i : 40 - i; }
     }
-    return '<button class="inv-asset' + (a.k === _invTab ? ' active' : '') + '" type="button" data-go="' + a.k + '" onclick="invTab(\'' + a.k + '\')">' +
-      '<span class="inv-asset-t"><i style="background:' + a.col + '"></i>' + a.n + '</span>' +
-      '<span class="inv-asset-v">' + (a.ready ? invShort(a.val) : '—') + '</span>' + sub + '</button>';
-  }).join('');
+    var c = cards[i];
+    c.style.transform = 'translate3d(' + x.toFixed(1) + 'px,' + y + 'px,0) scale(' + sc + ')';
+    c.style.zIndex = z; c.style.opacity = op; c.style.filter = br < 1 ? 'brightness(' + br + ')' : 'none';
+    c.classList.toggle('on', i === a);
+    if(i !== a){ c.style.removeProperty('--tx'); c.style.removeProperty('--ty'); }
+  }
+}
 
-  el.innerHTML =
-    '<div>' +
-      '<div class="inv-hero-lbl">Total invested value</div>' +
-      '<div class="inv-hero-amt">' + invFmt(total) + '</div>' +
-      '<div class="inv-deltas">' + deltas + '</div>' +
-      '<div class="inv-hero-note">' + (pending.length ? 'Still loading: ' + pending.join(', ') : 'Gain and ROI cover stocks, gold and unit trusts') + '</div>' +
-    '</div>' +
-    '<div>' +
-      '<div class="inv-hero-lbl">Allocation</div>' +
-      '<div class="inv-ribbon">' + (ribbon || '<span style="flex:1;background:rgba(255,255,255,.07)"></span>') + '</div>' +
-      '<div class="inv-assets">' + tiles + '</div>' +
-    '</div>';
+function invDeckBind(){
+  var deck = document.getElementById('invDeck'); if(!deck) return;
+  _invDeckHover = -1;
+  invDeckApply();
+  /* first placement lands without animating; transitions switch on next frame */
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ deck.classList.remove('inv-deck-init'); }); });
+  var fine = window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+  var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  deck.addEventListener('pointerover', function(e){
+    if(e.pointerType === 'touch') return;
+    var c = e.target.closest('.inv-mc'); if(!c) return;
+    var i = +c.dataset.i; if(i !== _invDeckHover){ _invDeckHover = i; invDeckApply(); }
+  });
+  deck.addEventListener('pointerleave', function(e){
+    if(e.pointerType === 'touch') return;
+    _invDeckHover = -1; invDeckApply();
+  });
+  /* tilt + light on the raised card, mouse only */
+  if(fine && !calm){
+    deck.addEventListener('pointermove', function(e){
+      var c = e.target.closest('.inv-mc.on'); if(!c) return;
+      var r = c.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      c.style.setProperty('--ty', ((px - .5) * 14).toFixed(1) + 'deg');
+      c.style.setProperty('--tx', ((.5 - py) * 10).toFixed(1) + 'deg');
+      c.style.setProperty('--mx', (px * 100).toFixed(0) + '%');
+      c.style.setProperty('--my', (py * 100).toFixed(0) + '%');
+    });
+  }
+  /* click/tap raises that card and keeps it up; asset cards also open their tab */
+  deck.addEventListener('click', function(e){
+    var c = e.target.closest('.inv-mc'); if(!c) return;
+    var i = +c.dataset.i, card = _invDeck[i];
+    invHaptic('select');
+    _invDeckPin = i;
+    _invDeckHover = fine ? i : -1;
+    if(card && card.k !== 'tot') invTab(card.k);
+    invDeckApply();
+  });
+
+  if(!_invDeckRO && window.ResizeObserver){
+    var t = null;
+    _invDeckRO = new ResizeObserver(function(){ clearTimeout(t); t = setTimeout(invDeckApply, 60); });
+    _invDeckRO.observe(document.getElementById('invHero'));
+  }
 }
 
 /* ═══════════════════════════════════════════
