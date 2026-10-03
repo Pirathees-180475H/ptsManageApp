@@ -182,11 +182,11 @@
 #page-cse .inv-hero > div{position:relative;z-index:1;min-width:0;}
 #page-cse .inv-hero-lbl{font-size:9.5px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:rgba(236,232,222,.45);
   display:flex;align-items:center;gap:8px;}
-#page-cse .inv-hero-lbl i{width:6px;height:6px;border-radius:50%;background:#d4af37;box-shadow:0 0 8px #d4af37;animation:invPulse 2.6s ease-in-out infinite;}
-#page-cse .inv-hero-amt{font:800 clamp(28px,3.6vw,42px)/1.08 'Bodoni Moda',Didot,serif;letter-spacing:-.5px;margin:10px 0 12px;
+#page-cse .inv-hero-lbl i{width:6px;height:6px;border-radius:50%;background:#e6e9ef;box-shadow:0 0 8px #e6e9ef;animation:invPulse 2.6s ease-in-out infinite;}
+#page-cse .inv-hero-amt{font:700 clamp(24px,3vw,36px)/1.15 'JetBrains Mono',ui-monospace,Menlo,monospace;letter-spacing:-1.2px;margin:10px 0 12px;
   font-variant-numeric:tabular-nums;white-space:nowrap;
-  background:linear-gradient(180deg,#fff2c4 0%,#d4af37 45%,#8f6a1c 62%,#f3dca0 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 2px 10px rgba(212,175,55,.18));}
+  background:linear-gradient(180deg,#ffffff 0%,#d9dde4 40%,#8a919c 60%,#eef0f4 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 2px 10px rgba(230,233,239,.14));}
 #page-cse .inv-deltas{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 #page-cse .inv-delta{font:700 11px 'JetBrains Mono',monospace;padding:4px 10px;border-radius:7px;white-space:nowrap;font-variant-numeric:tabular-nums;}
 #page-cse .inv-delta.up{background:rgba(159,227,196,.07);border:1px solid rgba(159,227,196,.28);color:#9fe3c4;}
@@ -370,7 +370,7 @@
 @media(max-width:680px){
   #page-cse .inv-wrap{padding:14px;padding-bottom:110px;}
   #page-cse .inv-hero{padding:18px 16px 16px;gap:16px;}
-  #page-cse .inv-hero-amt{font-size:30px;}
+  #page-cse .inv-hero-amt{font-size:27px;}
   #page-cse .inv-deck-hint{display:none;}
   #page-cse .inv-kpis.k3,#page-cse .inv-kpis.k6{grid-template-columns:repeat(2,minmax(0,1fr));}
   #page-cse .inv-hide-sm{display:none;}
@@ -835,28 +835,35 @@ function invUtTotals(){
 /* ═══════════════════════════════════════════
    ③ SUMMARY BAND
 ═══════════════════════════════════════════ */
-/* one metal per card: gradient stops for the rim and the value, and the
-   engraving colour used for the artwork */
+/* jewel tones — the total is solid polished silver, each asset its own gem
+   (sapphire, citrine, amethyst, emerald): bg = card body, c = engraving ink,
+   s = foil stops for rim and value, tx = small text, glow = halo when raised */
 var INV_METALS = {
-  tot:{ c:'#d4af37', s:['#7a5a14','#f5d77a','#b8862b','#fbe7a1','#8f6a1c'] },
-  stk:{ c:'#c4ccd8', s:['#6b7380','#eef1f5','#a4adba','#f7f9fb','#7b8390'] },
-  gld:{ c:'#d4af37', s:['#7a5a14','#f5d77a','#b8862b','#fbe7a1','#8f6a1c'] },
-  fd: { c:'#c49a6c', s:['#5e3b1e','#e0b58a','#9a6a3e','#f0c9a0','#6d4526'] },
-  ut: { c:'#8fbfa8', s:['#2f5a48','#bfe6d2','#5f9a80','#d8f0e3','#3d6b57'] }
+  tot:{ c:'#2a2f38', bg:['#f4f5f8','#9aa1ac'], s:['#3a3f48','#5d636d','#1d2128','#4a505a','#2a2f38'], tx:'rgba(20,23,28,.72)', glow:'#e6e9ef', metal:true },
+  stk:{ c:'#bcd2f5', bg:['#123a7a','#071a3d'], s:['#5d636d','#f4f5f8','#b9bec8','#ffffff','#80868f'] },
+  gld:{ c:'#ffe08a', bg:['#8a6410','#3d2a05'], s:['#7a5a14','#f5d77a','#b8862b','#fbe7a1','#8f6a1c'] },
+  fd: { c:'#e3c8ff', bg:['#4b1f73','#200a36'], s:['#5d636d','#f4f5f8','#b9bec8','#ffffff','#80868f'] },
+  ut: { c:'#b8f0d4', bg:['#0f5a3e','#05261a'], s:['#5d636d','#f4f5f8','#b9bec8','#ffffff','#80868f'] }
 };
+function invMcGlow(k){ return INV_METALS[k].glow || INV_METALS[k].c; }
 var _invDeck = [];          /* cards currently in the deck, in row order */
 var _invDeckHover = -1;     /* card under the pointer, -1 = none */
 var _invDeckPin   = 0;      /* card raised when nothing is hovered — Total by default */
 var _invDeckRO = null;
 
-/* card face — 340×214 artboard, black metal with engraved line-work */
+/* card face — 340×214 artboard, jewel-toned body, foil rim and engraved artwork */
 function invCardFace(c, n){
-  var M = INV_METALS[c.k], id = 'invmc' + n, ink = M.c, L = 'stroke="' + ink + '" fill="none"';
+  var M = INV_METALS[c.k], id = 'invmc' + n, ink = M.c, tx = M.tx || 'rgba(255,255,255,.66)', L = 'stroke="' + ink + '" fill="none"';
   var s = '<svg viewBox="0 0 340 214" aria-hidden="true"><defs><linearGradient id="' + id + 'm" x1="0" y1="0" x2="1" y2="1">' +
       M.s.map(function(x, i){ return '<stop offset="' + (i / 4) + '" stop-color="' + x + '"/>'; }).join('') + '</linearGradient>' +
-      '<pattern id="' + id + 'b" width="3" height="3" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="3" y2="0" stroke="rgba(255,255,255,.035)"/></pattern></defs>' +
-    '<rect width="340" height="214" rx="16" fill="#111215"/><rect width="340" height="214" rx="16" fill="url(#' + id + 'b)"/>';
-  for(var k = 0; k < 26; k++) s += '<path d="M0 ' + (120 + k * 3) + ' C90 ' + (80 + k * 4) + ' 220 ' + (170 - k * 2) + ' 340 ' + (110 + k * 3) + '" fill="none" stroke="' + ink + '" stroke-opacity=".09"/>';
+      '<pattern id="' + id + 'b" width="3" height="3" patternUnits="userSpaceOnUse"><line x1="0" y1="0" x2="3" y2="0" stroke="' + (M.metal ? 'rgba(0,0,0,.06)' : 'rgba(255,255,255,.035)') + '"/></pattern>' +
+      '<linearGradient id="' + id + 'g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="' + M.bg[0] + '"/><stop offset="1" stop-color="' + M.bg[1] + '"/></linearGradient></defs>' +
+    '<rect width="340" height="214" rx="16" fill="url(#' + id + 'g)"/><rect width="340" height="214" rx="16" fill="url(#' + id + 'b)"/>' +
+    (M.metal
+      /* polished silver: fine grain and a soft diagonal light */
+      ? '<rect width="340" height="214" fill="url(#' + id + 'b)" opacity=".9"/><path d="M-40 214 C80 70 200 150 380 0 L380 70 C200 200 80 130 -40 270 Z" fill="rgba(255,255,255,.35)"/>'
+      /* cut-gem facets */
+      : '<path d="M0 0 L170 107 L340 0 Z" fill="rgba(255,255,255,.06)"/><path d="M0 214 L170 107 L340 214 Z" fill="rgba(0,0,0,.15)"/><path d="M340 0 L170 107 L340 214 Z" fill="rgba(255,255,255,.03)"/>');
   s += '<rect x="1" y="1" width="338" height="212" rx="15" fill="none" stroke="url(#' + id + 'm)" stroke-width="1.6"/>';
 
   if(c.k === 'tot'){
@@ -868,7 +875,7 @@ function invCardFace(c, n){
       }
       s += '<path d="' + d + '" ' + L + ' stroke-opacity="' + (.5 - q * .12) + '" stroke-width=".6"/>';
     }
-    s += '<text x="252" y="99" text-anchor="middle" font-family="Bodoni Moda,Didot,serif" font-size="20" font-weight="800" fill="' + ink + '">PTS</text>';
+    s += '<text x="252" y="99" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="16" font-weight="700" fill="' + ink + '">PTS</text>';
   }
   if(c.k === 'stk'){
     var p = 60;
@@ -902,12 +909,12 @@ function invCardFace(c, n){
 
   var chip = c.k === 'tot' || c.k === 'stk';
   s += '<text x="22" y="34" font-size="10" font-weight="800" letter-spacing="2.4" fill="' + ink + '">' + invEsc(c.n.toUpperCase()) + '</text>' +
-       '<text x="22" y="50" font-size="9.5" fill="rgba(236,232,222,.55)">' + invEsc(c.sub) + '</text>';
-  if(chip) s += '<rect x="22" y="68" width="38" height="28" rx="5" fill="url(#' + id + 'm)"/><path d="M22 82 H60 M35 68 V96 M47 68 V96" stroke="rgba(0,0,0,.3)"/>';
-  s += '<text x="22" y="' + (chip ? 146 : 134) + '" font-family="Bodoni Moda,Didot,serif" font-size="' + (c.k === 'tot' ? 34 : 31) + '" font-weight="800" fill="url(#' + id + 'm)">' +
+       '<text x="22" y="50" font-size="9.5" fill="' + tx + '">' + invEsc(c.sub) + '</text>';
+  if(chip) s += '<rect x="22" y="68" width="38" height="28" rx="5" fill="' + (M.metal ? '#e8eaee' : 'url(#' + id + 'm)') + '" stroke="rgba(0,0,0,.25)"/><path d="M22 82 H60 M35 68 V96 M47 68 V96" stroke="rgba(0,0,0,.3)"/>';
+  s += '<text x="22" y="' + (chip ? 146 : 134) + '" font-family="JetBrains Mono,monospace" font-size="' + (c.k === 'tot' ? 30 : 27) + '" font-weight="700" letter-spacing="-1" fill="url(#' + id + 'm)">' +
          (c.ready ? invShort(c.val).replace('₨', 'Rs ') : '—') + '</text>' +
-       '<text x="22" y="' + (chip ? 170 : 158) + '" font-size="10.5" font-weight="600" fill="rgba(236,232,222,.6)">' + invEsc(c.line) + '</text>' +
-       '<text x="318" y="196" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9" fill="rgba(236,232,222,.45)">' + (c.k === 'tot' ? '•••• ' + String(Math.round((c.val || 0) / 1000)).slice(-4) : 'OPEN ›') + '</text>';
+       '<text x="22" y="' + (chip ? 170 : 158) + '" font-family="JetBrains Mono,monospace" font-size="9.5" font-weight="500" fill="' + tx + '">' + invEsc(c.line) + '</text>' +
+       '<text x="318" y="196" text-anchor="end" font-family="JetBrains Mono,monospace" font-size="9" fill="' + tx + '" fill-opacity=".7">' + (c.k === 'tot' ? '•••• ' + String(Math.round((c.val || 0) / 1000)).slice(-4) : 'OPEN ›') + '</text>';
   return s + '</svg>';
 }
 
@@ -969,7 +976,7 @@ function invRenderHero(){
       '</div>' +
       '<div><div class="inv-deck inv-deck-init" id="invDeck" role="group" aria-label="Holdings">' +
         _invDeck.map(function(c, i){
-          return '<button class="inv-mc" type="button" data-i="' + i + '" style="--mc:' + INV_METALS[c.k].c + '">' +
+          return '<button class="inv-mc" type="button" data-i="' + i + '" style="--mc:' + invMcGlow(c.k) + '">' +
             '<span class="inv-mc-in" style="display:block"></span></button>';
         }).join('') +
         '<span class="inv-deck-hint">POINT · TAP TO OPEN</span></div></div>';
