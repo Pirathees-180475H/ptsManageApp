@@ -814,7 +814,10 @@ function ccWalletHTML(data){
   return '<div class="cd-wrap">'+
       '<div class="cd-deck" id="cd-deck">'+deckHTML+'</div>'+
       '<div class="cd-bar"><div class="cd-dots" id="cd-dots">'+dotsHTML+'</div>'+
-        '<button class="cd-fan-btn" id="cd-fan-btn" type="button">⤢ Fan</button></div>'+
+        '<div class="cd-views" id="cd-views" role="group" aria-label="Card layout">'+
+          '<button type="button" data-v="iso">◇ Pile</button>'+
+          '<button type="button" data-v="fan">⤢ Fan</button>'+
+          '<button type="button" data-v="stack">▤ Stack</button></div></div>'+
       '<div class="cd-details" id="cd-details">'+sheets+'</div>'+
     '</div>'+
     '<div class="cc-kpis" id="ccKpis">'+ccKpiHTML(data)+'</div>';
@@ -828,30 +831,45 @@ function ccHexA(c,a){
   return 'rgba('+parseInt(h.slice(0,2),16)+','+parseInt(h.slice(2,4),16)+','+parseInt(h.slice(4,6),16)+','+a+')';
 }
 
-/* the physical card face — exactly the markup cardDeck.html expects */
+/* the brand colour as a bright-to-deep gradient: full colour at the
+   lit corner, falling to a deep shade, so cards read glossy and rich */
+function ccShade(c,k){
+  var h=String(c).replace('#','');
+  if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  return 'rgb('+[0,2,4].map(function(o){ return Math.round(parseInt(h.slice(o,o+2),16)*k); }).join(',')+')';
+}
+function ccDeepBg(c){ return 'linear-gradient(135deg,'+ccShade(c,.95)+' 0%,'+ccShade(c,.62)+' 48%,'+ccShade(c,.3)+' 100%)'; }
+
+/* the physical card face — exactly the markup cardDeck.html expects.
+   Bank and due sit on the top edge, so a Stack still shows them on
+   every card; figures are in JetBrains Mono. */
 function ccFaceHTML(row,i){
   var b=ccBrandCfg(row[0]), st=ccSettled(row), watch=ccIsWatch(row);
   var d=ccDaysUntilDue(row[5]), t=ccFmtDate(row[5]);
   var dueTxt = d===null ? t : (d<0 ? t+' · '+Math.abs(d)+'d ago' : d===0 ? t+' · today' : t+' · '+d+'d');
   return '<div class="cd-card'+(watch?' cd-warn':'')+'" data-i="'+i+'"'+
            ' data-brand="'+b.color+'" data-soft="'+ccHexA(b.color,.4)+'"'+
-           ' style="--brand-bg:'+b.bg+';--brand-soft:'+ccHexA(b.color,.4)+';--brand-glow:'+ccHexA(b.color,.32)+'">'+
+           ' style="--brand-bg:'+ccDeepBg(b.color)+';--brand-soft:'+ccHexA(b.color,.4)+';--brand-glow:'+ccHexA(b.color,.32)+'">'+
     '<div class="cd-face">'+
       '<div class="cd-guilloche"></div>'+
       '<div class="cd-sheen"></div>'+
       '<div class="cd-body">'+
         '<div class="cd-row1">'+
-          '<div class="cd-chip"></div>'+
-          '<div class="cd-pip '+(st?'settled':'pending')+'"><i></i>'+(st?'Settled':'Pending')+'</div>'+
+          '<div class="cd-brand">'+esc(b.label)+'</div>'+
+          '<div class="cd-top-due cd-mono'+(st?' paid':'')+'">'+(st?'✓ ':'')+ccFmtS(row[1])+'</div>'+
         '</div>'+
+        '<div class="cd-row2"><div class="cd-chip"></div>'+
+          '<svg class="cd-nfc" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true">'+
+            '<path d="M8.5 8.5a5 5 0 0 1 0 7"/><path d="M12 6a8.5 8.5 0 0 1 0 12"/><path d="M15.5 3.5a12 12 0 0 1 0 17"/></svg></div>'+
         '<div class="cd-mid">'+
-          '<div class="cd-due-lbl">Total Due</div>'+
-          '<div class="cd-due">'+ccFmt(row[1])+'</div>'+
-          '<div class="cd-avail">Available <b>'+ccFmt(row[8])+'</b></div>'+
+          '<div class="cd-due-lbl">Total due'+
+            '<span class="cd-pip '+(st?'settled':'pending')+'"><i></i>'+(st?'Settled':'Pending')+'</span></div>'+
+          '<div class="cd-due cd-mono">'+ccFmtS(row[1])+'</div>'+
+          '<div class="cd-avail cd-mono">AVAILABLE<b>'+ccFmtS(row[8])+'</b></div>'+
         '</div>'+
         '<div class="cd-row3">'+
-          '<div><div class="cd-brand">'+esc(b.label)+'</div><div class="cd-bank">'+esc(row[0])+'</div></div>'+
-          '<div class="cd-due-date"><div class="cd-dd-lbl">Due</div><div class="cd-dd-val">'+esc(dueTxt)+'</div></div>'+
+          '<div class="cd-bank">'+esc(row[0])+'</div>'+
+          '<div class="cd-due-date cd-mono">DUE '+esc(dueTxt)+'</div>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -965,6 +983,10 @@ function ccSetSettled(i,val){
   if(s) s.classList.toggle('on',val);
   var pip=document.querySelector('#cd-deck .cd-card[data-i="'+i+'"] .cd-pip');
   if(pip){ pip.className='cd-pip '+(val?'settled':'pending'); pip.innerHTML='<i></i>'+(val?'Settled':'Pending'); }
+  var td=document.querySelector('#cd-deck .cd-card[data-i="'+i+'"] .cd-top-due');
+  if(td){ td.classList.toggle('paid',val); td.textContent=(val?'✓ ':'')+ccFmtS(row[1]); }
+  var lb=document.querySelector('#cd-deck .cd-iso-lbl[data-i="'+i+'"] span');
+  if(lb){ lb.classList.toggle('paid',val); lb.textContent=(val?'✓ ':'')+ccFmtS(row[1]); }
 
   ccRefreshKpis(); ccRefreshSaveBtn();
   if(typeof toolWheelRefresh === 'function') toolWheelRefresh();

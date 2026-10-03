@@ -1,17 +1,18 @@
 <!-- ═══════════════════════════════════════════════════════════════
      CARD DECK  —  the credit cards, rendered as actual cards
      ───────────────────────────────────────────────────────────
-     Four real 1.586:1 card faces in their brand gradients, fanned
-     out like a hand of cards by default so every card is visible
-     at a glance.
+     Real 1.586:1 card faces in glossy brand gradients, laid in an
+     isometric pile by default with a leader label per card, so every
+     card's due reads at a glance.
 
-       • tap a card      → it comes to the front and its detail
-                           panel swaps in (the fan stays open)
-       • ▤ Stack / ⤢ Fan → switch between the fan and a Wallet-style
-                           stack
+       • tap a card      → it moves to the top of the pile / front of
+                           the stack and its detail panel swaps in
+       • Pile · Fan · Stack → isometric pile (default), a fanned hand,
+                           or a Wallet-style stack where each card's top
+                           edge shows its bank and due
        • drag sideways   → flick through the cards
        • hover (desktop) → parallax tilt + a holo sheen that
-                           tracks the cursor across the face
+                           tracks the cursor across the face (fan/stack)
 
      The detail panel beside the deck is the card sheet that
      cardAnalysis.html renders into each .cd-detail[data-i]. This file
@@ -19,7 +20,7 @@
        #cd-deck      holds one .cd-card[data-i][data-brand][data-soft],
                      each wrapping a .cd-face with .cd-sheen and .cd-pip
        #cd-dots      one .cd-dot per card
-       #cd-fan-btn   the Fan / Stack toggle
+       #cd-views     the Pile / Fan / Stack switch, one button[data-v] each
        #cd-details   one .cd-detail[data-i] per card; the active one
                      gets .on and the brand's --bk-soft border
      Anything may live inside a .cd-detail — the deck only switches
@@ -54,7 +55,8 @@
   border-radius:16px;
   cursor:pointer;
   transform-style:preserve-3d;
-  transform:translate3d(0,var(--cd-y,0px),0) scale(var(--cd-s,1)) rotate(var(--cd-r,0deg));
+  transform:translate3d(var(--cd-x,0px),var(--cd-y,0px),0) scale(var(--cd-s,1)) rotate(var(--cd-r,0deg))
+            rotateX(var(--cd-ix,0deg)) rotateZ(var(--cd-iz,0deg));
   transition:transform .46s cubic-bezier(.34,1.4,.64,1),
              opacity .3s ease, filter .3s ease;
   will-change:transform;
@@ -69,7 +71,8 @@
   background:var(--brand-bg,linear-gradient(135deg,#a855f7,#7c3aed));
   box-shadow:0 10px 30px rgba(0,0,0,.45),
              0 2px 6px rgba(0,0,0,.4),
-             inset 0 1px 0 rgba(255,255,255,.22),
+             inset 0 0 0 1px rgba(255,255,255,.14),
+             inset 0 1px 0 rgba(255,255,255,.4),
              inset 0 -1px 0 rgba(0,0,0,.25);
   transform:rotateX(var(--cd-rx,0deg)) rotateY(var(--cd-ry,0deg));
   transition:transform .3s cubic-bezier(.2,.8,.3,1), box-shadow .3s ease;
@@ -108,34 +111,34 @@
 }
 .cd-card.cd-tilting .cd-sheen{ opacity:1; }
 
-/* engraved guilloche pattern, so the face isn't a flat gradient */
+/* gloss: a lacquered top-left highlight, a diagonal band of light and
+   fine engraved waves, so the gradient reads as a polished card */
 .cd-guilloche{
   position:absolute;inset:0;
-  opacity:.16;pointer-events:none;z-index:1;
+  pointer-events:none;z-index:1;
   background-image:
-    repeating-radial-gradient(circle at 118% -12%,
-      transparent 0 16px, rgba(255,255,255,.5) 16px 17px),
-    repeating-radial-gradient(circle at -18% 112%,
-      transparent 0 21px, rgba(0,0,0,.45) 21px 22px);
+    linear-gradient(158deg, rgba(255,255,255,.26) 0%, rgba(255,255,255,.07) 34%, rgba(255,255,255,0) 35%),
+    linear-gradient(118deg, transparent 46%, rgba(255,255,255,.10) 46% 56%, transparent 56%),
+    radial-gradient(120% 90% at 0% 0%, rgba(255,255,255,.14), transparent 55%),
+    repeating-radial-gradient(ellipse at 120% 130%,
+      transparent 0 9px, rgba(255,255,255,.03) 9px 10px);
 }
 
 /* ═══ Face contents ════════════════════════════════════════ */
-.cd-body{ position:absolute;inset:0;z-index:4;padding:16px 18px;
+/* bank + due on the top edge, so a Stack shows them on every card */
+.cd-body{ position:absolute;inset:0;z-index:4;padding:13px 17px 14px;
           display:flex;flex-direction:column;color:#fff; }
+.cd-mono{ font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums; }
 
-.cd-row1{ display:flex;align-items:flex-start;justify-content:space-between;gap:10px; }
-/* brand + bank sit at the bottom left, where a cardholder name would */
+.cd-row1{ display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:20px; }
 .cd-brand{
-  font-size:14px;font-weight:900;letter-spacing:2.4px;
-  text-shadow:0 1px 3px rgba(0,0,0,.55);
-  line-height:1;
+  font-size:15px;font-weight:800;letter-spacing:1px;line-height:1;
+  text-shadow:0 1px 3px rgba(0,0,0,.45);
 }
-.cd-bank{
-  margin-top:4px;
-  font-size:9px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
-  color:rgba(255,255,255,.58);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px;
-}
+.cd-top-due{ font-size:13px;font-weight:800;white-space:nowrap;line-height:1; }
+.cd-top-due.paid{ color:#c9f5e1; }
+
+.cd-row2{ display:flex;align-items:center;gap:10px;margin-top:12px; }
 .cd-chip{
   width:34px;height:26px;border-radius:5px;flex-shrink:0;
   background:linear-gradient(135deg,#f3d98b 0%,#c9a84c 42%,#f7e6a8 62%,#b8912f 100%);
@@ -147,39 +150,38 @@
 }
 .cd-chip::before{ left:0;right:0;top:50%;height:1px; }
 .cd-chip::after { top:4px;bottom:4px;left:50%;width:1px; }
+.cd-nfc{ width:16px;height:16px;opacity:.6; }
 
-.cd-mid{ flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:2px; }
+.cd-mid{ flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:2px;min-width:0; }
 .cd-due-lbl{
-  font-size:8.5px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;
-  color:rgba(255,255,255,.58);margin-bottom:3px;
+  display:flex;align-items:center;gap:8px;
+  font-size:8.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:rgba(255,255,255,.62);margin-bottom:4px;
 }
 .cd-due{
-  font-size:26px;font-weight:900;letter-spacing:-.9px;line-height:1;
-  text-shadow:0 2px 8px rgba(0,0,0,.45);
-  font-variant-numeric:tabular-nums;
+  font-size:25px;font-weight:800;letter-spacing:-1px;line-height:1.05;
+  text-shadow:0 2px 8px rgba(0,0,0,.4);white-space:nowrap;
 }
 .cd-avail{
-  margin-top:7px;font-size:10px;font-weight:700;letter-spacing:.3px;
-  color:rgba(255,255,255,.64);
+  margin-top:6px;font-size:10px;font-weight:500;letter-spacing:.3px;
+  color:rgba(255,255,255,.62);white-space:nowrap;
 }
-.cd-avail b{ color:rgba(255,255,255,.95);font-weight:800; }
+.cd-avail b{ color:#c9f5e1;font-weight:700;margin-left:6px; }
 
 .cd-row3{ display:flex;align-items:flex-end;justify-content:space-between;gap:10px; }
-.cd-due-date{ text-align:right;flex-shrink:0; }
-.cd-dd-lbl{
-  font-size:7.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;
-  color:rgba(255,255,255,.5);
+.cd-bank{
+  font-size:10px;font-weight:500;color:rgba(255,255,255,.66);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;
 }
-.cd-dd-val{ font-size:11px;font-weight:800;color:#fff;margin-top:1px;white-space:nowrap; }
+.cd-due-date{ text-align:right;flex-shrink:0;font-size:10.5px;font-weight:700;white-space:nowrap; }
 
-/* status pip — sits top-right of the face, opposite the chip */
+/* status pip — beside the TOTAL DUE label */
 .cd-pip{
   z-index:5;flex-shrink:0;
-  display:flex;align-items:center;gap:5px;
-  padding:3px 8px;border-radius:999px;
-  font-size:8.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
-  background:rgba(0,0,0,.3);backdrop-filter:blur(4px);
-  border:1px solid rgba(255,255,255,.16);
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 7px;border-radius:999px;
+  font-size:7.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.16);
 }
 .cd-pip i{ width:5px;height:5px;border-radius:50%;display:block;font-style:normal; }
 .cd-pip.settled{ color:#7cffb2; } .cd-pip.settled i{ background:#00e676;box-shadow:0 0 6px #00e676; }
@@ -209,15 +211,46 @@
 }
 .cd-dot.on{ width:20px;border-radius:4px;background:var(--dot,#a855f7);
             box-shadow:0 0 10px var(--dot,#a855f7); }
-.cd-fan-btn{
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
-  color:rgba(255,255,255,.6);border-radius:8px;padding:5px 11px;
-  font-size:10px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;
+.cd-views{
+  display:flex;gap:2px;padding:2px;border-radius:9px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+}
+.cd-views button{
+  background:none;border:0;border-radius:7px;padding:5px 10px;
+  color:rgba(255,255,255,.5);
+  font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;
   font-family:inherit;cursor:pointer;transition:all .18s;white-space:nowrap;
   -webkit-tap-highlight-color:transparent;
 }
-.cd-fan-btn:hover{ background:rgba(255,255,255,.1);color:#fff; }
-.cd-fan-btn.on{ background:rgba(0,212,255,.18);border-color:rgba(0,212,255,.45);color:#67e8f9; }
+.cd-views button:hover{ color:#fff; }
+.cd-views button.on{ background:rgba(255,255,255,.1);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); }
+
+/* ═══ Pile labels — a leader line from each card to its figures ═══ */
+.cd-iso-lbls{ position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s ease; }
+.cd-deck.cd-v-iso{ perspective:none; }
+.cd-deck.cd-v-iso .cd-iso-lbls{ opacity:1; }
+.cd-iso-lbl{
+  position:absolute;right:0;
+  display:flex;flex-direction:column;gap:1px;align-items:flex-start;
+  padding:0 0 0 18px;background:none;border:0;cursor:pointer;text-align:left;min-width:0;
+  font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;color:#fff;
+  transform:translateY(-50%);transition:opacity .25s ease, top .46s cubic-bezier(.34,1.4,.64,1);
+  pointer-events:auto;opacity:.55;-webkit-tap-highlight-color:transparent;
+}
+.cd-deck:not(.cd-v-iso) .cd-iso-lbl{ pointer-events:none; }
+.cd-iso-lbl::before{
+  content:'';position:absolute;left:0;top:50%;width:12px;height:0;
+  border-top:1px dashed var(--lc,#fff);
+}
+.cd-iso-lbl::after{
+  content:'';position:absolute;left:-3px;top:50%;width:5px;height:5px;margin-top:-2.5px;
+  border-radius:50%;background:var(--lc,#fff);
+}
+.cd-iso-lbl b{ font-size:10px;font-weight:800;letter-spacing:.8px;white-space:nowrap; }
+.cd-iso-lbl span{ font-size:10.5px;font-weight:700;color:#ffb4a8;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis; }
+.cd-iso-lbl span.paid{ color:#9fe3c4; }
+.cd-iso-lbl small{ font-size:8.5px;font-weight:500;letter-spacing:0;color:rgba(255,255,255,.45);white-space:nowrap; }
+.cd-iso-lbl.on{ opacity:1; }
 
 /* ═══ Detail panel ═════════════════════════════════════════ */
 .cd-details{ margin-top:14px;position:relative; }
@@ -253,9 +286,12 @@
   .cd-wrap{ --cd-w:470px; column-gap:28px; }
 }
 @media(max-width:420px){
-  .cd-due{ font-size:23px; }
-  .cd-brand{ font-size:12.5px;letter-spacing:1.8px; }
-  .cd-body{ padding:14px 15px; }
+  .cd-due{ font-size:22px; }
+  .cd-brand{ font-size:13.5px; }
+  .cd-top-due{ font-size:12px; }
+  .cd-body{ padding:12px 14px 13px; }
+  .cd-row2{ margin-top:9px; }
+  .cd-iso-lbl b{ font-size:9px; } .cd-iso-lbl span{ font-size:9.5px; } .cd-iso-lbl small{ font-size:8px; }
 }
 @media(prefers-reduced-motion:reduce){
   .cd-card,.cd-face,.cd-deck{ transition-duration:.01ms !important; }
@@ -270,20 +306,27 @@
 
   var buzz = function(k){ if(typeof window.haptic === 'function') window.haptic(k); };
 
-  var deck, details, dotsWrap, fanBtn;
+  var deck, details, dotsWrap, viewsWrap, lblWrap;
   var cards   = [];       // { el, i, brand }
   var active  = 0;
-  var fanned  = true;     // fan is the default view — every card visible at once
+  var view    = 'iso';    // 'iso' pile (default) · 'fan' · 'stack' — kept across reloads
   var order   = [];       // stack order, front → back
 
-  var STEP_Y  = 26;       // px each card behind drops
-  var STEP_S  = 0.045;    // scale falloff per card behind
+  var STEP_Y  = 38;       // px of each card behind that shows above the front one
   var CARD_AR = 1.586;    // ISO/IEC 7810 ID-1 — a real credit card
 
   var FAN_ROT   = 7;      // degrees between neighbours when fanned
   var FAN_LIFT  = 10;     // px each step out from centre rises
   var FAN_BASE  = 16;     // px the whole fan sits down from the top
   var FAN_SCALE = 0.88;   // shrink when fanned so rotated cards stay in width
+
+  /* the pile: cards scaled down and laid flat at an isometric angle,
+     left of centre so the leader labels fit on the right */
+  var ISO_S   = 0.54;     // card scale in the pile
+  var ISO_RX  = 58, ISO_RZ = -38;
+  var ISO_CX  = 0.345;    // pile centre, as a share of deck width
+  var ISO_STEP = 0.075;   // gap between cards, share of deck width
+  var ISO_PAD  = 8;       // px above the top card
 
   /* ── Layout ───────────────────────────────────────────── */
   var curW = 360, curH = 227, curRot = FAN_ROT;
@@ -314,46 +357,80 @@
     return maxOff() * FAN_LIFT + FAN_BASE + half + 10;
   }
 
+  /* projected height of one card lying in the pile */
+  function isoH(w, h){
+    var z = -ISO_RZ * Math.PI / 180, x = ISO_RX * Math.PI / 180;
+    return ISO_S * (w * Math.sin(z) + h * Math.cos(z)) * Math.cos(x);
+  }
+
   function sizeDeck(){
     if(!deck) return;
     curW   = deck.clientWidth || 360;
     curH   = Math.round(curW / CARD_AR);
     curRot = fanRot(curW, curH);
     deck.style.setProperty('--cd-h', curH + 'px');
-    var behind = Math.max(0, cards.length - 1);
-    deck.style.setProperty('--cd-deck-h',
-      Math.round(fanned ? curH + fanExtent(curW, curH, curRot)
-                        : curH + behind * STEP_Y) + 'px');
+    var behind = Math.max(0, cards.length - 1), dh;
+    if(view === 'fan')        dh = curH + fanExtent(curW, curH, curRot);
+    else if(view === 'stack') dh = curH + behind * STEP_Y;
+    else                      dh = ISO_PAD + isoH(curW, curH) + behind * curW * ISO_STEP + 8;
+    deck.style.setProperty('--cd-deck-h', Math.round(dh) + 'px');
   }
 
   function layout(){
     if(!deck) return;
     sizeDeck();
+    deck.classList.toggle('cd-v-iso', view === 'iso');
 
     // order: active first, then the rest in their natural order
     order = [active];
     for(var k = 0; k < cards.length; k++) if(k !== active) order.push(k);
+    var n = cards.length;
 
     order.forEach(function(idx, depth){
-      var c = cards[idx], el = c.el;
-      if(fanned){
+      var c = cards[idx], el = c.el, face = el.querySelector('.cd-face');
+      var x = 0, y, s, r = 0, ix = 0, iz = 0, z, dim;
+      if(view === 'fan'){
         var off = idx - maxOff();
-        el.style.setProperty('--cd-y', (Math.abs(off) * FAN_LIFT + FAN_BASE).toFixed(1) + 'px');
-        el.style.setProperty('--cd-s', (idx === active ? FAN_SCALE + 0.05 : FAN_SCALE).toFixed(3));
-        el.style.setProperty('--cd-r', (off * curRot).toFixed(2) + 'deg');
+        y = Math.abs(off) * FAN_LIFT + FAN_BASE;
+        s = idx === active ? FAN_SCALE + 0.05 : FAN_SCALE;
+        r = off * curRot;
         // z-index must be an integer — off is fractional for even card counts
-        el.style.zIndex = idx === active ? 100 : Math.round(50 - Math.abs(off) * 2);
-        el.querySelector('.cd-face').style.setProperty('--cd-dim', idx === active ? '0' : '0.14');
+        z = idx === active ? 100 : Math.round(50 - Math.abs(off) * 2);
+        dim = idx === active ? 0 : 0.14;
+      } else if(view === 'stack'){
+        // Wallet: the front card sits lowest; each one behind shows its top edge
+        y = (n - 1 - depth) * STEP_Y; s = 1;
+        z = 100 - depth;
+        dim = depth === 0 ? 0 : Math.min(0.3, 0.08 + depth * 0.06);
       } else {
-        el.style.setProperty('--cd-y', (depth * STEP_Y) + 'px');
-        el.style.setProperty('--cd-s', (1 - depth * STEP_S).toFixed(3));
-        el.style.setProperty('--cd-r', '0deg');
-        el.style.zIndex = 100 - depth;
-        el.querySelector('.cd-face').style.setProperty('--cd-dim',
-          depth === 0 ? '0' : Math.min(0.46, 0.16 + depth * 0.1).toFixed(2));
+        // pile: the active card lies on top, the rest settle beneath it
+        // in order, each one a step lower and a shade darker
+        var cy = ISO_PAD + isoH(curW, curH) / 2 + depth * curW * ISO_STEP;
+        x = curW * (ISO_CX - 0.5); y = cy - curH / 2; s = ISO_S; ix = ISO_RX; iz = ISO_RZ;
+        z = 100 - depth;
+        dim = depth === 0 ? 0 : Math.min(0.4, 0.12 + depth * 0.06);
+        c.lblY = cy;
       }
+      el.style.setProperty('--cd-x', x.toFixed(1) + 'px');
+      el.style.setProperty('--cd-y', y.toFixed(1) + 'px');
+      el.style.setProperty('--cd-s', s.toFixed(3));
+      el.style.setProperty('--cd-r', r.toFixed(2) + 'deg');
+      el.style.setProperty('--cd-ix', ix + 'deg');
+      el.style.setProperty('--cd-iz', iz + 'deg');
+      el.style.zIndex = z;
+      face.style.setProperty('--cd-dim', dim.toFixed(2));
       el.classList.toggle('cd-active', idx === active);
     });
+
+    // pile labels sit level with their card, right of the pile
+    if(lblWrap){
+      lblWrap.querySelectorAll('.cd-iso-lbl').forEach(function(l){
+        var i = +l.getAttribute('data-i'), c = cards[i];
+        if(c && c.lblY != null) l.style.top = c.lblY.toFixed(1) + 'px';
+        l.style.left = (curW * (ISO_CX + 0.335)).toFixed(0) + 'px';
+        l.classList.toggle('on', i === active);
+      });
+    }
 
     // detail panels
     if(details){
@@ -386,6 +463,7 @@
     if(!face) return;
 
     function move(e){
+      if(view === 'iso') return;      // the pile already lies at an angle
       var r  = el.getBoundingClientRect();
       var px = (e.clientX - r.left) / r.width;
       var py = (e.clientY - r.top)  / r.height;
@@ -425,7 +503,7 @@
     if(!horiz) return;
     if(e && e.cancelable) e.preventDefault();   // we own this gesture now
     moved = true;
-    if(!fanned && Math.abs(dx) > 26) setFanned(true);
+    if(view === 'stack' && Math.abs(dx) > 26) setView('fan');
   }
   function dragUp(x){
     if(!dragging) return;
@@ -463,18 +541,39 @@
     }
   }
 
-  function syncFanBtn(){
-    if(!fanBtn) return;
-    fanBtn.classList.toggle('on', fanned);
-    fanBtn.textContent = fanned ? '▤ Stack' : '⤢ Fan';
+  function syncViews(){
+    if(!viewsWrap) return;
+    viewsWrap.querySelectorAll('button[data-v]').forEach(function(b){
+      var on = b.getAttribute('data-v') === view;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on);
+    });
   }
 
-  function setFanned(v){
-    if(fanned === v) return;
-    fanned = v;
-    syncFanBtn();
+  function setView(v){
+    if(view === v) return;
+    view = v;
+    syncViews();
     buzz('step');
     layout();
+  }
+
+  /* one leader label per card for the pile, read off the card's own face */
+  function buildLabels(){
+    lblWrap = document.createElement('div');
+    lblWrap.className = 'cd-iso-lbls';
+    lblWrap.innerHTML = cards.map(function(c){
+      var q = function(sel){ var e = c.el.querySelector(sel); return e ? e.textContent : ''; };
+      var paid = !!c.el.querySelector('.cd-top-due.paid');
+      var when = q('.cd-due-date').split('·').pop().trim();   // "3d", "today", "2d ago"
+      return '<button type="button" class="cd-iso-lbl" data-i="' + c.i + '" style="--lc:' + c.brand + '">' +
+        '<b>' + q('.cd-brand') + (when && !paid ? ' <small>' + when + '</small>' : '') + '</b>' +
+        '<span class="' + (paid ? 'paid' : '') + '">' + q('.cd-top-due') + '</span></button>';
+    }).join('');
+    deck.appendChild(lblWrap);
+    lblWrap.querySelectorAll('.cd-iso-lbl').forEach(function(l){
+      l.addEventListener('click', function(){ setActive(+l.getAttribute('data-i')); });
+    });
   }
 
   /* ── Public entry point, called by ccDisplayData() ────── */
@@ -482,10 +581,10 @@
     deck     = document.getElementById('cd-deck');
     details  = document.getElementById('cd-details');
     dotsWrap = document.getElementById('cd-dots');
-    fanBtn   = document.getElementById('cd-fan-btn');
+    viewsWrap = document.getElementById('cd-views');
     if(!deck) return;
 
-    active = 0; fanned = true; cards = [];
+    active = 0; cards = [];
 
     deck.querySelectorAll('.cd-card').forEach(function(el, i){
       var c = {
@@ -496,8 +595,7 @@
       };
       cards.push(c);
       bindTilt(c);
-      // tapping a card selects it; the fan stays open, since it is the
-      // default view and collapsing it on the first tap would fight the user
+      // tapping a card selects it; the current view stays as it is
       el.addEventListener('click', function(){ setActive(i); });
     });
     if(!cards.length) return;
@@ -507,10 +605,13 @@
         d.addEventListener('click', function(){ setActive(i); });
       });
     }
-    if(fanBtn){
-      syncFanBtn();
-      fanBtn.addEventListener('click', function(){ setFanned(!fanned); });
+    if(viewsWrap){
+      syncViews();
+      viewsWrap.querySelectorAll('button[data-v]').forEach(function(b){
+        b.addEventListener('click', function(){ setView(b.getAttribute('data-v')); });
+      });
     }
+    buildLabels();
 
     bindDrag();
     layout();
