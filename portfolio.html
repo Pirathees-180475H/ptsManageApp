@@ -4,7 +4,7 @@
      Five zones, in document order, each one anchor of the tab rail:
 
        ① command bar    pinned above the scroller · tabs · actions
-       ② overview       net-worth hero + allocation ribbon + 7 tiles
+       ② overview       Obsidian Prism note + ledger + 6 tiles
        ③ allocation     4 switchable charts | goals & phases
        ④ growth         range-filtered line + MA + projection
        ⑤ assets         search / sort / filter · card grid
@@ -14,6 +14,7 @@
 
      Every write, handler and read from the old page is intact:
        getPortfolioData · logPortfolioAmount · syncEPFetf
+       getBankTransactions (read-only, for the note's dividend back)
        portEPFCalcOpen (lives in ETFCalc.html, called from a tile)
 
      Talks to render.html through five hooks only:
@@ -118,60 +119,170 @@
 #page-port .pf-seg.purple .pf-seg-btn.active{background:rgba(168,85,247,.2);border-color:rgba(168,85,247,.35);color:#c084fc;}
 #page-port .pf-seg.teal   .pf-seg-btn.active{background:rgba(45,212,191,.18);border-color:rgba(45,212,191,.35);color:var(--teal);}
 
-/* ── ② hero ── */
-#page-port .pf-hero{position:relative;border-radius:20px;padding:24px 28px;margin-bottom:16px;overflow:hidden;
-  background:linear-gradient(135deg,rgba(0,212,255,.07),rgba(168,85,247,.05),rgba(0,255,136,.04));
-  border:1px solid rgba(255,255,255,.1);
-  box-shadow:0 8px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);}
-#page-port .pf-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;
-  border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.13),transparent 70%);pointer-events:none;}
-#page-port .pf-hero::after{content:'';position:absolute;bottom:-30px;left:20%;width:240px;height:90px;
-  background:radial-gradient(ellipse,rgba(168,85,247,.09),transparent 70%);pointer-events:none;}
-#page-port .pf-hero-spark{position:absolute;right:0;bottom:0;width:62%;height:112px;opacity:.16;pointer-events:none;}
-#page-port .pf-hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;gap:16px;}
-#page-port .pf-hero-top{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;}
-#page-port .pf-hero-main{display:flex;flex-direction:column;gap:5px;min-width:0;}
-#page-port .pf-hero-label{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
-  color:rgba(255,255,255,.4);display:flex;align-items:center;gap:8px;}
-#page-port .pf-hero-label .hero-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;
-  background:#00ff88;box-shadow:0 0 10px #00ff88;animation:pfPulse 2.4s ease-in-out infinite;}
-#page-port .pf-hero-amt{font-size:clamp(28px,5.4vw,52px);font-weight:900;letter-spacing:-2px;line-height:1;
-  font-variant-numeric:tabular-nums;
-  background:linear-gradient(135deg,#fff 0%,var(--blue) 55%,var(--purple) 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-#page-port .pf-deltas{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;}
-#page-port .pf-delta{font-size:12px;font-weight:700;padding:4px 11px;border-radius:8px;white-space:nowrap;}
-#page-port .pf-delta.up  {background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);color:#00ff88;}
-#page-port .pf-delta.down{background:rgba(255,77,141,.1);border:1px solid rgba(255,77,141,.25);color:var(--red2);}
-#page-port .pf-delta.flat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.45);}
-#page-port .pf-delta-note{font-size:11px;color:rgba(255,255,255,.35);}
+/* ── ② hero — the Obsidian Prism note ──────────────────────────
+   Net worth printed on a black polymer note in silver ink, with one
+   holographic foil stripe. Tap (or Enter) turns it over: the back
+   shows how the book splits and twelve months of dividend credits.
+   The ledger beside it carries the figures that must stay legible
+   at any width. Everything inside the note is sized in cqw so the
+   note scales as one object; the ledger matches its height on wide
+   screens and folds under it below 980px. */
+#page-port .pf-hero{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(280px,1fr);gap:16px;
+  align-items:stretch;margin-bottom:16px;--metal:#d6d9e2;--up:#9fe3c4;--down:#ff8fae;}
+#page-port .pf-note-box{container-type:inline-size;perspective:1600px;min-width:0;align-self:start;}
+#page-port .pf-note{position:relative;width:100%;aspect-ratio:2.15;transform-style:preserve-3d;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;outline:none;
+  transform:rotateX(var(--rx,0deg)) rotateY(calc(var(--ry,0deg) + var(--flip,0deg)));
+  transition:transform .8s cubic-bezier(.3,.9,.25,1);}
+#page-port .pf-note.tilting{transition:transform .2s ease-out;}
+#page-port .pf-note.flipped{--flip:180deg;}
+#page-port .pf-note:focus-visible .pf-nf{box-shadow:0 0 0 2px var(--metal),0 2.8cqw 5.5cqw rgba(0,0,0,.7);}
+#page-port .pf-nf{position:absolute;inset:0;border-radius:1.4cqw;overflow:hidden;isolation:isolate;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;color:var(--metal);
+  background:radial-gradient(130% 120% at 25% 20%,#121218,#08080c 60%,#040406);
+  box-shadow:0 2.8cqw 5.5cqw rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.07);}
+#page-port .pf-nf.back{transform:rotateY(180deg);}
+#page-port .pf-nf>*{position:absolute;}
+#page-port .pf-nf canvas{inset:0;width:100%;height:100%;z-index:1;}
+/* the foil stripe: a soft spectrum that slides as the light moves */
+#page-port .pf-nf .prism{top:0;bottom:0;left:76%;width:8%;z-index:2;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,180,220,.15) 15%,rgba(255,240,190,.18) 32%,rgba(190,255,230,.18) 50%,rgba(190,220,255,.18) 68%,rgba(220,200,255,.15) 85%,transparent);
+  background-size:100% 300%;background-position:0 var(--py,50%);mix-blend-mode:screen;transition:background-position .3s ease-out;}
+#page-port .pf-nf.back .prism{left:16%;}
+#page-port .pf-nf::after{content:'';position:absolute;inset:0;z-index:9;pointer-events:none;
+  background:radial-gradient(50% 120% at var(--sx,30%) -10%,rgba(255,255,255,.1),transparent 60%),
+             linear-gradient(115deg,transparent 42%,rgba(255,255,255,.045) 50%,transparent 58%);}
+#page-port .pf-nf .frm{inset:1.9cqw;z-index:3;border:.14cqw solid rgba(214,217,226,.5);border-radius:.6cqw;pointer-events:none;}
+#page-port .pf-nf .frm::before{content:'';position:absolute;inset:.5cqw;border:.07cqw solid rgba(214,217,226,.26);border-radius:.35cqw;}
+#page-port .pf-foil{background:linear-gradient(90deg,#ffd6e6,#fff1c9 25%,#d3ffe9 50%,#cfe6ff 75%,#e6d6ff);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;}
+#page-port .pf-silver{background:linear-gradient(180deg,#ffffff 0%,#d6d9e2 45%,#8c93a1 62%,#f1f3f7 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;}
 
-#page-port .pf-ccy-row{display:flex;gap:10px;flex-wrap:wrap;}
-#page-port .pf-ccy{display:flex;flex-direction:column;gap:2px;padding:11px 16px;border-radius:13px;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);min-width:132px;transition:all .25s;}
-#page-port .pf-ccy:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);transform:translateY(-1px);}
-#page-port .pf-ccy.lkr{border-left:2px solid var(--gold);}
-#page-port .pf-ccy.usd{border-left:2px solid #00ff88;}
-#page-port .pf-ccy.epf{border-left:2px solid #c084fc;}
-#page-port .pf-ccy-lbl{font-size:9px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.3);}
-#page-port .pf-ccy-val{font-size:16px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
-#page-port .pf-ccy.lkr .pf-ccy-val{color:var(--gold);}
-#page-port .pf-ccy.usd .pf-ccy-val{color:#00ff88;}
-#page-port .pf-ccy.epf .pf-ccy-val{color:#c084fc;}
+/* front */
+#page-port .nf-brand{left:5.2%;top:9.5%;z-index:4;font:700 1.45cqw 'Inter',sans-serif;letter-spacing:.7cqw;text-transform:uppercase;}
+#page-port .nf-brand small{display:block;font-size:.9cqw;letter-spacing:.42cqw;font-weight:500;opacity:.55;margin-top:.5cqw;
+  -webkit-text-fill-color:var(--metal);}
+#page-port .nf-ser{right:5.2%;top:9.5%;z-index:4;font:500 1.3cqw 'JetBrains Mono',monospace;letter-spacing:.25cqw;opacity:.75;text-align:right;}
+#page-port .nf-emb{left:5.5%;top:23%;width:25%;aspect-ratio:1;z-index:4;display:grid;place-items:center;}
+#page-port .nf-emb b{font:600 4.2cqw 'Bodoni Moda',Didot,serif;letter-spacing:.2cqw;}
+#page-port .nf-main{left:36%;right:5.2%;top:29%;z-index:4;}
+#page-port .nf-k{font:600 1.1cqw 'Inter',sans-serif;letter-spacing:.55cqw;text-transform:uppercase;opacity:.7;display:flex;align-items:center;gap:1cqw;}
+#page-port .nf-k i{width:.8cqw;height:.8cqw;border-radius:50%;background:var(--up);box-shadow:0 0 1cqw var(--up);animation:pfPulse 2.4s ease-in-out infinite;}
+#page-port .nf-amt{font:800 7.4cqw 'Bodoni Moda',Didot,serif;line-height:1.12;letter-spacing:-.05cqw;white-space:nowrap;margin-top:.6cqw;
+  font-variant-numeric:tabular-nums;filter:drop-shadow(0 .15cqw .2cqw rgba(0,0,0,.6));}
+#page-port .nf-amt .s{font-size:.46em;font-weight:600;margin-right:.3em;vertical-align:.62em;}
+#page-port .nf-amt small{font-size:.38em;vertical-align:1.3em;margin-left:.08em;}
+#page-port .nf-rule{height:.1cqw;margin:1.3cqw 0 1.1cqw;background:linear-gradient(90deg,rgba(214,217,226,.6),transparent);}
+#page-port .nf-row{display:flex;gap:2.4cqw;font:600 1.2cqw 'JetBrains Mono',monospace;white-space:nowrap;}
+#page-port .nf-row span{opacity:.85;}
+#page-port .nf-row b{font-weight:700;}
+#page-port .nf-row .up{color:var(--up);} #page-port .nf-row .down{color:var(--down);}
+#page-port .nf-den{right:5.2%;bottom:9%;z-index:4;font:800 4.4cqw 'Bodoni Moda',Didot,serif;line-height:.9;
+  color:transparent;-webkit-text-stroke:.1cqw rgba(214,217,226,.75);white-space:nowrap;}
+#page-port .nf-sig{left:36%;bottom:8.5%;z-index:4;}
+#page-port .nf-sig i{display:block;font:3.1cqw 'Mrs Saint Delafield',cursive;font-style:normal;line-height:.9;opacity:.85;}
+#page-port .nf-sig span{display:block;border-top:.08cqw solid rgba(214,217,226,.45);font:600 .8cqw 'Inter',sans-serif;letter-spacing:.35cqw;
+  padding-top:.4cqw;opacity:.6;text-transform:uppercase;}
+#page-port .nf-patch{z-index:4;width:5.4cqw;height:7cqw;left:77.3%;bottom:25%;border-radius:.5cqw;opacity:.75;
+  background:conic-gradient(from var(--pa,0deg),#b8c4d6,#e9d9b8,#c9b8e6,#b8e0d6,#b8c4d6);box-shadow:inset 0 0 0 .1cqw rgba(255,255,255,.4);}
+#page-port .nf-hint{right:5.2%;top:17%;z-index:4;font:600 .85cqw 'Inter',sans-serif;letter-spacing:.3cqw;text-transform:uppercase;opacity:.4;}
 
-/* allocation ribbon */
-#page-port .pf-ribbon-wrap{display:flex;flex-direction:column;gap:8px;}
-#page-port .pf-ribbon{display:flex;gap:2px;height:10px;align-items:flex-end;}
-#page-port .pf-rib{height:10px;border-radius:2px;transition:height .2s,box-shadow .2s,filter .2s;min-width:2px;}
-#page-port .pf-rib:first-child{border-radius:6px 2px 2px 6px;}
-#page-port .pf-rib:last-child {border-radius:2px 6px 6px 2px;}
-#page-port .pf-rib:hover{height:15px;filter:brightness(1.2);}
-#page-port .pf-ribbon-legend{display:flex;gap:16px;flex-wrap:wrap;}
-#page-port .pf-rl{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(255,255,255,.45);}
+/* back */
+#page-port .nb-in{inset:0;z-index:4;padding:5.6cqw 5.6cqw 5cqw;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:4.5cqw;}
+#page-port .nb-t{font:600 1.05cqw 'Inter',sans-serif;letter-spacing:.5cqw;text-transform:uppercase;opacity:.7;margin-bottom:1.5cqw;}
+#page-port .nb-bar{display:flex;height:1.3cqw;border-radius:.7cqw;overflow:hidden;gap:.2cqw;margin-bottom:1.6cqw;}
+#page-port .nb-rows{display:flex;flex-direction:column;gap:.55cqw;}
+#page-port .nb-rows div{display:grid;grid-template-columns:1cqw minmax(0,1fr) auto auto;gap:1cqw;align-items:center;
+  font:500 1.25cqw 'Inter',sans-serif;color:#e6e8ee;}
+#page-port .nb-rows i{width:1cqw;height:1cqw;border-radius:.25cqw;}
+#page-port .nb-rows span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#page-port .nb-rows em{font:500 1.15cqw 'JetBrains Mono',monospace;font-style:normal;opacity:.7;}
+#page-port .nb-rows b{font:700 1.15cqw 'JetBrains Mono',monospace;min-width:4.4cqw;text-align:right;}
+#page-port .nb-dv{font:800 4.2cqw 'Bodoni Moda',Didot,serif;line-height:1.05;white-space:nowrap;font-variant-numeric:tabular-nums;overflow:hidden;}
+#page-port .nb-sub{font:500 1.1cqw 'JetBrains Mono',monospace;opacity:.65;margin-top:.8cqw;white-space:nowrap;}
+#page-port .nb-bars{display:flex;align-items:flex-end;gap:.5cqw;height:9cqw;margin-top:2cqw;border-bottom:.08cqw solid rgba(214,217,226,.4);}
+#page-port .nb-bars span{flex:1;min-height:.3cqw;border-radius:.25cqw .25cqw 0 0;opacity:.75;
+  background:linear-gradient(180deg,#f1f3f7,rgba(214,217,226,.3));}
+#page-port .nb-bars span.hi{opacity:1;box-shadow:0 0 1cqw rgba(214,217,226,.55);}
+#page-port .nb-mon{display:flex;justify-content:space-between;font:500 .9cqw 'JetBrains Mono',monospace;opacity:.5;margin-top:.5cqw;}
+#page-port .nb-foot{display:flex;justify-content:space-between;gap:1cqw;margin-top:1.4cqw;font:500 1.1cqw 'Inter',sans-serif;opacity:.85;}
+#page-port .nb-foot b{font-weight:700;}
+#page-port .nb-empty{font:500 1.2cqw 'Inter',sans-serif;opacity:.6;line-height:1.5;margin-top:1cqw;}
+
+@container (max-width:520px){
+  #page-port .nf-brand{font-size:2.3cqw;letter-spacing:.9cqw;}
+  #page-port .nf-brand small{font-size:1.5cqw;}
+  #page-port .nf-ser{font-size:2.1cqw;}
+  #page-port .nf-hint{display:none;}
+  #page-port .nf-main{top:31%;}
+  #page-port .nf-k{font-size:1.9cqw;}
+  #page-port .nf-k i{width:1.3cqw;height:1.3cqw;}
+  #page-port .nf-amt{font-size:8.4cqw;}
+  #page-port .nf-row{font-size:2.05cqw;gap:3cqw;}
+  #page-port .nf-row span:nth-child(3){display:none;}
+  #page-port .nf-sig,#page-port .nf-patch{display:none;}
+  #page-port .nf-den{font-size:6.2cqw;}
+  #page-port .nb-in{grid-template-columns:1fr 1fr;padding:6cqw;gap:5cqw;}
+  #page-port .nb-rows div:nth-child(n+5){display:none;}
+  #page-port .nb-rows div{font-size:2.1cqw;grid-template-columns:1.6cqw minmax(0,1fr) auto;}
+  #page-port .nb-rows em{display:none;}
+  #page-port .nb-rows b{font-size:2.1cqw;}
+  #page-port .nb-rows i{width:1.6cqw;height:1.6cqw;}
+  #page-port .nb-t{font-size:1.9cqw;letter-spacing:.6cqw;}
+  #page-port .nb-bar{height:2cqw;}
+  #page-port .nb-dv{font-size:6.6cqw;}
+  #page-port .nb-sub,#page-port .nb-foot{font-size:1.9cqw;}
+  #page-port .nb-foot span:nth-child(3){display:none;}
+  #page-port .nb-mon{font-size:1.7cqw;}
+  #page-port .nb-bars{height:12cqw;}
+  #page-port .nb-empty{font-size:2.1cqw;}
+}
+
+/* ── the ledger beside the note ── */
+#page-port .pf-ledger{position:relative;overflow:hidden;border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:14px;min-width:0;
+  background:radial-gradient(120% 100% at 100% 0%,rgba(214,217,226,.06),transparent 55%),linear-gradient(160deg,#101015,#09090d);
+  border:1px solid rgba(214,217,226,.13);box-shadow:0 10px 34px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.05);color:var(--metal);}
+#page-port .pf-ledger::before{content:'';position:absolute;top:0;bottom:0;right:14%;width:22px;pointer-events:none;opacity:.5;
+  background:linear-gradient(90deg,transparent,rgba(255,180,220,.08),rgba(255,240,190,.09),rgba(190,255,230,.09),rgba(190,220,255,.08),transparent);}
+#page-port .lg-hd{display:flex;align-items:center;gap:8px;}
+#page-port .lg-t{font-size:9px;font-weight:700;letter-spacing:2.6px;text-transform:uppercase;opacity:.6;}
+#page-port .lg-flip{margin-left:auto;font:700 10px 'Inter',sans-serif;letter-spacing:.6px;padding:4px 10px;border-radius:8px;cursor:pointer;
+  background:rgba(214,217,226,.06);border:1px solid rgba(214,217,226,.18);color:var(--metal);transition:all .2s;}
+#page-port .lg-flip:hover{background:rgba(214,217,226,.12);border-color:rgba(214,217,226,.35);}
+#page-port .lg-rows{display:flex;flex-direction:column;}
+#page-port .lg-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid rgba(214,217,226,.08);}
+#page-port .lg-row:first-child{padding-top:2px;}
+#page-port .lg-row span{font-size:9px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;opacity:.55;white-space:nowrap;}
+#page-port .lg-row b{font:800 17px 'Inter',sans-serif;letter-spacing:-.5px;font-variant-numeric:tabular-nums;white-space:nowrap;}
+#page-port .lg-deltas{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+#page-port .lg-pill{font:700 11px 'JetBrains Mono',monospace;padding:4px 9px;border-radius:7px;white-space:nowrap;
+  background:rgba(214,217,226,.05);border:1px solid rgba(214,217,226,.14);}
+#page-port .lg-pill.up{color:var(--up);border-color:rgba(159,227,196,.28);background:rgba(159,227,196,.06);}
+#page-port .lg-pill.down{color:var(--down);border-color:rgba(255,143,174,.28);background:rgba(255,143,174,.06);}
+#page-port .lg-note{font-size:10.5px;opacity:.5;}
+#page-port .lg-div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 14px;align-items:end;padding:12px 14px;border-radius:12px;
+  background:rgba(214,217,226,.035);border:1px solid rgba(214,217,226,.09);cursor:pointer;transition:border-color .2s;}
+#page-port .lg-div:hover{border-color:rgba(214,217,226,.22);}
+#page-port .lg-div span{font-size:9px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;opacity:.55;}
+#page-port .lg-div b{display:block;font:800 16px 'Inter',sans-serif;letter-spacing:-.4px;font-variant-numeric:tabular-nums;margin-top:3px;}
+#page-port .lg-div em{display:block;font-style:normal;font-size:10.5px;opacity:.5;margin-top:2px;}
+#page-port .lg-spark{display:flex;align-items:flex-end;gap:2px;height:30px;width:84px;}
+#page-port .lg-spark i{flex:1;border-radius:2px 2px 0 0;background:linear-gradient(180deg,#f1f3f7,rgba(214,217,226,.25));opacity:.7;min-height:2px;}
+#page-port .lg-spark i.hi{opacity:1;}
+#page-port .pf-ribbon-wrap{display:flex;flex-direction:column;gap:8px;margin-top:auto;}
+#page-port .pf-ribbon{display:flex;gap:2px;height:8px;align-items:flex-end;}
+#page-port .pf-rib{height:8px;border-radius:2px;transition:height .2s,filter .2s;min-width:2px;}
+#page-port .pf-rib:first-child{border-radius:5px 2px 2px 5px;}
+#page-port .pf-rib:last-child {border-radius:2px 5px 5px 2px;}
+#page-port .pf-rib:hover{height:13px;filter:brightness(1.2);}
+#page-port .pf-ribbon-legend{display:flex;gap:6px 12px;flex-wrap:wrap;}
+#page-port .pf-rl{display:flex;align-items:center;gap:5px;font-size:10px;color:rgba(255,255,255,.5);}
 #page-port .pf-rl-sw{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+#page-port .pf-note-tip{display:none;text-align:center;font-size:10.5px;color:rgba(255,255,255,.35);margin-top:10px;letter-spacing:.3px;}
 
 /* ── KPI bento strip ── */
-#page-port .pf-kpis{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;margin-bottom:16px;}
+#page-port .pf-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:16px;}
 #page-port .pf-tile{position:relative;display:flex;flex-direction:column;gap:3px;padding:14px;
   border-radius:16px;overflow:hidden;min-height:112px;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);
@@ -189,15 +300,11 @@
 #page-port .pf-tile svg{position:relative;}
 #page-port .pf-tile.lkr{background:linear-gradient(135deg,rgba(255,215,0,.08),rgba(255,150,0,.04));
   border-color:rgba(255,215,0,.25);box-shadow:0 0 30px rgba(255,215,0,.07),inset 0 1px 0 rgba(255,255,255,.05);}
-#page-port .pf-tile.usd{background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,212,255,.04));
-  border-color:rgba(0,255,136,.25);box-shadow:0 0 30px rgba(0,255,136,.07),inset 0 1px 0 rgba(255,255,255,.05);}
 #page-port .pf-tile.epf{background:linear-gradient(135deg,rgba(168,85,247,.08),rgba(56,189,248,.04));
   border-color:rgba(168,85,247,.25);box-shadow:0 0 30px rgba(168,85,247,.07),inset 0 1px 0 rgba(255,255,255,.05);}
 #page-port .pf-tile.lkr:hover{box-shadow:0 10px 34px rgba(255,215,0,.14);}
-#page-port .pf-tile.usd:hover{box-shadow:0 10px 34px rgba(0,255,136,.14);}
 #page-port .pf-tile.epf:hover{box-shadow:0 10px 34px rgba(168,85,247,.14);}
 #page-port .pf-tile.lkr .pf-tile-val{color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,.35);}
-#page-port .pf-tile.usd .pf-tile-val{color:#00ff88;text-shadow:0 0 20px rgba(0,255,136,.35);}
 #page-port .pf-tile.epf .pf-tile-val{color:#c084fc;text-shadow:0 0 20px rgba(168,85,247,.35);}
 #page-port .pf-tile-actions{position:absolute;top:10px;right:10px;display:flex;gap:5px;z-index:2;}
 #page-port .pf-tile-btn{display:flex;align-items:center;justify-content:center;width:24px;height:24px;
@@ -424,13 +531,13 @@
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);
   transform:translateX(-100%);animation:pfSweep 1.5s ease-in-out infinite;}
 @keyframes pfSweep{100%{transform:translateX(100%)}}
-#page-port .pf-sk.hero{height:186px;border-radius:20px;}
+#page-port .pf-sk.hero{height:auto;aspect-ratio:3.4;border-radius:20px;}
 #page-port .pf-sk.tile{height:112px;}
 #page-port .pf-sk.big {height:300px;border-radius:18px;}
 #page-port .pf-sk.wide{height:380px;border-radius:18px;}
 #page-port .pf-sk.card{height:104px;border-radius:14px;}
 #page-port .pf-skel-row{display:grid;gap:10px;}
-#page-port .pf-skel-row.k7{grid-template-columns:repeat(7,minmax(0,1fr));}
+#page-port .pf-skel-row.k7{grid-template-columns:repeat(6,minmax(0,1fr));}
 #page-port .pf-skel-row.b2{grid-template-columns:1.35fr 1fr;gap:14px;}
 #page-port .pf-skel-row.c4{grid-template-columns:repeat(4,minmax(0,1fr));}
 
@@ -446,7 +553,7 @@
 
 /* ── responsive ladder ── */
 @media(max-width:1200px){
-  #page-port .pf-kpis{grid-template-columns:repeat(4,minmax(0,1fr));}
+  #page-port .pf-kpis{grid-template-columns:repeat(3,minmax(0,1fr));}
   #page-port .assets-grid{grid-template-columns:repeat(auto-fill,minmax(170px,1fr));}
 }
 @media(max-width:980px){
@@ -456,17 +563,32 @@
   #page-port .pf-aims{max-height:none;}
   #page-port .pf-growth-stats{grid-template-columns:repeat(3,minmax(0,1fr));}
   #page-port .pf-skel-row.b2{grid-template-columns:1fr;}
-  #page-port .pf-skel-row.k7{grid-template-columns:repeat(4,minmax(0,1fr));}
+  #page-port .pf-skel-row.k7{grid-template-columns:repeat(3,minmax(0,1fr));}
+  /* hero: the ledger folds under the note and its three figures go side by side */
+  #page-port .pf-hero{grid-template-columns:1fr;}
+  #page-port .pf-note-box,#page-port .pf-ledger{width:100%;max-width:760px;justify-self:center;}
+  #page-port .lg-rows{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+  #page-port .lg-row{flex-direction:column;align-items:flex-start;gap:4px;padding:10px 12px;
+    border:1px solid rgba(214,217,226,.09);border-radius:12px;background:rgba(214,217,226,.03);}
+  #page-port .lg-row:first-child{padding-top:10px;}
+  #page-port .pf-sk.hero{aspect-ratio:1.55;}
+  #page-port .pf-ledger::before{display:none;}
 }
 @media(max-width:680px){
   #page-port .page-wrap{padding:14px;padding-bottom:110px;}
   #page-port .pf-growth-box{height:210px;}
-  #page-port .pf-hero{padding:18px 16px;}
-  #page-port .pf-hero-top{flex-direction:column;align-items:stretch;gap:14px;}
-  #page-port .pf-ccy-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;}
-  #page-port .pf-ccy{min-width:0;padding:9px 10px;}
-  #page-port .pf-ccy-val{font-size:12px;}
-  #page-port .pf-hero-spark{width:100%;height:80px;}
+  #page-port .pf-hero{gap:12px;}
+  #page-port .pf-ledger{padding:12px;gap:10px;border-radius:16px;}
+  #page-port .lg-hd{display:none;}
+  #page-port .lg-rows{gap:7px;}
+  #page-port .lg-row{padding:8px 9px;border-radius:10px;}
+  #page-port .lg-row span{font-size:8px;letter-spacing:1.1px;}
+  #page-port .lg-row b{font-size:13px;letter-spacing:-.3px;}
+  #page-port .lg-div{padding:10px 12px;}
+  #page-port .lg-div b{font-size:14px;}
+  #page-port .lg-spark{width:72px;height:26px;}
+  #page-port .pf-note-tip{display:block;}
+  #page-port .pf-sk.hero{aspect-ratio:1.25;}
   /* the seven KPI tiles are a laptop-and-up affordance */
   #page-port .pf-kpis{display:none;}
   /* and the hero's allocation ribbon is unreadable at this width */
@@ -496,9 +618,17 @@
 }
 
 @media(prefers-reduced-motion:reduce){
+  #page-port .pf-note{transition:none;}
   #page-port *,#page-port *::before,#page-port *::after{
     animation-duration:.01ms !important;animation-iteration-count:1 !important;
     transition-duration:.01ms !important;scroll-behavior:auto !important;}
+}
+
+/* phone: the fifth growth stat spans the row; asset amounts stay on one line */
+#page-port .asset-amount{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+@media(max-width:680px){
+  #page-port .pf-gs:last-child{grid-column:1/-1;}
+  #page-port .asset-amount{font-size:16px;letter-spacing:-.3px;}
 }
 </style>
 
@@ -723,7 +853,7 @@ function portSkeleton(){
     '<div class="pf-sk hero"></div>' +
     '<div class="pf-skel-row k7">' +
       '<div class="pf-sk tile"></div><div class="pf-sk tile"></div><div class="pf-sk tile"></div><div class="pf-sk tile"></div>' +
-      '<div class="pf-sk tile"></div><div class="pf-sk tile"></div><div class="pf-sk tile"></div>' +
+      '<div class="pf-sk tile"></div><div class="pf-sk tile"></div>' +
     '</div>' +
     '<div class="pf-skel-row b2"><div class="pf-sk big"></div><div class="pf-sk big"></div></div>' +
     '<div class="pf-sk wide"></div>' +
@@ -734,6 +864,7 @@ function portSkeleton(){
 }
 
 function portLoad(){
+  _portDiv = null;   /* a reload re-reads dividend credits too */
   var root = document.getElementById('port-root');
   if(root && !root.querySelector('.pf-skel')) root.innerHTML = portSkeleton();
   google.script.run
@@ -997,12 +1128,8 @@ function portDisplayPortfolio(data){
 
   /* ── animate in ── */
   setTimeout(function(){
-    var h = document.getElementById('portHeroAmt');
     var l = document.getElementById('portTileLkr');
-    var u = document.getElementById('portTileUsd');
-    if(h) portAnimateCounter(h, portConv(totalLKR), 1800, portSym());
     if(l) portAnimateCounter(l, portConv(totalLKR), 1600, portSym());
-    if(u) portAnimateCounter(u, totalUSD, 1600, '$');
   }, 180);
 
   setTimeout(function(){
@@ -1010,6 +1137,7 @@ function portDisplayPortfolio(data){
     for(var i = 0; i < bars.length; i++) bars[i].style.width = bars[i].dataset.w + '%';
   }, 320);
 
+  portNoteMount(totalLKR);
   portRenderAssets();
   portEnsureChart(_portChartIdx);
   if(growth.length) portBuildGrowthChart();
@@ -1020,27 +1148,51 @@ function portDisplayPortfolio(data){
 }
 
 /* ═══════════════════════════════════════════
-   ② HERO
+   ② HERO — the Obsidian Prism note + its ledger
+   Front: net worth. Back: the split of the book and twelve months
+   of dividend credits (read from the bank Transactions sheet, the
+   same rule the Bank page uses). The ledger keeps the LKR / USD /
+   EPF figures, the deltas and the allocation ribbon legible at
+   every width.
 ═══════════════════════════════════════════ */
-function portHeroHtml(lkr, usd, epf, momPct, momAbs, ytdPct, hasYtd, amounts){
-  var momCls = momPct > 0.5 ? 'up' : momPct < -0.5 ? 'down' : 'flat';
-  var momArr = momPct > 0.5 ? '▲' : momPct < -0.5 ? '▼' : '→';
-  var ytdCls = ytdPct > 0.5 ? 'up' : ytdPct < -0.5 ? 'down' : 'flat';
-  var ytdArr = ytdPct > 0.5 ? '▲' : ytdPct < -0.5 ? '▼' : '→';
+var PORT_NOTE_TONES = [1, .78, .6, .45, .33, .22];
+var PORT_MON = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+var PORT_MON3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var _portDiv    = null;   /* null | 'loading' | {months, div, int, count} | {err:true} */
+var _portNoteRO = null;
 
-  var spark = '';
-  var sp = portSparkPath(amounts, 800, 120, 8);
-  if(sp){
-    spark = '<svg class="pf-hero-spark" viewBox="0 0 800 120" preserveAspectRatio="none" aria-hidden="true">' +
-      '<defs><linearGradient id="pfHeroG" x1="0" y1="0" x2="0" y2="1">' +
-        '<stop offset="0%" stop-color="#2dd4bf" stop-opacity=".9"/>' +
-        '<stop offset="100%" stop-color="#2dd4bf" stop-opacity="0"/></linearGradient></defs>' +
-      '<path d="' + sp.area + '" fill="url(#pfHeroG)"/>' +
-      '<path d="' + sp.line + '" fill="none" stroke="#2dd4bf" stroke-width="2.5"/></svg>';
-  }
+/* like portFmtShort, but keeps one decimal under 100K so small
+   figures (dividends, a month's change in USD) don't round to "$1K" */
+function portNoteShort(n, currency){
+  var sym = currency === 'USD' ? '$' : portSym();
+  if(currency !== 'USD') n = portConv(n);
+  var a = Math.abs(n), s = n < 0 ? '-' : '';
+  if(a >= 1e6) return s + sym + (a/1e6).toFixed(2) + 'M';
+  if(a >= 1e5) return s + sym + Math.round(a/1e3) + 'K';
+  if(a >= 1e3) return s + sym + (a/1e3).toFixed(1) + 'K';
+  return s + sym + a.toFixed(0);
+}
+
+function portNoteTone(k){ return 'rgba(214,217,226,' + PORT_NOTE_TONES[Math.min(k, PORT_NOTE_TONES.length-1)] + ')'; }
+
+function portHeroHtml(lkr, usd, epf, momPct, momAbs, ytdPct, hasYtd, amounts){
+  var g     = _portGrowthAll || [];
+  var asOf  = g.length ? g[g.length-1].date : '';
+  var cls   = function(p){ return p > 0.5 ? 'up' : p < -0.5 ? 'down' : ''; };
+  var arr   = function(p){ return p > 0.5 ? '▲' : p < -0.5 ? '▼' : '→'; };
+  var pct   = function(p){ return (p >= 0 ? '+' : '') + p.toFixed(1) + '%'; };
+  var sym   = portSym().trim();
+  var v     = portConv(lkr), whole = Math.floor(Math.abs(v)), dec = Math.round((Math.abs(v) - whole) * 100);
+  var hasMom = amounts.length >= 2;
+  var since = hasMom ? (momAbs >= 0 ? '+' : '−') + portNoteShort(Math.abs(momAbs)) : '';
+
+  /* split rows: the five biggest holdings, the tail folded into "Other" */
+  var tot = _portPos.reduce(function(s,a){ return s + a.amt; }, 0);
+  var srt = _portPos.slice().sort(function(a,b){ return b.amt - a.amt; });
+  var rows = srt.slice(0, 5).map(function(a){ return { cat:a.cat, amt:a.amt }; });
+  if(srt.length > 5) rows.push({ cat:'Other · ' + (srt.length - 5), amt:srt.slice(5).reduce(function(s,a){ return s + a.amt; }, 0) });
 
   var ribbon = '', legend = '';
-  var tot = _portPos.reduce(function(s,a){ return s + a.amt; }, 0);
   if(tot > 0){
     _portPos.forEach(function(a){
       ribbon += '<span class="pf-rib" style="width:' + a.pct.toFixed(2) + '%;background:' + a.color + '" ' +
@@ -1050,32 +1202,264 @@ function portHeroHtml(lkr, usd, epf, momPct, momAbs, ytdPct, hasYtd, amounts){
     });
   }
 
-  return '<div class="pf-hero">' + spark +
-    '<div class="pf-hero-inner">' +
-      '<div class="pf-hero-top">' +
-        '<div class="pf-hero-main">' +
-          '<div class="pf-hero-label"><span class="hero-dot"></span>Net Worth · All currencies combined</div>' +
-          '<div class="pf-hero-amt" id="portHeroAmt">' + portFmt(lkr) + '</div>' +
-          '<div class="pf-deltas">' +
-            (amounts.length >= 2 ? '<span class="pf-delta ' + momCls + '">' + momArr + ' ' + (momPct>=0?'+':'') + momPct.toFixed(1) + '% MoM</span>' : '') +
-            (hasYtd ? '<span class="pf-delta ' + ytdCls + '">' + ytdArr + ' ' + (ytdPct>=0?'+':'') + ytdPct.toFixed(1) + '% 12M</span>' : '') +
-            (amounts.length >= 2 ? '<span class="pf-delta-note">' + (momAbs>=0?'+':'-') + portFmt(Math.abs(momAbs)) + ' since last snapshot</span>' : '') +
-          '</div>' +
-        '</div>' +
-        '<div class="pf-ccy-row">' +
-          '<div class="pf-ccy lkr"><span class="pf-ccy-lbl">LKR Assets</span><span class="pf-ccy-val">' + portFmtShort(lkr) + '</span></div>' +
-          '<div class="pf-ccy usd"><span class="pf-ccy-lbl">USD Assets</span><span class="pf-ccy-val">' + portFmt(usd,'USD') + '</span></div>' +
-          '<div class="pf-ccy epf"><span class="pf-ccy-lbl">EPF + ETF</span><span class="pf-ccy-val">' + portFmtShort(epf) + '</span></div>' +
+  var front =
+    '<div class="pf-nf front"><canvas></canvas><div class="prism"></div><div class="frm"></div>' +
+      '<div class="nf-brand pf-silver">PTS Reserve<small>Net worth note · Series ' + new Date().getFullYear() + '</small></div>' +
+      '<div class="nf-ser">№ PT ' + String(g.length).padStart(6,'0') + (asOf ? '<br>as of ' + portEsc(asOf) : '') + '</div>' +
+      '<div class="nf-hint">Tap to turn ⟲</div>' +
+      '<div class="nf-emb"><b class="pf-silver">PTS</b></div>' +
+      '<div class="nf-main">' +
+        '<div class="nf-k"><i></i>Net worth · ' + _portCcy + '</div>' +
+        '<div class="nf-amt pf-foil" id="portHeroAmt"><span class="s">' + portEsc(sym) + '</span>' +
+          '<span id="portHeroNum">' + portNum(whole, 0) + '</span>' +
+          (_portCcy === 'JPY' ? '' : '<small>.' + String(dec).padStart(2,'0') + '</small>') + '</div>' +
+        '<div class="nf-rule"></div>' +
+        '<div class="nf-row">' +
+          (hasMom ? '<span>MoM <b class="' + cls(momPct) + '">' + arr(momPct) + ' ' + pct(momPct) + '</b></span>' : '<span>First snapshot</span>') +
+          (hasYtd ? '<span>12M <b class="' + cls(ytdPct) + '">' + arr(ytdPct) + ' ' + pct(ytdPct) + '</b></span>' : '') +
+          (hasMom ? '<span>' + since + ' since last snapshot</span>' : '') +
         '</div>' +
       '</div>' +
+      '<div class="nf-den">' + portNoteShort(lkr) + '</div>' +
+      '<div class="nf-sig"><i>Pirathees</i><span>Governor of savings</span></div>' +
+      '<div class="nf-patch"></div>' +
+    '</div>';
+
+  var back =
+    '<div class="pf-nf back"><canvas></canvas><div class="prism"></div><div class="frm"></div><div class="nb-in">' +
+      '<div><div class="nb-t">Portfolio split</div>' +
+        '<div class="nb-bar">' + rows.map(function(r, k){ return '<span style="flex:' + r.amt + ';background:' + portNoteTone(k) + '"></span>'; }).join('') + '</div>' +
+        '<div class="nb-rows">' + rows.map(function(r, k){
+          return '<div><i style="background:' + portNoteTone(k) + '"></i><span>' + portEsc(r.cat) + '</span>' +
+            '<em>' + portNoteShort(r.amt) + '</em><b>' + (tot > 0 ? (r.amt / tot * 100).toFixed(1) : '0.0') + '%</b></div>';
+        }).join('') + '</div></div>' +
+      '<div id="portNoteDiv"><div class="nb-t">Dividends · last 12 months</div><div class="nb-empty">Reading dividend credits…</div></div>' +
+    '</div></div>';
+
+  var ledger =
+    '<div class="pf-ledger">' +
+      '<div class="lg-hd"><span class="lg-t">Reserve ledger</span>' +
+        '<button class="lg-flip" type="button" onclick="portNoteFlip()">Turn note ⟲</button></div>' +
+      '<div class="lg-rows">' +
+        '<div class="lg-row"><span>LKR Assets</span><b class="pf-silver">' + portNoteShort(lkr) + '</b></div>' +
+        '<div class="lg-row"><span>USD Assets</span><b class="pf-silver">' + portFmt(usd,'USD') + '</b></div>' +
+        '<div class="lg-row"><span>EPF + ETF</span><b class="pf-silver">' + portNoteShort(epf) + '</b></div>' +
+      '</div>' +
+      '<div class="lg-deltas">' +
+        (hasMom ? '<span class="lg-pill ' + cls(momPct) + '">' + arr(momPct) + ' ' + pct(momPct) + ' MoM</span>' : '') +
+        (hasYtd ? '<span class="lg-pill ' + cls(ytdPct) + '">' + arr(ytdPct) + ' ' + pct(ytdPct) + ' 12M</span>' : '') +
+        (hasMom ? '<span class="lg-note">' + since + ' since last snapshot</span>' : '<span class="lg-note">Log a second snapshot to see change</span>') +
+      '</div>' +
+      '<div class="lg-div" id="portLedgerDiv" role="button" tabindex="0" title="Turn the note to see dividends by month" onclick="portNoteFlip(true)">' +
+        '<div><span>Dividends · 12M</span><b>…</b></div><div class="lg-spark"></div></div>' +
       (ribbon ? '<div class="pf-ribbon-wrap"><div class="pf-ribbon">' + ribbon + '</div>' +
                 '<div class="pf-ribbon-legend">' + legend + '</div></div>' : '') +
-    '</div>' +
-  '</div>';
+    '</div>';
+
+  return '<div class="pf-hero" id="portHero">' +
+      '<div class="pf-note-box"><div class="pf-note" id="portNote" tabindex="0" role="button" ' +
+        'aria-label="Net worth note. Press to turn it over for the portfolio split and dividends.">' + front + back + '</div>' +
+        '<div class="pf-note-tip">Tap the note to see your split and dividends</div></div>' +
+      ledger +
+    '</div>';
+}
+
+function portNoteFlip(toBack){
+  var n = document.getElementById('portNote'); if(!n) return;
+  n.classList.remove('tilting');
+  if(toBack === true) n.classList.add('flipped'); else n.classList.toggle('flipped');
+  portHaptic();
+}
+
+/* fine lattice, three nested rosettes behind the emblem, a wave band and
+   micro-text along the frame — silver at low alpha, drawn per face */
+function portNoteEngrave(face, isBack){
+  var cv = face.querySelector('canvas'); if(!cv) return;
+  var w = Math.max(1, face.offsetWidth), h = Math.max(1, face.offsetHeight);
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = w * dpr; cv.height = h * dpr;
+  var x = cv.getContext('2d'); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,w,h);
+  x.strokeStyle = '#d6d9e2'; x.fillStyle = '#d6d9e2'; x.lineWidth = Math.max(.4, w / 1400);
+  var k, j, u;
+  x.globalAlpha = .055;
+  for(k = -40; k < 40; k++){
+    x.beginPath();
+    for(j = 0; j <= 80; j++){ u = j / 80; var py = h*.5 + k*h*.035 + Math.sin(u*Math.PI*4 + k*.3)*h*.05; j ? x.lineTo(u*w, py) : x.moveTo(u*w, py); }
+    x.stroke();
+  }
+  x.globalAlpha = .16;
+  var yb = isBack ? .12 : .86;
+  for(k = 0; k < 22; k++){
+    x.beginPath();
+    for(j = 0; j <= 120; j++){ u = j / 120; var py2 = h*yb + Math.sin(u*Math.PI*9 + k*.22)*h*.055*Math.sin(u*Math.PI + k*.05) + (k-11)*h*.0035; j ? x.lineTo(u*w, py2) : x.moveTo(u*w, py2); }
+    x.stroke();
+  }
+  /* emblem centre in face coordinates: 5.5% + 25%/2 across, 23% + half its (square) height down */
+  var cx = isBack ? w*.5 : w*(.055 + .125), cy = isBack ? h*.5 : h*.23 + w*.125, S = isBack ? h*1.15 : w*.25*1.15;
+  [[1,.42,44],[.78,.3,38],[.52,.38,30]].forEach(function(L){
+    var R = S*.5*L[0], rr = R*19/120, dd = R*L[2]/120;
+    x.globalAlpha = isBack ? L[1]*.22 : L[1]; x.beginPath();
+    for(var t = 0; t <= Math.PI*2*19; t += .015){
+      var X = cx + ((R-rr)*Math.cos(t) + dd*Math.cos((R-rr)/rr*t))*.5, Y = cy + ((R-rr)*Math.sin(t) - dd*Math.sin((R-rr)/rr*t))*.5;
+      t ? x.lineTo(X,Y) : x.moveTo(X,Y);
+    }
+    x.stroke();
+  });
+  if(!isBack){
+    x.globalAlpha = .5;
+    x.beginPath(); x.arc(cx, cy, S*.5*.55, 0, Math.PI*2); x.stroke();
+    x.beginPath(); x.arc(cx, cy, S*.5*.58, 0, Math.PI*2); x.stroke();
+  }
+  var fs = Math.max(4.5, h*.018), line = '', mt = 'PTS RESERVE · NET WORTH · ';
+  x.globalAlpha = .3; x.font = '500 ' + fs + 'px Inter, sans-serif';
+  while(x.measureText(line).width < w) line += mt;
+  var ins = w*.019 + fs*.2;
+  x.fillText(line, ins + fs, ins - fs*.35);
+  x.fillText(line, ins + fs, h - ins + fs*1.05);
+}
+
+/* shrink the big figures until they sit inside their column */
+function portNoteFit(){
+  var els = document.querySelectorAll('#portHeroAmt, #portNoteDiv .nb-dv');
+  for(var i = 0; i < els.length; i++){
+    var el = els[i]; el.style.fontSize = '';
+    var fs = parseFloat(getComputedStyle(el).fontSize), n = 0;
+    while(el.scrollWidth > el.clientWidth + 1 && n++ < 30){ fs *= .95; el.style.fontSize = fs + 'px'; }
+  }
+}
+
+function portNoteDraw(){
+  var n = document.getElementById('portNote'); if(!n) return;
+  portNoteEngrave(n.querySelector('.front'), false);
+  portNoteEngrave(n.querySelector('.back'), true);
+  portNoteFit();
+}
+
+function portNoteMount(lkr){
+  var n = document.getElementById('portNote'); if(!n) return;
+  portNoteDraw();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(portNoteDraw);
+
+  /* count the figure up once the final width is known */
+  var num = document.getElementById('portHeroNum'), target = Math.floor(Math.abs(portConv(lkr)));
+  if(num && !(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)){
+    var start = performance.now();
+    (function upd(now){
+      var p = Math.min((now - start) / 1600, 1), e = 1 - Math.pow(1 - p, 4);
+      num.textContent = portNum(target * e, 0);
+      if(p < 1) requestAnimationFrame(upd);
+    })(start);
+  }
+
+  if(_portNoteRO) _portNoteRO.disconnect();
+  if(window.ResizeObserver){
+    var t = null;
+    _portNoteRO = new ResizeObserver(function(){ clearTimeout(t); t = setTimeout(portNoteDraw, 90); });
+    _portNoteRO.observe(n);
+  }
+
+  n.addEventListener('click', function(){ portNoteFlip(); });
+  n.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); portNoteFlip(); } });
+  var lg = document.getElementById('portLedgerDiv');
+  if(lg) lg.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); portNoteFlip(true); } });
+
+  /* light and foil follow the pointer — mouse only, so a tap never sticks a tilt */
+  if(window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches &&
+     !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    var faces = n.querySelectorAll('.pf-nf'), prisms = n.querySelectorAll('.prism'), patch = n.querySelector('.nf-patch');
+    n.addEventListener('pointermove', function(e){
+      var r = n.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      n.classList.add('tilting');
+      n.style.setProperty('--ry', ((px - .5) * 7).toFixed(2) + 'deg');
+      n.style.setProperty('--rx', ((.5 - py) * 5).toFixed(2) + 'deg');
+      for(var i = 0; i < faces.length; i++) faces[i].style.setProperty('--sx', (px * 100).toFixed(0) + '%');
+      for(var j = 0; j < prisms.length; j++) prisms[j].style.setProperty('--py', (px * 100).toFixed(0) + '%');
+      if(patch) patch.style.setProperty('--pa', (px * 360).toFixed(0) + 'deg');
+    });
+    n.addEventListener('pointerleave', function(){
+      n.classList.remove('tilting');
+      n.style.setProperty('--ry', '0deg'); n.style.setProperty('--rx', '0deg');
+    });
+  }
+  portDivLoad();
+}
+
+/* ── dividends: credits whose source names a dividend, last 12 months ── */
+function portPassiveKind(t){
+  if(/rollbacked|rolled back/i.test(t.reference || '')) return '';
+  var src = String(t.source || '');
+  if(/\bdividends?\b/i.test(src)) return 'div';
+  if(/\binterest\b/i.test(src)) return 'int';
+  return '';
+}
+
+function portDivCompute(txns){
+  var now = new Date(), y0 = now.getFullYear(), m0 = now.getMonth() - 11, months = [];
+  for(var k = 0; k < 12; k++){ var d = new Date(y0, m0 + k, 1); months.push({ m:d.getMonth(), div:0, int:0 }); }
+  var first = new Date(y0, m0, 1), out = { months:months, div:0, int:0, count:0 };
+  (txns || []).forEach(function(t){
+    var kind = portPassiveKind(t); if(!kind) return;
+    var d = new Date(t.date); if(isNaN(d.getTime())) return;
+    var idx = (d.getFullYear() - first.getFullYear()) * 12 + d.getMonth() - first.getMonth();
+    if(idx < 0 || idx > 11) return;
+    var a = Number(t.amount) || 0;
+    months[idx][kind] += a; out[kind] += a;
+    if(kind === 'div') out.count++;
+  });
+  return out;
+}
+
+function portDivLoad(){
+  if(_portDiv && _portDiv !== 'loading'){ portDivPaint(); return; }
+  if(typeof _bkTxns !== 'undefined' && _bkTxns && _bkTxns.length){ _portDiv = portDivCompute(_bkTxns); portDivPaint(); return; }
+  if(_portDiv === 'loading') return;
+  _portDiv = 'loading';
+  google.script.run
+    .withSuccessHandler(function(t){ _portDiv = portDivCompute(t || []); portDivPaint(); })
+    .withFailureHandler(function(){ _portDiv = { err:true }; portDivPaint(); })
+    .getBankTransactions();
+}
+
+function portDivPaint(){
+  var host = document.getElementById('portNoteDiv'), lg = document.getElementById('portLedgerDiv');
+  if(!host || !_portDiv || _portDiv === 'loading') return;
+  var title = '<div class="nb-t">Dividends · last 12 months</div>';
+  if(_portDiv.err){
+    host.innerHTML = title + '<div class="nb-empty">Could not read the Transactions sheet. Reload the page to try again.</div>';
+    if(lg) lg.innerHTML = '<div><span>Dividends · 12M</span><b>—</b><em>unavailable</em></div>';
+    return;
+  }
+  var D = _portDiv, mx = 0, hi = -1;
+  D.months.forEach(function(m, i){ if(m.div > mx){ mx = m.div; hi = i; } });
+  var bars = D.months.map(function(m, i){
+    return '<span' + (i === hi ? ' class="hi"' : '') + ' style="height:' + (mx > 0 ? (m.div / mx * 100).toFixed(0) : 0) + '%" ' +
+      'title="' + PORT_MON3[m.m] + ' · ' + portNoteShort(m.div) + '"></span>';
+  }).join('');
+  if(!D.div){
+    host.innerHTML = title + '<div class="nb-dv pf-silver">' + portNoteShort(0) + '</div>' +
+      '<div class="nb-empty">No dividend credits in the last 12 months. Bank transfers whose source says “dividend” are counted here.</div>' +
+      (D.int ? '<div class="nb-foot"><span>Interest <b>' + portNoteShort(D.int) + '</b></span></div>' : '');
+  } else {
+    host.innerHTML = title +
+      '<div class="nb-dv pf-silver">' + portFmt(D.div) + '</div>' +
+      '<div class="nb-sub">' + D.count + ' credit' + (D.count === 1 ? '' : 's') + (D.int ? ' · +' + portNoteShort(D.int) + ' interest' : '') + '</div>' +
+      '<div class="nb-bars">' + bars + '</div>' +
+      '<div class="nb-mon">' + D.months.map(function(m){ return '<span>' + PORT_MON[m.m] + '</span>'; }).join('') + '</div>' +
+      '<div class="nb-foot"><span>Avg <b>' + portNoteShort(D.div / 12) + '</b>/mo</span>' +
+        '<span>Best <b>' + (hi >= 0 ? PORT_MON3[D.months[hi].m] : '—') + '</b></span>' +
+        '<span>This month <b>' + portNoteShort(D.months[11].div) + '</b></span></div>';
+  }
+  portNoteFit();
+  if(lg) lg.innerHTML =
+    '<div><span>Dividends · 12M</span><b class="pf-silver">' + portNoteShort(D.div) + '</b>' +
+      '<em>' + (D.div ? D.count + ' credits · tap for months' : 'none logged yet') + '</em></div>' +
+    '<div class="lg-spark">' + D.months.map(function(m, i){
+      return '<i' + (i === hi ? ' class="hi"' : '') + ' style="height:' + (mx > 0 ? Math.max(6, m.div / mx * 100).toFixed(0) : 6) + '%"></i>';
+    }).join('') + '</div>';
 }
 
 /* ═══════════════════════════════════════════
-   ② KPI BENTO STRIP  (3 currency tiles + 4 stats)
+   ② KPI BENTO STRIP  (2 total tiles + 4 stats)
 ═══════════════════════════════════════════ */
 function portKpisHtml(lkr, usd, epf, largest, epfPct, growth, amounts, firstDate){
   var ico = function(d, color){
@@ -1086,7 +1470,6 @@ function portKpisHtml(lkr, usd, epf, largest, epfPct, growth, amounts, firstDate
   _portPos.forEach(function(a){ dots += '<i style="background:' + a.color + '"></i>'; });
 
   var lkrSpark = portSparkSvg(amounts, '#ffd700', 'pf-tile-spark', 200, 40);
-  var usdSpark = portSparkSvg(amounts, '#00ff88', 'pf-tile-spark', 200, 40);
 
   return '<div class="pf-kpis">' +
 
@@ -1095,13 +1478,6 @@ function portKpisHtml(lkr, usd, epf, largest, epfPct, growth, amounts, firstDate
       '<span class="pf-tile-lbl">Total · ' + _portCcy + '</span>' +
       '<span class="pf-tile-val" id="portTileLkr">' + portFmt(lkr) + '</span>' +
       (lkrSpark || '<span class="pf-tile-sub">&nbsp;</span>') +
-    '</div>' +
-
-    '<div class="pf-tile usd' + (usdSpark ? ' pad0' : '') + '"><span class="pf-tile-glow" style="background:#00ff88"></span>' +
-      ico('<path d="M12 2v20M17 6.5c0-2-2.2-3.5-5-3.5S7 4.5 7 6.5 9 10 12 10.5s5 1.5 5 3.5-2.2 3.5-5 3.5-5-1.5-5-3.5"/>','#00ff88') +
-      '<span class="pf-tile-lbl">Total · USD</span>' +
-      '<span class="pf-tile-val" id="portTileUsd">' + portFmt(usd,'USD') + '</span>' +
-      (usdSpark || '<span class="pf-tile-sub">&nbsp;</span>') +
     '</div>' +
 
     '<div class="pf-tile epf"><span class="pf-tile-glow" style="background:#a855f7"></span>' +
