@@ -644,8 +644,8 @@ var EXP_FALLBACK=['#6366f1','#8b5cf6','#06b6d4','#f59e0b','#10b981','#ec4899','#
 var EXP_YR_COLORS=['#6366f1','#06b6d4','#10b981','#f59e0b','#ec4899','#f97316'];
 var EXP_MON_ORDER=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function expCc(name,i){return EXP_CAT_COLORS[name]||EXP_FALLBACK[i%EXP_FALLBACK.length];}
-function expSl(s){var p=s.trim().split(/\s+/);if(p.length<2)return s.substring(0,6);var m=p[0].substring(0,3);if(m.toUpperCase()==='OTC')m='Oct';return m+" '"+p[p.length-1].substring(2);}
-function expF(n){return n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?(n/1e3).toFixed(1)+'K':Math.round(n).toLocaleString('en-IN');}
+function expSl(s){var p=s.trim().split(/\s+/);if(p.length<2)return s.substring(0,6);var m=p[0].substring(0,3);if(m.toUpperCase()==='OTC')m='Oct';m=m.charAt(0).toUpperCase()+m.slice(1).toLowerCase();return m+" '"+p[p.length-1].substring(2);}
+function expF(n){var a=Math.abs(n),s=n<0?'-':'';return s+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?(a/1e3).toFixed(1)+'K':Math.round(a).toLocaleString('en-IN'));}
 function expFr(n){return '₨ '+Math.round(n).toLocaleString('en-IN');}
 var EXP_GC='rgba(255,255,255,0.05)',EXP_TC='#475569';
 var EXP_LEG={labels:{color:'#94a3b8',boxWidth:10,padding:14,font:{size:11}}};
@@ -842,9 +842,10 @@ function expBuild(D){
   var months=D.months,totals=D.monthlyTotals,cats=D.categories,yg=D.yearGroups,latest=D.latestMonth;
   var labels=months.map(expSl),n=months.length,li=n-1;
   var years=Object.keys(yg).sort();
+  var sum=function(a){return a.reduce(function(s,v){return s+(v||0);},0);};
   var cur=totals[li]||0,prev=totals[li-1]||0;
   var mom=prev>0?(cur-prev)/prev*100:0;
-  var avg=totals.reduce(function(a,b){return a+b;},0)/(n||1);
+  var avg=sum(totals)/(n||1);
   var worstI=totals.indexOf(Math.max.apply(null,totals));
   var catCur=cats.map(function(c,i){return {name:c.name,val:c.values[li]||0,i:i};}).sort(function(a,b){return b.val-a.val;});
   var topCat=catCur[0]||{name:'–',val:0};
@@ -862,39 +863,44 @@ function expBuild(D){
   var discVal=cats.filter(function(c){return discNames.includes(c.name.toLowerCase());}).reduce(function(s,c){return s+(c.values[li]||0);},0);
   var discPct=cur>0?discVal/cur*100:0;
   var momArr=totals.map(function(v,i){return i===0?0:v-totals[i-1];});
-  var catAll=cats.map(function(c,i){return {name:c.name,tot:c.values.reduce(function(s,v){return s+v;},0),i:i};}).sort(function(a,b){return b.tot-a.tot;});
+  var catAll=cats.map(function(c,i){return {name:c.name,tot:sum(c.values),i:i};}).sort(function(a,b){return b.tot-a.tot;});
   var transVal=['uber','uber work','bus fair'].reduce(function(s,nm){var c=cats.find(function(x){return x.name.toLowerCase()===nm;});return s+(c?c.values[li]||0:0);},0);
+  var allTotal=sum(totals);
 
-  var yrCards=years.map(function(yr,yi){
-    var g=yg[yr];
-    var yrTotal=g.totals.reduce(function(a,b){return a+b;},0);
-    var yrAvg=yrTotal/(g.months.length||1);
-    var yrBestI=g.totals.indexOf(Math.min.apply(null,g.totals));
-    var yrWorstI=g.totals.indexOf(Math.max.apply(null,g.totals));
-    var yoyHtml='';
-    if(yi>0){var prevYr=years[yi-1];var prevTotal=yg[prevYr].totals.reduce(function(a,b){return a+b;},0);
-      if(prevTotal>0){var yoyPct=(yrTotal-prevTotal)/prevTotal*100;
-        yoyHtml='<div class="yr-yoy '+(yoyPct>0?'up':'dn')+'">'+(yoyPct>0?'▲':'▼')+' '+Math.abs(yoyPct).toFixed(1)+'% vs '+prevYr+'</div>';}}
-    return '<div class="yr-card"><div class="yr-card-yr">'+yr+'</div>'+
-      '<div class="yr-card-total">'+expFr(yrTotal)+' total · '+g.months.length+' months</div>'+
-      '<div class="yr-card-meta">'+
-        '<div class="yr-card-m"><span style="opacity:.5">Avg/mo</span> <strong>'+expFr(yrAvg)+'</strong></div>'+
-        '<div class="yr-card-m"><span style="opacity:.5">Best</span> <strong style="color:#10b981">'+expSl(g.months[yrBestI]||'–')+'</strong></div>'+
-        '<div class="yr-card-m"><span style="opacity:.5">Worst</span> <strong style="color:#ef4444">'+expSl(g.months[yrWorstI]||'–')+'</strong></div>'+
-      '</div>'+yoyHtml+'</div>';
+  var curYr=years[years.length-1],prevYr=years[years.length-2];
+  var curKey=expMonKey(expSl(latest)),lyVal=0;
+  if(prevYr)yg[prevYr].months.forEach(function(m,i){if(expMonKey(expSl(m))===curKey)lyVal=yg[prevYr].totals[i];});
+  var lyPct=lyVal>0?(cur-lyVal)/lyVal*100:0;
+  var ytd=sum(yg[curYr].totals),ytdKeys=yg[curYr].months.map(function(m){return expMonKey(expSl(m));});
+  var lyYtd=prevYr?sum(yg[prevYr].months.map(function(m,i){return ytdKeys.indexOf(expMonKey(expSl(m)))>=0?yg[prevYr].totals[i]:0;})):0;
+  var ytdPct=lyYtd>0?(ytd-lyYtd)/lyYtd*100:0;
+
+  /* Per-year summary (was the year cards) — now lives in the YoY chart */
+  /* The latest column is still filling up when it is this calendar month — a few
+     days of spend would otherwise read as the year's "best" month and drag avg/mo down. */
+  var _now=new Date(),_lm=latest.match(/20\d{2}/);
+  var inProgKey=(_lm&&+_lm[0]===_now.getFullYear()&&expMonIdx(expMonKey(expSl(latest)))===_now.getMonth())?expMonKey(expSl(latest)):null;
+  var inProgYr=inProgKey?_lm[0]:null;
+  var yrInfo=years.map(function(yr,yi){
+    var g=yg[yr],t=sum(g.totals);
+    var done=g.months.map(function(m,i){return {k:expMonKey(expSl(m)),v:g.totals[i]||0};})
+      .filter(function(x){return !(yr===inProgYr&&x.k===inProgKey);});
+    var dv=done.map(function(x){return x.v;}),a=dv.length?sum(dv)/dv.length:0;
+    var best=done.length?done[dv.indexOf(Math.min.apply(null,dv))].k:null,worst=done.length?done[dv.indexOf(Math.max.apply(null,dv))].k:null;
+    return {yr:yr,total:t,avg:a,n:g.months.length,partial:yr===inProgYr,best:best,worst:worst,color:EXP_YR_COLORS[yi%EXP_YR_COLORS.length]};
+  });
+  yrInfo.forEach(function(y,yi){y.yoy=null;if(yi>0&&yrInfo[yi-1].avg>0)y.yoy=(y.avg-yrInfo[yi-1].avg)/yrInfo[yi-1].avg*100;});
+  var yrStrip=yrInfo.map(function(y){
+    return '<span class="yrs"><i style="background:'+y.color+'"></i><b>'+y.yr+'</b> ₨'+expF(y.total)+' · ₨'+expF(y.avg)+'/mo'+(y.n<12?' · '+y.n+' mo'+(y.partial?' ('+inProgKey+' in progress)':''):'')+
+      (y.yoy!=null?' <span class="delta '+(y.yoy>0?'up':'dn')+'">'+(y.yoy>0?'▲':'▼')+' '+Math.abs(y.yoy).toFixed(1)+'%</span>':'')+'</span>';
   }).join('');
 
-  /* Sub-label + hover breakdown for the subscriptions KPI */
   var subsNote, subsTip='';
-  if(!subs.keywords||!subs.keywords.length){
-    subsNote='Set keywords in H1';
-  }else if(!subsVal){
-    subsNote='None this month';
-  }else{
-    subsNote=subs.count+' item'+(subs.count===1?'':'s')+' \u00b7 '+subsPct.toFixed(1)+'% of total';
-    subsTip=(subs.items||[]).map(function(it){
-      return it.reference+' \u2014 '+expFr(it.amount)+' ('+it.category+', day '+it.day+')';
-    }).join('&#10;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  if(!subs.keywords||!subs.keywords.length){subsNote='Set keywords in H1';}
+  else if(!subsVal){subsNote='None this month';}
+  else{
+    subsNote=subs.count+' item'+(subs.count===1?'':'s')+' · '+subsPct.toFixed(1)+'% of total';
+    subsTip=(subs.items||[]).map(function(it){return it.reference+' — '+expFr(it.amount)+' ('+it.category+', day '+it.day+')';}).join('&#10;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   }
 
   var root=document.getElementById('exp-root');
@@ -905,162 +911,166 @@ function expBuild(D){
       '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div></div>'+
       '<div class="kpi c1"><div class="kpi-lbl">Avg Monthly</div><div class="kpi-val">'+expFr(avg)+'</div><div class="kpi-sub">Over '+n+' months</div></div>'+
       '<div class="kpi c2"><div class="kpi-lbl">Top Category</div><div class="kpi-val" style="font-size:13px">'+topCat.name+'</div><div class="kpi-sub">'+expFr(topCat.val)+' this month</div></div>'+
-      '<div class="kpi c3"><div class="kpi-lbl">Subscriptions &amp; Non-Regulars</div><div class="kpi-val">'+expFr(subsVal)+'</div><div class="kpi-sub"'+(subsTip?' title="'+subsTip+'"':'')+'>'+subsNote+'</div></div>'+
+      '<div class="kpi c3"'+(subsTip?' title="'+subsTip+'"':'')+'><div class="kpi-lbl">Subscriptions &amp; Non-Regulars</div><div class="kpi-val">'+expFr(subsVal)+'</div><div class="kpi-sub">'+subsNote+'</div></div>'+
       '<div class="kpi c4"><div class="kpi-lbl">Rent</div><div class="kpi-val">'+expFr(rentVal)+'</div><div class="kpi-sub">'+rentPct.toFixed(1)+'% of total</div></div>'+
       '<div class="kpi c5"><div class="kpi-lbl">Variable Spend</div><div class="kpi-val">'+expFr(varSpd)+'</div><div class="kpi-sub">Excl. rent &amp; subs</div></div>'+
     '</div>'+
     '<div class="pills">'+
-      '<div class="pill '+(rentPct>40?'warn':'good')+'"><em>🏠 Rent</em><strong>'+rentPct.toFixed(1)+'%</strong></div>'+
       '<div class="pill '+(foodPct>30?'warn':'')+'"><em>🍜 Food</em><strong>'+foodPct.toFixed(1)+'%</strong></div>'+
       '<div class="pill '+(discPct>15?'warn':'')+'"><em>🎉 Discretionary</em><strong>'+discPct.toFixed(1)+'%</strong></div>'+
       '<div class="pill info"><em>🚗 Transport</em><strong>'+expFr(transVal)+'</strong></div>'+
       '<div class="pill '+(cur<avg?'good':'bad')+'"><em>vs Avg</em><strong>'+(cur<avg?'Below avg ✓':'Above avg')+'</strong></div>'+
+      (lyVal?'<div class="pill '+(lyPct>0?'bad':'good')+'"><em>📅 vs '+expSl(latest).split(' ')[0]+' '+prevYr+'</em><strong>'+(lyPct>0?'▲ +':'▼ ')+Math.abs(lyPct).toFixed(1)+'%</strong></div>':'')+
+      (lyYtd?'<div class="pill '+(ytdPct>0?'bad':'good')+'"><em>📆 YTD vs '+prevYr+'</em><strong>'+(ytdPct>0?'▲ +':'▼ ')+Math.abs(ytdPct).toFixed(1)+'%</strong></div>':'')+
       '<div class="pill pur"><em>📉 Worst</em><strong>'+expSl(months[worstI]||'–')+'</strong></div>'+
-      '<div class="pill"><em>📈 All-time</em><strong>'+expFr(totals.reduce(function(a,b){return a+b;},0))+'</strong></div>'+
+      '<div class="pill"><em>📈 All-time</em><strong>'+expFr(allTotal)+'</strong></div>'+
     '</div>'+
     '<div class="sec-lbl" style="margin-top:6px">Year Comparison</div>'+
-    '<div class="yr-strip">'+yrCards+'</div>'+
-    '<div class="row r2" style="margin-bottom:12px">'+
-      '<div class="cbox"><div class="ctitle">📅 Year-over-Year Monthly Totals</div><div class="csub">Same calendar month across years</div><div class="cwrap tall"><canvas id="expCYoY"></canvas></div></div>'+
-      '<div class="cbox"><div class="ctitle">🏷️ Year-over-Year by Category</div><div class="csub">Total per category grouped by year</div><div class="cwrap tall"><canvas id="expCYrCat"></canvas></div></div>'+
-    '</div>'+
-    '<div class="row r1" style="margin-bottom:12px">'+
-      '<div class="cbox"><div class="ctitle">📊 Avg Monthly Spend per Category (YoY)</div><div class="csub">Average monthly spend per category compared across years</div><div class="cwrap"><canvas id="expCYrAvgCat"></canvas></div></div>'+
+    '<div class="row r2">'+
+      '<div class="cbox"><div class="ctitle">📅 Year-over-Year Monthly Totals</div><div class="csub">Same calendar month across years · <span style="color:#10b981">●</span> best <span style="color:#ef4444">●</span> worst month'+(inProgKey?' · ○ '+inProgKey+' in progress (left out of best/worst and avg)':'')+' · YoY on avg/mo</div><div class="yr-sum">'+yrStrip+'</div><div class="cwrap tall"><canvas id="expCYoY"></canvas></div></div>'+
+      '<div class="cbox"><div class="ctitle">📊 Avg Monthly Spend per Category (YoY)</div><div class="csub">Average monthly spend per category compared across years</div><div class="cwrap tall" style="height:278px"><canvas id="expCYrAvgCat"></canvas></div></div>'+
     '</div>'+
     '<div class="sec-lbl" style="margin-top:6px">Monthly View</div>'+
-    '<div class="row r21">'+
+    '<div class="row r311">'+
       '<div class="cbox"><div class="ctitle">📈 Monthly Expense Trend</div><div class="csub">Total spend each month + average line</div><div class="cwrap tall"><canvas id="expCTrend"></canvas></div></div>'+
-      '<div class="cbox"><div class="ctitle">🍩 '+latest+' Breakdown</div><div class="csub">Current month by category</div><div class="cwrap"><canvas id="expCDonut"></canvas></div></div>'+
+      '<div class="cbox"><div class="cbox-hd"><div><div class="ctitle">🍩 Month Breakdown</div><div class="csub">By category</div></div><div class="mnav"><button type="button" id="expDMPrev" aria-label="Previous month">‹</button><span id="expDMLbl"></span><button type="button" id="expDMNext" aria-label="Next month">›</button></div></div><div class="cwrap tall"><canvas id="expCDonut"></canvas></div></div>'+
+      '<div class="cbox"><div class="cbox-hd"><div><div class="ctitle">🍩 Year Breakdown</div><div class="csub">By category</div></div><div class="mnav"><button type="button" id="expDYPrev" aria-label="Previous year">‹</button><span id="expDYLbl"></span><button type="button" id="expDYNext" aria-label="Next year">›</button></div></div><div class="cwrap tall"><canvas id="expCDonutYr"></canvas></div></div>'+
     '</div>'+
     '<div class="row r1">'+
       '<div class="cbox"><div class="ctitle">📊 Monthly Spend by Category (Stacked)</div><div class="csub">Stacked view across all months</div><div class="cwrap tall"><canvas id="expCStack"></canvas></div></div>'+
     '</div>'+
     '<div class="row r2">'+
-      '<div class="cbox"><div class="ctitle">📉 Top Category Trends</div><div class="csub">Top 4 categories over time</div><div class="cwrap"><canvas id="expCCatTrend"></canvas></div></div>'+
+      '<div class="cbox"><div class="cbox-hd"><div><div class="ctitle">📉 Top Category Trends</div><div class="csub" id="expTcSub">Top category over time (excl. rent)</div></div><label class="tgl"><input type="checkbox" id="expTcAll"><span class="tgl-sw"></span>Show others</label></div><div class="cwrap"><canvas id="expCCatTrend"></canvas></div></div>'+
       '<div class="cbox"><div class="ctitle">📊 Month-on-Month Change</div><div class="csub">Δ vs previous month</div><div class="cwrap"><canvas id="expCMom"></canvas></div></div>'+
     '</div>'+
-    '<div class="row r1">'+
-      '<div class="cbox"><div class="ctitle">🏆 All-Time Category Ranking</div><div class="csub">Total spend per category across all months · <span style="color:var(--teal);font-weight:700;">click a bar to see all entries</span></div><div class="cwrap"><canvas id="expCRank"></canvas></div></div>'+
-    '</div>'+
-    '<div class="ig" id="exp-ig"></div>';
+    '<div class="row r2">'+
+      '<div class="cbox"><div class="ctitle">🧱 Fixed vs Variable</div><div class="csub">Rent vs everything else, each month</div><div class="cwrap"><canvas id="expCFixVar"></canvas></div></div>'+
+      '<div class="cbox"><div class="ctitle">🏆 All-Time Category Map</div><div class="csub">Tile size = all-time spend · <span style="color:var(--teal);font-weight:700;">click a tile to see all entries</span></div><div class="tm" id="exp-treemap"></div></div>'+
+    '</div>';
 
   document.getElementById('exp-sub').textContent=n+' months tracked · Latest: '+latest;
-  buildExpTicker(cur, avg, 0, 0);  /* budget/remaining fed from edm if loaded */
   document.getElementById('exp-badge').textContent=latest;
 
-  // Build YoY month key list
+  var base={responsive:true,maintainAspectRatio:false};
+  function opts(o){return Object.assign({},base,o);}
+  /* centre label for donuts */
+  var centerTxt={id:'centerTxt',afterDraw:function(ch){var t=ch.options.plugins.centerTxt;if(!t||!t.text)return;var a=ch.chartArea,x=(a.left+a.right)/2,y=(a.top+a.bottom)/2,c=ch.ctx;
+    c.save();c.textAlign='center';c.textBaseline='middle';c.fillStyle='#fff';c.font='700 14px Inter, system-ui, sans-serif';c.fillText(t.text,x,y-6);
+    c.fillStyle='rgba(255,255,255,.35)';c.font='500 9px Inter, system-ui, sans-serif';c.fillText(t.sub||'',x,y+10);c.restore();}};
+
+  /* YoY monthly totals — carries the old year-card info */
   var allMonKeys=[];
   years.forEach(function(yr){yg[yr].months.map(expSl).forEach(function(lbl){var k=expMonKey(lbl);if(!allMonKeys.includes(k))allMonKeys.push(k);});});
   allMonKeys.sort(function(a,b){return expMonIdx(a)-expMonIdx(b);});
-
-  // YoY line chart
-  var yoyDs=years.map(function(yr,yi){var g=yg[yr],map={};g.months.forEach(function(m,i){map[expMonKey(expSl(m))]=g.totals[i]||0;});
-    return {label:yr,data:allMonKeys.map(function(k){return map[k]!==undefined?map[k]:null;}),
-      borderColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length],backgroundColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length]+'25',
-      fill:false,tension:.4,pointRadius:4,pointHoverRadius:7,borderWidth:2.5,spanGaps:false};});
+  var yoyDs=yrInfo.map(function(y){var g=yg[y.yr],map={};g.months.forEach(function(m,i){map[expMonKey(expSl(m))]=g.totals[i]||0;});
+    var mk=function(hit,dflt){return allMonKeys.map(function(k){return k===y.best?hit[0]:k===y.worst?hit[1]:dflt;});};
+    return {label:y.yr,data:allMonKeys.map(function(k){return map[k]!==undefined?map[k]:null;}),
+      borderColor:y.color,backgroundColor:y.color+'25',fill:false,tension:.4,borderWidth:2.5,spanGaps:false,
+      pointRadius:mk([6,6],3),pointHoverRadius:7,pointBorderColor:mk(['#10b981','#ef4444'],y.color),
+      pointBackgroundColor:allMonKeys.map(function(k){return y.partial&&k===inProgKey?'transparent':k===y.best?'#10b981':k===y.worst?'#ef4444':y.color;}),
+      pointBorderWidth:allMonKeys.map(function(k){return y.partial&&k===inProgKey?2:1;}),
+      segment:{borderDash:function(ctx){return y.partial&&allMonKeys[ctx.p1DataIndex]===inProgKey?[4,4]:undefined;}}};});
   new Chart(document.getElementById('expCYoY'),{type:'line',data:{labels:allMonKeys,datasets:yoyDs},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);}}}},scales:expSc()}});
+    options:opts({interaction:{mode:'index',intersect:false},plugins:{legend:EXP_LEG,tooltip:{callbacks:{
+      label:function(c){if(c.raw==null)return null;var y=yrInfo[c.datasetIndex],tag=(y.partial&&c.label===inProgKey)?' · in progress':c.label===y.best?' · best':c.label===y.worst?' · worst':'';return ' '+c.dataset.label+': ₨'+expF(c.raw)+tag;}}}},scales:expSc()})});
 
-  // YoY by category grouped bar
-  var yrCatDs=years.map(function(yr,yi){var g=yg[yr];
-    return {label:yr,data:cats.map(function(c){return g.catTotals[c.name]||0;}),backgroundColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length]+'bb',borderWidth:0,borderRadius:4};});
-  new Chart(document.getElementById('expCYrCat'),{type:'bar',data:{labels:cats.map(function(c){return c.name;}),datasets:yrCatDs},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);}}}},scales:expSc()}});
-
-  // YoY avg per category
   var yrAvgDs=years.map(function(yr,yi){var g=yg[yr],mo=g.months.length||1;
     return {label:yr,data:cats.map(function(c){return (g.catTotals[c.name]||0)/mo;}),backgroundColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length]+'99',borderColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length],borderWidth:1,borderRadius:4};});
   new Chart(document.getElementById('expCYrAvgCat'),{type:'bar',data:{labels:cats.map(function(c){return c.name;}),datasets:yrAvgDs},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+' avg/mo: ₨'+expF(c.raw);}}}},scales:expSc()}});
+    options:opts({plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+' avg/mo: ₨'+expF(c.raw);}}}},scales:expSc()})});
 
-  // Trend line
   new Chart(document.getElementById('expCTrend'),{type:'line',data:{labels:labels,datasets:[
-    {label:'Total Spend',data:totals,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',fill:true,tension:.4,pointBackgroundColor:'#6366f1',pointRadius:4,pointHoverRadius:7,borderWidth:2.5},
-    {label:'Average',data:totals.map(function(){return avg;}),borderColor:'rgba(239,68,68,.5)',borderDash:[5,5],borderWidth:1.5,fill:false,pointRadius:0,tension:0}
-  ]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw);}}}},scales:expSc()}});
+    {label:'Total Spend',data:totals,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',fill:true,tension:.4,pointBackgroundColor:'#6366f1',pointRadius:3,pointHoverRadius:7,borderWidth:2.5},
+    {label:'Average (₨'+expF(avg)+')',data:totals.map(function(){return avg;}),borderColor:'rgba(239,68,68,.5)',borderDash:[5,5],borderWidth:1.5,fill:false,pointRadius:0,tension:0}
+  ]},options:opts({interaction:{mode:'index',intersect:false},plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label.split(' (')[0]+': ₨'+expF(c.raw);}}}},scales:expSc()})});
 
-  // Donut
-  var dCats=catCur.filter(function(c){return c.val>0;});
-  new Chart(document.getElementById('expCDonut'),{type:'doughnut',data:{
-    labels:dCats.map(function(c){return c.name;}),
-    datasets:[{data:dCats.map(function(c){return c.val;}),backgroundColor:dCats.map(function(c){return expCc(c.name,c.i);}),borderWidth:0,hoverOffset:8}]
-  },options:{responsive:true,maintainAspectRatio:true,cutout:'62%',
-    plugins:{legend:{labels:{color:'#94a3b8',boxWidth:10,padding:10,font:{size:10}},position:'bottom'},
-      tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw)+' ('+(c.raw/cur*100).toFixed(1)+'%)';}}}}}});
+  /* Donuts with prev/next navigation */
+  var donutOpts=function(){return opts({cutout:'64%',plugins:{centerTxt:{},legend:{labels:{color:'#94a3b8',boxWidth:8,padding:6,font:{size:9}},position:'bottom'},
+    tooltip:{callbacks:{label:function(c){var t=sum(c.dataset.data);return ' '+c.label+': ₨'+expF(c.raw)+' ('+(t?c.raw/t*100:0).toFixed(1)+'%)';}}}}});};
+  function donutData(pairs){pairs=pairs.filter(function(p){return p.v>0;}).sort(function(a,b){return b.v-a.v;});
+    return {labels:pairs.map(function(p){return p.name;}),datasets:[{data:pairs.map(function(p){return p.v;}),backgroundColor:pairs.map(function(p){return expCc(p.name,p.i);}),borderWidth:0,hoverOffset:8}]};}
+  var dM=new Chart(document.getElementById('expCDonut'),{type:'doughnut',data:{labels:[],datasets:[]},options:donutOpts(),plugins:[centerTxt]});
+  var dY=new Chart(document.getElementById('expCDonutYr'),{type:'doughnut',data:{labels:[],datasets:[]},options:donutOpts(),plugins:[centerTxt]});
+  var mIdx=li,yIdx=years.length-1;
+  function drawM(){dM.data=donutData(cats.map(function(c,i){return {name:c.name,v:c.values[mIdx]||0,i:i};}));
+    dM.options.plugins.centerTxt={text:'₨'+expF(totals[mIdx]),sub:months[mIdx]};dM.update();
+    document.getElementById('expDMLbl').textContent=labels[mIdx];
+    document.getElementById('expDMPrev').disabled=mIdx<=0;document.getElementById('expDMNext').disabled=mIdx>=li;}
+  function drawY(){var g=yg[years[yIdx]];dY.data=donutData(cats.map(function(c,i){return {name:c.name,v:g.catTotals[c.name]||0,i:i};}));
+    dY.options.plugins.centerTxt={text:'₨'+expF(sum(g.totals)),sub:g.months.length+' months'};dY.update();
+    document.getElementById('expDYLbl').textContent=years[yIdx];
+    document.getElementById('expDYPrev').disabled=yIdx<=0;document.getElementById('expDYNext').disabled=yIdx>=years.length-1;}
+  document.getElementById('expDMPrev').onclick=function(){if(mIdx>0){mIdx--;drawM();}};
+  document.getElementById('expDMNext').onclick=function(){if(mIdx<li){mIdx++;drawM();}};
+  document.getElementById('expDYPrev').onclick=function(){if(yIdx>0){yIdx--;drawY();}};
+  document.getElementById('expDYNext').onclick=function(){if(yIdx<years.length-1){yIdx++;drawY();}};
+  drawM();drawY();
 
-  // Stacked bar
   new Chart(document.getElementById('expCStack'),{type:'bar',data:{labels:labels,
     datasets:cats.map(function(c,i){return {label:c.name,data:c.values,backgroundColor:expCc(c.name,i)+'cc',borderWidth:0,stack:'a'};})
-  },options:{responsive:true,maintainAspectRatio:true,
-    plugins:{legend:EXP_LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);}}}},
-    scales:expSc(true)}});
+  },options:opts({
+    plugins:{legend:EXP_LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);},
+      footer:function(items){return 'Total: ₨'+expF(totals[items[0].dataIndex]);}}}},
+    scales:expSc(true)})});
 
-  // Top 4 category trends
-  var top4Cats=[].concat(cats).sort(function(a,b){return b.values.reduce(function(s,v){return s+v;},0)-a.values.reduce(function(s,v){return s+v;},0);}).slice(0,4);
-  new Chart(document.getElementById('expCCatTrend'),{type:'line',data:{labels:labels,
-    datasets:top4Cats.map(function(c){return {label:c.name,data:c.values,borderColor:expCc(c.name,cats.indexOf(c)),backgroundColor:'transparent',tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2};})
-  },options:{responsive:true,maintainAspectRatio:true,plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw);}}}},scales:expSc()}});
+  /* Top category trends: only #1 visible, toggle reveals the next 3 */
+  var top4Cats=cats.filter(function(c){return c.name.toLowerCase()!=='rent';}).sort(function(a,b){return sum(b.values)-sum(a.values);}).slice(0,4);
+  var tc=new Chart(document.getElementById('expCCatTrend'),{type:'line',data:{labels:labels,
+    datasets:top4Cats.map(function(c,k){var col=expCc(c.name,cats.indexOf(c));return {label:c.name,data:c.values,borderColor:col,backgroundColor:col+'1f',fill:k===0,hidden:k>0,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2};})
+  },options:opts({interaction:{mode:'index',intersect:false},plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);}}}},scales:expSc()})});
+  document.getElementById('expTcAll').onchange=function(){var on=this.checked;
+    tc.data.datasets.forEach(function(d,k){if(k>0)d.hidden=!on;d.fill=!on&&k===0;});tc.update();
+    document.getElementById('expTcSub').textContent=on?'Top 4 categories over time (excl. rent)':'Top category over time (excl. rent)';};
 
-  // MoM delta bar
   var momColors=momArr.map(function(v){return v>0?'rgba(239,68,68,.8)':v<0?'rgba(16,185,129,.8)':'rgba(148,163,184,.4)';});
   new Chart(document.getElementById('expCMom'),{type:'bar',data:{labels:labels.slice(1),
     datasets:[{label:'MoM Δ',data:momArr.slice(1),backgroundColor:momColors.slice(1),borderWidth:0,borderRadius:3}]
-  },options:{responsive:true,maintainAspectRatio:true,
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' ₨'+expF(Math.abs(c.raw))+(c.raw>=0?' ▲':' ▼');}}}},
-    scales:expSc()}});
+  },options:opts({
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var p=totals[c.dataIndex]>0?c.raw/totals[c.dataIndex]*100:0;return ' ₨'+expF(Math.abs(c.raw))+(c.raw>=0?' ▲':' ▼')+' ('+(p>=0?'+':'')+p.toFixed(1)+'%)';}}}},
+    scales:expSc()})});
 
-  // Category ranking (horizontal) — click a bar to open all-time drilldown
-  new Chart(document.getElementById('expCRank'),{type:'bar',data:{
-    labels:catAll.map(function(c){return c.name;}),
-    datasets:[{label:'All-time Total',data:catAll.map(function(c){return c.tot;}),
-      backgroundColor:catAll.map(function(c){return expCc(c.name,c.i)+'cc';}),borderWidth:0,borderRadius:4}]
-  },options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,
-    onClick:function(evt,elements){
-      if(elements && elements.length>0){
-        var idx=elements[0].index;
-        var catName=catAll[idx]&&catAll[idx].name;
-        if(catName) catPanelOpen(catName);
-      }
-    },
-    plugins:{legend:{display:false},
-      tooltip:{callbacks:{label:function(c){return ' ₨'+expF(c.raw)+' — click to drill down';}}},
-      cursor:{pointer:true}},
-    scales:{x:{grid:{color:EXP_GC},ticks:{color:EXP_TC,callback:function(v){return '₨'+expF(v);}}},y:{grid:{color:'transparent'},ticks:{color:EXP_TC}}}}});
+  var rentArr=months.map(function(_,i){return rentObj?rentObj.values[i]||0:0;});
+  new Chart(document.getElementById('expCFixVar'),{type:'bar',data:{labels:labels,datasets:[
+    {label:'Rent',data:rentArr,backgroundColor:'#64748bcc',borderWidth:0,stack:'f'},
+    {label:'Variable',data:totals.map(function(t,i){return t-rentArr[i];}),backgroundColor:'#6366f1cc',borderWidth:0,stack:'f'}]},
+    options:opts({plugins:{legend:EXP_LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw)+' ('+(totals[c.dataIndex]?c.raw/totals[c.dataIndex]*100:0).toFixed(0)+'%)';}}}},scales:expSc(true)})});
 
-  // Insights
-  var biggestMomIdx=momArr.slice(1).reduce(function(mx,v,i,a){return Math.abs(v)>Math.abs(a[mx])?i:mx;},0);
-  var biggestMomVal=momArr[biggestMomIdx+1]||0,biggestMomLbl=labels[biggestMomIdx+1]||'–';
-  var topAllCat=catAll[0]||{name:'–',tot:0};
-  var allTotal=totals.reduce(function(a,b){return a+b;},0);
-  var topAllPct=allTotal>0?topAllCat.tot/allTotal*100:0;
-  var foodTrend=foodObj?foodObj.values.slice(-3):[];
-  var foodDir=foodTrend.length>=2?(foodTrend[foodTrend.length-1]>foodTrend[0]?'↑ Rising':'↓ Falling'):'–';
-  var rentVals2=rentObj?rentObj.values.filter(function(v){return v>0;}):[];
-  var avgRent=rentVals2.length>0?rentVals2.reduce(function(a,b){return a+b;},0)/rentVals2.length:0;
-  var abvAvg=totals.filter(function(v){return v>avg;}).length;
-  var yrTotals=years.map(function(yr){return {yr:yr,tot:yg[yr].totals.reduce(function(a,b){return a+b;},0)};});
-  var bestYr=yrTotals.reduce(function(b,y){return y.tot<b.tot?y:b;},yrTotals[0]||{yr:'–',tot:0});
-  var worstYr2=yrTotals.reduce(function(b,y){return y.tot>b.tot?y:b;},yrTotals[0]||{yr:'–',tot:0});
-  var expYoyTxt='–',expYoyCls='nt';
-  if(years.length>=2){var ya=years[years.length-2],yb=years[years.length-1];
-    var ta=yg[ya].totals.reduce(function(a,b){return a+b;},0),tb=yg[yb].totals.reduce(function(a,b){return a+b;},0);
-    var pc=(tb-ta)/ta*100;expYoyTxt=(pc>0?'▲ +':'▼ ')+Math.abs(pc).toFixed(1)+'% vs '+ya;expYoyCls=pc>0?'bad':'good';}
-  var expIns=[
-    {ico:'📊',lbl:'Above-Avg Months',val:abvAvg+' / '+n,cls:abvAvg>n/2?'bad':'good',desc:abvAvg+' months exceeded avg of ₨'+expF(avg)},
-    {ico:'📅',lbl:'Year-over-Year',val:expYoyTxt,cls:expYoyCls,desc:years.map(function(yr){return yr+': ₨'+expF(yg[yr].totals.reduce(function(a,b){return a+b;},0));}).join(' · ')},
-    {ico:'🏆',lbl:'Best Year',val:bestYr.yr,cls:'good',desc:'₨'+expF(bestYr.tot)+' total · '+(yg[bestYr.yr]||{months:[]}).months.length+' months'},
-    {ico:'⚠️',lbl:'Highest Year',val:worstYr2.yr,cls:'bad',desc:'₨'+expF(worstYr2.tot)+' total · '+(yg[worstYr2.yr]||{months:[]}).months.length+' months'},
-    {ico:'🍜',lbl:'Food Trend (3mo)',val:foodDir,cls:foodDir.includes('Rising')?'bad':'good',desc:foodTrend.map(function(v){return '₨'+expF(v);}).join(' → ')||'–'},
-    {ico:'🏠',lbl:'Avg Rent',val:expFr(avgRent),cls:'info',desc:'Over '+rentVals2.length+' months. Now '+expFr(rentVal)},
-    {ico:'🏷️',lbl:'Biggest Category',val:topAllCat.name,cls:'pur',desc:'₨'+expF(topAllCat.tot)+' · '+topAllPct.toFixed(1)+'% of all spending'},
-    {ico:'📈',lbl:'Biggest MoM Jump',val:(biggestMomVal>=0?'+':'')+expFr(biggestMomVal),cls:biggestMomVal>0?'bad':'good',desc:'Happened in '+biggestMomLbl}
-  ];
-  document.getElementById('exp-ig').innerHTML=expIns.map(function(x){
-    return '<div class="ic"><div class="ic-ico">'+x.ico+'</div><div class="ic-lbl">'+x.lbl+'</div><div class="ic-val '+x.cls+'">'+x.val+'</div><div class="ic-desc">'+x.desc+'</div></div>';
-  }).join('');
+  /* All-time category map (squarified treemap) — replaces the ranking bar */
+  expTreemap(document.getElementById('exp-treemap'),catAll.map(function(c){
+    var vals=cats[c.i].values,last=vals[li]||0,a6=sum(vals.slice(-7,-1))/6;
+    return {name:c.name,v:c.tot,pct:allTotal?c.tot/allTotal*100:0,color:expCc(c.name,c.i),last:last,trend:a6>0?(last-a6)/a6*100:0};}));
+
+  buildExpTicker(cur, avg, 0, 0);  /* budget/remaining fed from edm if loaded */
 
   // ── Background preload: Heatmap + Major EXP data ──
   preloadAnalyzeData();
+}
+
+/* Squarified treemap → absolutely positioned tiles; click opens the all-time drilldown */
+function expTreemap(el,items){
+  function draw(){
+    var W=el.clientWidth,H=el.clientHeight;if(!W)return;
+    var total=items.reduce(function(s,x){return s+x.v;},0),scale=W*H/total;
+    var nodes=items.map(function(x){return Object.assign({a:x.v*scale},x);}),out=[];
+    var r={x:0,y:0,w:W,h:H};
+    function worst(row,side){var s=row.reduce(function(t,n){return t+n.a;},0),mx=Math.max.apply(null,row.map(function(n){return n.a;})),mn=Math.min.apply(null,row.map(function(n){return n.a;}));return Math.max(side*side*mx/(s*s),s*s/(side*side*mn));}
+    function lay(row){var s=row.reduce(function(t,n){return t+n.a;},0);
+      if(r.w>=r.h){var w=s/r.h,y=r.y;row.forEach(function(n){var h=n.a/w;out.push(Object.assign({x:r.x,y:y,w:w,h:h},n));y+=h;});r.x+=w;r.w-=w;}
+      else{var h2=s/r.w,x=r.x;row.forEach(function(n){var w2=n.a/h2;out.push(Object.assign({x:x,y:r.y,w:w2,h:h2},n));x+=w2;});r.y+=h2;r.h-=h2;}}
+    var row=[];
+    while(nodes.length){var side=Math.min(r.w,r.h),nx=nodes[0];
+      if(!row.length||worst(row.concat([nx]),side)<=worst(row,side)){row.push(nodes.shift());}else{lay(row);row=[];}}
+    if(row.length)lay(row);
+    el.innerHTML=out.map(function(t){
+      var big=t.w>110&&t.h>70,mid=t.w>64&&t.h>38;
+      return '<button type="button" class="tm-t" style="left:'+t.x+'px;top:'+t.y+'px;width:'+t.w+'px;height:'+t.h+'px;--c:'+t.color+'" title="'+t.name+' · '+expFr(t.v)+' ('+t.pct.toFixed(1)+'%) — click for all entries" onclick="catPanelOpen(\''+t.name.replace(/'/g,"\\'")+'\')">'+
+        (mid?'<span class="tm-n">'+t.name+'</span><span class="tm-v">₨'+expF(t.v)+'</span>':'<span class="tm-n" style="font-size:9px">'+t.pct.toFixed(0)+'%</span>')+
+        (big?'<span class="tm-p">'+t.pct.toFixed(1)+'% of all · this mo ₨'+expF(t.last)+' <span class="delta '+(t.trend>5?'up':t.trend<-5?'dn':'nt')+'">'+(t.trend>=0?'▲':'▼')+Math.abs(t.trend).toFixed(0)+'%</span></span>':'')+
+        '<span class="tm-go">↗</span></button>';
+    }).join('');
+  }
+  draw();
+  if(window.ResizeObserver)new ResizeObserver(draw).observe(el);
 }
 
 /* ═══════════════════════════════════════════

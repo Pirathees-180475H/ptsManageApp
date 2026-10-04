@@ -2106,6 +2106,13 @@ function getSubscriptionSpendForMonth_(sheet, tz, month, year) {
   return out;
 }
 
+/** 0–11 for a month header like "OCTOBER", "Oct 2025" or the "OTC" typo; -1 if unrecognised. */
+function _expMonthIdx_(h) {
+  var m = String(h).trim().substring(0, 3).toLowerCase();
+  if (m === 'otc') m = 'oct';
+  return ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(m);
+}
+
 function getExpenseData() {
   try {
     var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -2122,11 +2129,37 @@ function getExpenseData() {
       if (h.toUpperCase() === 'TOTAL') continue;                    // skip grand-total column
       if (h.toLowerCase().indexOf('control') >= 0) continue;       // skip Control Plan Amount column
       // Extract year: header contains "20XX" (e.g. "JUNE 2025", "JAN 2026")
-      var yr = 'Unknown';
       var ym = h.match(/20\d{2}/);
-      if (ym) yr = ym[0];
-      monthCols.push({ label: h, colIndex: c, year: yr });
+      monthCols.push({ label: h, colIndex: c, year: ym ? ym[0] : null, mon: _expMonthIdx_(h) });
     }
+
+    // Headers typed without a year ("OCTOBER") get it from their neighbours.
+    // Columns run oldest → newest, so a month that wraps back (Dec → Jan)
+    // starts the next year. Leading year-less columns borrow from the first
+    // dated column after them.
+    var lastYr = null, lastMon = -1;
+    monthCols.forEach(function(mc) {
+      if (mc.year) { lastYr = +mc.year; }
+      else if (lastYr !== null) {
+        if (mc.mon >= 0 && lastMon >= 0 && mc.mon <= lastMon) lastYr++;
+        mc.year = String(lastYr);
+      }
+      if (mc.mon >= 0) lastMon = mc.mon;
+    });
+    var nextYr = null, nextMon = 12;
+    for (var k = monthCols.length - 1; k >= 0; k--) {
+      var mk = monthCols[k];
+      if (mk.year) { nextYr = +mk.year; }
+      else if (nextYr !== null) {
+        if (mk.mon >= 0 && mk.mon >= nextMon) nextYr--;
+        mk.year = String(nextYr);
+      }
+      if (mk.mon >= 0) nextMon = mk.mon;
+    }
+    monthCols.forEach(function(mc) {
+      if (!mc.year) { mc.year = 'Unknown'; return; }
+      if (!/20\d{2}/.test(mc.label)) mc.label = mc.label + ' ' + mc.year;  // so the client can read it
+    });
 
     // ── Rows 7–17: 10 category rows + 1 Total row ────────────────
     // Read exactly 11 rows, same 30-col window so indices align
