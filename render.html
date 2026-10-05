@@ -659,6 +659,9 @@ function expMonKey(lbl){return lbl.split(' ')[0];}
 function expMonIdx(k){var i=EXP_MON_ORDER.findIndex(function(m){return m.toLowerCase()===k.toLowerCase();});return i>=0?i:11;}
 
 function expLoad(){
+  /* the header strip almost always shows this calendar month — ask for it now,
+     side by side with the main data, instead of after it arrives */
+  var now=new Date();expStripFetch(now.getMonth()+1,now.getFullYear());
   google.script.run
     .withSuccessHandler(function(d){try{expBuild(d);}catch(e){expShowErr('Render error: '+e.message);}})
     .withFailureHandler(function(e){expShowErr(e.message||e.toString());})
@@ -837,6 +840,192 @@ function expShowErr(m){
   document.getElementById('exp-root').innerHTML='<div class="exp-err">⚠️ '+m+'</div>';
 }
 
+/* ── Expense header: readout + day strip ─────────────────────────
+   The readout uses the monthly table, so its numbers match the KPI strip
+   below it. The strip (one bar per day) is filled afterwards from
+   getExpenseStrip(), which reads the daily rows with rent split out. */
+var EXP_MON_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var _xsTok=0;
+function expMix(a,b,t){var A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),o='#';
+  for(var k=16;k>=0;k-=8){var x=(A>>k)&255,y=(B>>k)&255;o+=('0'+Math.round(x+(y-x)*t).toString(16)).slice(-2);}return o;}
+function expK(n){var a=Math.abs(n);return (n<0?'-':'')+(a>=1e5?Math.round(a/1e3)+'k':(a/1e3).toFixed(1).replace(/\.0$/,'')+'k');}
+
+function expHeroHtml(c){
+  var mo=EXP_MON_FULL[c.mon],pmo=EXP_MON_FULL[(c.mon+11)%12],pms=pmo.substring(0,3);
+  var left=c.avgU-c.cur,pctU=c.avgU>0?c.cur/c.avgU*100:0;
+  var fc=c.inProg&&c.el>0?c.rent+(c.cur-c.rent)/c.el*c.dim:c.cur;
+  var burn=c.el>0?(c.cur-c.rent)/c.el:0;
+  var mom=c.prevTot>0?(c.cur-c.prevTot)/c.prevTot*100:0;
+  var chip=function(cls,id,txt){return '<span class="xh-chip '+cls+'"'+(id?' id="'+id+'"':'')+'>'+txt+'</span>';};
+  var tile=function(cls,lbl,val,sub,ids){ids=ids||{};
+    return '<div class="xh-tile '+cls+'"'+(ids.t?' title="'+ids.t+'"':'')+'><b>'+lbl+'</b><span'+(ids.v?' id="'+ids.v+'"':'')+'>'+val+'</span><em'+(ids.s?' id="'+ids.s+'"':'')+'>'+sub+'</em></div>';};
+  var ribbon=c.catList.map(function(x){return '<span title="'+escHtml(x.name)+' · '+x.pct.toFixed(0)+'%" style="flex:'+x.val+';background:'+x.col+'"></span>';}).join('');
+  var legend=c.catList.slice(0,5).map(function(x){return '<span><i style="background:'+x.col+'"></i>'+esc(x.name)+' '+x.pct.toFixed(0)+'%</span>';}).join('');
+
+  return '<section class="xh" id="expHero" aria-label="This month’s spending">'+
+    '<div class="xh-read">'+
+      '<div class="xh-lbl"><i></i>'+(c.inProg?'Spent in '+mo+' · day '+c.el+' of '+c.dim:'Spent in '+mo+' '+c.year)+'</div>'+
+      '<div class="xh-amt">'+expFr(c.cur)+'<small>of usual '+expK(c.avgU)+'</small></div>'+
+      '<div class="xh-chips">'+
+        (c.inProg?chip('','xhPace','… vs '+pms+' pace')
+                 :chip(mom>0?'bad':'ok','',(mom>0?'▲ +':'▼ ')+Math.abs(mom).toFixed(1)+'% vs '+pms))+
+        chip('y','',pctU.toFixed(0)+'% of usual month')+
+        chip(left<0?'bad':'',null,left>=0?expFr(left)+' left':expFr(-left)+' over usual')+
+        '<span class="xh-badge" id="exp-badge">'+esc(c.label)+'</span>'+
+      '</div>'+
+      '<div class="xh-tiles">'+
+        tile('r','Rent',expFr(c.rent),(c.cur>0?(c.rent/c.cur*100).toFixed(0):0)+'% of the month',{s:'xhRentSub'})+
+        tile('s','Subs',expFr(c.subs),c.subsN?c.subsN+' item'+(c.subsN===1?'':'s'):c.subsNote,{s:'xhSubsSub',t:c.subsTip})+
+        tile('','Variable',expFr(c.varSpd),'excl. rent &amp; subs')+
+        tile('b','Last month',expFr(c.prevTot),pmo+' total')+
+        (c.inProg?tile('b',pms+' by day '+c.el,'…','same point last month',{v:'xhPrevCum'})
+                 :tile('b','vs '+pms,(mom>0?'+':'')+mom.toFixed(1)+'%','change in total'))+
+        (c.inProg?tile('y','Forecast',expFr(fc),'vs usual '+expK(c.avgU))
+                 :tile('y','Usual month',expFr(c.avgU),'avg of finished months'))+
+        (c.inProg?tile('y','Safe per day',expFr(Math.max(0,left)/Math.max(1,c.dim-c.el)),(c.dim-c.el)+' day'+(c.dim-c.el===1?'':'s')+' to go')
+                 :tile('y','Avg per day',expFr(c.cur/c.dim),'over '+c.dim+' days'))+
+        tile('','No-spend','…','burn '+expFr(burn)+'/day',{v:'xhNil'})+
+      '</div>'+
+      '<div class="xh-ribbon">'+ribbon+'</div><div class="xh-leg">'+legend+'</div>'+
+      '<p class="xh-sub" id="exp-sub">Loading…</p>'+
+    '</div>'+
+    '<div class="xs-card" id="xsCard"><div class="xs-hd"><span class="xs-mo">'+mo+'</span><span class="xs-meta">'+c.year+(c.inProg?' · DAY '+c.el+' / '+c.dim:' · '+c.dim+' DAYS')+'</span></div>'+
+      '<div class="xs-wait" id="xsBody"><div class="exp-spinner"></div><span>Loading daily spend…</span></div></div>'+
+  '</section>';
+}
+
+/* one in-flight/finished strip request per month; expStripLoad reuses it */
+var _xsReq=null;
+function expStripFetch(m,y){
+  var q={key:m+'-'+y,done:false,ok:false,res:null,cbs:[]};_xsReq=q;
+  var fin=function(ok,res){q.done=true;q.ok=ok;q.res=res;q.cbs.forEach(function(f){f(ok,res);});q.cbs=[];};
+  google.script.run.withSuccessHandler(function(r){fin(true,r);})
+    .withFailureHandler(function(e){fin(false,e&&e.message||String(e));}).getExpenseStrip(m,y);
+  return q;
+}
+function expStripLoad(c){
+  var tok=++_xsTok;
+  var fail=function(m){
+    if(tok!==_xsTok)return;
+    var b=document.getElementById('xsBody');if(b){b.className='xs-wait';b.innerHTML='<span>⚠️ Daily spend unavailable'+(m?' · '+esc(m):'')+'</span>';}
+    ['xhPrevCum','xhNil'].forEach(function(id){var e=document.getElementById(id);if(e)e.textContent='—';});
+    var p=document.getElementById('xhPace');if(p)p.textContent='— vs last month';
+  };
+  var key=(c.mon+1)+'-'+c.year,q=(_xsReq&&_xsReq.key===key)?_xsReq:expStripFetch(c.mon+1,c.year);
+  var done=function(ok,r){
+    if(tok!==_xsTok)return;
+    if(!ok){fail(r);return;}
+    if(!r||!r.success){fail(r&&r.error);return;}
+    try{expStripRender(r,c);}catch(e){fail(e.message);}
+  };
+  if(q.done)done(q.ok,q.res);else q.cbs.push(done);
+}
+
+function expStripRender(r,c){
+  var days=r.days||[],pd=r.prevDays||[],dim=days.length||c.dim,el=Math.min(c.el,dim);
+  var mo=EXP_MON_FULL[c.mon],ms=mo.substring(0,3),pms=EXP_MON_FULL[(c.mon+11)%12].substring(0,3);
+  var fw=(new Date(c.year,c.mon,1).getDay()+6)%7;           // Monday-first index of day 1
+  var WD=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var i,mx=0,nonRent=0,cum=0,pcum=0,nil=0,rentDay=0;
+  for(i=0;i<el;i++){var x=days[i];if(x.t>mx)mx=x.t;nonRent+=x.t;cum+=x.t+x.r;if(!x.t&&!x.r)nil++;if(x.r>0&&!rentDay)rentDay=i+1;}
+  for(i=0;i<Math.min(el,pd.length);i++)pcum+=pd[i].t+pd[i].r;
+  var hasPrev=pd.some(function(x){return x.t||x.r;});
+  if(!mx)mx=1;
+  var hOf=function(v){return v>0?8+92*Math.min(v,mx)/mx:0;};
+  /* bar colour by where the day sits between the month's lowest and highest
+     spend day: lowest = green, highest = red, the rest blend through amber */
+  var mn=Infinity,maxD=0,minD=0;
+  for(i=0;i<el;i++){var t=days[i].t;if(t>0&&t<mn){mn=t;minD=i+1;}if(t>0&&t===mx)maxD=i+1;}
+  var colOf=function(v){
+    var f=mx>mn?(v-mn)/(mx-mn):0;
+    return f<.5?expMix('#4ade80','#fcd34d',f*2):expMix('#fcd34d','#fb7185',(f-.5)*2);
+  };
+  var burn=el>0?nonRent/el:0;
+
+  /* biggest three days get a value label */
+  var top=days.slice(0,el).map(function(x,j){return {j:j,t:x.t};}).filter(function(o){return o.t>0;})
+    .sort(function(a,b){return b.t-a.t;}).slice(0,3).map(function(o){return o.j;});
+
+  /* subscriptions: paid this month; and last month's ones not charged yet (expected) */
+  var paid={},exp={},seen={};
+  (r.subs||[]).forEach(function(s){(paid[s.day]=paid[s.day]||[]).push(s);seen[s.keyword]=1;});
+  if(c.inProg)(r.prevSubs||[]).forEach(function(s){if(seen[s.keyword])return;var d=Math.min(Math.max(s.day,el+1),dim);(exp[d]=exp[d]||[]).push(s);});
+  var expN=Object.keys(exp).reduce(function(n,k){return n+exp[k].length;},0);
+
+  var cols='',axis='';
+  for(var d=1;d<=dim;d++){
+    var o=days[d-1],fut=d>el,wd=(d-1+fw)%7,wk=Math.floor((d-1+fw)/7),cls='xs-col'+(wk%2?' wb':'');
+    var h=0,inner='';
+    if(fut){cls+=' fut';}
+    else if(o.r>0){cls+=' rent';h=100;inner='<span class="xs-rt">RENT '+expK(o.r)+'</span>';}
+    else if(!o.t){cls+=' nil';inner='<span class="xs-ok">✓</span>';}
+    else{h=hOf(o.t);if(top.indexOf(d-1)>=0||d===minD)inner='<span class="xs-val">'+expK(o.t)+'</span>';
+      if(d===maxD)cls+=' hi';else if(d===minD)cls+=' lo';}
+    if(d===el&&c.inProg){cls+=' today';inner+='<span class="xs-tdy">TODAY</span>';}
+    cols+='<button type="button" class="'+cls+'" data-d="'+d+'" style="--h:'+h.toFixed(1)+'%;--c:'+(o.t>0?colOf(o.t):'transparent')+'" aria-label="'+escHtml(xsDayText(d))+'"><span class="xs-bar"></span>'+inner+'</button>';
+    var mk=(paid[d]?'<i class="p"></i>':'')+(exp[d]?'<i class="e"></i>':'');
+    /* phone shows 1, 5, 10 … plus today; a multiple of 5 right next to today is dropped so labels don't collide */
+    var showNum=(d===1||d%5===0)&&!(c.inProg&&d!==el&&Math.abs(d-el)<=1);
+    axis+='<span class="xs-day'+(showNum?' m':'')+(d===el&&c.inProg?' t':'')+'"><b>'+d+'</b><em>'+WD[wd].charAt(0)+'</em><s>'+mk+'</s></span>';
+  }
+  function xsDayText(d){
+    var o=days[d-1],dt=WD[(d-1+fw)%7]+' '+d+' '+ms,bits=[];
+    if(d>el)bits.push(c.inProg?'still to come':'no data');
+    else{ if(o.r>0)bits.push('rent '+expFr(o.r)); bits.push(o.t?expFr(o.t)+(o.r>0?' other':''):(o.r>0?'':'no spend')); }
+    if(d===maxD&&d<=el)bits.push('highest day');else if(d===minD&&d<=el&&maxD!==minD)bits.push('lowest day');
+    (paid[d]||[]).forEach(function(s){bits.push(s.reference+' '+expFr(s.amount));});
+    (exp[d]||[]).forEach(function(s){bits.push(s.reference+' expected (~'+expFr(s.amount)+')');});
+    return dt+' · '+bits.join(' · ');
+  }
+
+  var body=document.getElementById('xsBody');if(!body)return;
+  body.className='xs-body';
+  body.innerHTML=
+    '<div class="xs-plot" style="--n:'+dim+'"><span class="xs-avg" style="bottom:'+hOf(burn).toFixed(1)+'%"><em>avg '+expK(burn)+'/day</em></span>'+cols+'</div>'+
+    '<div class="xs-axis" style="--n:'+dim+'">'+axis+'</div>'+
+    '<div class="xs-info" id="xsInfo" aria-live="polite"></div>'+
+    '<div class="xs-leg"><span><i class="g"></i>low → high</span><span><i class="p"></i>subscription</span>'+(c.inProg?'<span><i class="e"></i>expected</span>':'')+
+      '<span><i class="r"></i>rent</span><span class="ok">✓ no-spend</span><span class="xs-hint">tap a day</span></div>';
+
+  var info=document.getElementById('xsInfo'),plot=body.querySelector('.xs-plot');
+  var show=function(d){
+    var t=xsDayText(d),k=t.indexOf(' · ');
+    info.innerHTML='<b>'+esc(t.substring(0,k))+'</b>'+esc(t.substring(k));
+    var s=plot.querySelector('.sel');if(s)s.classList.remove('sel');
+    var b=plot.querySelector('[data-d="'+d+'"]');if(b)b.classList.add('sel');
+  };
+  var pickD=function(e){var b=e.target.closest&&e.target.closest('.xs-col');if(b)show(+b.dataset.d);};
+  plot.addEventListener('click',pickD);plot.addEventListener('mouseover',pickD);plot.addEventListener('focusin',pickD);
+  show(el>0?el:1);
+
+  /* fill the readout bits that need daily data */
+  var set=function(id,t){var e=document.getElementById(id);if(e)e.textContent=t;};
+  set('xhNil',nil+' day'+(nil===1?'':'s'));
+  if(rentDay)set('xhRentSub','paid '+rentDay+' '+ms+' · '+(c.cur>0?(c.rent/c.cur*100).toFixed(0):0)+'%');
+  if(expN)set('xhSubsSub',c.subsN+' paid · '+expN+' expected');
+  if(c.inProg){
+    set('xhPrevCum',hasPrev?expFr(pcum):'—');
+    var p=document.getElementById('xhPace');
+    if(p){
+      if(hasPrev&&pcum>0){var pace=(cum-pcum)/pcum*100;p.textContent=(pace>0?'▲ +':'▼ ')+Math.abs(pace).toFixed(1)+'% vs '+pms+' pace';p.className='xh-chip '+(pace>0?'bad':'ok');}
+      else p.textContent='No '+pms+' daily data';
+    }
+  }
+}
+
+/* run render jobs a frame at a time; a newer expBuild supersedes older ones */
+var _expJobTok=0;
+function expRunJobs(jobs){
+  var tok=++_expJobTok,i=0,raf=window.requestAnimationFrame||function(f){return setTimeout(f,16);};
+  (function next(){
+    if(tok!==_expJobTok||i>=jobs.length)return;
+    var t0=Date.now();
+    do{ try{jobs[i++]();}catch(e){if(window.console)console.error('Expense chart',e);} }
+    while(i<jobs.length&&Date.now()-t0<8);
+    raf(function(){setTimeout(next,0);});
+  })();
+}
+
 function expBuild(D){
   window._expDashData = D;
   var months=D.months,totals=D.monthlyTotals,cats=D.categories,yg=D.yearGroups,latest=D.latestMonth;
@@ -848,7 +1037,6 @@ function expBuild(D){
   var avg=sum(totals)/(n||1);
   var worstI=totals.indexOf(Math.max.apply(null,totals));
   var catCur=cats.map(function(c,i){return {name:c.name,val:c.values[li]||0,i:i};}).sort(function(a,b){return b.val-a.val;});
-  var topCat=catCur[0]||{name:'–',val:0};
   var rentObj=cats.find(function(c){return c.name.toLowerCase()==='rent';});
   var rentVal=rentObj?rentObj.values[li]||0:0;
   /* Subscriptions & non-regulars: entries whose reference matches a keyword
@@ -903,18 +1091,19 @@ function expBuild(D){
     subsTip=(subs.items||[]).map(function(it){return it.reference+' — '+expFr(it.amount)+' ('+it.category+', day '+it.day+')';}).join('&#10;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
   }
 
+  /* header hero context — month of the latest column; "in progress" when it is this calendar month */
+  var hMon=expMonIdx(expMonKey(expSl(latest))),hYrM=latest.match(/20\d{2}/),hYr=hYrM?+hYrM[0]:_now.getFullYear();
+  var hDim=new Date(hYr,hMon+1,0).getDate();
+  var hProg=hYr===_now.getFullYear()&&hMon===_now.getMonth();
+  var doneTot=totals.slice(0,hProg?li:n).filter(function(v){return v>0;});
+  var hCtx={label:latest,mon:hMon,year:hYr,dim:hDim,inProg:hProg,el:hProg?Math.min(_now.getDate(),hDim):hDim,
+    cur:cur,rent:rentVal,subs:subsVal,subsN:subs.count||0,subsNote:subsNote,subsTip:subsTip,varSpd:varSpd,prevTot:prev,
+    avgU:doneTot.length?sum(doneTot)/doneTot.length:avg,
+    catList:catCur.filter(function(x){return x.val>0;}).map(function(x){return {name:x.name,val:x.val,pct:cur>0?x.val/cur*100:0,col:x.name.toLowerCase()==='rent'?'#f59e0b':expCc(x.name,x.i)};})};
+
   var root=document.getElementById('exp-root');
   root.innerHTML=
-    '<div class="exp-hdr"><div><h1>📊 Monthly Expense Dashboard</h1><p id="exp-sub">Loading…</p></div><div style="display:flex;gap:10px;align-items:center;"><div class="exp-badge" id="exp-badge">–</div></div></div>'+
-    '<div class="sec-lbl">Overall</div>'+
-    '<div class="kpi-strip">'+
-      '<div class="kpi c0"><div class="kpi-lbl">Current Month</div><div class="kpi-val">'+expFr(cur)+'</div><div class="delta '+(mom>5?'up':mom<-5?'dn':'nt')+'">'+(mom>=0?'▲':'▼')+' '+Math.abs(mom).toFixed(1)+'% MoM</div></div>'+
-      '<div class="kpi c1"><div class="kpi-lbl">Avg Monthly</div><div class="kpi-val">'+expFr(avg)+'</div><div class="kpi-sub">Over '+n+' months</div></div>'+
-      '<div class="kpi c2"><div class="kpi-lbl">Top Category</div><div class="kpi-val" style="font-size:13px">'+topCat.name+'</div><div class="kpi-sub">'+expFr(topCat.val)+' this month</div></div>'+
-      '<div class="kpi c3"'+(subsTip?' title="'+subsTip+'"':'')+'><div class="kpi-lbl">Subscriptions &amp; Non-Regulars</div><div class="kpi-val">'+expFr(subsVal)+'</div><div class="kpi-sub">'+subsNote+'</div></div>'+
-      '<div class="kpi c4"><div class="kpi-lbl">Rent</div><div class="kpi-val">'+expFr(rentVal)+'</div><div class="kpi-sub">'+rentPct.toFixed(1)+'% of total</div></div>'+
-      '<div class="kpi c5"><div class="kpi-lbl">Variable Spend</div><div class="kpi-val">'+expFr(varSpd)+'</div><div class="kpi-sub">Excl. rent &amp; subs</div></div>'+
-    '</div>'+
+    expHeroHtml(hCtx)+
     '<div class="pills">'+
       '<div class="pill '+(foodPct>30?'warn':'')+'"><em>🍜 Food</em><strong>'+foodPct.toFixed(1)+'%</strong></div>'+
       '<div class="pill '+(discPct>15?'warn':'')+'"><em>🎉 Discretionary</em><strong>'+discPct.toFixed(1)+'%</strong></div>'+
@@ -950,6 +1139,7 @@ function expBuild(D){
 
   document.getElementById('exp-sub').textContent=n+' months tracked · Latest: '+latest;
   document.getElementById('exp-badge').textContent=latest;
+  expStripLoad(hCtx);
 
   var base={responsive:true,maintainAspectRatio:false};
   function opts(o){return Object.assign({},base,o);}
@@ -958,92 +1148,108 @@ function expBuild(D){
     c.save();c.textAlign='center';c.textBaseline='middle';c.fillStyle='#fff';c.font='700 14px Inter, system-ui, sans-serif';c.fillText(t.text,x,y-6);
     c.fillStyle='rgba(255,255,255,.35)';c.font='500 9px Inter, system-ui, sans-serif';c.fillText(t.sub||'',x,y+10);c.restore();}};
 
-  /* YoY monthly totals — carries the old year-card info */
-  var allMonKeys=[];
-  years.forEach(function(yr){yg[yr].months.map(expSl).forEach(function(lbl){var k=expMonKey(lbl);if(!allMonKeys.includes(k))allMonKeys.push(k);});});
-  allMonKeys.sort(function(a,b){return expMonIdx(a)-expMonIdx(b);});
-  var yoyDs=yrInfo.map(function(y){var g=yg[y.yr],map={};g.months.forEach(function(m,i){map[expMonKey(expSl(m))]=g.totals[i]||0;});
-    var mk=function(hit,dflt){return allMonKeys.map(function(k){return k===y.best?hit[0]:k===y.worst?hit[1]:dflt;});};
-    return {label:y.yr,data:allMonKeys.map(function(k){return map[k]!==undefined?map[k]:null;}),
-      borderColor:y.color,backgroundColor:y.color+'25',fill:false,tension:.4,borderWidth:2.5,spanGaps:false,
-      pointRadius:mk([6,6],3),pointHoverRadius:7,pointBorderColor:mk(['#10b981','#ef4444'],y.color),
-      pointBackgroundColor:allMonKeys.map(function(k){return y.partial&&k===inProgKey?'transparent':k===y.best?'#10b981':k===y.worst?'#ef4444':y.color;}),
-      pointBorderWidth:allMonKeys.map(function(k){return y.partial&&k===inProgKey?2:1;}),
-      segment:{borderDash:function(ctx){return y.partial&&allMonKeys[ctx.p1DataIndex]===inProgKey?[4,4]:undefined;}}};});
-  new Chart(document.getElementById('expCYoY'),{type:'line',data:{labels:allMonKeys,datasets:yoyDs},
-    options:opts({interaction:{mode:'index',intersect:false},plugins:{legend:EXP_LEG,tooltip:{callbacks:{
-      label:function(c){if(c.raw==null)return null;var y=yrInfo[c.datasetIndex],tag=(y.partial&&c.label===inProgKey)?' · in progress':c.label===y.best?' · best':c.label===y.worst?' · worst':'';return ' '+c.dataset.label+': ₨'+expF(c.raw)+tag;}}}},scales:expSc()})});
+  /* Charts are built one per frame instead of all at once, so the header
+     and pills paint first and the page never freezes while nine charts set up.
+     They go in page order, top first. A rebuild (reload) cancels any left. */
+  var jobs=[];
+  jobs.push(function(){
+    /* YoY monthly totals — carries the old year-card info */
+    var allMonKeys=[];
+    years.forEach(function(yr){yg[yr].months.map(expSl).forEach(function(lbl){var k=expMonKey(lbl);if(!allMonKeys.includes(k))allMonKeys.push(k);});});
+    allMonKeys.sort(function(a,b){return expMonIdx(a)-expMonIdx(b);});
+    var yoyDs=yrInfo.map(function(y){var g=yg[y.yr],map={};g.months.forEach(function(m,i){map[expMonKey(expSl(m))]=g.totals[i]||0;});
+      var mk=function(hit,dflt){return allMonKeys.map(function(k){return k===y.best?hit[0]:k===y.worst?hit[1]:dflt;});};
+      return {label:y.yr,data:allMonKeys.map(function(k){return map[k]!==undefined?map[k]:null;}),
+        borderColor:y.color,backgroundColor:y.color+'25',fill:false,tension:.4,borderWidth:2.5,spanGaps:false,
+        pointRadius:mk([6,6],3),pointHoverRadius:7,pointBorderColor:mk(['#10b981','#ef4444'],y.color),
+        pointBackgroundColor:allMonKeys.map(function(k){return y.partial&&k===inProgKey?'transparent':k===y.best?'#10b981':k===y.worst?'#ef4444':y.color;}),
+        pointBorderWidth:allMonKeys.map(function(k){return y.partial&&k===inProgKey?2:1;}),
+        segment:{borderDash:function(ctx){return y.partial&&allMonKeys[ctx.p1DataIndex]===inProgKey?[4,4]:undefined;}}};});
+    new Chart(document.getElementById('expCYoY'),{type:'line',data:{labels:allMonKeys,datasets:yoyDs},
+      options:opts({interaction:{mode:'index',intersect:false},plugins:{legend:EXP_LEG,tooltip:{callbacks:{
+        label:function(c){if(c.raw==null)return null;var y=yrInfo[c.datasetIndex],tag=(y.partial&&c.label===inProgKey)?' · in progress':c.label===y.best?' · best':c.label===y.worst?' · worst':'';return ' '+c.dataset.label+': ₨'+expF(c.raw)+tag;}}}},scales:expSc()})});
+  });
+  jobs.push(function(){
+    var yrAvgDs=years.map(function(yr,yi){var g=yg[yr],mo=g.months.length||1;
+      return {label:yr,data:cats.map(function(c){return (g.catTotals[c.name]||0)/mo;}),backgroundColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length]+'99',borderColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length],borderWidth:1,borderRadius:4};});
+    new Chart(document.getElementById('expCYrAvgCat'),{type:'bar',data:{labels:cats.map(function(c){return c.name;}),datasets:yrAvgDs},
+      options:opts({plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+' avg/mo: ₨'+expF(c.raw);}}}},scales:expSc()})});
+  });
+  jobs.push(function(){
+    new Chart(document.getElementById('expCTrend'),{type:'line',data:{labels:labels,datasets:[
+      {label:'Total Spend',data:totals,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',fill:true,tension:.4,pointBackgroundColor:'#6366f1',pointRadius:3,pointHoverRadius:7,borderWidth:2.5},
+      {label:'Average (₨'+expF(avg)+')',data:totals.map(function(){return avg;}),borderColor:'rgba(239,68,68,.5)',borderDash:[5,5],borderWidth:1.5,fill:false,pointRadius:0,tension:0}
+    ]},options:opts({interaction:{mode:'index',intersect:false},plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label.split(' (')[0]+': ₨'+expF(c.raw);}}}},scales:expSc()})});
+  });
+  jobs.push(function(){
+    /* Donuts with prev/next navigation */
+    var donutOpts=function(){return opts({cutout:'64%',plugins:{centerTxt:{},legend:{labels:{color:'#94a3b8',boxWidth:8,padding:6,font:{size:9}},position:'bottom'},
+      tooltip:{callbacks:{label:function(c){var t=sum(c.dataset.data);return ' '+c.label+': ₨'+expF(c.raw)+' ('+(t?c.raw/t*100:0).toFixed(1)+'%)';}}}}});};
+    function donutData(pairs){pairs=pairs.filter(function(p){return p.v>0;}).sort(function(a,b){return b.v-a.v;});
+      return {labels:pairs.map(function(p){return p.name;}),datasets:[{data:pairs.map(function(p){return p.v;}),backgroundColor:pairs.map(function(p){return expCc(p.name,p.i);}),borderWidth:0,hoverOffset:8}]};}
+    var dM=new Chart(document.getElementById('expCDonut'),{type:'doughnut',data:{labels:[],datasets:[]},options:donutOpts(),plugins:[centerTxt]});
+    var dY=new Chart(document.getElementById('expCDonutYr'),{type:'doughnut',data:{labels:[],datasets:[]},options:donutOpts(),plugins:[centerTxt]});
+    var mIdx=li,yIdx=years.length-1;
+    function drawM(){dM.data=donutData(cats.map(function(c,i){return {name:c.name,v:c.values[mIdx]||0,i:i};}));
+      dM.options.plugins.centerTxt={text:'₨'+expF(totals[mIdx]),sub:months[mIdx]};dM.update();
+      document.getElementById('expDMLbl').textContent=labels[mIdx];
+      document.getElementById('expDMPrev').disabled=mIdx<=0;document.getElementById('expDMNext').disabled=mIdx>=li;}
+    function drawY(){var g=yg[years[yIdx]];dY.data=donutData(cats.map(function(c,i){return {name:c.name,v:g.catTotals[c.name]||0,i:i};}));
+      dY.options.plugins.centerTxt={text:'₨'+expF(sum(g.totals)),sub:g.months.length+' months'};dY.update();
+      document.getElementById('expDYLbl').textContent=years[yIdx];
+      document.getElementById('expDYPrev').disabled=yIdx<=0;document.getElementById('expDYNext').disabled=yIdx>=years.length-1;}
+    document.getElementById('expDMPrev').onclick=function(){if(mIdx>0){mIdx--;drawM();}};
+    document.getElementById('expDMNext').onclick=function(){if(mIdx<li){mIdx++;drawM();}};
+    document.getElementById('expDYPrev').onclick=function(){if(yIdx>0){yIdx--;drawY();}};
+    document.getElementById('expDYNext').onclick=function(){if(yIdx<years.length-1){yIdx++;drawY();}};
+    drawM();drawY();
+  });
+  jobs.push(function(){
+    new Chart(document.getElementById('expCStack'),{type:'bar',data:{labels:labels,
+      datasets:cats.map(function(c,i){return {label:c.name,data:c.values,backgroundColor:expCc(c.name,i)+'cc',borderWidth:0,stack:'a'};})
+    },options:opts({
+      plugins:{legend:EXP_LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);},
+        footer:function(items){return 'Total: ₨'+expF(totals[items[0].dataIndex]);}}}},
+      scales:expSc(true)})});
+  });
+  jobs.push(function(){
+    /* Top category trends: only #1 visible, toggle reveals the next 3 */
+    var top4Cats=cats.filter(function(c){return c.name.toLowerCase()!=='rent';}).sort(function(a,b){return sum(b.values)-sum(a.values);}).slice(0,4);
+    var tc=new Chart(document.getElementById('expCCatTrend'),{type:'line',data:{labels:labels,
+      datasets:top4Cats.map(function(c,k){var col=expCc(c.name,cats.indexOf(c));return {label:c.name,data:c.values,borderColor:col,backgroundColor:col+'1f',fill:k===0,hidden:k>0,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2};})
+    },options:opts({interaction:{mode:'index',intersect:false},plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);}}}},scales:expSc()})});
+    document.getElementById('expTcAll').onchange=function(){var on=this.checked;
+      tc.data.datasets.forEach(function(d,k){if(k>0)d.hidden=!on;d.fill=!on&&k===0;});tc.update();
+      document.getElementById('expTcSub').textContent=on?'Top 4 categories over time (excl. rent)':'Top category over time (excl. rent)';};
+  });
+  jobs.push(function(){
+    var momColors=momArr.map(function(v){return v>0?'rgba(239,68,68,.8)':v<0?'rgba(16,185,129,.8)':'rgba(148,163,184,.4)';});
+    new Chart(document.getElementById('expCMom'),{type:'bar',data:{labels:labels.slice(1),
+      datasets:[{label:'MoM Δ',data:momArr.slice(1),backgroundColor:momColors.slice(1),borderWidth:0,borderRadius:3}]
+    },options:opts({
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var p=totals[c.dataIndex]>0?c.raw/totals[c.dataIndex]*100:0;return ' ₨'+expF(Math.abs(c.raw))+(c.raw>=0?' ▲':' ▼')+' ('+(p>=0?'+':'')+p.toFixed(1)+'%)';}}}},
+      scales:expSc()})});
+  });
+  jobs.push(function(){
+    var rentArr=months.map(function(_,i){return rentObj?rentObj.values[i]||0:0;});
+    new Chart(document.getElementById('expCFixVar'),{type:'bar',data:{labels:labels,datasets:[
+      {label:'Rent',data:rentArr,backgroundColor:'#64748bcc',borderWidth:0,stack:'f'},
+      {label:'Variable',data:totals.map(function(t,i){return t-rentArr[i];}),backgroundColor:'#6366f1cc',borderWidth:0,stack:'f'}]},
+      options:opts({plugins:{legend:EXP_LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw)+' ('+(totals[c.dataIndex]?c.raw/totals[c.dataIndex]*100:0).toFixed(0)+'%)';}}}},scales:expSc(true)})});
+  });
+  jobs.push(function(){
+    /* All-time category map (squarified treemap) — replaces the ranking bar */
+    expTreemap(document.getElementById('exp-treemap'),catAll.map(function(c){
+      var vals=cats[c.i].values,last=vals[li]||0,a6=sum(vals.slice(-7,-1))/6;
+      return {name:c.name,v:c.tot,pct:allTotal?c.tot/allTotal*100:0,color:expCc(c.name,c.i),last:last,trend:a6>0?(last-a6)/a6*100:0};}));
+  });
+  jobs.push(function(){
+    buildExpTicker(cur, avg, 0, 0);  /* budget/remaining fed from edm if loaded */
 
-  var yrAvgDs=years.map(function(yr,yi){var g=yg[yr],mo=g.months.length||1;
-    return {label:yr,data:cats.map(function(c){return (g.catTotals[c.name]||0)/mo;}),backgroundColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length]+'99',borderColor:EXP_YR_COLORS[yi%EXP_YR_COLORS.length],borderWidth:1,borderRadius:4};});
-  new Chart(document.getElementById('expCYrAvgCat'),{type:'bar',data:{labels:cats.map(function(c){return c.name;}),datasets:yrAvgDs},
-    options:opts({plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+' avg/mo: ₨'+expF(c.raw);}}}},scales:expSc()})});
-
-  new Chart(document.getElementById('expCTrend'),{type:'line',data:{labels:labels,datasets:[
-    {label:'Total Spend',data:totals,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.12)',fill:true,tension:.4,pointBackgroundColor:'#6366f1',pointRadius:3,pointHoverRadius:7,borderWidth:2.5},
-    {label:'Average (₨'+expF(avg)+')',data:totals.map(function(){return avg;}),borderColor:'rgba(239,68,68,.5)',borderDash:[5,5],borderWidth:1.5,fill:false,pointRadius:0,tension:0}
-  ]},options:opts({interaction:{mode:'index',intersect:false},plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label.split(' (')[0]+': ₨'+expF(c.raw);}}}},scales:expSc()})});
-
-  /* Donuts with prev/next navigation */
-  var donutOpts=function(){return opts({cutout:'64%',plugins:{centerTxt:{},legend:{labels:{color:'#94a3b8',boxWidth:8,padding:6,font:{size:9}},position:'bottom'},
-    tooltip:{callbacks:{label:function(c){var t=sum(c.dataset.data);return ' '+c.label+': ₨'+expF(c.raw)+' ('+(t?c.raw/t*100:0).toFixed(1)+'%)';}}}}});};
-  function donutData(pairs){pairs=pairs.filter(function(p){return p.v>0;}).sort(function(a,b){return b.v-a.v;});
-    return {labels:pairs.map(function(p){return p.name;}),datasets:[{data:pairs.map(function(p){return p.v;}),backgroundColor:pairs.map(function(p){return expCc(p.name,p.i);}),borderWidth:0,hoverOffset:8}]};}
-  var dM=new Chart(document.getElementById('expCDonut'),{type:'doughnut',data:{labels:[],datasets:[]},options:donutOpts(),plugins:[centerTxt]});
-  var dY=new Chart(document.getElementById('expCDonutYr'),{type:'doughnut',data:{labels:[],datasets:[]},options:donutOpts(),plugins:[centerTxt]});
-  var mIdx=li,yIdx=years.length-1;
-  function drawM(){dM.data=donutData(cats.map(function(c,i){return {name:c.name,v:c.values[mIdx]||0,i:i};}));
-    dM.options.plugins.centerTxt={text:'₨'+expF(totals[mIdx]),sub:months[mIdx]};dM.update();
-    document.getElementById('expDMLbl').textContent=labels[mIdx];
-    document.getElementById('expDMPrev').disabled=mIdx<=0;document.getElementById('expDMNext').disabled=mIdx>=li;}
-  function drawY(){var g=yg[years[yIdx]];dY.data=donutData(cats.map(function(c,i){return {name:c.name,v:g.catTotals[c.name]||0,i:i};}));
-    dY.options.plugins.centerTxt={text:'₨'+expF(sum(g.totals)),sub:g.months.length+' months'};dY.update();
-    document.getElementById('expDYLbl').textContent=years[yIdx];
-    document.getElementById('expDYPrev').disabled=yIdx<=0;document.getElementById('expDYNext').disabled=yIdx>=years.length-1;}
-  document.getElementById('expDMPrev').onclick=function(){if(mIdx>0){mIdx--;drawM();}};
-  document.getElementById('expDMNext').onclick=function(){if(mIdx<li){mIdx++;drawM();}};
-  document.getElementById('expDYPrev').onclick=function(){if(yIdx>0){yIdx--;drawY();}};
-  document.getElementById('expDYNext').onclick=function(){if(yIdx<years.length-1){yIdx++;drawY();}};
-  drawM();drawY();
-
-  new Chart(document.getElementById('expCStack'),{type:'bar',data:{labels:labels,
-    datasets:cats.map(function(c,i){return {label:c.name,data:c.values,backgroundColor:expCc(c.name,i)+'cc',borderWidth:0,stack:'a'};})
-  },options:opts({
-    plugins:{legend:EXP_LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);},
-      footer:function(items){return 'Total: ₨'+expF(totals[items[0].dataIndex]);}}}},
-    scales:expSc(true)})});
-
-  /* Top category trends: only #1 visible, toggle reveals the next 3 */
-  var top4Cats=cats.filter(function(c){return c.name.toLowerCase()!=='rent';}).sort(function(a,b){return sum(b.values)-sum(a.values);}).slice(0,4);
-  var tc=new Chart(document.getElementById('expCCatTrend'),{type:'line',data:{labels:labels,
-    datasets:top4Cats.map(function(c,k){var col=expCc(c.name,cats.indexOf(c));return {label:c.name,data:c.values,borderColor:col,backgroundColor:col+'1f',fill:k===0,hidden:k>0,tension:.4,pointRadius:3,pointHoverRadius:6,borderWidth:2};})
-  },options:opts({interaction:{mode:'index',intersect:false},plugins:{legend:EXP_LEG,tooltip:{callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw);}}}},scales:expSc()})});
-  document.getElementById('expTcAll').onchange=function(){var on=this.checked;
-    tc.data.datasets.forEach(function(d,k){if(k>0)d.hidden=!on;d.fill=!on&&k===0;});tc.update();
-    document.getElementById('expTcSub').textContent=on?'Top 4 categories over time (excl. rent)':'Top category over time (excl. rent)';};
-
-  var momColors=momArr.map(function(v){return v>0?'rgba(239,68,68,.8)':v<0?'rgba(16,185,129,.8)':'rgba(148,163,184,.4)';});
-  new Chart(document.getElementById('expCMom'),{type:'bar',data:{labels:labels.slice(1),
-    datasets:[{label:'MoM Δ',data:momArr.slice(1),backgroundColor:momColors.slice(1),borderWidth:0,borderRadius:3}]
-  },options:opts({
-    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){var p=totals[c.dataIndex]>0?c.raw/totals[c.dataIndex]*100:0;return ' ₨'+expF(Math.abs(c.raw))+(c.raw>=0?' ▲':' ▼')+' ('+(p>=0?'+':'')+p.toFixed(1)+'%)';}}}},
-    scales:expSc()})});
-
-  var rentArr=months.map(function(_,i){return rentObj?rentObj.values[i]||0:0;});
-  new Chart(document.getElementById('expCFixVar'),{type:'bar',data:{labels:labels,datasets:[
-    {label:'Rent',data:rentArr,backgroundColor:'#64748bcc',borderWidth:0,stack:'f'},
-    {label:'Variable',data:totals.map(function(t,i){return t-rentArr[i];}),backgroundColor:'#6366f1cc',borderWidth:0,stack:'f'}]},
-    options:opts({plugins:{legend:EXP_LEG,tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){return ' '+c.dataset.label+': ₨'+expF(c.raw)+' ('+(totals[c.dataIndex]?c.raw/totals[c.dataIndex]*100:0).toFixed(0)+'%)';}}}},scales:expSc(true)})});
-
-  /* All-time category map (squarified treemap) — replaces the ranking bar */
-  expTreemap(document.getElementById('exp-treemap'),catAll.map(function(c){
-    var vals=cats[c.i].values,last=vals[li]||0,a6=sum(vals.slice(-7,-1))/6;
-    return {name:c.name,v:c.tot,pct:allTotal?c.tot/allTotal*100:0,color:expCc(c.name,c.i),last:last,trend:a6>0?(last-a6)/a6*100:0};}));
-
-  buildExpTicker(cur, avg, 0, 0);  /* budget/remaining fed from edm if loaded */
-
-  // ── Background preload: Heatmap + Major EXP data ──
-  preloadAnalyzeData();
+    // ── Background preload: Heatmap + Major EXP data ──
+    preloadAnalyzeData();
+  });
+  expRunJobs(jobs);
 }
 
 /* Squarified treemap → absolutely positioned tiles; click opens the all-time drilldown */

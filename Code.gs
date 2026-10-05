@@ -2051,17 +2051,20 @@ function expLabelToMonthYear_(label) {
   Sum every daily entry in the given month whose reference matches a keyword.
   Returns { total, count, keywords, items:[{day,category,reference,amount,keyword}] }
 */
-function getSubscriptionSpendForMonth_(sheet, tz, month, year) {
+function getSubscriptionSpendForMonth_(sheet, tz, month, year, allData, keywords) {
   var out = { total: 0, count: 0, keywords: [], items: [] };
   try {
-    var keywords = getSubscriptionKeywords_(sheet);
+    keywords = keywords || getSubscriptionKeywords_(sheet);
     out.keywords = keywords;
     if (!keywords.length || !month) return out;
 
-    var lastRow = sheet.getLastRow();
-    var numCols = Math.min(35, sheet.getLastColumn());
-    if (lastRow < 1 || numCols < 1) return out;
-    var allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+    // A caller that already holds the sheet's values passes them in, so the sheet is read once
+    if (!allData) {
+      var lastRow = sheet.getLastRow();
+      var numCols = Math.min(35, sheet.getLastColumn());
+      if (lastRow < 1 || numCols < 1) return out;
+      allData = sheet.getRange(1, 1, lastRow, numCols).getValues();
+    }
 
     for (var r = 0; r < allData.length; r++) {
       var row = allData[r];
@@ -2226,6 +2229,73 @@ function getExpenseData() {
 
   } catch (error) {
     throw new Error('Failed to load expense data: ' + error.message);
+  }
+}
+
+/*
+  Day-by-day spend for one month and the month before it, for the Expenses
+  header strip. Rent (col R) is kept apart from everything else so one rent
+  day doesn't flatten the other bars. Subscription hits for both months come
+  along so the strip can mark the paid ones and the ones still expected.
+  Returns { success, days:[{t,r}], prevDays:[{t,r}], subs:[…], prevSubs:[…] }
+  where days[i] is day i+1 and t = non-rent spend, r = rent.
+*/
+function getExpenseStrip(month, year) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Monthly Expences');
+    if (!sheet) return { success: false, error: 'Sheet "Monthly Expences" not found' };
+    var tz = ss.getSpreadsheetTimeZone();
+
+    month = parseInt(month, 10); year = parseInt(year, 10);
+    if (!(month >= 1 && month <= 12) || !(year >= 2000)) return { success: false, error: 'Bad month/year' };
+    var pm = month === 1 ? 12 : month - 1, py = month === 1 ? year - 1 : year;
+    var dim  = new Date(year, month, 0).getDate();
+    var pdim = new Date(py, pm, 0).getDate();
+    var blank = function(n) { var a = []; for (var i = 0; i < n; i++) a.push({ t: 0, r: 0 }); return a; };
+    var days = blank(dim), prevDays = blank(pdim);
+
+    // One read serves the daily totals and both months' subscription matches
+    var lastRow = sheet.getLastRow();
+    var numCols = Math.min(35, sheet.getLastColumn());
+    var all = lastRow > 0 && numCols > 0 ? sheet.getRange(1, 1, lastRow, numCols).getValues() : [];
+    var keywords = getSubscriptionKeywords_(sheet);
+
+    for (var r = 0; r < all.length; r++) {
+      var row = all[r];
+      var parts = _cellStr(row[0], true).trim().match(/^(\d{1,2})-(\d{1,2})$/);
+      if (!parts) continue;
+      var m = parseInt(parts[1], 10), d = parseInt(parts[2], 10);
+      // Only enforce the year when col A really holds a Date (same rule as the other daily readers)
+      var y = (row[0] instanceof Date && !isNaN(row[0])) ? parseInt(Utilities.formatDate(row[0], tz, 'yyyy'), 10) : null;
+      var target = null;
+      if (m === month && (y === null || y === year) && d >= 1 && d <= dim) target = days[d - 1];
+      else if (m === pm && (y === null || y === py) && d >= 1 && d <= pdim) target = prevDays[d - 1];
+      if (!target) continue;
+
+      EXP_DAILY_CATS_.forEach(function(cat) {
+        if (cat.amtCol > numCols) return;
+        var raw = row[cat.amtCol - 1];
+        var amt = (typeof raw === 'number') ? raw : parseFloat(String(raw).replace(/[^0-9.+-]/g, '')) || 0;
+        if (isNaN(amt) || amt <= 0) return;
+        if (cat.name === 'Rent') target.r += amt; else target.t += amt;
+      });
+    }
+
+    var round = function(a) { a.forEach(function(x) { x.t = Math.round(x.t * 100) / 100; x.r = Math.round(x.r * 100) / 100; }); return a; };
+    var pick = function(s) { return (s.items || []).map(function(it) { return { day: it.day, reference: it.reference, amount: it.amount, keyword: it.keyword }; }); };
+
+    return {
+      success:  true,
+      month:    month,
+      year:     year,
+      days:     round(days),
+      prevDays: round(prevDays),
+      subs:     pick(getSubscriptionSpendForMonth_(sheet, tz, month, year, all, keywords)),
+      prevSubs: pick(getSubscriptionSpendForMonth_(sheet, tz, pm, py, all, keywords))
+    };
+  } catch (error) {
+    return { success: false, error: error.message };
   }
 }
 
