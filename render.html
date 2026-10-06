@@ -846,8 +846,6 @@ function expShowErr(m){
    getExpenseStrip(), which reads the daily rows with rent split out. */
 var EXP_MON_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var _xsTok=0;
-function expMix(a,b,t){var A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),o='#';
-  for(var k=16;k>=0;k-=8){var x=(A>>k)&255,y=(B>>k)&255;o+=('0'+Math.round(x+(y-x)*t).toString(16)).slice(-2);}return o;}
 function expK(n){var a=Math.abs(n);return (n<0?'-':'')+(a>=1e5?Math.round(a/1e3)+'k':(a/1e3).toFixed(1).replace(/\.0$/,'')+'k');}
 
 function expHeroHtml(c){
@@ -932,13 +930,14 @@ function expStripRender(r,c){
   var hasPrev=pd.some(function(x){return x.t||x.r;});
   if(!mx)mx=1;
   var hOf=function(v){return v>0?8+92*Math.min(v,mx)/mx:0;};
-  /* bar colour by where the day sits between the month's lowest and highest
-     spend day: lowest = green, highest = red, the rest blend through amber */
+  /* bar colour = GitHub contribution scale: the day's spot between the month's
+     lowest and highest spend day picks one of four greens (dim = low, bright = high) */
   var mn=Infinity,maxD=0,minD=0;
   for(i=0;i<el;i++){var t=days[i].t;if(t>0&&t<mn){mn=t;minD=i+1;}if(t>0&&t===mx)maxD=i+1;}
+  var XS_GH=['#0e4429','#006d32','#26a641','#39d353'];
   var colOf=function(v){
     var f=mx>mn?(v-mn)/(mx-mn):0;
-    return f<.5?expMix('#4ade80','#fcd34d',f*2):expMix('#fcd34d','#fb7185',(f-.5)*2);
+    return XS_GH[Math.min(3,Math.floor(f*4))];
   };
   var burn=el>0?nonRent/el:0;
 
@@ -984,7 +983,7 @@ function expStripRender(r,c){
     '<div class="xs-plot" style="--n:'+dim+'"><span class="xs-avg" style="bottom:'+hOf(burn).toFixed(1)+'%"><em>avg '+expK(burn)+'/day</em></span>'+cols+'</div>'+
     '<div class="xs-axis" style="--n:'+dim+'">'+axis+'</div>'+
     '<div class="xs-info" id="xsInfo" aria-live="polite"></div>'+
-    '<div class="xs-leg"><span><i class="g"></i>low → high</span><span><i class="p"></i>subscription</span>'+(c.inProg?'<span><i class="e"></i>expected</span>':'')+
+    '<div class="xs-leg"><span>Less<i class="g"></i>More</span><span><i class="p"></i>subscription</span>'+(c.inProg?'<span><i class="e"></i>expected</span>':'')+
       '<span><i class="r"></i>rent</span><span class="ok">✓ no-spend</span><span class="xs-hint">tap a day</span></div>';
 
   var info=document.getElementById('xsInfo'),plot=body.querySelector('.xs-plot');

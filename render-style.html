@@ -1104,10 +1104,9 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-exp .xs-col{position:relative;height:100%;min-width:0;padding:0;border:0;border-radius:3px;background:none;cursor:pointer;font:inherit;color:inherit;-webkit-tap-highlight-color:transparent;}
 #page-exp .xs-col.wb{background:rgba(238,234,255,.035);}
 #page-exp .xs-col.sel,#page-exp .xs-col:focus-visible{outline:1px solid rgba(238,234,255,.55);outline-offset:1px;}
-#page-exp .xs-bar{position:absolute;left:1px;right:1px;bottom:0;height:var(--h);border-radius:2px 2px 1px 1px;background:var(--c,var(--xh-y));opacity:.88;transition:height .5s cubic-bezier(.2,.8,.2,1);}
-#page-exp .xs-col.hi .xs-bar,#page-exp .xs-col.lo .xs-bar,#page-exp .xs-col.sel .xs-bar{opacity:1;}
-#page-exp .xs-col.hi .xs-val{color:var(--xh-bad);}
-#page-exp .xs-col.lo .xs-val{color:var(--xh-ok);}
+#page-exp .xs-bar{position:absolute;left:1px;right:1px;bottom:0;height:var(--h);border-radius:2px 2px 1px 1px;background:var(--c,var(--xh-y));transition:height .5s cubic-bezier(.2,.8,.2,1);}
+#page-exp .xs-col.hi .xs-val{color:#39d353;}
+#page-exp .xs-col.lo .xs-val{color:#26a641;}
 #page-exp .xs-col.rent .xs-bar{background:var(--xh-rent);opacity:1;}
 #page-exp .xs-col.fut .xs-bar{height:14px;background:none;opacity:1;border:1px dashed rgba(238,234,255,.2);}
 #page-exp .xs-rt{position:absolute;left:50%;top:6px;transform:translateX(-50%);writing-mode:vertical-rl;font:800 7px var(--xh-mono);letter-spacing:.5px;color:#16132a;white-space:nowrap;}
@@ -1124,7 +1123,7 @@ body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(
 #page-exp .xs-day em{font-size:7px;font-style:normal;color:rgba(238,234,255,.32);}
 #page-exp .xs-day s{display:flex;gap:1px;height:6px;margin-top:2px;text-decoration:none;}
 #page-exp .xs-card i.p,#page-exp .xs-card i.e,#page-exp .xs-card i.r{display:inline-block;width:5px;height:5px;border-radius:50%;}
-#page-exp .xs-card i.g{display:inline-block;width:22px;height:5px;border-radius:3px;background:linear-gradient(90deg,#4ade80,#fcd34d,#fb7185);}
+#page-exp .xs-card i.g{display:inline-block;width:38px;height:8px;border-radius:2px;background:linear-gradient(90deg,#0e4429 0 8px,transparent 8px 10px,#006d32 10px 18px,transparent 18px 20px,#26a641 20px 28px,transparent 28px 30px,#39d353 30px);}
 #page-exp .xs-card i.p{background:var(--xh-sub);}
 #page-exp .xs-card i.e{border:1px solid var(--xh-sub);}
 #page-exp .xs-card i.r{background:var(--xh-rent);border-radius:1px;}
